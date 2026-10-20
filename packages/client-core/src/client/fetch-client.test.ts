@@ -1,11 +1,22 @@
-import { asyncFixture } from "@tailorkit/config/testing";
+import { asyncFixture } from "@patchsmith/config/testing";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
 import { createSlotStore } from "#store/fetch/slot";
-import { createTailorKitStore } from "#store/store";
+import { createPatchsmithStore } from "#store/store";
 import { testContract } from "#test-contract";
 
-import { createTailorKitFetchClient } from "./fetch-client";
+import { createPatchsmithFetchClient } from "./fetch-client";
+
+const identity = {
+  appId: "app",
+  deploymentId: "deployment",
+  expiresAt: Date.now() + 300_000,
+  installationId: "app",
+  projectId: "project",
+  scope: { name: "workspace", value: { id: "workspace" } },
+  subjectId: "principal",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
+};
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -16,25 +27,30 @@ it("shares endpoint responses across roots without sharing local view registrati
   const fetchMock = vi
     .fn<typeof fetch>()
     .mockResolvedValueOnce(Response.json([{ id: "app" }]));
-  const client = createTailorKitFetchClient({
+
+  const client = createPatchsmithFetchClient({
     baseUrl: "https://host.test/api",
     fetch: fetchMock,
   });
-  const first = createTailorKitStore({
+
+  const first = createPatchsmithStore({
     apps: undefined,
     baseUrl: client.baseUrl,
     client,
     contract: testContract(),
   });
-  const second = createTailorKitStore({
+
+  const second = createPatchsmithStore({
     apps: undefined,
     baseUrl: client.baseUrl,
     client,
     contract: testContract(),
   });
+
   const stop = second.subscribeApps(
     vi.fn<NonNullable<Parameters<typeof second.subscribeApps>[0]>>()
   );
+
   await Promise.all([first.fetchApps(), second.fetchApps()]);
   expect(fetchMock).toHaveBeenCalledOnce();
   expect(second.getAppsSnapshot().apps).toBe(first.getAppsSnapshot().apps);
@@ -48,22 +64,26 @@ it("keeps supplied discovery data local while another root fetches", async () =>
   const fetchMock = vi
     .fn()
     .mockResolvedValue(Response.json([{ id: "remote" }]));
-  const client = createTailorKitFetchClient({
+
+  const client = createPatchsmithFetchClient({
     baseUrl: "https://host.test/",
     fetch: fetchMock,
   });
-  const supplied = createTailorKitStore({
+
+  const supplied = createPatchsmithStore({
     apps: [{ id: "provided" }],
     baseUrl: client.baseUrl,
     client,
     contract: testContract(),
   });
-  const remote = createTailorKitStore({
+
+  const remote = createPatchsmithStore({
     apps: undefined,
     baseUrl: client.baseUrl,
     client,
     contract: testContract(),
   });
+
   await Promise.all([supplied.fetchApps(), remote.fetchApps()]);
   expect(supplied.getAppsSnapshot().apps).toEqual([{ id: "provided" }]);
   expect(remote.getAppsSnapshot().apps).toEqual([{ id: "remote" }]);
@@ -73,15 +93,18 @@ it("keeps supplied discovery data local while another root fetches", async () =>
 
 it("honors app freshness defaults", async () => {
   vi.useFakeTimers();
+
   const fetchMock = vi
     .fn<typeof fetch>()
     .mockResolvedValueOnce(Response.json([{ id: "app" }]))
     .mockResolvedValueOnce(Response.json([{ id: "app" }]));
-  const client = createTailorKitFetchClient({
+
+  const client = createPatchsmithFetchClient({
     baseUrl: "https://host.test/",
     cache: { apps: { staleTime: 10 }, gcTime: Infinity },
     fetch: fetchMock,
   });
+
   await client.apps().fetch();
   vi.advanceTimersByTime(11);
   await client.apps().fetch();
@@ -94,17 +117,21 @@ it("isolates authenticated clients at the same endpoint and clears credentials w
   const firstFetch = vi
     .fn()
     .mockResolvedValue(Response.json([{ id: "first" }]));
+
   const secondFetch = vi
     .fn()
     .mockResolvedValue(Response.json([{ id: "second" }]));
-  const first = createTailorKitFetchClient({
+
+  const first = createPatchsmithFetchClient({
     baseUrl: "https://host.test/",
     fetch: firstFetch,
   });
-  const second = createTailorKitFetchClient({
+
+  const second = createPatchsmithFetchClient({
     baseUrl: "https://host.test/",
     fetch: secondFetch,
   });
+
   await first.apps().fetch();
   expect(second.apps().getSnapshot().status).toBe("idle");
   await second.apps().fetch();
@@ -120,6 +147,7 @@ it("deduplicates instance requests and sessions across framework-neutral consume
   const fetchMock = vi.fn(
     asyncFixture((input) => {
       const path = new URL(String(input)).pathname;
+
       if (path.endsWith("/meta")) {
         return Response.json({
           schema: {
@@ -128,23 +156,29 @@ it("deduplicates instance requests and sessions across framework-neutral consume
           },
         });
       }
+
       if (path.endsWith("/backend/session")) {
         return Response.json({
           expiresAt: Date.now() + 300_000,
+          identity,
           token: "token",
           url: "https://runtime.test/rpc",
         });
       }
+
       return Response.json({
         json: [{ data: {}, key: "overview", metadata: {} }],
       });
     })
   );
-  const client = createTailorKitFetchClient({
+
+  const client = createPatchsmithFetchClient({
     baseUrl: "https://host.test/",
     fetch: fetchMock,
   });
+
   const contract = testContract(true);
+
   const options = {
     activeView: {
       layers: [
@@ -160,14 +194,18 @@ it("deduplicates instance requests and sessions across framework-neutral consume
     ],
     slot: "page",
   };
+
   const first = createSlotStore(client, contract, options);
   const second = createSlotStore(client, contract, options);
+
   const stopFirst = first.subscribe(
     vi.fn<NonNullable<Parameters<typeof first.subscribe>[0]>>()
   );
+
   const stopSecond = second.subscribe(
     vi.fn<NonNullable<Parameters<typeof second.subscribe>[0]>>()
   );
+
   const pending = first.fetch();
   expect(second.fetch()).toBe(pending);
   await pending;

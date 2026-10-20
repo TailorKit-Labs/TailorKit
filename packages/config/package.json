@@ -1,5 +1,5 @@
 {
-  "name": "@tailorkit/config",
+  "name": "@patchsmith/config",
   "version": "0.0.0",
   "private": true,
   "license": "BUSL-1.1",
@@ -23,5 +23,8 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "vite-plus": "catalog:"
+  },
+  "engines": {
+    "node": ">=24.11"
   }
 }

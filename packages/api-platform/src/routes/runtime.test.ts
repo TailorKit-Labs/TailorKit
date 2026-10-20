@@ -23,7 +23,7 @@ const state = vi.hoisted(() => ({
 
 vi.mock("../env", () => ({ env: state.env }));
 
-vi.mock("@tailorkit/db", () => ({
+vi.mock("@patchsmith/db", () => ({
   db: {
     query: {
       app: { findFirst: state.findApp },
@@ -32,7 +32,7 @@ vi.mock("@tailorkit/db", () => ({
   },
 }));
 
-vi.mock("@tailorkit/kv", () => ({ getKV: () => {} }));
+vi.mock("@patchsmith/kv", () => ({ getKV: () => {} }));
 
 vi.mock("../runtime/auth", () => ({
   appRuntimePublicKeys: state.publicKeys,
@@ -45,6 +45,7 @@ it("serves public signing keys at the existing URL without an authenticated cont
   const response = handlePublicRuntimeRequest(
     new Request("https://platform.test/api/platform/runtime/keys")
   );
+
   expect(response?.status).toBe(200);
   expect(response?.headers.get("cache-control")).toBe("public, max-age=60");
   await expect(response?.json()).resolves.toEqual(state.publicKeys());
@@ -66,9 +67,11 @@ it("returns a non-cacheable error when signing keys are unavailable", () => {
   state.publicKeys.mockImplementationOnce(() => {
     throw new Error("Private configuration details");
   });
+
   const response = handlePublicRuntimeRequest(
     new Request("https://platform.test/api/platform/runtime/keys")
   );
+
   expect(response?.status).toBe(503);
   expect(response?.headers.get("cache-control")).toBe("no-store");
 });
@@ -82,9 +85,11 @@ it("publishes deployment metadata to the worker with the service credential", as
     objectKey: "private/server.js",
     projectId: "project",
   };
+
   const fetch = vi
     .spyOn(globalThis, "fetch")
     .mockResolvedValue(new Response(null, { status: 204 }));
+
   try {
     await publishRuntimeMetadata(metadata, "app000000001");
     expect(fetch).toHaveBeenCalledWith(
@@ -123,6 +128,7 @@ it("returns deployment metadata directly as the HTTP response body", async () =>
       "projects/proj00000001/apps/app-public/deployments/deployment-public/server/server.js",
     projectId: "project",
   };
+
   state.findApp.mockResolvedValueOnce({
     currentDeployment: {
       id: metadata.deploymentId,
@@ -133,6 +139,7 @@ it("returns deployment metadata directly as the HTTP response body", async () =>
   });
   state.findFile.mockResolvedValueOnce(metadata);
   const handler = new OpenAPIHandler({ runtime: getRuntimeBundle });
+
   // SAFETY: This test supplies the context members read by the handler; unrelated request context services are outside this scenario.
   const { matched, response } = await handler.handle(
     new Request("https://platform.test/api/platform/apps/app/runtime", {
@@ -152,6 +159,7 @@ it("returns deployment metadata directly as the HTTP response body", async () =>
       prefix: "/api/platform",
     }
   );
+
   expect(matched).toBe(true);
   expect(response?.status).toBe(200);
   await expect(response?.json()).resolves.toEqual(metadata);

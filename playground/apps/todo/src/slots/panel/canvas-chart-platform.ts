@@ -13,14 +13,18 @@ export class CanvasChartPlatform extends BasicPlatform {
     if (type !== "mousemove" && type !== "mouseout" && type !== "click") {
       return;
     }
+
     this.removeEventListener(chart, type);
+
     const handler = (event: Event) => {
       if (event instanceof MouseEvent) {
         listener({ native: event, type, x: event.clientX, y: event.clientY });
       }
     };
+
     const handlers =
       this.listeners.get(chart) ?? new Map<string, EventListener>();
+
     handlers.set(type, handler);
     this.listeners.set(chart, handlers);
     chart.canvas.addEventListener(type, handler);
@@ -29,10 +33,12 @@ export class CanvasChartPlatform extends BasicPlatform {
   override removeEventListener(chart: Chart, type: string) {
     const handlers = this.listeners.get(chart);
     const handler = handlers?.get(type);
+
     if (handler) {
       chart.canvas.removeEventListener(type, handler);
       handlers?.delete(type);
     }
+
     if (handlers?.size === 0) {
       this.listeners.delete(chart);
     }

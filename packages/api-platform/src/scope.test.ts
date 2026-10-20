@@ -16,6 +16,7 @@ describe("scope canonicalization", () => {
         settings: { enabled: true, mode: "compact" },
       },
     });
+
     const reordered = canonicalizeScope({
       name: "organization",
       value: {
@@ -82,9 +83,11 @@ describe("scope canonicalization", () => {
     const rootValue: unknown = JSON.parse(
       '{"__proto__":"unexpected","orgId":"org_123"}'
     );
+
     const nestedValue: unknown = JSON.parse(
       '{"orgId":"org_123","labels":[{"__proto__":"unexpected"}]}'
     );
+
     expect(
       scopeSchema.safeParse({ name: "organization", value: rootValue }).success
     ).toBe(false);
@@ -107,6 +110,7 @@ describe("scope canonicalization", () => {
         Array.from({ length: index === 31 ? 14 : 15 }, () => null),
       ])
     );
+
     const scope = { name: "organization", value };
     expect(scopeSchema.safeParse(scope).success).toBe(true);
     expect(() => canonicalizeScope(scope)).not.toThrow();
@@ -114,9 +118,11 @@ describe("scope canonicalization", () => {
     value.key31?.push(null);
     const result = scopeSchema.safeParse(scope);
     expect(result.success).toBe(false);
+
     if (!result.success) {
       expect(result.error.issues[0]?.message).toContain("512 JSON values");
     }
+
     expect(() => canonicalizeScope(scope)).toThrow(/512 values/u);
   });
 
@@ -124,15 +130,18 @@ describe("scope canonicalization", () => {
 
   it("reports the violated schema bound", () => {
     const parse = parseImplementation;
+
     const tooManyKeys = Object.fromEntries(
       Array.from({ length: 33 }, (_, index) => [`key${index}`, index])
     );
+
     const tooManyBytes = Object.fromEntries(
       Array.from({ length: 32 }, (_, index) => [
         `key${index}`,
         Array.from({ length: 10 }, () => "x".repeat(255)),
       ])
     );
+
     for (const [value, message] of [
       [tooManyKeys, "1–32 entries"],
       [{ id: -0 }, "cannot be -0"],
@@ -140,6 +149,7 @@ describe("scope canonicalization", () => {
     ] as const) {
       const result = parse(value);
       expect(result.success).toBe(false);
+
       if (!result.success) {
         expect(result.error.issues[0]?.message).toContain(message);
       }

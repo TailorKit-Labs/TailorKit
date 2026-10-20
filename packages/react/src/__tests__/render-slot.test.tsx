@@ -1,10 +1,10 @@
+import { asyncFixture } from "@patchsmith/config/testing";
+import { defineContract } from "@patchsmith/core/schema";
+import type { RemoteProps } from "@patchsmith/sandbox/protocol";
 import type {
   StandardJSONSchemaV1,
   StandardSchemaV1,
 } from "@standard-schema/spec";
-import { asyncFixture } from "@tailorkit/config/testing";
-import { defineContract } from "@tailorkit/core/schema";
-import type { RemoteProps } from "@tailorkit/sandbox/protocol";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { StrictMode } from "react";
 import {
@@ -18,18 +18,31 @@ import {
 import { z } from "zod";
 
 import { RenderSlot } from "#index";
-import { createClient } from "#tailorkit";
+import { createClient } from "#patchsmith";
+
+const identity = {
+  appId: "app",
+  deploymentId: "deployment",
+  expiresAt: Date.now() + 300_000,
+  installationId: "app",
+  projectId: "project",
+  scope: { name: "workspace", value: { id: "workspace" } },
+  subjectId: "principal",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
+};
 
 const requests: { appUrl: string; props: RemoteProps }[] = [];
 
 vi.mock("../remote-view", () => ({
   RemoteViewHost: (request: { appUrl: string; props: RemoteProps }) => {
     requests.push(request);
+
     return null;
   },
 }));
 
 const customerContextSchema = z.looseObject({ canEdit: z.boolean() });
+
 type CustomerContext = Pick<z.infer<typeof customerContextSchema>, "canEdit">;
 
 // Retain extra fields for the duplicate-context fixture with its declared contract.
@@ -73,12 +86,14 @@ const Detail = () => {
     context: undefined,
     loading: true,
   });
+
   return null;
 };
 
 const Context = ({ detail = true }: { detail?: boolean }) => {
   client.useViewContext("/", { context: { user: { id: "registered" } } });
   client.useViewContext("/customers", { context: { canEdit: true } });
+
   return detail ? <Detail /> : null;
 };
 
@@ -133,6 +148,7 @@ describe("RenderSlot", () => {
         <client.RenderSlot app={app} slot="panel" />
       </client.Provider>
     );
+
     expect(container.childElementCount).toBe(0);
     expect(requests).toHaveLength(0);
     expect(globalThis.fetch).not.toHaveBeenCalled();
@@ -294,6 +310,7 @@ it.each(["managed", "controlled"] as const)(
       baseUrl: "https://other.test/api/",
       contract,
     });
+
     vi.spyOn(console, "error").mockImplementation(() => {});
     expect(() =>
       render(
@@ -311,7 +328,7 @@ it.each(["managed", "controlled"] as const)(
         </other.Provider>
       )
     ).toThrow(
-      `${mode === "managed" ? "RenderSlot" : "RenderSlot.Controlled"} was created for a different TailorKit client`
+      `${mode === "managed" ? "RenderSlot" : "RenderSlot.Controlled"} was created for a different Patchsmith client`
     );
   }
 );
@@ -342,18 +359,22 @@ const contentImplementation = (key: string) => (
 
 it("resolves the key and sends a complete controlled instance through the renderer", async () => {
   let finish!: (response: Response) => void;
+
   const fetch = vi
     .mocked(globalThis.fetch)
 
     .mockImplementation(async (input) => {
       const url = input instanceof Request ? input.url : String(input);
+
       if (url.endsWith("/backend/session")) {
         return Response.json({
           expiresAt: Date.now() + 300_000,
+          identity,
           token: "token",
           url: "https://runtime.test/rpc",
         });
       }
+
       if (url.endsWith("/actions")) {
         return await (async () => {
           const {
@@ -361,16 +382,20 @@ it("resolves the key and sends a complete controlled instance through the render
             resolve,
             reject: rejectPending,
           } = Promise.withResolvers<Response>();
+
           try {
             finish = resolve;
           } catch (error) {
             rejectPending(error);
           }
+
           return await pendingPromise;
         })();
       }
+
       return Response.json({ schema: {} });
     });
+
   const content = contentImplementation;
   const view = render(content("overview"));
   await waitFor(() => {
@@ -422,13 +447,16 @@ it("reports resolver failures and missing keys without mounting stale instances"
   vi.mocked(globalThis.fetch).mockImplementation(
     asyncFixture((input) => {
       const url = input instanceof Request ? input.url : String(input);
+
       if (url.endsWith("/backend/session")) {
         return Response.json({
           expiresAt: Date.now() + 300_000,
+          identity,
           token: "token",
           url: "https://runtime.test/rpc",
         });
       }
+
       if (url.endsWith("/actions")) {
         return Response.json(
           {
@@ -441,6 +469,7 @@ it("reports resolver failures and missing keys without mounting stale instances"
           { status: 403 }
         );
       }
+
       return Response.json({ schema: {} });
     })
   );
@@ -478,8 +507,10 @@ it.each([false, true])(
       client.useViewContext("/", { context: { user: { id: "registered" } } });
       const context = { canEdit: true, user: { id: "duplicate" } };
       client.useViewContext("/customers", { context });
+
       return null;
     };
+
     const appWithViews = {
       ...app,
       views: [
@@ -488,12 +519,14 @@ it.each([false, true])(
           : { path: "/customers", slot: "panel" },
       ],
     };
+
     render(
       <client.Provider>
         <DuplicateContext />
         <client.RenderSlot app={appWithViews} slot="panel" />
       </client.Provider>
     );
+
     if (dynamic) {
       await waitFor(() => {
         expect(screen.getByRole("alert").textContent).toBe(
@@ -546,6 +579,7 @@ it("passes supplied instances without resolving them and clears them while loadi
       )}
     </client.Provider>
   );
+
   const view = render(content(overview, "ready"));
   await waitFor(() => {
     expect(requests.at(-1)?.props.instance).toEqual(overview);
@@ -572,6 +606,7 @@ it("reports a missing controlled instance and recovers when one is supplied", as
       />
     </client.Provider>
   );
+
   const view = render(content());
   expect(screen.getByRole("alert").textContent).toContain(
     "Pass instance to RenderSlot.Controlled"
@@ -588,12 +623,14 @@ it("rejects instance keys and controlled instances for single-instance slots at 
     ...app,
     views: [{ instances: true as const, path: "/", slot: "navbar" }],
   };
+
   const rendered = render(
     <client.Provider>
       <Context />
       <RenderSlot app={singleApp} slot="navbar" instanceKey="overview" />
     </client.Provider>
   );
+
   await waitFor(() => {
     expect(screen.getByRole("alert").textContent).toBe(
       'Slot "navbar" does not support instances.'

@@ -2,16 +2,16 @@
   "extends": ["//"],
   "tasks": {
     "lint": {
-      "dependsOn": ["$TURBO_EXTENDS$", "@tailorkit/api-platform#build"]
+      "dependsOn": ["$TURBO_EXTENDS$", "@patchsmith/api-platform#build"]
     },
     "lint:fix": {
-      "dependsOn": ["$TURBO_EXTENDS$", "@tailorkit/api-platform#build"]
+      "dependsOn": ["$TURBO_EXTENDS$", "@patchsmith/api-platform#build"]
     },
     "check-types": {
-      "dependsOn": ["$TURBO_EXTENDS$", "@tailorkit/api-platform#build"]
+      "dependsOn": ["$TURBO_EXTENDS$", "@patchsmith/api-platform#build"]
     },
     "test": {
-      "dependsOn": ["$TURBO_EXTENDS$", "@tailorkit/api-platform#build"]
+      "dependsOn": ["$TURBO_EXTENDS$", "@patchsmith/api-platform#build"]
     }
   }
 }

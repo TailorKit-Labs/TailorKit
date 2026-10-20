@@ -1,8 +1,8 @@
 # Frontend components
 
-App frontend code runs in a hidden, sandboxed iframe. TailorKit serializes the component tree and props, then renders the visible UI using the host's components.
+App frontend code runs in a hidden, sandboxed iframe. Patchsmith serializes the component tree and props, then renders the visible UI using the host's components.
 
-Import UI components and host tools from `#tailorkit`. The generated capability pages list each control's props, callbacks, children, and styling options. Compose those controls with Preact; use their layout, spacing, color, and accessibility props.
+Import UI components and host tools from `#patchsmith`. The generated capability pages list each control's props, callbacks, children, and styling options. Compose those controls with Preact; use their layout, spacing, color, and accessibility props.
 
 ## Forms and callbacks
 
@@ -12,7 +12,7 @@ Prefer uncontrolled inputs when the host supports them, so typing doesn't wait f
 
 Callbacks receive the payload in the generated signature: an object such as `{ value }`, a string, or no argument. Use that value directly; callbacks are not DOM events.
 
-Backend hooks come from `tailorkit/client`; function references come from `api` in `#tailorkit`. They require `ClientProvider` above the component. See `tailorkit-functions` for queries, mutations, and actions.
+Backend hooks come from `patchsmith/client`; function references come from `api` in `#patchsmith`. They require `ClientProvider` above the component. See `patchsmith-functions` for queries, mutations, and actions.
 
 Use the hook's pending/error state, disable overlapping saves, and keep drafts on failure.
 
@@ -21,10 +21,10 @@ This uncontrolled input keeps its draft on failure and remounts empty after a su
 <!-- example: src/components/note-editor.tsx -->
 
 ```tsx
+import { useMutation } from "patchsmith/client";
 import { useRef, useState } from "preact/hooks";
-import { useMutation } from "tailorkit/client";
 
-import { api, Box, Button, Input } from "#tailorkit";
+import { api, Box, Button, Input } from "#patchsmith";
 
 export const NoteEditor = () => {
   const title = useRef("");
@@ -62,4 +62,4 @@ export const NoteEditor = () => {
 
 ## Host tools
 
-Host tools perform exposed product operations, such as updating a contact or navigating. Call `tools` from `#tailorkit` in an event handler or effect and handle the promise's result/error. Tools return one result per call; they do not subscribe to changes.
+Host tools perform exposed product operations, such as updating a contact or navigating. Call `tools` from `#patchsmith` in an event handler or effect and handle the promise's result/error. Tools return one result per call; they do not subscribe to changes.

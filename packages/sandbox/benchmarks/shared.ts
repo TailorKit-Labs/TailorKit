@@ -15,7 +15,9 @@ export const Configuration = v.object({
     "revoke",
   ]),
 });
+
 export type BenchmarkConfiguration = v.InferOutput<typeof Configuration>;
+
 export const Result = v.object({
   elapsedMs: v.optional(v.number()),
   equivalentMegabytesPerSecond: v.optional(v.number()),
@@ -27,4 +29,5 @@ export const Result = v.object({
   passed: v.boolean(),
   width: v.optional(v.number()),
 });
+
 export type BenchmarkResultData = v.InferOutput<typeof Result>;

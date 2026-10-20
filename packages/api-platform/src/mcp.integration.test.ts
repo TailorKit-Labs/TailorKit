@@ -12,22 +12,27 @@ const require = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
 interface ListInput {
   input: { body: { scopes: { name: string; value: { tenant: string } }[] } };
 }
+
 interface ListResult {
   body: {
     items: { id: string; name: string }[];
     pagination: { hasMore: boolean };
   };
 }
+
 const calls = vi.hoisted(() => ({
   list: vi.fn<(options: ListInput) => Promise<ListResult>>(),
 }));
-vi.mock("@tailorkit/db", () => ({ db: {} }));
+
+vi.mock("@patchsmith/db", () => ({ db: {} }));
+
 vi.mock("./routes/apps.ts", () => ({
   appRouter: {
     list: os
@@ -46,22 +51,27 @@ vi.mock("./routes/apps.ts", () => ({
       .handler(calls.list),
   },
 }));
-vi.mock("@tailorkit/agent-fx/workflows", () => ({
+
+vi.mock("@patchsmith/agent-fx/workflows", () => ({
   appAgent: vi.fn(),
   cancelAppAgent: vi.fn(),
 }));
+
 vi.mock("workflow/api", () => ({ start: vi.fn() }));
-vi.mock("@tailorkit/api-utils/dev-delay", () => ({
+
+vi.mock("@patchsmith/api-utils/dev-delay", () => ({
   devDelayMiddleware: async <TResult>({ next }: { next: () => TResult }) =>
     await next(),
 }));
-vi.mock("@tailorkit/api-utils/rate-limiting", () => ({
+
+vi.mock("@patchsmith/api-utils/rate-limiting", () => ({
   createRateLimiter: vi.fn(),
   ratelimitMiddleware:
     () =>
     async <TResult>({ next }: { next: () => TResult }) =>
       await next(),
 }));
+
 const { handleAppAgentMcpRequest } = await import("./app-agent-mcp");
 
 it("connects an ordinary MCP client directly to the platform with standard headers", async () => {
@@ -69,21 +79,24 @@ it("connects an ordinary MCP client directly to the platform with standard heade
     body: { items: [], pagination: { hasMore: false } },
   });
   const url = "https://platform.test/api/platform/app-agent/mcp";
+
   const headers = {
     authorization: "Bearer host-key",
-    "x-tailorkit-context": Buffer.from(
+    "x-patchsmith-context": Buffer.from(
       JSON.stringify({
-        hostUrl: "https://host.test/api/tailorkit",
+        hostUrl: "https://host.test/api/patchsmith",
         scopes: { org: { tenant: "墨尔本" } },
         subjectId: "user",
       }),
       "utf-8"
     ).toString("base64url"),
   };
+
   const client = new Client(
     { name: "integration", version: "1" },
     { versionNegotiation: { mode: { pin: "2026-07-28" } } }
   );
+
   try {
     await client.connect(
       new StreamableHTTPClientTransport(new URL(url), {
@@ -115,10 +128,12 @@ it("connects an ordinary MCP client directly to the platform with standard heade
       "create_app",
       "edit_app",
     ]);
+
     const awaitedResult2 = await client.callTool({
       arguments: {},
       name: "list_apps",
     });
+
     expect(awaitedResult2.isError).not.toBe(true);
     expect(require(calls.list.mock.lastCall)[0].input.body.scopes).toEqual([
       { name: "org", value: { tenant: "墨尔本" } },

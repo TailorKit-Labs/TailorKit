@@ -30,13 +30,13 @@ const theme = {
 
 it("builds view-scoped theme variables", () => {
   const css = buildThemeCss("screen-1", theme);
-  expect(css).toContain('[data-tailorkit-view="screen-1"]');
-  expect(css).toContain("--tailorkit-border-solid: solid;");
-  expect(css).toContain("--tailorkit-size-full: 100%;");
-  expect(css).toContain("--tailorkit-space-md: 8px;");
-  expect(css).toContain("--tailorkit-background-surface: var(--background);");
+  expect(css).toContain('[data-patchsmith-view="screen-1"]');
+  expect(css).toContain("--patchsmith-border-solid: solid;");
+  expect(css).toContain("--patchsmith-size-full: 100%;");
+  expect(css).toContain("--patchsmith-space-md: 8px;");
+  expect(css).toContain("--patchsmith-background-surface: var(--background);");
   expect(css).toContain(
-    "--tailorkit-textColor-muted: var(--muted-foreground);"
+    "--patchsmith-textColor-muted: var(--muted-foreground);"
   );
 });
 
@@ -54,10 +54,11 @@ it("builds responsive primitive CSS without rendering a component", () => {
     theme,
     viewId: "view",
   });
+
   expect(css).toContain(
-    '[data-tailorkit-view="view"] [data-tailorkit-node="node"]'
+    '[data-patchsmith-view="view"] [data-patchsmith-node="node"]'
   );
-  expect(css).toContain("padding: var(--tailorkit-space-md)");
+  expect(css).toContain("padding: var(--patchsmith-space-md)");
   expect(css).toContain("width: 320px");
   expect(css).toContain("align-items: flex-start");
   expect(css).toContain("justify-content: space-between");
@@ -84,22 +85,23 @@ it("builds responsive Pressable states in interaction precedence order", () => {
     theme,
     viewId: "view",
   });
+
   expect(css).toContain("appearance: none;");
   expect(css).toContain("display: inline-flex;");
-  expect(css).toContain("width: var(--tailorkit-size-full);");
+  expect(css).toContain("width: var(--patchsmith-size-full);");
   expect(css).toContain("@media (hover: hover)");
   expect(css).toContain(
-    ':not([aria-disabled="true"]):hover { background: var(--tailorkit-background-surface); }'
+    ':not([aria-disabled="true"]):hover { background: var(--patchsmith-background-surface); }'
   );
   expect(css).toContain(
-    ':not([aria-disabled="true"]):focus-visible { border-color: var(--tailorkit-borderColor-default); }'
+    ':not([aria-disabled="true"]):focus-visible { border-color: var(--patchsmith-borderColor-default); }'
   );
   expect(css).toContain("@media (min-width: 640px)");
   expect(css).toContain(
-    ':not([aria-disabled="true"]):is(:active, [data-pressed]) { padding: var(--tailorkit-space-md); }'
+    ':not([aria-disabled="true"]):is(:active, [data-pressed]) { padding: var(--patchsmith-space-md); }'
   );
   expect(css).toContain(
-    '[aria-disabled="true"] { color: var(--tailorkit-textColor-muted); }'
+    '[aria-disabled="true"] { color: var(--patchsmith-textColor-muted); }'
   );
   expect(css.indexOf(':not([aria-disabled="true"]):hover')).toBeLessThan(
     css.indexOf(':not([aria-disabled="true"]):focus-visible { border-color:')
@@ -123,16 +125,17 @@ it("keeps per-prop state breakpoints scoped to their state", () => {
     theme,
     viewId: "view",
   };
+
   const css = buildPrimitiveCss({ ...options, pressable: true });
-  expect(css).toContain("padding: var(--tailorkit-space-md);");
+  expect(css).toContain("padding: var(--patchsmith-space-md);");
   expect(css).toContain(
-    '@media (min-width: 1024px) { [data-tailorkit-view="view"] [data-tailorkit-node="node"]:not([aria-disabled="true"]):is(:active, [data-pressed]) { padding: var(--tailorkit-space-lg); } }'
+    '@media (min-width: 1024px) { [data-patchsmith-view="view"] [data-patchsmith-node="node"]:not([aria-disabled="true"]):is(:active, [data-pressed]) { padding: var(--patchsmith-space-lg); } }'
   );
   expect(css).not.toContain(
-    ':not([aria-disabled="true"]):is(:active, [data-pressed]) { padding: var(--tailorkit-space-md); }'
+    ':not([aria-disabled="true"]):is(:active, [data-pressed]) { padding: var(--patchsmith-space-md); }'
   );
   expect(buildPrimitiveCss(options)).toContain(
-    ":active { padding: var(--tailorkit-space-lg); }"
+    ":active { padding: var(--patchsmith-space-lg); }"
   );
 });
 
@@ -150,17 +153,18 @@ it("keeps breakpoint aliases separate from pseudo-classes", () => {
     theme: { breakpoints: { hover: "900px" } },
     viewId: "view",
   });
+
   expect(css).toContain(
-    '[data-tailorkit-node="node"] { display: block; padding: var(--tailorkit-space-md); }'
+    '[data-patchsmith-node="node"] { display: block; padding: var(--patchsmith-space-md); }'
   );
   expect(css).toContain(
-    '@media (min-width: 900px) { [data-tailorkit-view="view"] [data-tailorkit-node="node"] { padding: var(--tailorkit-space-lg); } }'
+    '@media (min-width: 900px) { [data-patchsmith-view="view"] [data-patchsmith-node="node"] { padding: var(--patchsmith-space-lg); } }'
   );
   expect(css).toContain(
-    '[data-tailorkit-node="node"]:hover { padding: var(--tailorkit-space-lg); }'
+    '[data-patchsmith-node="node"]:hover { padding: var(--patchsmith-space-lg); }'
   );
   expect(css).toContain(
-    '@media (min-width: 900px) { [data-tailorkit-view="view"] [data-tailorkit-node="node"]:hover { padding: var(--tailorkit-space-md); } }'
+    '@media (min-width: 900px) { [data-patchsmith-view="view"] [data-patchsmith-node="node"]:hover { padding: var(--patchsmith-space-md); } }'
   );
 });
 
@@ -176,6 +180,7 @@ it("preserves each property's breakpoint order when multiple queries match", () 
     theme,
     viewId: "view",
   });
+
   const rules = css.split("\n").filter((rule) => rule.startsWith("@media"));
   expect(rules).toHaveLength(4);
   expect(rules[0]).toContain("640px");

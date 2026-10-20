@@ -1,5 +1,5 @@
 declare module "application.js" {
-  import type { ApplicationModule } from "@tailorkit/app/server";
+  import type { ApplicationModule } from "@patchsmith/app/server";
 
   const app: ApplicationModule["default"];
   export default app;

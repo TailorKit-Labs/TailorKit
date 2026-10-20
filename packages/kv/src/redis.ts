@@ -1,4 +1,4 @@
-import { withSpan } from "@tailorkit/observability";
+import { withSpan } from "@patchsmith/observability";
 import IORedis from "ioredis";
 
 import type { GetOptions, KV, SetOptions } from "./types.js";
@@ -11,6 +11,7 @@ if value == 1 then
 end
 return value
 `;
+
 export const createRedisKV = (url: string): KV<"redis"> => {
   const redis = new IORedis(url);
 
@@ -18,7 +19,7 @@ export const createRedisKV = (url: string): KV<"redis"> => {
     delete: async (key) => {
       await withSpan(
         "kv.delete",
-        { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
+        { attributes: { "kv.type": "redis", "patchsmith.package": "kv" } },
         async () => await redis.del(key)
       );
     },
@@ -26,13 +27,13 @@ export const createRedisKV = (url: string): KV<"redis"> => {
     get: async (key, options?: GetOptions) =>
       await withSpan(
         "kv.get",
-        { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
+        { attributes: { "kv.type": "redis", "patchsmith.package": "kv" } },
         async () => await withTimeout(redis.get(key), options?.timeout)
       ),
     getAndDelete: async (key) =>
       await withSpan(
         "kv.get_and_delete",
-        { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
+        { attributes: { "kv.type": "redis", "patchsmith.package": "kv" } },
         async () => await redis.getdel(key)
       ),
     increment: async (key, ttl) =>
@@ -42,7 +43,7 @@ export const createRedisKV = (url: string): KV<"redis"> => {
           attributes: {
             "kv.ttl_seconds": ttl,
             "kv.type": "redis",
-            "tailorkit.package": "kv",
+            "patchsmith.package": "kv",
           },
         },
         async () => {
@@ -71,7 +72,7 @@ export const createRedisKV = (url: string): KV<"redis"> => {
             attributes: {
               "kv.ttl_seconds": ttl,
               "kv.type": "redis",
-              "tailorkit.package": "kv",
+              "patchsmith.package": "kv",
             },
           },
           async () => await redis.setex(key, ttl, value)
@@ -79,7 +80,7 @@ export const createRedisKV = (url: string): KV<"redis"> => {
       } else {
         await withSpan(
           "kv.set",
-          { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
+          { attributes: { "kv.type": "redis", "patchsmith.package": "kv" } },
           async () => await redis.set(key, value)
         );
       }

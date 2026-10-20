@@ -1,10 +1,10 @@
 import * as v from "valibot";
 import { describe, expect, it, vi } from "vite-plus/test";
 
-import { TailorKitSchemaSpec } from "#spec/index";
+import { PatchsmithSchemaSpec } from "#spec/index";
 
 import { experimental_canvas } from "./canvas";
-import { createTailorKitSchema } from "./schema";
+import { createPatchsmithSchema } from "./schema";
 
 const props = {
   ariaLabel: "Revenue chart",
@@ -42,15 +42,18 @@ describe("experimental_canvas", () => {
     expect(() => experimental_canvas(policy)).toThrow("policy");
   });
 
-  it("serializes with the native TailorKit converter even when a host supplies a different validator converter", () => {
+  it("serializes with the native Patchsmith converter even when a host supplies a different validator converter", () => {
     const definition = experimental_canvas();
+
     const converter = vi.fn(() => {
-      throw new Error("Host converter cannot parse TailorKit schemas.");
+      throw new Error("Host converter cannot parse Patchsmith schemas.");
     });
-    const schema = createTailorKitSchema({
+
+    const schema = createPatchsmithSchema({
       components: { experimental_Canvas: definition },
     }).serialize(converter);
-    expect(v.safeParse(TailorKitSchemaSpec, schema).success).toBe(true);
+
+    expect(v.safeParse(PatchsmithSchemaSpec, schema).success).toBe(true);
     expect(schema.components.experimental_Canvas?.fields?.required).toContain(
       "surface"
     );
@@ -61,6 +64,7 @@ describe("experimental_canvas", () => {
 
 it("keeps input disabled by default and validates immutable host input grants", () => {
   expect(experimental_canvas().experimental_canvas.input).toBeUndefined();
+
   for (const code of [
     "Tab",
     "Escape",
@@ -73,10 +77,13 @@ it("keeps input disabled by default and validates immutable host input grants", 
       experimental_canvas({ input: { keyboard: [code] } })
     ).toThrow();
   }
+
   const keyboard = ["ArrowLeft", "KeyW"];
+
   const policy = experimental_canvas({
     input: { keyboard, pointer: true },
   }).experimental_canvas;
+
   keyboard.push("Tab");
   expect(policy.input?.keyboard).toEqual(["ArrowLeft", "KeyW"]);
   expect(Object.isFrozen(policy.input)).toBe(true);

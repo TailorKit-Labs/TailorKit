@@ -1,5 +1,6 @@
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
   typeof value === "object" && value !== null;
+
 // Each view schema owns its field values; composition only merges checked object containers.
 // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- A schema-agnostic composer cannot narrow arbitrary registered schema outputs.
 export type ViewContextValues = Record<string, unknown>;
@@ -21,11 +22,13 @@ export interface ActiveView {
 export const getViewHierarchy = (path: string): string[] => {
   const hierarchy = [path];
   let current = path;
+
   while (current !== "/") {
     const separator = current.lastIndexOf("/");
     current = separator <= 0 ? "/" : current.slice(0, separator);
     hierarchy.push(current);
   }
+
   return hierarchy;
 };
 
@@ -52,22 +55,28 @@ export const composeViewContext = (
 ): ResolvedViewProps => {
   let status: ViewStatus = "ready";
   const context: ViewContextValues = {};
+
   for (const path of getViewHierarchy(selected).toReversed()) {
     const layer = request.layers.find((entry) => entry.path === path);
+
     if (!layer) {
       if (request.declaredViews.includes(path) || path === selected) {
         status = "error";
       }
+
       continue;
     }
+
     if (layer.status === "error") {
       status = "error";
     } else if (layer.status === "loading" && status !== "error") {
       status = "loading";
     }
+
     if (layer.status !== "ready" || layer.context === undefined) {
       continue;
     }
+
     if (
       layer.context === null ||
       !isObjectValue(layer.context) ||
@@ -76,10 +85,12 @@ export const composeViewContext = (
       status = "error";
       continue;
     }
+
     for (const [key, value] of Object.entries(layer.context)) {
       if (Object.hasOwn(context, key)) {
         throw new Error(`Duplicate view context field "${key}".`);
       }
+
       Object.defineProperty(context, key, {
         configurable: true,
         enumerable: true,
@@ -88,9 +99,11 @@ export const composeViewContext = (
       });
     }
   }
+
   const props: ResolvedViewProps =
     status === "ready"
       ? { context, status, view: selected }
       : { context: undefined, status, view: selected };
+
   return props;
 };

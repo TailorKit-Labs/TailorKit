@@ -30,11 +30,13 @@ type BreakpointQuery =
 
 const resolveMin = (value: Breakpoint | number): string => {
   const px = isNumberValue(value) ? value : BREAKPOINTS[value];
+
   return `(min-width: ${px}px)`;
 };
 
 const resolveMax = (value: Breakpoint | number): string => {
   const px = isNumberValue(value) ? value : BREAKPOINTS[value];
+
   return `(max-width: ${px - 1}px)`;
 };
 
@@ -43,21 +45,27 @@ const parseQuery = (
 ): string => {
   if (!isStringValue(query)) {
     const parts: string[] = [];
+
     if (query.min !== undefined) {
       parts.push(resolveMin(query.min));
     }
+
     if (query.max !== undefined) {
       parts.push(resolveMax(query.max));
     }
+
     if (query.pointer === "coarse") {
       parts.push("(pointer: coarse)");
     }
+
     if (query.pointer === "fine") {
       parts.push("(pointer: fine)");
     }
+
     if (parts.length === 0) {
       return "(min-width: 0px)";
     }
+
     return parts.join(" and ");
   }
 
@@ -66,9 +74,11 @@ const parseQuery = (
   }
 
   const parts: string[] = [];
+
   for (const segment of query.split(":")) {
     if (segment.startsWith("max-")) {
       const bp = segment.slice(4);
+
       if (isBreakpoint(bp)) {
         parts.push(resolveMax(bp));
       }
@@ -101,8 +111,10 @@ export const useMediaQuery = (
           /* Intentionally no action is needed. */
         };
       }
+
       const mql = window.matchMedia(mediaQuery);
       mql.addEventListener("change", operation);
+
       return () => {
         mql.removeEventListener("change", operation);
       };
@@ -114,6 +126,7 @@ export const useMediaQuery = (
     if (typeof window === "undefined") {
       return false;
     }
+
     return window.matchMedia(mediaQuery).matches;
   }, [mediaQuery]);
 

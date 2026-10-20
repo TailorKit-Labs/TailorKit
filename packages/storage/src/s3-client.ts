@@ -7,7 +7,7 @@ import {
 } from "@aws-sdk/client-s3";
 import type { S3ClientConfig } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { withSpan } from "@tailorkit/observability";
+import { withSpan } from "@patchsmith/observability";
 
 import type { S3CompatibleStorageOptions } from "./s3.js";
 import type {
@@ -65,9 +65,9 @@ export const createS3CompatibleStorage = (
           "storage.create_download_url",
           {
             attributes: {
+              "patchsmith.package": "storage",
               "storage.expires_seconds": input.expiresInSeconds ?? 300,
               "storage.type": "s3",
-              "tailorkit.package": "storage",
             },
           },
           async () =>
@@ -90,6 +90,7 @@ export const createS3CompatibleStorage = (
       });
 
       const headers: CreateUploadUrlOutput["headers"] = {};
+
       if (
         input.contentType !== undefined &&
         input.contentType !== null &&
@@ -97,6 +98,7 @@ export const createS3CompatibleStorage = (
       ) {
         headers["content-type"] = input.contentType;
       }
+
       if (
         input.contentEncoding !== undefined &&
         input.contentEncoding !== null &&
@@ -104,6 +106,7 @@ export const createS3CompatibleStorage = (
       ) {
         headers["content-encoding"] = input.contentEncoding;
       }
+
       if (
         input.checksumSha256 !== undefined &&
         input.checksumSha256 !== null &&
@@ -111,6 +114,7 @@ export const createS3CompatibleStorage = (
       ) {
         headers["x-amz-checksum-sha256"] = input.checksumSha256;
       }
+
       return {
         headers,
         key: input.key,
@@ -118,9 +122,9 @@ export const createS3CompatibleStorage = (
           "storage.create_upload_url",
           {
             attributes: {
+              "patchsmith.package": "storage",
               "storage.expires_seconds": input.expiresInSeconds ?? 300,
               "storage.type": "s3",
-              "tailorkit.package": "storage",
             },
           },
           async () =>
@@ -140,7 +144,7 @@ export const createS3CompatibleStorage = (
       await withSpan(
         "storage.delete",
         {
-          attributes: { "storage.type": "s3", "tailorkit.package": "storage" },
+          attributes: { "patchsmith.package": "storage", "storage.type": "s3" },
         },
         async () =>
           await client.send(
@@ -155,7 +159,7 @@ export const createS3CompatibleStorage = (
       const result = await withSpan(
         "storage.head",
         {
-          attributes: { "storage.type": "s3", "tailorkit.package": "storage" },
+          attributes: { "patchsmith.package": "storage", "storage.type": "s3" },
         },
         async () =>
           await client.send(

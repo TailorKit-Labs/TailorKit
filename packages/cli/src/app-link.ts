@@ -1,6 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 
-import { setConfigAppId } from "@tailorkit/vite/config/app-link";
+import { setConfigAppId } from "@patchsmith/vite/config/app-link";
 
 export const writeAppIdToConfig = async (
   configPath: string,

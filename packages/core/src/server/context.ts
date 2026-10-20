@@ -1,46 +1,47 @@
-import type { Client as PlatformClient } from "@tailorkit/client-platform/client/client/index";
+import type { Client as PlatformClient } from "@patchsmith/client-platform/client/client/index";
 
-import type { TailorKitSchema } from "#schema/index";
+import type { PatchsmithSchema } from "#schema/index";
 
-import type { TailorKitScopeSchemas } from "./scope";
-import type { TailorKitPlatformOptions, TailorKitScopes } from "./types";
+import type { PatchsmithScopeSchemas } from "./scope";
+import type { PatchsmithPlatformOptions, PatchsmithScopes } from "./types";
 
 const isFunctionValue = <TValue>(
   value: TValue
 ): value is Extract<TValue, CallableFunction> => typeof value === "function";
 
-export interface TailorKitRuntimeContext {
-  subjectId?: string;
-  scopes: TailorKitScopes;
+export interface PatchsmithRuntimeContext {
+  subjectId: string;
+  scopes: PatchsmithScopes;
 }
 
 export interface Context {
   platform: PlatformClient;
   platformHeaders: Record<string, string>;
   request: Request;
-  schema: TailorKitSchema;
-  scopeSchemas: TailorKitScopeSchemas;
-  tailorkit?: TailorKitRuntimeContext;
+  schema: PatchsmithSchema;
+  scopeSchemas: PatchsmithScopeSchemas;
+  /** Scope authorization shared by host sessions and CLI deployment grants. */
+  patchsmith?: Pick<PatchsmithRuntimeContext, "scopes">;
   authenticate: (ctx: {
     request: Request;
   }) =>
-    | TailorKitRuntimeContext
+    | PatchsmithRuntimeContext
     | null
-    | Promise<TailorKitRuntimeContext | null>;
+    | Promise<PatchsmithRuntimeContext | null>;
 }
 
 export interface CreateContextOptions {
   platform: PlatformClient;
-  platformHeaders?: TailorKitPlatformOptions["headers"];
+  platformHeaders?: PatchsmithPlatformOptions["headers"];
   request: Request;
-  schema: TailorKitSchema;
-  scopeSchemas: TailorKitScopeSchemas;
+  schema: PatchsmithSchema;
+  scopeSchemas: PatchsmithScopeSchemas;
   authenticate: (ctx: {
     request: Request;
   }) =>
-    | TailorKitRuntimeContext
+    | PatchsmithRuntimeContext
     | null
-    | Promise<TailorKitRuntimeContext | null>;
+    | Promise<PatchsmithRuntimeContext | null>;
 }
 
 export const createContext = async (

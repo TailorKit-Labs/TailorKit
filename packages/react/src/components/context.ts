@@ -1,31 +1,34 @@
-import type { TailorKitStore } from "@tailorkit/client-core";
+import type { PatchsmithStore } from "@patchsmith/client-core";
 import { createContext, useContext } from "react";
 
-import type { TailorKitClientConfig } from "#tailorkit";
+import type { PatchsmithClientConfig } from "#patchsmith";
 
-export interface TailorkitContextValue {
-  store: TailorKitStore;
-  client: TailorKitClientConfig;
+export interface PatchsmithContextValue {
+  store: PatchsmithStore;
+  client: PatchsmithClientConfig;
 }
 
-export const TailorkitContext = createContext<TailorkitContextValue | null>(
+export const PatchsmithContext = createContext<PatchsmithContextValue | null>(
   null
 );
 
-export const useTailorkitContext = (
+export const usePatchsmithContext = (
   component: string,
-  expectedClient?: TailorKitClientConfig
-): TailorkitContextValue => {
-  const context = useContext(TailorkitContext);
+  expectedClient?: PatchsmithClientConfig
+): PatchsmithContextValue => {
+  const context = useContext(PatchsmithContext);
+
   if (!context) {
     throw new Error(
-      `${component} must be rendered inside a TailorKit Provider.`
+      `${component} must be rendered inside a Patchsmith Provider.`
     );
   }
+
   if (expectedClient && context.client !== expectedClient) {
     throw new Error(
-      `${component} was created for a different TailorKit client than the surrounding Provider.`
+      `${component} was created for a different Patchsmith client than the surrounding Provider.`
     );
   }
+
   return context;
 };

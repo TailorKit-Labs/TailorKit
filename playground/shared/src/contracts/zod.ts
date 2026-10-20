@@ -1,5 +1,5 @@
-import { experimental_canvas, tool, defineContract } from "tailorkit";
-import { primitives } from "tailorkit/zod";
+import { experimental_canvas, tool, defineContract } from "patchsmith";
+import { primitives } from "patchsmith/zod";
 import { z } from "zod";
 
 import { theme } from "./theme";

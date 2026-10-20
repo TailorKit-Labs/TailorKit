@@ -1,14 +1,14 @@
 import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
-import { RateLimitHandlerPlugin } from "@tailorkit/api-utils/rate-limiting";
-import { createContext } from "@tailorkit/api/context";
-import { appRouter } from "@tailorkit/api/routers/index";
+import { RateLimitHandlerPlugin } from "@patchsmith/api-utils/rate-limiting";
+import { createContext } from "@patchsmith/api/context";
+import { appRouter } from "@patchsmith/api/routers/index";
 import {
   initializeObservability,
   recordException,
   sanitizeErrorForLog,
   setSpanAttributes,
-} from "@tailorkit/observability";
+} from "@patchsmith/observability";
 
 import { createApiEntry } from "./entry";
 
@@ -16,7 +16,7 @@ const rpcHandler = new RPCHandler(appRouter, {
   interceptors: [
     // oxlint-disable-next-line promise/prefer-await-to-callbacks -- The oRPC error interceptor is a synchronous callback required by the adapter API.
     onError((err) => {
-      recordException(err, { "tailorkit.adapter": "orpc-rpc" });
+      recordException(err, { "patchsmith.adapter": "orpc-rpc" });
       console.error("oRPC request failed", sanitizeErrorForLog(err));
     }),
   ],
@@ -24,16 +24,17 @@ const rpcHandler = new RPCHandler(appRouter, {
 });
 
 export const handleRpcRequest = async ({ request }: { request: Request }) => {
-  await initializeObservability("tailorkit-web");
+  await initializeObservability("patchsmith-web");
   setSpanAttributes({
-    "tailorkit.adapter": "orpc-rpc",
-    "tailorkit.package": "apps-web",
+    "patchsmith.adapter": "orpc-rpc",
+    "patchsmith.package": "apps-web",
   });
 
   const rpcResult = await rpcHandler.handle(request, {
     context: await createContext({ request }),
     prefix: "/api/rpc",
   });
+
   if (rpcResult.response) {
     return rpcResult.response;
   }

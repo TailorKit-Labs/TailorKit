@@ -12,6 +12,7 @@ import { ClientProvider, useAction, useMutation, useQuery } from "./preact";
 import type { ActionResult, MutationResult, QueryResult } from "./preact";
 
 const transport = vi.hoisted(() => ({ createClient: vi.fn() }));
+
 vi.mock("./client/connection", () => ({
   createClient: transport.createClient,
 }));
@@ -19,6 +20,7 @@ vi.mock("./client/connection", () => ({
 let window: Window;
 let root: HTMLDivElement;
 let client: Client;
+
 const subscriptions: {
   name: string;
   input: unknown;
@@ -29,9 +31,11 @@ const subscriptions: {
 
 const subscription = (index: number) => {
   const value = subscriptions[index];
+
   if (!value) {
     throw new Error("Missing subscription");
   }
+
   return value;
 };
 
@@ -47,11 +51,13 @@ const actWithStoreUpdates = async (operation: () => void | Promise<void>) => {
         resolve,
         reject: rejectPending,
       } = Promise.withResolvers<ReturnType<() => void>>();
+
       try {
         setTimeout(resolve, 0);
       } catch (error) {
         rejectPending(error);
       }
+
       await pendingPromise;
     })();
   });
@@ -77,11 +83,13 @@ beforeEach(() => {
         next,
         stop,
       });
+
       return stop;
     }),
   };
   transport.createClient.mockReset().mockReturnValue(client);
 });
+
 afterEach(async () => {
   await actWithStoreUpdates(() => {
     render(null, root);
@@ -95,18 +103,25 @@ it("shares live queries, preserves subscriptions across equivalent inputs, and c
     "list",
     "query"
   );
+
   let first!: QueryResult<number[]>;
   let second!: QueryResult<number[]>;
+
   const First = ({ reverse }: { reverse: boolean }) => {
     first = useQuery(ref, reverse ? { a: 1, b: 2 } : { a: 1, b: 2 });
+
     return null;
   };
+
   const Second = () => {
     second = useQuery(ref, { a: 1, b: 2 });
+
     return null;
   };
+
   const tree = (reverse: boolean, showSecond = true) =>
     h(ClientProvider, {}, [h(First, { reverse }), showSecond && h(Second, {})]);
+
   await actWithStoreUpdates(() => {
     render(tree(false), root);
   });
@@ -145,12 +160,16 @@ it("shares live queries, preserves subscriptions across equivalent inputs, and c
 it("resets stale query data when inputs change, ignores old snapshots, and respects enabled", async () => {
   const ref = reference<"query", { id: string }, string>("get", "query");
   let state!: QueryResult<string>;
+
   const View = ({ id, enabled }: { id: string; enabled: boolean }) => {
     state = useQuery(ref, { id }, { enabled });
+
     return null;
   };
+
   const tree = (id: string, enabled = true) =>
     h(ClientProvider, { client }, h(View, { enabled, id }));
+
   await actWithStoreUpdates(() => {
     render(tree("one"), root);
   });
@@ -186,6 +205,7 @@ it("resets stale query data when inputs change, ignores old snapshots, and respe
 const ViewImplementation = () => {
   useQuery(reference<"query", null, string>("nullable", "query"), null);
   useQuery(reference<"query", undefined, string>("empty", "query"));
+
   return null;
 };
 
@@ -202,16 +222,21 @@ it("captures mutation failures without unhandled rejections, reports errors, and
     "write",
     "mutation"
   );
+
   let state!: MutationResult<{ value: number }, number>;
   const onError = vi.fn();
+
   const onSuccess =
     vi.fn<
       NonNullable<NonNullable<Parameters<typeof useMutation>[1]>["onSuccess"]>
     >();
+
   const View = () => {
     state = useMutation(ref, { onSuccess });
+
     return null;
   };
+
   await actWithStoreUpdates(() => {
     render(h(ClientProvider, { client, onError }, h(View, {})), root);
   });
@@ -241,10 +266,13 @@ it("captures mutation failures without unhandled rejections, reports errors, and
 it("keeps the latest call result when calls overlap and ignores completion after reset", async () => {
   const ref = reference<"mutation", number, number>("write", "mutation");
   let state!: MutationResult<number, number>;
+
   const View = () => {
     state = useMutation(ref);
+
     return null;
   };
+
   await actWithStoreUpdates(() => {
     render(h(ClientProvider, { client }, h(View, {})), root);
   });
@@ -285,14 +313,18 @@ it("keeps the latest call result when calls overlap and ignores completion after
 
 it("runs actions explicitly and does not call completion callbacks after unmount", async () => {
   let state!: ActionResult<undefined, string>;
+
   const onSuccess =
     vi.fn<
       NonNullable<NonNullable<Parameters<typeof useAction>[1]>["onSuccess"]>
     >();
+
   const View = () => {
     state = useAction(reference("import", "action"), { onSuccess });
+
     return null;
   };
+
   await actWithStoreUpdates(() => {
     render(h(ClientProvider, { client }, h(View, {})), root);
   });
@@ -314,23 +346,30 @@ it("runs actions explicitly and does not call completion callbacks after unmount
 
 it("keeps unrelated query updates from rerendering other observers", async () => {
   const renders = { profile: vi.fn(), todos: vi.fn() };
+
   const Profile = () => {
     useQuery(reference<"query", undefined, string>("profile", "query"));
     renders.profile();
+
     return null;
   };
+
   const Todos = () => {
     useQuery(reference<"query", undefined, string[]>("todos", "query"));
     renders.todos();
+
     return null;
   };
+
   await actWithStoreUpdates(() => {
     render(h(ClientProvider, { client }, [h(Profile, {}), h(Todos, {})]), root);
   });
+
   const before = {
     profile: renders.profile.mock.calls.length,
     todos: renders.todos.mock.calls.length,
   };
+
   await actWithStoreUpdates(() => {
     subscription(0).next("Alice");
   });
@@ -349,18 +388,25 @@ it("shares nested equivalent inputs and keeps the subscription until its last ob
     "profile",
     "query"
   );
+
   let first!: QueryResult<string>;
   let second!: QueryResult<string>;
+
   const First = () => {
     first = useQuery(ref, { filter: { a: 1, b: 2 } });
+
     return null;
   };
+
   const Second = () => {
     second = useQuery(ref, { filter: { a: 1, b: 2 } });
+
     return null;
   };
+
   const tree = (showFirst: boolean) =>
     h(ClientProvider, { client }, [showFirst && h(First, {}), h(Second, {})]);
+
   await actWithStoreUpdates(() => {
     render(tree(true), root);
   });
@@ -386,6 +432,7 @@ it("shares nested equivalent inputs and keeps the subscription until its last ob
 
 it("ignores snapshots from a cancelled subscription when the same query is enabled again", async () => {
   let state!: QueryResult<string>;
+
   const View = ({ enabled }: { enabled: boolean }) => {
     state = useQuery(
       reference<"query", undefined, string>("profile", "query"),
@@ -394,10 +441,13 @@ it("ignores snapshots from a cancelled subscription when the same query is enabl
         enabled,
       }
     );
+
     return null;
   };
+
   const tree = (enabled: boolean) =>
     h(ClientProvider, { client }, h(View, { enabled }));
+
   await actWithStoreUpdates(() => {
     render(tree(true), root);
   });
@@ -435,10 +485,13 @@ it("captures snapshots delivered synchronously while opening a subscription", as
     return stop;
   });
   let state!: QueryResult<string>;
+
   const View = () => {
     state = useQuery(reference<"query", undefined, string>("profile", "query"));
+
     return null;
   };
+
   await actWithStoreUpdates(() => {
     render(h(ClientProvider, { client }, h(View, {})), root);
   });
@@ -463,14 +516,19 @@ it("switches query stores when the provider client changes and ignores the previ
       ) as Client["subscribe"],
     /* oxlint-enable typescript/no-unsafe-type-assertion */
   };
+
   const onError = vi.fn();
   let state!: QueryResult<string>;
+
   const View = () => {
     state = useQuery(reference<"query", undefined, string>("profile", "query"));
+
     return null;
   };
+
   const tree = (currentClient: Client) =>
     h(ClientProvider, { client: currentClient, onError }, h(View, {}));
+
   await actWithStoreUpdates(() => {
     render(tree(client), root);
   });
@@ -509,15 +567,19 @@ it("switches query stores when the provider client changes and ignores the previ
 it("resets call state when the reference changes and ignores the previous call's result", async () => {
   let state!: MutationResult<number, number>;
   const onSuccess = vi.fn<(data: number) => void>();
+
   const View = ({ name }: { name: string }) => {
     state = useMutation(
       reference<"mutation", number, number>(name, "mutation"),
       { onSuccess }
     );
+
     return null;
   };
+
   const tree = (name: string) =>
     h(ClientProvider, { client }, h(View, { name }));
+
   const pending = Promise.withResolvers<number>();
   vi.mocked(client.mutate)
     .mockReturnValueOnce(pending.promise)

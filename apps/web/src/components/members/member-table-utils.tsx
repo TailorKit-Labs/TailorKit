@@ -18,6 +18,7 @@ export const renderSortableHeader = <TData extends RowData>(
 
   const sort = header.column.getIsSorted();
   let sortIcon = null;
+
   if (sort === "asc") {
     sortIcon = (
       <ChevronUpIcon
@@ -26,6 +27,7 @@ export const renderSortableHeader = <TData extends RowData>(
       />
     );
   }
+
   if (sort === "desc") {
     sortIcon = (
       <ChevronDownIcon
@@ -34,6 +36,7 @@ export const renderSortableHeader = <TData extends RowData>(
       />
     );
   }
+
   return (
     <button
       className="flex h-full w-full cursor-pointer items-center justify-between gap-2 text-left select-none"
@@ -52,8 +55,10 @@ export const getRoleBadgeVariant = (
   if (role === "owner") {
     return "info";
   }
+
   if (role === "admin") {
     return "warning";
   }
+
   return "outline";
 };

@@ -1,5 +1,5 @@
-import type { experimental_CanvasInputEvent } from "@tailorkit/app/client";
-import type { experimental_CanvasInputPolicy } from "@tailorkit/core/schema";
+import type { experimental_CanvasInputEvent } from "@patchsmith/app/client";
+import type { experimental_CanvasInputPolicy } from "@patchsmith/core/schema";
 
 /** One acknowledged batch in flight, at most 32 queued transitions, and one latest move. */
 export const createCanvasInput = (
@@ -18,28 +18,35 @@ export const createCanvasInput = (
   const keys = new Set(policy.keyboard);
   const heldKeys = new Set<string>();
   const previousTabIndex = canvas.getAttribute("tabindex");
+
   if (keys.size > 0) {
     canvas.tabIndex = 0;
   }
+
   const flush = () => {
     frame = null;
+
     if (awaiting || signal.aborted || (queue.length === 0 && move === null)) {
       return;
     }
+
     if (move !== null && queue.length < 32) {
       queue.push(move);
     }
+
     move = null;
     sequence += 1;
     awaiting = true;
     port.postMessage({ events: queue, sequence, type: "input" });
     queue = [];
   };
+
   const schedule = () => {
     if (frame === null && !awaiting && !signal.aborted) {
       frame = requestAnimationFrame(flush);
     }
   };
+
   const enqueue = (event: experimental_CanvasInputEvent) => {
     if (event.type === "pointer" && event.event === "pointermove") {
       move = event;
@@ -53,29 +60,38 @@ export const createCanvasInput = (
         queue.push(move);
         move = null;
       }
+
       queue.push(event);
     }
+
     schedule();
   };
+
   const reset = () => {
     heldKeys.clear();
     queue = [{ type: "blur" }];
     move = null;
     schedule();
   };
+
   const pointer = (event: PointerEvent | MouseEvent) => {
     if (event.type === "pointerdown" && keys.size > 0) {
       canvas.focus({ preventScroll: true });
     }
+
     if (policy.pointer !== true) {
       return;
     }
+
     const rect = canvas.getBoundingClientRect();
+
     if (rect.width <= 0 || rect.height <= 0) {
       return;
     }
+
     const pointerType = "pointerType" in event ? event.pointerType : "mouse";
     const name = event.type;
+
     if (
       name !== "pointermove" &&
       name !== "pointerdown" &&
@@ -85,6 +101,7 @@ export const createCanvasInput = (
     ) {
       return;
     }
+
     enqueue({
       button: event.button,
       buttons: event.buttons,
@@ -112,6 +129,7 @@ export const createCanvasInput = (
       ),
     });
   };
+
   const keyboard = (event: KeyboardEvent) => {
     if (
       canvas.ownerDocument.activeElement !== canvas ||
@@ -119,20 +137,25 @@ export const createCanvasInput = (
     ) {
       return;
     }
+
     const shortcut = event.ctrlKey || event.metaKey || event.altKey;
     const release = event.type === "keyup" && heldKeys.has(event.code);
+
     if ((shortcut && !release) || (event.type === "keyup" && !release)) {
       return;
     }
+
     if (event.type === "keydown") {
       heldKeys.add(event.code);
     } else {
       heldKeys.delete(event.code);
     }
+
     // Release captured keys even if a modifier was pressed later; never suppress shortcuts.
     if (!shortcut) {
       event.preventDefault();
     }
+
     enqueue({
       code: event.code,
       event: event.type === "keydown" ? "keydown" : "keyup",
@@ -142,6 +165,7 @@ export const createCanvasInput = (
       type: "key",
     });
   };
+
   if (policy.pointer === true || keys.size > 0) {
     const pointerEvents = [
       "pointermove",
@@ -150,9 +174,11 @@ export const createCanvasInput = (
       "pointerleave",
       "click",
     ] as const;
+
     for (const name of pointerEvents) {
       canvas.addEventListener(name, pointer, { signal });
     }
+
     canvas.addEventListener("keydown", keyboard, { signal });
     canvas.addEventListener("keyup", keyboard, { signal });
     canvas.addEventListener("blur", reset, { signal });
@@ -178,24 +204,31 @@ export const createCanvasInput = (
       signal,
     });
   }
+
   return {
     acknowledge: (value: number) => {
       if (!awaiting || value !== sequence) {
         onInvalidAck();
+
         return;
       }
+
       awaiting = false;
+
       if (queue.length > 0 || move !== null) {
         schedule();
       }
     },
     close: () => {
       lifetime.abort();
+
       if (frame !== null) {
         cancelAnimationFrame(frame);
       }
+
       queue = [];
       move = null;
+
       if (keys.size > 0) {
         if (previousTabIndex === null) {
           canvas.removeAttribute("tabindex");

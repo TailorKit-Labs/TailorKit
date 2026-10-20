@@ -12,8 +12,8 @@ For example, a client tool can show a message using your toast library, open a d
 
 Server tools run on your backend. Use them for database access, secrets, and actions that need server-side permission checks.
 
-```ts title="tailorkit.ts"
-import { defineContract, tool } from "tailorkit";
+```ts title="patchsmith.ts"
+import { defineContract, tool } from "patchsmith";
 import { z } from "zod";
 
 export const contract = defineContract({
@@ -29,9 +29,9 @@ export const contract = defineContract({
 Register the handler in `createServer`. Your `readMember` function should check access using the verified scope:
 
 ```ts title="Server handler"
-import type { ToolImplementations } from "tailorkit";
+import type { ToolImplementations } from "patchsmith";
 import { readMember } from "./members";
-import { contract } from "./tailorkit";
+import { contract } from "./patchsmith";
 
 export const tools: ToolImplementations<typeof contract.tools, "server"> = {
   readMember: ({ input, context }) => readMember(context.scope, input.memberId),
@@ -66,7 +66,7 @@ See [Write app UI](/writing-apps/ui#use-components-and-tools) for calling tools 
 
 ## SDK reference
 
-Import `tool` and `defineContract` from `tailorkit`. Register server handlers with `createServer` from `tailorkit/server`, and client handlers with `createClient` from `tailorkit/react`.
+Import `tool` and `defineContract` from `patchsmith`. Register server handlers with `createServer` from `patchsmith/server`, and client handlers with `createClient` from `patchsmith/react`.
 
 | Method | Meaning |
 | --- | --- |
@@ -85,7 +85,7 @@ export interface ToolContext {
 }
 ```
 
-`identity` includes installation, app, project, and deployment IDs, plus an optional `subjectId` and an expiry. `scope` has a name and its scoped values. Apply your permission checks in the handler.
+`identity` includes installation, app, project, and deployment IDs, plus the required authenticated `subjectId` and an expiry. `scope` has a name and its scoped values. Apply your permission checks in the handler.
 
 Tools can be nested in objects, such as `tools.members.read`.
 

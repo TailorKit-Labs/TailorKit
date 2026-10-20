@@ -1,10 +1,10 @@
 {
-  "name": "@tailorkit/vite",
-  "version": "0.1.0-beta.50",
+  "name": "@patchsmith/vite",
+  "version": "0.1.0-beta.53",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TailorKit-Labs/TailorKit.git",
+    "url": "git+https://github.com/patchsmith-io/patchsmith.git",
     "directory": "packages/vite"
   },
   "files": [
@@ -58,17 +58,17 @@
     "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
-    "@tailorkit/app": "workspace:*",
+    "@patchsmith/app": "workspace:*",
     "cosmiconfig": "^10.0.1",
     "valibot": "catalog:"
   },
   "devDependencies": {
-    "@tailorkit/asset-delivery": "workspace:*",
-    "@tailorkit/config": "workspace:*",
+    "@patchsmith/asset-delivery": "workspace:*",
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "drizzle-kit": "catalog:",
     "drizzle-orm": "catalog:",
-    "happy-dom": "^20.14.6",
+    "happy-dom": "^21.0.3",
     "preact": "^11.0.1",
     "typescript": "catalog:",
     "vite": "catalog:",
@@ -77,5 +77,8 @@
   },
   "peerDependencies": {
     "vite": "^8.0.0 || ^1.0.0"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

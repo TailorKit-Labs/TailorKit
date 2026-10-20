@@ -6,7 +6,7 @@ import {
   spinner,
   text,
 } from "@clack/prompts";
-import type { TailorKitRouterClient } from "@tailorkit/core/server";
+import type { PatchsmithRouterClient } from "@patchsmith/core/server";
 
 import {
   getDeployToken,
@@ -26,16 +26,20 @@ interface AgentOptions {
 }
 
 const chooseApp = async (
-  client: Pick<TailorKitRouterClient, "apps" | "appAgent">
+  client: Pick<PatchsmithRouterClient, "apps" | "appAgent">
 ): Promise<string | undefined> => {
   const loading = spinner();
+
   const apps: Awaited<
-    ReturnType<TailorKitRouterClient["apps"]["list"]>
+    ReturnType<PatchsmithRouterClient["apps"]["list"]>
   >["items"] = [];
+
   loading.start("Finding apps");
+
   try {
     let page = 1;
     let hasMore = true;
+
     while (hasMore) {
       // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
       const result = await client.apps.list({ page, pageSize: 100 });
@@ -43,6 +47,7 @@ const chooseApp = async (
       ({ hasMore } = result.pagination);
       page += 1;
     }
+
     loading.stop(
       apps.length ? "Found AI-created apps." : "No AI-created apps found."
     );
@@ -68,11 +73,13 @@ const chooseApp = async (
     ],
     placeholder: "Search by name or app ID",
   });
+
   if (isCancel(selection)) {
     cancel("Agent cancelled.");
 
     return undefined;
   }
+
   if (selection !== null) {
     return selection;
   }
@@ -84,18 +91,23 @@ const chooseApp = async (
     validate: (value) =>
       (value?.trim() ?? "") === "" ? "Enter an app name." : undefined,
   });
+
   if (isCancel(name)) {
     cancel("Agent cancelled.");
 
     return undefined;
   }
+
   loading.start("Creating app");
+
   try {
     const app = await client.appAgent.create({
       description: null,
       name: name.trim(),
     });
+
     loading.stop("Created app.");
+
     return app.id;
   } catch (error) {
     loading.stop("Unable to create app.");
@@ -105,33 +117,43 @@ const chooseApp = async (
 
 export const runAgentCommand = async (options: AgentOptions) => {
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    throw new Error("tailorkit agent requires an interactive terminal.");
+    throw new Error("patchsmith agent requires an interactive terminal.");
   }
+
   const host = options.host?.trim();
+
   if (host === undefined || host === "") {
     throw new Error(
-      "Missing TailorKit host URL. Use tailorkit agent --host <url>."
+      "Missing Patchsmith host URL. Use patchsmith agent --host <url>."
     );
   }
+
   let { appId } = options;
   const hostUrl = normalizeHostUrl(host);
   const authUrl = await resolveHostUrl(options);
+
   try {
     await runWhoami(options);
   } catch (error) {
     if (!(error instanceof NotLoggedInError) || !options.onLoginRequired) {
       throw error;
     }
+
     await options.onLoginRequired();
     await runWhoami(options);
   }
+
   const auth = await getDeployToken(authUrl);
+
   if (!auth) {
     throw new NotLoggedInError(hostUrl);
   }
+
   const client = createCliClient({ token: auth.deployToken, url: authUrl });
+
   if (appId !== undefined && appId !== null && appId !== "") {
     const app = await client.apps.get({ appId });
+
     if (!app.createdByAgent) {
       throw new Error(
         "The agent can only edit apps created by AI. Create a new app to continue."
@@ -139,10 +161,12 @@ export const runAgentCommand = async (options: AgentOptions) => {
     }
   } else {
     appId = await chooseApp(client);
+
     if (!(appId !== undefined && appId !== null && appId !== "")) {
       return;
     }
   }
+
   log.info(`App: ${appId}`);
   const { openAgentTui } = await import("./agent-tui");
   await openAgentTui({

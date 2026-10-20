@@ -17,7 +17,7 @@ export const SignInTemplate = ({
           Only enter it on a page you opened yourself.
         </>
       }
-      heading="Sign in to TailorKit"
+      heading="Sign in to Patchsmith"
       otp={otp}
     />
   </AuthEmailLayout>

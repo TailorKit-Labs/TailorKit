@@ -17,10 +17,11 @@ export default defineConfig({
             try {
               const source = await readFile(
                 new URL(
-                  "../apps/todo/.tailorkit/client/client.js",
+                  "../apps/todo/.patchsmith/client/client.js",
                   import.meta.url
                 )
               );
+
               response.setHeader("Content-Type", "application/javascript");
               response.end(source);
             } catch {

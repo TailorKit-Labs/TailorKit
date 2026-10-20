@@ -5,6 +5,7 @@ import type { AppSandboxSession } from "./sandbox-session";
 
 const agentToken = "scoped-agent-grant";
 const context = { agentToken, sandboxName: "app-sandbox" };
+
 const checkArguments = [
   ["run", "fix"],
   ["run", "test", "--passWithNoTests"],
@@ -22,13 +23,16 @@ it.each([
   async (output) => {
     const commands: Parameters<AppSandboxSession["runCommand"]>[0][] = [];
     const controller = new AbortController();
+
     const tool = createDeployTool({
       sandbox: async (name) => {
         expect(name).toBe(context.sandboxName);
+
         return await Promise.resolve({
           runCommand: async (command) => {
             commands.push(command);
             const deploying = command.args?.[0] === "exec";
+
             return await Promise.resolve({
               exitCode: deploying ? output.exitCode : 0,
               stderr: async () =>
@@ -40,6 +44,7 @@ it.each([
         });
       },
     });
+
     const result = await tool.execute(
       {},
       {
@@ -49,15 +54,16 @@ it.each([
         toolCallId: "deploy",
       }
     );
+
     expect(commands).toEqual(
       [
         ...checkArguments,
-        ["exec", "tailorkit", "deploy", "--no-interactive"],
+        ["exec", "patchsmith", "deploy", "--no-interactive"],
       ].map((args) => ({
         args,
         cmd: "pnpm",
         cwd: "/workspace/app",
-        env: { CI: "true", NO_COLOR: "1", TAILORKIT_AGENT_TOKEN: agentToken },
+        env: { CI: "true", NO_COLOR: "1", PATCHSMITH_AGENT_TOKEN: agentToken },
         signal: controller.signal,
         timeoutMs: 5 * 60_000,
       }))
@@ -75,12 +81,14 @@ it.each([0, 1])(
   "stops before publication when check %i fails",
   async (failedCheck) => {
     const commands: string[][] = [];
+
     const tool = createDeployTool({
       sandbox: async () =>
         await Promise.resolve({
           runCommand: async ({ args = [] }) => {
             commands.push(args);
             const failed = commands.length === failedCheck + 1;
+
             return await Promise.resolve({
               exitCode: failed ? 2 : 0,
               stderr: async () =>
@@ -90,10 +98,12 @@ it.each([0, 1])(
           },
         }),
     });
+
     const result = await tool.execute(
       {},
       { context, messages: [], toolCallId: "deploy" }
     );
+
     expect(commands).toEqual(checkArguments.slice(0, failedCheck + 1));
     expect(result).toEqual({
       exitCode: 2,
@@ -107,11 +117,13 @@ it.each(["sandbox", "command"])(
   "reports %s failures without exposing authorization",
   async (failure) => {
     const error = new Error(`Could not deploy: ${agentToken}`);
+
     const tool = createDeployTool({
       sandbox: async () => {
         if (failure === "sandbox") {
           throw error;
         }
+
         return await Promise.resolve({
           runCommand: () => {
             throw error;
@@ -119,6 +131,7 @@ it.each(["sandbox", "command"])(
         });
       },
     });
+
     expect(
       await tool.execute(
         {},

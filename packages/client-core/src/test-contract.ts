@@ -1,12 +1,13 @@
-import { defineContract } from "@tailorkit/core/schema";
+import { defineContract } from "@patchsmith/core/schema";
 import type {
   EmptyDefinitionMap,
-  TailorKitContract,
-} from "@tailorkit/core/schema";
+  PatchsmithContract,
+} from "@patchsmith/core/schema";
 import { z } from "zod";
 
 const viewSchema = z.looseObject({}).optional();
-type TestContract = TailorKitContract<
+
+type TestContract = PatchsmithContract<
   EmptyDefinitionMap,
   { readonly "/": typeof viewSchema },
   {

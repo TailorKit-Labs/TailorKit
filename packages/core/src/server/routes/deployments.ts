@@ -4,13 +4,13 @@ import {
   deploymentsGet,
   deploymentsList,
   deploymentsPublish,
-} from "@tailorkit/client-platform/client";
+} from "@patchsmith/client-platform/client";
 import * as v from "valibot";
 
 import { platformAppSelector } from "#server/platform-app-selector";
 import {
-  getTailorKitScope,
-  getTailorKitScopes,
+  getPatchsmithScope,
+  getPatchsmithScopes,
   o,
   requireCliDeployToken,
 } from "#server/procedures";
@@ -53,6 +53,7 @@ const logoAssetInput = v.object({
 });
 
 const deploymentAssetsInput = v.tuple([clientAssetInput]);
+
 const deploymentLogosInput = v.optional(
   v.object({
     dark: v.optional(logoAssetInput),
@@ -64,11 +65,14 @@ const getErrorMessage = (cause: unknown): string | undefined => {
   if (cause instanceof Error) {
     return cause.message;
   }
+
   if (isStringValue(cause)) {
     return cause;
   }
+
   if (isObjectValue(cause) && "message" in cause) {
     const { message } = cause;
+
     return isStringValue(message) ? message : undefined;
   }
 
@@ -117,7 +121,7 @@ export const deploymentRouter = {
             app: platformAppSelector(input.appId),
             assets: input.assets,
             logos: input.logos,
-            scope: getTailorKitScope(context),
+            scope: getPatchsmithScope(context),
             server: input.server,
             views: input.views,
           },
@@ -139,7 +143,7 @@ export const deploymentRouter = {
     .handler(
       async ({ context, input }) =>
         await deploymentsGet({
-          body: { scopes: getTailorKitScopes(context, input.scopes) },
+          body: { scopes: getPatchsmithScopes(context, input.scopes) },
           client: context.platform,
           headers: context.platformHeaders,
           path: { deploymentId: input.deploymentId },
@@ -161,7 +165,7 @@ export const deploymentRouter = {
             app: platformAppSelector(input.appId),
             page: input.page,
             pageSize: input.pageSize,
-            scopes: getTailorKitScopes(context, input.scopes),
+            scopes: getPatchsmithScopes(context, input.scopes),
           },
           client: context.platform,
           headers: context.platformHeaders,
@@ -178,7 +182,7 @@ export const deploymentRouter = {
     .handler(
       async ({ context, input }) =>
         await deploymentsPublish({
-          body: { rollout: input.rollout, scope: getTailorKitScope(context) },
+          body: { rollout: input.rollout, scope: getPatchsmithScope(context) },
           client: context.platform,
           headers: context.platformHeaders,
           path: { deploymentId: input.deploymentId },

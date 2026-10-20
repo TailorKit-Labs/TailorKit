@@ -6,8 +6,10 @@ import { act } from "preact/test-utils";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
 vi.stubGlobal("__PREACT_VERSION__", "11.0.0");
+
 const { defineView } = await import("./views");
 const roots: HTMLElement[] = [];
+
 afterEach(() => {
   for (const root of roots.splice(0)) {
     render(null, root);
@@ -17,6 +19,7 @@ afterEach(() => {
 const root = () => {
   const element = document.createElement("div");
   roots.push(element);
+
   return element;
 };
 
@@ -29,6 +32,7 @@ it("supplies instance data and context, updates data, and resets component state
       const context = view.useContext();
       // oxlint-disable-next-line react/hook-use-state -- The test reads the initial state without exposing a setter.
       const [initialKey] = useState(instance.key);
+
       return h(
         "span",
         {},
@@ -40,7 +44,9 @@ it("supplies instance data and context, updates data, and resets component state
     slot: "page",
     view: "/",
   });
+
   const container = root();
+
   const show = async (key: string, data: { count: number } | null) => {
     await act(() => {
       render(
@@ -54,6 +60,7 @@ it("supplies instance data and context, updates data, and resets component state
       );
     });
   };
+
   await show("overview", { count: 1 });
   expect(container.textContent).toBe('u1:overview:{"count":1}:overview');
   await show("overview", { count: 2 });
@@ -74,6 +81,7 @@ it("keeps ordinary views rendering without an instance", async () => {
     slot: "navbar",
     view: "/",
   });
+
   const container = root();
   await act(() => {
     render(
@@ -97,6 +105,7 @@ it("reports missing instances and useInstance outside its view", () => {
     slot: "page",
     view: "/",
   });
+
   expect(() => {
     render(
       h(view.component, {
@@ -107,10 +116,13 @@ it("reports missing instances and useInstance outside its view", () => {
       root()
     );
   }).toThrow("requires a selected instance");
+
   const Outside = () => {
     view.useInstance();
+
     return null;
   };
+
   expect(() => {
     render(h(Outside, {}), root());
   }).toThrow("View instance is only available");

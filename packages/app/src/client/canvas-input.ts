@@ -6,6 +6,7 @@ const coordinate = v.pipe(
   v.minValue(0),
   v.maxValue(4096)
 );
+
 const InputEvent = v.variant("type", [
   v.strictObject({
     button: v.pipe(v.number(), v.integer(), v.minValue(-1), v.maxValue(5)),
@@ -54,17 +55,20 @@ export const createCanvasInput = (canvas: OffscreenCanvas) => {
     string,
     Extract<experimental_CanvasInputEvent, { type: "key" }>
   >();
+
   const reset = () => {
     for (const key of keys.values()) {
       canvas.dispatchEvent(
         new KeyboardEvent("keyup", { code: key.code, key: key.key })
       );
     }
+
     keys.clear();
     canvas.dispatchEvent(new PointerEvent("pointercancel"));
     canvas.dispatchEvent(new Event("blur"));
     canvas.dispatchEvent(new MouseEvent("mouseout"));
   };
+
   return {
     dispatch: (input: experimental_CanvasInputEvent) => {
       if (input.type === "blur") {
@@ -77,10 +81,12 @@ export const createCanvasInput = (canvas: OffscreenCanvas) => {
         } else {
           keys.delete(input.code);
         }
+
         canvas.dispatchEvent(new KeyboardEvent(input.event, input));
       } else if (input.type === "pointer") {
         const init = { ...input, clientX: input.x, clientY: input.y };
         canvas.dispatchEvent(new PointerEvent(input.event, init));
+
         const mouseEvent = {
           click: "click",
           pointerdown: "mousedown",
@@ -88,6 +94,7 @@ export const createCanvasInput = (canvas: OffscreenCanvas) => {
           pointermove: "mousemove",
           pointerup: "mouseup",
         }[input.event];
+
         // Mouse compatibility events support canvas libraries' existing listeners.
         if (input.event !== "click") {
           canvas.dispatchEvent(new MouseEvent(mouseEvent, init));

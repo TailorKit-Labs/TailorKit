@@ -11,18 +11,23 @@ export const drizzleGenerateArguments = async (
   name?: string
 ) => {
   const require = createRequire(path.join(root, "package.json"));
+
   const candidates = await Promise.all(
     (require.resolve.paths("drizzle-kit") ?? []).map(async (directory) => {
       const cli = path.join(directory, "drizzle-kit/bin.cjs");
+
       try {
         await access(cli);
+
         return cli;
       } catch {
         return null;
       }
     })
   );
+
   const cli = candidates.find((candidate) => candidate !== null);
+
   if (cli !== undefined && cli !== null && cli !== "") {
     return [
       "--preserve-symlinks-main",
@@ -37,7 +42,8 @@ export const drizzleGenerateArguments = async (
       ...(name === undefined ? [] : ["--name", name]),
     ];
   }
+
   throw new Error(
-    "Install drizzle-kit and drizzle-orm as dev dependencies, then run tailorkit db generate."
+    "Install drizzle-kit and drizzle-orm as dev dependencies, then run patchsmith db generate."
   );
 };

@@ -2,7 +2,7 @@ Business Source License 1.1
 
 Parameters
 
-Licensor: TailorKit Licensed Work: All work contained in the directory in which this License is included. Additional Use Grant: None Change Date: Four years from the date the applicable version of the Licensed Work is first publicly available under this License. Change License: AGPL-3.0-or-later
+Licensor: Patchsmith Licensed Work: All work contained in the directory in which this License is included. Additional Use Grant: None Change Date: Four years from the date the applicable version of the Licensed Work is first publicly available under this License. Change License: AGPL-3.0-or-later
 
 Terms
 

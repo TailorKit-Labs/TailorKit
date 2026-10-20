@@ -1,3 +1,3 @@
-# TailorKit environment configuration
+# Patchsmith environment configuration
 
-`@tailorkit/env` defines environment configuration for TailorKit apps and packages.
+`@patchsmith/env` defines environment configuration for Patchsmith apps and packages.

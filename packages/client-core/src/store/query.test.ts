@@ -1,30 +1,33 @@
 import { allTasks } from "nanostores";
 import { expect, it, vi } from "vite-plus/test";
 
-import { createTailorKitFetchClient } from "#client/fetch-client";
+import { createPatchsmithFetchClient } from "#client/fetch-client";
 import { testContract } from "#test-contract";
-import type { TailorKitApp } from "#types";
+import type { PatchsmithApp } from "#types";
 
 import {
   createAppsQuery,
   createAppViewsQuery,
   createViewsQuery,
 } from "./query";
-import { createTailorKitStore } from "./store";
+import { createPatchsmithStore } from "./store";
 
-const setup = (multiple = true, apps?: TailorKitApp[]) => {
+const setup = (multiple = true, apps?: PatchsmithApp[]) => {
   const fetch = vi.fn<typeof globalThis.fetch>();
-  const client = createTailorKitFetchClient({
+
+  const client = createPatchsmithFetchClient({
     baseUrl: "https://host.test/api/",
     fetch,
   });
-  const store = createTailorKitStore({
+
+  const store = createPatchsmithStore({
     apps,
     baseUrl: client.baseUrl,
     client,
     contract: testContract(multiple),
   });
-  const app: TailorKitApp = {
+
+  const app: PatchsmithApp = {
     id: "app",
     views: [
       multiple
@@ -32,6 +35,7 @@ const setup = (multiple = true, apps?: TailorKitApp[]) => {
         : { path: "/", slot: "page" },
     ],
   };
+
   return { app, client, fetch, store };
 };
 
@@ -46,27 +50,33 @@ it("starts discovery only when observed and supplies filtered results and shared
           resolve: done,
           reject: rejectPending,
         } = Promise.withResolvers<Response>();
+
         try {
           resolve = done;
         } catch (error) {
           rejectPending(error);
         }
+
         return await pendingPromise;
       })()
   );
+
   const query = createAppsQuery(store, {
     appIds: ["included"],
     scopes: ["user"],
   });
+
   expect(query.state.get()).toMatchObject({
     data: undefined,
     isLoading: false,
     isPending: true,
   });
   expect(fetch).not.toHaveBeenCalled();
+
   const stop = query.state.listen(
     vi.fn<NonNullable<Parameters<typeof query.state.listen>[0]>>()
   );
+
   expect(query.state.get()).toMatchObject({
     isFetching: true,
     isLoading: true,
@@ -107,9 +117,11 @@ it("updates single-slot results from provided apps without observing context or 
   const { client, fetch, store, app } = setup(false, []);
   const instances = vi.spyOn(client.endpoints, "slotInstances");
   const query = createViewsQuery(store, { slot: "page" });
+
   const stop = query.state.listen(
     vi.fn<NonNullable<Parameters<typeof query.state.listen>[0]>>()
   );
+
   await allTasks();
   expect(query.state.get().data).toEqual([]);
   store.setProvidedApps([app]);
@@ -129,6 +141,7 @@ it("updates single-slot results from provided apps without observing context or 
 it("switches instance queries on context changes and immediately cancels unobserved requests", async () => {
   const { client, store, app } = setup(true, []);
   store.setProvidedApps([app]);
+
   const requests: {
     signal: AbortSignal;
     resolve: (
@@ -139,6 +152,7 @@ it("switches instance queries on context changes and immediately cancels unobser
       }[]
     ) => void;
   }[] = [];
+
   vi.spyOn(client.endpoints, "slotInstances").mockImplementation(
     async (_app, _input, signal) =>
       await (async () => {
@@ -153,11 +167,13 @@ it("switches instance queries on context changes and immediately cancels unobser
             data: Record<string, never>;
           }[]
         >();
+
         try {
           requests.push({ resolve, signal });
         } catch (error) {
           rejectPending(error);
         }
+
         return await pendingPromise;
       })()
   );
@@ -165,9 +181,11 @@ it("switches instance queries on context changes and immediately cancels unobser
   store.views.register({ context: { customer: "first" }, id, view: "/" });
   await Promise.resolve();
   const query = createViewsQuery(store, { slot: "page" });
+
   const stop = query.state.listen(
     vi.fn<NonNullable<Parameters<typeof query.state.listen>[0]>>()
   );
+
   await vi.waitFor(() => {
     expect(requests).toHaveLength(1);
   });
@@ -216,9 +234,11 @@ it("switches instance queries on context changes and immediately cancels unobser
 
 it("refetches an unobserved explicit app with the latest registered context without discovery", async () => {
   const { client, fetch, store, app } = setup();
+
   const instances = vi
     .spyOn(client.endpoints, "slotInstances")
     .mockResolvedValue([]);
+
   const query = createAppViewsQuery(store, app, "page");
   const id = Symbol("view");
   store.views.register({ context: { customer: "latest" }, id, view: "/" });
@@ -234,43 +254,54 @@ it("refetches an unobserved explicit app with the latest registered context with
 });
 
 it("sends parsed native contract context to instance requests without calling metadata", async () => {
-  const { defineContract } = await import("@tailorkit/core/schema");
+  const { defineContract } = await import("@patchsmith/core/schema");
   const { z } = await import("zod");
+
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockRejectedValue(new Error("Unexpected HTTP request"));
-  const client = createTailorKitFetchClient({
+
+  const client = createPatchsmithFetchClient({
     baseUrl: "https://host.test",
     fetch,
   });
+
   const contract = defineContract({
     slots: { page: { multiple: true, views: ["/"] } },
     views: { "/": z.object({ user: z.object({ id: z.string() }) }) },
   });
-  const app: TailorKitApp = {
+
+  const app: PatchsmithApp = {
     id: "app",
     views: [{ instances: true, path: "/", slot: "page" }],
   };
-  const store = createTailorKitStore({
+
+  const store = createPatchsmithStore({
     apps: [app],
     baseUrl: client.baseUrl,
     client,
     contract,
   });
+
   const instances = vi
     .spyOn(client.endpoints, "slotInstances")
     .mockResolvedValue([]);
+
   const id = Symbol("identity");
+
   const original = {
     extra: true,
     user: { email: "private@example.com", id: "u1" },
   };
+
   store.views.register({ context: original, id, view: "/" });
   await Promise.resolve();
   const query = createViewsQuery(store, { slot: "page" });
+
   const stop = query.state.listen(
     vi.fn<NonNullable<Parameters<typeof query.state.listen>[0]>>()
   );
+
   await vi.waitFor(() => {
     expect(query.state.get().isSuccess).toBe(true);
   });

@@ -1,17 +1,17 @@
 import { ORPCError } from "@orpc/server";
-import { verifyAgentToken } from "@tailorkit/api-utils/agent-token";
-import type { AgentToken } from "@tailorkit/api-utils/agent-token";
-import { auth } from "@tailorkit/auth";
-import { db } from "@tailorkit/db";
-import type { Organization } from "@tailorkit/db/schema/auth";
-import type { Project } from "@tailorkit/db/schema/project";
+import { verifyAgentToken } from "@patchsmith/api-utils/agent-token";
+import type { AgentToken } from "@patchsmith/api-utils/agent-token";
+import { auth } from "@patchsmith/auth";
+import { db } from "@patchsmith/db";
+import type { Organization } from "@patchsmith/db/schema/auth";
+import type { Project } from "@patchsmith/db/schema/project";
 import {
   initializeObservability,
   setSpanAttributes,
   withSpan,
-} from "@tailorkit/observability";
-import { getStorage } from "@tailorkit/storage";
-import type { Storage } from "@tailorkit/storage";
+} from "@patchsmith/observability";
+import { getStorage } from "@patchsmith/storage";
+import type { Storage } from "@patchsmith/storage";
 import { z } from "zod";
 
 import { env } from "./env";
@@ -33,11 +33,12 @@ export const createContext = async ({
 }: {
   request: Request;
 }): Promise<Context> => {
-  await initializeObservability("tailorkit-web");
+  await initializeObservability("patchsmith-web");
 
   // oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
   return await withSpan("api_platform.create_context", async () => {
     const storage = getStorage();
+
     if (!storage) {
       throw new ORPCError("SERVICE_UNAVAILABLE", {
         message: "Platform storage is unavailable.",
@@ -52,6 +53,7 @@ export const createContext = async ({
         message: "Authorization header not found",
       });
     }
+
     if (scheme !== "Bearer") {
       throw new ORPCError("UNAUTHORIZED", {
         message: "Invalid authorization scheme",
@@ -62,9 +64,11 @@ export const createContext = async ({
       request,
       env.APP_RUNTIME_SERVICE_TOKEN
     );
+
     let projectId: string;
 
     let agentToken: Context["agentToken"];
+
     if (key.split(".").length === 3) {
       if (
         !(
@@ -75,12 +79,14 @@ export const createContext = async ({
       ) {
         throw new ORPCError("SERVICE_UNAVAILABLE");
       }
+
       let claims: AgentToken;
+
       try {
         claims = await verifyAgentToken(
           key,
           env.AUTH_SECRET,
-          env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform"
+          env.OPENAPI_SERVER_URL ?? "https://patchsmith.io/api/platform"
         );
         canonicalizeScope(claims.scope);
       } catch {
@@ -88,12 +94,15 @@ export const createContext = async ({
           message: "Invalid or expired agent token. Start a new agent turn.",
         });
       }
+
       // Keep database failures outside the token-rejection catch.
       const source = await db.query.cliToken.findFirst({
         where: { id: claims.cliTokenId, projectId: claims.projectId },
       });
+
       const scope = canonicalizeScope(claims.scope);
       let validSource = false;
+
       try {
         validSource = Boolean(
           source &&
@@ -104,11 +113,13 @@ export const createContext = async ({
       } catch {
         /* Malformed stored authorization is rejected. */
       }
+
       if (!validSource) {
         throw new ORPCError("UNAUTHORIZED", {
           message: "Agent authorization revoked. Start a new agent turn.",
         });
       }
+
       // An authorized JWT has its own expiry; source revocation still applies.
       agentToken = { ...claims, scope: scope.scope, token: key };
       ({ projectId } = agentToken);
@@ -122,17 +133,21 @@ export const createContext = async ({
       const apiKey = await auth.api.verifyApiKey({
         body: { configId: "project-host", key },
       });
+
       if (!apiKey?.valid) {
         throw new ORPCError("UNAUTHORIZED", { message: "Invalid API key" });
       }
+
       const keyProjectId = z
         .object({ projectId: z.string().min(1) })
         .safeParse(apiKey.key?.metadata).data?.projectId;
+
       if (keyProjectId === undefined || keyProjectId === "") {
         throw new ORPCError("UNAUTHORIZED", {
           message: "Project ID not found in API key metadata",
         });
       }
+
       projectId = keyProjectId;
     }
 
@@ -152,9 +167,9 @@ export const createContext = async ({
     }
 
     setSpanAttributes({
-      "tailorkit.authenticated": true,
-      "tailorkit.package": "api-platform",
-      "tailorkit.resource_type": "project",
+      "patchsmith.authenticated": true,
+      "patchsmith.package": "api-platform",
+      "patchsmith.resource_type": "project",
     });
 
     return {
@@ -175,6 +190,7 @@ export const contextErrorResponse = (cause: unknown) => {
       { status: 401 }
     );
   }
+
   return Response.json(
     {
       code: "SERVICE_UNAVAILABLE",

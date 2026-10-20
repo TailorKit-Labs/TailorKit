@@ -1,7 +1,7 @@
 "use client";
 
-import { Badge } from "@tailorkit/ui/badge";
-import { Button } from "@tailorkit/ui/button";
+import { Badge } from "@patchsmith/ui/badge";
+import { Button } from "@patchsmith/ui/button";
 import {
   Card,
   CardDescription,
@@ -10,12 +10,12 @@ import {
   CardHeader,
   CardPanel,
   CardTitle,
-} from "@tailorkit/ui/card";
+} from "@patchsmith/ui/card";
 import {
   Collapsible,
   CollapsiblePanel,
   CollapsibleTrigger,
-} from "@tailorkit/ui/collapsible";
+} from "@patchsmith/ui/collapsible";
 import {
   Dialog,
   DialogClose,
@@ -25,12 +25,12 @@ import {
   DialogPanel,
   DialogPopup,
   DialogTitle,
-} from "@tailorkit/ui/dialog";
-import { Field, FieldLabel } from "@tailorkit/ui/field";
-import { useAppForm } from "@tailorkit/ui/form";
-import { Input } from "@tailorkit/ui/input";
-import { Skeleton } from "@tailorkit/ui/skeleton";
-import { toastManager } from "@tailorkit/ui/toast";
+} from "@patchsmith/ui/dialog";
+import { Field, FieldLabel } from "@patchsmith/ui/field";
+import { useAppForm } from "@patchsmith/ui/form";
+import { Input } from "@patchsmith/ui/input";
+import { Skeleton } from "@patchsmith/ui/skeleton";
+import { toastManager } from "@patchsmith/ui/toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   useLoaderData,
@@ -197,6 +197,7 @@ const ActiveSessions = ({
   const queryClient = useQueryClient();
   const { data: sessionData } = useQuery(orpc.user.getSession.queryOptions());
   const currentSession = sessionData?.session ?? null;
+
   const {
     data: sessions,
     error,
@@ -258,6 +259,7 @@ const ActiveSessions = ({
     : undefined;
 
   let sessionsContent: ReactNode;
+
   if (isPending) {
     sessionsContent = <ActiveSessionsSkeleton />;
   } else if (error) {
@@ -375,49 +377,66 @@ const SecurityPage = () => {
   const { error, error_description } = useSearch({
     from: "/(app)/account/security/",
   });
+
   const { locale, timeZone } = useLoaderData({
     from: "/(app)/account/security/",
   });
+
   const queryClient = useQueryClient();
+
   const [linkPending, setLinkPending] = useState<"github" | "google" | null>(
     null
   );
+
   const [unlinkPending, setUnlinkPending] = useState<string | null>(null);
   const [passkeyDialogOpen, setPasskeyDialogOpen] = useState(false);
   const [passkeyName, setPasskeyName] = useState("");
   const [passkeysOpen, setPasskeysOpen] = useState(false);
   const [passkeyPending, setPasskeyPending] = useState<string | null>(null);
+
   const socialProvidersQuery = useQuery(
     orpc.user.getSocialProviders.queryOptions()
   );
+
   const accountsQuery = useQuery(orpc.user.listAccounts.queryOptions());
+
   const passkeysQuery = useQuery({
     queryFn: async () => {
       const result = await authClient.passkey.listUserPasskeys();
+
       if (result.error) {
         throw new Error(result.error.message ?? "Failed to load passkeys");
       }
+
       return result.data;
     },
     queryKey: ["passkeys"],
   });
+
   const sessionQuery = useQuery(orpc.user.getSession.queryOptions());
+
   const googleAccount = accountsQuery.data?.find(
     (account) => account.providerId === "google"
   );
+
   const githubAccount = accountsQuery.data?.find(
     (account) => account.providerId === "github"
   );
+
   const hasCredentialAccount = accountsQuery.data?.some(
     (account) => account.providerId === "credential"
   );
+
   const passkeys = passkeysQuery.data ?? [];
+
   const primaryAccountError =
     error_description ?? error ?? accountsQuery.error?.message ?? "";
+
   const accountErrorMessage =
     primaryAccountError === ""
       ? passkeysQuery.error?.message
       : primaryAccountError;
+
   const signInMethodCount = (accountsQuery.data?.length ?? 0) + passkeys.length;
   const canUnlinkGoogle = Boolean(googleAccount && signInMethodCount > 1);
   const canUnlinkGitHub = Boolean(githubAccount && signInMethodCount > 1);
@@ -435,12 +454,14 @@ const SecurityPage = () => {
   const linkSocial = async (provider: "github" | "google") => {
     const providerName = provider === "google" ? "Google" : "GitHub";
     setLinkPending(provider);
+
     try {
       const result = await client.user.linkSocial({
         callbackURL: "/account/security",
         errorCallbackURL: "/account/security",
         provider,
       });
+
       if (result.url) {
         window.location.assign(result.url);
       }
@@ -471,6 +492,7 @@ const SecurityPage = () => {
 
     const providerName = provider === "google" ? "Google" : "GitHub";
     setUnlinkPending(accountId);
+
     try {
       await client.user.unlinkAccount({ accountId });
       setUnlinkPending(null);
@@ -484,6 +506,7 @@ const SecurityPage = () => {
         title: "Error",
         type: "error",
       });
+
       return;
     }
 
@@ -497,20 +520,24 @@ const SecurityPage = () => {
 
   const addPasskey = async () => {
     const name = passkeyName.trim();
+
     if (!name) {
       return;
     }
 
     setPasskeyPending("add");
     setPasskeyDialogOpen(false);
+
     try {
       const result = await authClient.passkey.addPasskey({ name });
+
       if (result.error) {
         toastManager.add({
           description: result.error.message ?? "Failed to add passkey",
           title: "Couldn't add passkey",
           type: "error",
         });
+
         return;
       }
 
@@ -539,14 +566,17 @@ const SecurityPage = () => {
 
   const deletePasskey = async (id: string) => {
     setPasskeyPending(id);
+
     try {
       const result = await authClient.passkey.deletePasskey({ id });
+
       if (result.error) {
         toastManager.add({
           description: result.error.message ?? "Failed to remove passkey",
           title: "Couldn't remove passkey",
           type: "error",
         });
+
         return;
       }
 
@@ -593,6 +623,7 @@ const SecurityPage = () => {
           title: "Error",
           type: "error",
         });
+
         return;
       }
 
@@ -929,6 +960,7 @@ const SecurityPage = () => {
             onOpenChange={(open) => {
               if (passkeyPending === null) {
                 setPasskeyDialogOpen(open);
+
                 if (!open) {
                   setPasskeyName("");
                 }

@@ -7,10 +7,10 @@ import {
   Tooltip,
 } from "chart.js";
 import type { ChartItem } from "chart.js";
+import { experimental_useCanvasSurface as useCanvasSurface } from "patchsmith/client";
 import { useState } from "preact/hooks";
-import { experimental_useCanvasSurface as useCanvasSurface } from "tailorkit/client";
 
-import { Box, Button, experimental_Canvas as Canvas, Flex } from "#tailorkit";
+import { Box, Button, experimental_Canvas as Canvas, Flex } from "#patchsmith";
 
 import { CanvasChartPlatform } from "./canvas-chart-platform";
 
@@ -35,21 +35,26 @@ const Chart = ({
 }) => {
   const [hovered, setHovered] = useState("none");
   const [heldKeys, setHeldKeys] = useState("none");
+
   const surface = useCanvasSurface<ChartJS<"bar", number[], string>>(
     {
       create: (canvas, { signal }) => {
         const keys = new Set<string>();
+
         const key = (event: Event) => {
           if (!(event instanceof KeyboardEvent)) {
             return;
           }
+
           if (event.type === "keydown") {
             keys.add(event.code);
           } else {
             keys.delete(event.code);
           }
+
           setHeldKeys([...keys].join(", ") || "none");
         };
+
         canvas.addEventListener("keydown", key, { signal });
         canvas.addEventListener("keyup", key, { signal });
         canvas.addEventListener(
@@ -62,6 +67,7 @@ const Chart = ({
         // SAFETY: Chart.js documents OffscreenCanvas support, but ChartItem omits it. The platform uses the canvas's local EventTarget and 2D context.
         // oxlint-disable-next-line typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- Chart.js's input type omits its supported OffscreenCanvas input.
         const item = canvas as unknown as ChartItem;
+
         const chart = new ChartJS<"bar", number[], string>(item, {
           data: {
             datasets: [{ backgroundColor: "#65b5ff", data: [] }],
@@ -100,7 +106,9 @@ const Chart = ({
           ],
           type: "bar",
         });
+
         onInstanceCountChange(Object.keys(ChartJS.instances).length);
+
         return chart;
       },
       dispose: (chart) => {
@@ -131,6 +139,7 @@ const Chart = ({
     [revision, continuous],
     { continuous, framesPerSecond: 30 }
   );
+
   return (
     <>
       <Canvas
@@ -152,6 +161,7 @@ export const CanvasPrototype = () => {
   const [expanded, setExpanded] = useState(false);
   const [visible, setVisible] = useState(true);
   const [instanceCount, setInstanceCount] = useState(0);
+
   return (
     <Flex direction="column" gap="sm">
       <Box>Experimental sandbox canvas · Chart.js {ChartJS.version}</Box>

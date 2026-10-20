@@ -1,6 +1,6 @@
 ---
-"@tailorkit/core": minor
-"@tailorkit/client-platform": minor
+"@patchsmith/core": minor
+"@patchsmith/client-platform": minor
 ---
 
 Upgrade oRPC to 2.0.0-beta.40 with native v2 routing, clients, rate limiting, tracing, and WebSocket transport. Generate OpenAPI 3.2.0 specifications and the corresponding SDK.

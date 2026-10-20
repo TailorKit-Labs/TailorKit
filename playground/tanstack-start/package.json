@@ -21,15 +21,15 @@
     "dev:canvas": "vp dev --config canvas-demo.vite.config.ts --host 127.0.0.1 --port 5191"
   },
   "dependencies": {
+    "@patchsmith/ui": "workspace:*",
     "@playground/shared": "workspace:*",
-    "@tailorkit/ui": "workspace:*",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
     "lucide-react": "catalog:",
+    "patchsmith": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "tailorkit": "workspace:*",
     "tailwindcss": "catalog:",
     "zod": "catalog:"
   },
@@ -41,5 +41,8 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"
+  },
+  "engines": {
+    "node": ">=24.11"
   }
 }

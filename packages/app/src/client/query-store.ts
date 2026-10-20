@@ -33,6 +33,7 @@ export const serializeInput = (input: unknown): string =>
           Object.entries(value).toSorted(([a], [b]) => a.localeCompare(b))
         );
       }
+
       return value;
     }
   );
@@ -66,22 +67,27 @@ export class QueryStore {
   watch<I, O>(key: string, ref: Reference<"query", I, O>, input: I) {
     let entry = this.entries.get(key);
     const first = !entry;
+
     if (!entry) {
       entry = { observers: 0 };
       this.entries.set(key, entry);
     }
+
     const current = entry;
     current.observers += 1;
+
     const publish = (state: QueryState<unknown>) => {
       if (!this.disposed && this.entries.get(key) === current) {
         this.state.set(new Map(this.state.get()).set(key, state));
       }
     };
+
     if (first) {
       const onError = (error: AppError) => {
         if (this.disposed || this.entries.get(key) !== current) {
           return;
         }
+
         publish({
           data: this.state.get().get(key)?.data,
           error,
@@ -89,6 +95,7 @@ export class QueryStore {
         });
         this.onError(error);
       };
+
       try {
         current.stop = this.client.subscribe(
           ref,
@@ -102,13 +109,17 @@ export class QueryStore {
         onError(appError(error));
       }
     }
+
     let active = true;
+
     return () => {
       if (!active) {
         return;
       }
+
       active = false;
       current.observers -= 1;
+
       if (current.observers === 0 && this.entries.get(key) === current) {
         this.entries.delete(key);
         current.stop?.();
@@ -123,11 +134,14 @@ export class QueryStore {
     this.disposed = true;
     const entries = [...this.entries.values()];
     this.entries.clear();
+
     for (const entry of entries) {
       entry.stop?.();
       entry.stop = undefined;
     }
+
     this.state.set(new Map());
+
     if (this.ownsClient) {
       this.client.close();
     }

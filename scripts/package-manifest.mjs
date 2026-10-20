@@ -29,15 +29,20 @@ const stringMap = (value) => {
   if (!isRecord(value)) {
     return {};
   }
+
   /** @type {Record<string, string>} */
   const result = {};
+
   for (const [name, range] of Object.entries(value)) {
     const parsed = optionalString(range);
+
     if (parsed === undefined) {
       throw new Error(`Dependency ${name} must have a string version range`);
     }
+
     result[name] = parsed;
   }
+
   return result;
 };
 
@@ -45,9 +50,11 @@ const stringMap = (value) => {
 export const parsePackageManifest = (source) => {
   /** @type {unknown} */
   const value = JSON.parse(source);
+
   if (!isRecord(value)) {
     throw new Error("Package manifest must be an object");
   }
+
   return {
     dependencies: stringMap(value.dependencies),
     license: optionalString(value.license),
@@ -69,9 +76,11 @@ export const parsePackageManifest = (source) => {
 export const parsePrereleaseState = (source) => {
   /** @type {unknown} */
   const value = JSON.parse(source);
+
   if (!isRecord(value)) {
     throw new Error("Changesets prerelease state must be an object");
   }
+
   return {
     mode: optionalString(value.mode) ?? "",
     tag: optionalString(value.tag) ?? "",

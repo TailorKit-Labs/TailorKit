@@ -12,17 +12,21 @@ const mocks = vi.hoisted(() => ({
   step: vi.fn(),
   stop: vi.fn(),
 }));
+
 vi.mock("./agent-step", () => ({ agentStep: mocks.step }));
+
 vi.mock("./sandbox", () => ({
   prepareSandboxStep: mocks.prepare,
   stopSandboxStep: mocks.stop,
 }));
+
 vi.mock("./session-store", () => ({
   cancelAppAgent: mocks.cancel,
   loadResumeStep: mocks.load,
   persistResumeStep: mocks.persist,
   releaseSessionStep: mocks.release,
 }));
+
 vi.mock("workflow", () => ({
   FatalError: class extends Error {},
   getWorkflowMetadata: () => ({ workflowRunId: "run-1" }),
@@ -31,11 +35,12 @@ vi.mock("workflow", () => ({
 const input: AppAgentInput = {
   agentToken: "private-token",
   appId: "app-1",
-  hostUrl: "https://host.test/api/tailorkit",
+  hostUrl: "https://host.test/api/patchsmith",
   messages: [{ content: "Build the app", role: "user" }],
   model: "xiaomi/mimo-v2.6-pro",
   threadId: "thread-1",
 };
+
 const resumeFrom = {
   data: { sessionFileName: "native-session.jsonl" },
   harnessId: "pi",

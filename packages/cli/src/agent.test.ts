@@ -21,6 +21,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -38,6 +39,7 @@ const mocks = vi.hoisted(() => ({
   tui: vi.fn<typeof openAgentTui>(),
   whoami: vi.fn(),
 }));
+
 vi.mock("@clack/prompts", async (importOriginal) => ({
   ...(await importOriginal<typeof promptsModule>()),
   autocomplete: mocks.select,
@@ -46,30 +48,35 @@ vi.mock("@clack/prompts", async (importOriginal) => ({
   spinner: () => ({ start: vi.fn(), stop: vi.fn() }),
   text: mocks.text,
 }));
-vi.mock("@tailorkit/vite/config/loader", () => ({
-  loadTailorKitConfig: mocks.load,
+
+vi.mock("@patchsmith/vite/config/loader", () => ({
+  loadPatchsmithConfig: mocks.load,
 }));
+
 vi.mock("./auth", async (importOriginal) => ({
   ...(await importOriginal<typeof authModule>()),
   getDeployToken: mocks.token,
   runWhoami: mocks.whoami,
 }));
-vi.mock("@tailorkit/core/server", () => ({
-  createTailorKitClient: mocks.client,
+
+vi.mock("@patchsmith/core/server", () => ({
+  createPatchsmithClient: mocks.client,
 }));
+
 vi.mock("./agent-tui", () => ({ openAgentTui: mocks.tui }));
+
 const { runAgentCommand } = await import("./agent");
 const { NotLoggedInError } = await import("./auth");
 const stdinTty = Object.getOwnPropertyDescriptor(process.stdin, "isTTY");
 const stdoutTty = Object.getOwnPropertyDescriptor(process.stdout, "isTTY");
 let root: string;
 let configPath: string;
-const host = "https://host.test/api/tailorkit";
+const host = "https://host.test/api/patchsmith";
 
 beforeEach(async () => {
   vi.resetAllMocks();
-  root = await mkdtemp(path.join(tmpdir(), "tailorkit-agent-"));
-  configPath = path.join(root, "tailorkit.config.ts");
+  root = await mkdtemp(path.join(tmpdir(), "patchsmith-agent-"));
+  configPath = path.join(root, "patchsmith.config.ts");
   vi.spyOn(process, "cwd").mockReturnValue(root);
   await writeFile(
     path.join(root, "package.json"),
@@ -98,10 +105,12 @@ beforeEach(async () => {
   // oxlint-disable-next-line unicorn/no-useless-undefined -- Vitest requires the resolved value argument.
   mocks.tui.mockResolvedValue(undefined);
 });
+
 afterEach(async () => {
   expect(mocks.load).not.toHaveBeenCalled();
   await rm(root, { force: true, recursive: true });
   vi.restoreAllMocks();
+
   for (const [object, key, descriptor] of [
     [process.stdin, "isTTY", stdinTty],
     [process.stdout, "isTTY", stdoutTty],
@@ -138,6 +147,7 @@ describe("agent command", () => {
   it("ignores an existing config when choosing an app", async () => {
     const source =
       'export default { name: "Test App", slug: "test-app", host: "https://other.test", appId: "other-app" };\n';
+
     await writeFile(configPath, source);
     mocks.select.mockResolvedValueOnce("selected-app");
     await runAgentCommand({ host });
@@ -204,9 +214,11 @@ describe("agent command", () => {
       { hint: "two", label: "Second app", value: "app-two" },
       { label: "Create a new app", value: null },
     ]);
+
     if (!Array.isArray(prompt.options)) {
       throw new TypeError("Expected static app options");
     }
+
     const filter = requireValue(prompt.filter);
     const secondApp = requireValue(prompt.options[1]);
     const createApp = requireValue(prompt.options[2]);
@@ -224,12 +236,15 @@ describe("agent command", () => {
     expect(mocks.text).toHaveBeenCalledWith(
       expect.objectContaining({ initialValue: "My app" })
     );
+
     const validate = requireValue(
       requireValue(mocks.text.mock.lastCall)[0].validate
     );
+
     if ("~standard" in validate) {
       throw new TypeError("Expected an app name validation callback");
     }
+
     expect(validate("  ")).toBe("Enter an app name.");
     expect(validate("New app")).toBeUndefined();
     expect(mocks.create).toHaveBeenCalledWith({

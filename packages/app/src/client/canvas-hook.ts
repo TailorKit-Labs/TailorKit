@@ -23,6 +23,7 @@ export interface experimental_CanvasHookResult extends experimental_CanvasHookSt
   invalidate: () => void;
   retry: () => void;
 }
+
 interface UseCanvasSurface {
   <T>(
     definition: experimental_CanvasLifecycle<T>,
@@ -47,24 +48,29 @@ const useCanvasSurface: UseCanvasSurface = <T>(
 ) => {
   const id = useId();
   const binding = `canvas:${id}`;
+
   const [state, setState] = useState<experimental_CanvasHookState>({
     error: null,
     status: "pending",
   });
+
   const controller = useMemo(
     () =>
       createCanvasController<T>(binding, setState, {
         request: experimental_requestCanvas,
         watch: (name, listener) => {
-          const watch = globalThis.__tailorkitWatchCanvas;
+          const watch = globalThis.__patchsmithWatchCanvas;
+
           if (!watch) {
             throw new Error("Canvas lifecycle is unavailable.");
           }
+
           return watch(name, listener);
         },
       }),
     [binding]
   );
+
   // Effects run in declaration order: install the current definition before watching availability.
   useEffect(() => {
     controller.update(definition, dependencies, options);
@@ -76,11 +82,14 @@ const useCanvasSurface: UseCanvasSurface = <T>(
         controller.retry();
       }
     };
+
     document.addEventListener("visibilitychange", resume);
+
     return () => {
       document.removeEventListener("visibilitychange", resume);
     };
   }, [controller, state.status]);
+
   return {
     ...state,
     binding,

@@ -1,5 +1,5 @@
-import { validateProjectSlug } from "@tailorkit/db/validate-project-slug";
-import { Button } from "@tailorkit/ui/button";
+import { validateProjectSlug } from "@patchsmith/db/validate-project-slug";
+import { Button } from "@patchsmith/ui/button";
 import {
   Card,
   CardDescription,
@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardPanel,
   CardTitle,
-} from "@tailorkit/ui/card";
+} from "@patchsmith/ui/card";
 import {
   Dialog,
   DialogClose,
@@ -18,11 +18,11 @@ import {
   DialogPanel,
   DialogPopup,
   DialogTitle,
-} from "@tailorkit/ui/dialog";
-import { Field, FieldDescription, FieldLabel } from "@tailorkit/ui/field";
-import { useAppForm } from "@tailorkit/ui/form";
-import { Input } from "@tailorkit/ui/input";
-import { toastManager } from "@tailorkit/ui/toast";
+} from "@patchsmith/ui/dialog";
+import { Field, FieldDescription, FieldLabel } from "@patchsmith/ui/field";
+import { useAppForm } from "@patchsmith/ui/form";
+import { Input } from "@patchsmith/ui/input";
+import { toastManager } from "@patchsmith/ui/toast";
 import {
   useMutation,
   useQueryClient,
@@ -51,6 +51,7 @@ const projectSettingsSchema = z.object({
   name: z.string().min(1, "Name is required."),
   slug: z.string().superRefine((value, ctx) => {
     const result = validateProjectSlug(value);
+
     if (!result.valid) {
       ctx.addIssue({
         code: "custom",
@@ -64,10 +65,12 @@ const ProjectSettingsPage = () => {
   const { orgSlug, projectSlug } = useParams({
     from: "/(app)/$orgSlug/$projectSlug/settings/",
   });
+
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
+
   const { data: project } = useSuspenseQuery(
     orpc.project.get.queryOptions({ input: { orgSlug, projectSlug } })
   );
@@ -83,6 +86,7 @@ const ProjectSettingsPage = () => {
     onError: (cause: unknown) => {
       const message =
         cause instanceof Error ? cause.message : "Failed to update project";
+
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: async (updatedProject) => {
@@ -114,6 +118,7 @@ const ProjectSettingsPage = () => {
     onError: (cause: unknown) => {
       const message =
         cause instanceof Error ? cause.message : "Failed to delete project";
+
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: async () => {
@@ -179,7 +184,7 @@ const ProjectSettingsPage = () => {
                 <form.AppField name="slug">
                   {(field) => (
                     <field.TextField
-                      description={`tailorkit.com/${orgSlug}/${field.state.value || "project-slug"}`}
+                      description={`patchsmith.com/${orgSlug}/${field.state.value || "project-slug"}`}
                       label="Slug"
                       placeholder="amazing-project"
                       onChange={(event) => {
@@ -228,6 +233,7 @@ const ProjectSettingsPage = () => {
         open={deleteDialogOpen}
         onOpenChange={(open) => {
           setDeleteDialogOpen(open);
+
           if (!open) {
             setDeleteConfirmation("");
           }

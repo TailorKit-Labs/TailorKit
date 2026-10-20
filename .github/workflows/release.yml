@@ -15,13 +15,13 @@ concurrency:
 env:
   CI: true
   TURBO_TELEMETRY_DISABLED: 1
-  TAILORKIT_OTEL_DISABLED: true
+  PATCHSMITH_OTEL_DISABLED: true
   OTEL_SDK_DISABLED: true
 
 jobs:
   select-mode:
     name: Select release mode
-    if: github.repository == 'tailorkit-labs/tailorkit' && github.ref == 'refs/heads/main'
+    if: github.repository == 'patchsmith-io/patchsmith' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

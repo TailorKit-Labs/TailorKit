@@ -1,10 +1,10 @@
 {
-  "name": "@tailorkit/client-platform",
-  "version": "0.1.0-beta.50",
+  "name": "@patchsmith/client-platform",
+  "version": "0.1.0-beta.53",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TailorKit-Labs/TailorKit.git",
+    "url": "git+https://github.com/patchsmith-io/patchsmith.git",
     "directory": "packages/client-platform"
   },
   "files": [
@@ -57,7 +57,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsup 'src/**/*.ts' --format esm --target node20 --clean && tsc -p tsconfig.build.json",
+    "build": "vp pack && tsc -p tsconfig.build.json",
     "generate": "openapi-ts && node ./scripts/restore-openapi-params.mjs && node ./scripts/normalize-sse-cancellation.mjs",
     "check-types": "tsc --noEmit",
     "test": "vp test run",
@@ -71,11 +71,14 @@
   },
   "devDependencies": {
     "@hey-api/openapi-ts": "next",
-    "@tailorkit/api-platform": "workspace:*",
-    "@tailorkit/config": "workspace:*",
+    "@patchsmith/api-platform": "workspace:*",
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
-    "tsup": "^8.5.1",
     "typescript": "catalog:",
+    "vite-plus": "catalog:",
     "zod": "catalog:"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

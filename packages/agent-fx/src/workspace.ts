@@ -1,9 +1,9 @@
 import type { AppAgentInput } from "./input";
 import type { AppSandboxSession } from "./sandbox-session";
 
-const stagingDirectory = "/workspace/.tailorkit-scaffold";
-const setupMarker = "/workspace/app/.tailorkit-setup-pending";
-export const hostSchemaPath = "/workspace/tailorkit.schema.json";
+const stagingDirectory = "/workspace/.patchsmith-scaffold";
+const setupMarker = "/workspace/app/.patchsmith-setup-pending";
+export const hostSchemaPath = "/workspace/patchsmith.schema.json";
 
 /** Set up new apps before inference, preserving existing and partially installed apps. */
 export const prepareWorkspace = async (
@@ -13,6 +13,7 @@ export const prepareWorkspace = async (
   const appExists = Boolean(
     await session.readFileToBuffer({ path: "/workspace/app/package.json" })
   );
+
   if (appExists && !(await session.readFileToBuffer({ path: setupMarker }))) {
     return;
   }
@@ -30,6 +31,7 @@ export const prepareWorkspace = async (
       env: { CI: "true", NO_COLOR: "1" },
       timeoutMs: 5 * 60_000,
     });
+
     if (result.exitCode !== 0) {
       const diagnostics = `${await result.stdout()}\n${await result.stderr()}`;
       throw new Error(
@@ -44,7 +46,7 @@ export const prepareWorkspace = async (
       "pnpm",
       [
         "dlx",
-        "tailorkit@beta",
+        "patchsmith@beta",
         "init",
         stagingDirectory,
         "--name",
@@ -64,7 +66,7 @@ export const prepareWorkspace = async (
     await session.writeFiles([
       {
         content: Buffer.from("Complete setup before starting the agent.\n"),
-        path: `${stagingDirectory}/app/.tailorkit-setup-pending`,
+        path: `${stagingDirectory}/app/.patchsmith-setup-pending`,
       },
     ]);
     // mv refuses to replace a nonempty directory, protecting source without a manifest.

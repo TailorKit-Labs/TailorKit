@@ -1,4 +1,4 @@
-import { APP_AUDIENCE, issueAppToken } from "@tailorkit/api-utils/app-auth";
+import { APP_AUDIENCE, issueAppToken } from "@patchsmith/api-utils/app-auth";
 import { Effect } from "effect";
 import { expect, it, vi, afterEach } from "vite-plus/test";
 
@@ -9,13 +9,16 @@ const pair = await crypto.subtle.generateKey(
   true,
   ["sign", "verify"]
 );
+
 const issuer = "https://platform.test/api/platform";
+
 const signing = {
   audience: APP_AUDIENCE,
   issuer,
   keyId: "platform",
   privateKey: pair.privateKey,
 };
+
 const publicKeys = {
   keys: [
     {
@@ -24,6 +27,7 @@ const publicKeys = {
     },
   ],
 };
+
 const identity = {
   appId: "app",
   appShortId: "app000000001",
@@ -33,8 +37,9 @@ const identity = {
   projectShortId: "abc123def456",
   scope: { name: "org", value: { id: "tenant" } },
   subjectId: "user",
-  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
 };
+
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.useRealTimers();
@@ -45,10 +50,12 @@ it.each([publicKeys, JSON.stringify(publicKeys)])(
   async (keys) => {
     const fetcher = vi.fn();
     vi.stubGlobal("fetch", fetcher);
+
     const verify = createAppRuntimeVerifierEffect({
       platformUrl: issuer,
       publicKeys: keys,
     });
+
     const session = await issueAppToken(signing, identity);
     expect(await Effect.runPromise(verify(session.token))).toMatchObject(
       identity

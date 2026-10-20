@@ -1,6 +1,6 @@
 # Backend functions
 
-App functions run on TailorKit's managed backend. Enable `server: {}` in `tailorkit.config.ts`; no separate server deployment is needed.
+App functions run on Patchsmith's managed backend. Enable `server: {}` in `patchsmith.config.ts`; no separate server deployment is needed.
 
 | Function | Use | Handler access |
 | --- | --- | --- |
@@ -10,7 +10,7 @@ App functions run on TailorKit's managed backend. Enable `server: {}` in `tailor
 
 ## Queries and mutations
 
-Database functions use `fn` from `#db`. These snippets use the shared `notes` table (`id`, `title`) from `tailorkit-database`.
+Database functions use `fn` from `#db`. These snippets use the shared `notes` table (`id`, `title`) from `patchsmith-database`.
 
 A query reads data synchronously. For example, in `src/functions/notes.ts`:
 
@@ -51,7 +51,7 @@ A router groups named functions. Export the handlers from the same module:
 <!-- continue: src/functions/notes.ts -->
 
 ```ts
-import { defineRouter } from "tailorkit/server";
+import { defineRouter } from "patchsmith/server";
 
 export default defineRouter({ list, add });
 ```
@@ -61,7 +61,7 @@ Register routers in `src/server.ts`, then run `pnpm run generate`. Router names 
 <!-- example: src/server.ts -->
 
 ```ts
-import { defineServer } from "tailorkit/server";
+import { defineServer } from "patchsmith/server";
 
 import notes from "#functions/notes";
 export default defineServer({ notes });
@@ -69,12 +69,12 @@ export default defineServer({ notes });
 
 ## Actions
 
-Use `fn` from `tailorkit/server` for actions without a database. This action fetches a summary; replace the URL with the requested service:
+Use `fn` from `patchsmith/server` for actions without a database. This action fetches a summary; replace the URL with the requested service:
 
 <!-- example: src/functions/preview.ts -->
 
 ```ts
-import { AppError, defineRouter, fn } from "tailorkit/server";
+import { AppError, defineRouter, fn } from "patchsmith/server";
 import * as v from "valibot";
 
 const result = v.object({ summary: v.string() });
@@ -93,18 +93,18 @@ Actions have no `db`. Declare `.functions({ notes })` to use `queries.notes.list
 
 ## Access control
 
-`identity` describes the verified caller. For private records, require `identity.subjectId` and filter reads, updates, and deletes by an owner column. Shared records follow the feature's shared access rule. Throw `AppError` for expected failures such as `UNAUTHORIZED` or `NOT_FOUND`; caller-supplied IDs do not grant access.
+`identity.subjectId` is the authenticated user or service principal supplied by the host and is always a nonempty string. For private records, filter reads, updates, and deletes by an owner column matched to that subject. Shared records follow the feature's shared access rule. Throw `AppError` for expected failures such as `UNAUTHORIZED` or `NOT_FOUND`; caller-supplied IDs do not grant access.
 
 ## Client hooks
 
-After registering each function's router, import `api` from `#tailorkit`. Inside a component under `ClientProvider`:
+After registering each function's router, import `api` from `#patchsmith`. Inside a component under `ClientProvider`:
 
 <!-- example: src/examples/function-hooks.ts -->
 
 ```ts
-import { useAction, useMutation, useQuery } from "tailorkit/client";
+import { useAction, useMutation, useQuery } from "patchsmith/client";
 
-import { api } from "#tailorkit";
+import { api } from "#patchsmith";
 
 const notes = useQuery(api.notes.list);
 const add = useMutation(api.notes.add);

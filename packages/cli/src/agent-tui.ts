@@ -6,19 +6,19 @@ import { asyncIteratorToUnproxiedDataStream } from "@orpc/client";
 import {
   agentRunChunkSchema,
   agentRunCompleteChunkSchema,
-} from "@tailorkit/client-platform/agent";
-import type { AgentRunCursor } from "@tailorkit/client-platform/agent";
-import type { TailorKitRouterClient } from "@tailorkit/core/server";
+} from "@patchsmith/client-platform/agent";
+import type { AgentRunCursor } from "@patchsmith/client-platform/agent";
+import type { PatchsmithRouterClient } from "@patchsmith/core/server";
 import type { ChatTransport, UIMessage, UIMessageChunk } from "ai";
 import * as v from "valibot";
 
 import { fetchSchemaFromHost, readSchemaFile } from "./generator/types";
-import type { TailorKitSchemaFile } from "./generator/types";
+import type { PatchsmithSchemaFile } from "./generator/types";
 
 const schemaFetchTimeoutMs = 10_000;
 
 interface AgentTuiOptions {
-  client: { appAgent: Pick<TailorKitRouterClient["appAgent"], "chat"> };
+  client: { appAgent: Pick<PatchsmithRouterClient["appAgent"], "chat"> };
   hostUrl: string;
   appId: string;
   schemaPath?: string;
@@ -38,8 +38,11 @@ export const openAgentTui = async (
   }
 ) => {
   let threadId = requestedThreadId;
-  type ChatInput = Parameters<TailorKitRouterClient["appAgent"]["chat"]>[0];
+
+  type ChatInput = Parameters<PatchsmithRouterClient["appAgent"]["chat"]>[0];
+
   let resume: AgentRunCursor | undefined;
+
   const connect = async (
     input: ChatInput,
     signal?: AbortSignal
@@ -49,14 +52,18 @@ export const openAgentTui = async (
       input,
       { signal }
     );
+
     return chunks;
   };
+
   const connectResume = async (signal?: AbortSignal) => {
     if (resume === undefined) {
       throw new Error("Agent stream did not include its run identity.");
     }
+
     return await connect({ appId, type: "resume", ...resume }, signal);
   };
+
   const readTurn = async function* readTurn(
     signal?: AbortSignal,
     initial?: AsyncIterable<UIMessageChunk>
@@ -64,18 +71,22 @@ export const openAgentTui = async (
     let initialChunks = initial;
     let failures = 0;
     let finished = false;
+
     while (true) {
       signal?.throwIfAborted();
       const startIndex = resume?.startIndex ?? 0;
+
       try {
         const nextChunks = initialChunks ?? connectResume(signal);
         // oxlint-disable-next-line no-await-in-loop -- Connect sequentially from the last received chunk to avoid overlapping readers.
         const chunks = await nextChunks;
         initialChunks = undefined;
+
         // oxlint-disable-next-line no-await-in-loop -- Each chunk advances the reconnect cursor before reading the next one.
         for await (const chunk of chunks) {
           const run = v.safeParse(agentRunChunkSchema, chunk);
           const complete = v.safeParse(agentRunCompleteChunkSchema, chunk);
+
           if (run.success) {
             ({ threadId } = run.output.data);
             resume = { ...run.output.data, startIndex };
@@ -88,31 +99,40 @@ export const openAgentTui = async (
             if (resume !== undefined) {
               resume = { ...resume, startIndex: resume.startIndex + 1 };
             }
+
             failures = 0;
+
             if (chunk.type === "error") {
               finished = true;
               // The SDK may cancel consumption as soon as it sees this terminal error.
               resume = undefined;
             }
           }
+
           yield chunk;
         }
+
         if (finished) {
           resume = undefined;
+
           return;
         }
+
         throw new Error("The agent stream ended before the turn completed.");
       } catch (error) {
         signal?.throwIfAborted();
         failures += 1;
+
         if (resume === undefined || failures > 3) {
           throw error;
         }
+
         // oxlint-disable-next-line no-await-in-loop -- Retry this read, never the initial workflow submission; abort interrupts the backoff.
         await waitForRetry(1000 * failures, signal);
       }
     }
   };
+
   const transport: ChatTransport<UIMessage> = {
     // oxlint-disable-next-line eslint/require-await -- ChatTransport requires a Promise although stream creation is synchronous.
     reconnectToStream: async ({ abortSignal }) =>
@@ -127,11 +147,15 @@ export const openAgentTui = async (
           /* consume */
         }
       }
+
       const timeoutSignal = AbortSignal.timeout(schemaFetchTimeoutMs);
+
       const schemaSignal = abortSignal
         ? AbortSignal.any([abortSignal, timeoutSignal])
         : timeoutSignal;
-      let schema: TailorKitSchemaFile;
+
+      let schema: PatchsmithSchemaFile;
+
       try {
         schemaSignal.throwIfAborted();
         schema =
@@ -141,15 +165,19 @@ export const openAgentTui = async (
         schemaSignal.throwIfAborted();
       } catch (error) {
         abortSignal?.throwIfAborted();
+
         const detail = (() => {
           if (timeoutSignal.aborted) {
             return "Timed out after 10 seconds." as const;
           }
+
           if (error instanceof Error) {
             return error.message;
           }
+
           return String(error);
         })();
+
         throw new Error(
           schemaPath === undefined
             ? `Unable to fetch the host schema from ${hostUrl}: ${detail}`
@@ -159,6 +187,7 @@ export const openAgentTui = async (
           }
         );
       }
+
       const input: ChatInput = {
         appId,
         hostUrl,
@@ -170,16 +199,20 @@ export const openAgentTui = async (
         threadId,
         type: "turn",
       };
+
       const initial = await connect(input, abortSignal);
+
       return asyncIteratorToUnproxiedDataStream(readTurn(abortSignal, initial));
     },
   };
+
   await runAgentTUI({
     reasoning: "hidden",
-    title: `TailorKit Agent · ${hostUrl}`,
+    title: `Patchsmith Agent · ${hostUrl}`,
     tools: "collapsed",
     transport,
   });
+
   if (threadId !== undefined) {
     log.info(`Thread: ${threadId} (resume with --thread ${threadId})`);
   }

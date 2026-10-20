@@ -1,3 +1,3 @@
-# TailorKit client core
+# Patchsmith client core
 
-`@tailorkit/client-core` contains shared client functionality for TailorKit integrations.
+`@patchsmith/client-core` contains shared client functionality for Patchsmith integrations.

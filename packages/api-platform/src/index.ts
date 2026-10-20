@@ -5,6 +5,7 @@ import type { deploymentRouter } from "#routes/deployments";
 import { lazyOpenAPIRouter } from "./lazy-router";
 
 type DeploymentRouter = typeof deploymentRouter;
+
 type DeploymentOperation = Exclude<keyof DeploymentRouter, "runtime">;
 
 const lazyDeploymentOperation = <TOperation extends DeploymentOperation>(
@@ -12,20 +13,24 @@ const lazyDeploymentOperation = <TOperation extends DeploymentOperation>(
 ) =>
   lazyOpenAPIRouter("/deployments", async () => {
     const { deploymentRouter } = await import("#routes/deployments");
+
     return { default: deploymentRouter[operation] };
   });
 
 export const platformRouter = {
   appAgent: lazyOpenAPIRouter("/app-agent", async () => {
     const { appAgentRouter } = await import("#routes/app-agent");
+
     return { default: appAgentRouter };
   }),
   apps: lazyOpenAPIRouter("/apps", async () => {
     const { appRouter } = await import("#routes/apps");
+
     return { default: appRouter };
   }),
   cliAuth: lazyOpenAPIRouter("/cli-auth", async () => {
     const { cliAuthRouter } = await import("#routes/cli-auth");
+
     return { default: cliAuthRouter };
   }),
   deployments: {
@@ -35,10 +40,12 @@ export const platformRouter = {
     publish: lazyDeploymentOperation("publish"),
     runtime: lazyOpenAPIRouter("/apps", async () => {
       const { getRuntimeBundle } = await import("#routes/runtime");
+
       return { default: getRuntimeBundle };
     }),
   },
 };
 
 export type PlatformRouter = typeof platformRouter;
+
 export type PlatformRouterClient = RouterClient<PlatformRouter>;

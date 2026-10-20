@@ -1,13 +1,13 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { call, asyncIteratorToUnproxiedDataStream } from "@orpc/server";
-import type { appAgent } from "@tailorkit/agent-fx/workflows";
-import { AppAgentThreadError } from "@tailorkit/agent/threads";
-import type * as threadsModule from "@tailorkit/agent/threads";
+import type { appAgent } from "@patchsmith/agent-fx/workflows";
+import { AppAgentThreadError } from "@patchsmith/agent/threads";
+import type * as threadsModule from "@patchsmith/agent/threads";
 import {
   issueAgentToken,
   verifyAgentToken,
-} from "@tailorkit/api-utils/agent-token";
-import { asyncFixture } from "@tailorkit/config/testing";
+} from "@patchsmith/api-utils/agent-token";
+import { asyncFixture } from "@patchsmith/config/testing";
 import { readUIMessageStream } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
@@ -20,6 +20,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -41,7 +42,8 @@ const mocks = vi.hoisted(() => ({
   thread: vi.fn<(appId: string, threadId?: string) => Promise<string>>(),
   token: vi.fn(),
 }));
-vi.mock("@tailorkit/db", () => ({
+
+vi.mock("@patchsmith/db", () => ({
   db: {
     query: {
       app: { findFirst: mocks.app },
@@ -49,22 +51,27 @@ vi.mock("@tailorkit/db", () => ({
     },
   },
 }));
-vi.mock("@tailorkit/api-utils/dev-delay", () => ({
+
+vi.mock("@patchsmith/api-utils/dev-delay", () => ({
   devDelayMiddleware: async <TResult>({ next }: { next: () => TResult }) =>
     await next(),
 }));
-vi.mock("@tailorkit/api-utils/rate-limiting", () => ({
+
+vi.mock("@patchsmith/api-utils/rate-limiting", () => ({
   createRateLimiter: vi.fn(),
   ratelimitMiddleware:
     () =>
     async <TResult>({ next }: { next: () => TResult }) =>
       await next(),
 }));
-vi.mock("@tailorkit/agent-fx/workflows", () => ({ appAgent: vi.fn() }));
-vi.mock("@tailorkit/agent/threads", async (importOriginal) => ({
+
+vi.mock("@patchsmith/agent-fx/workflows", () => ({ appAgent: vi.fn() }));
+
+vi.mock("@patchsmith/agent/threads", async (importOriginal) => ({
   ...(await importOriginal<typeof threadsModule>()),
   resolveAppAgentThread: mocks.thread,
 }));
+
 vi.mock("workflow/api", () => ({ getRun: mocks.getRun, start: mocks.start }));
 
 const { appAgentRouter } = await import("./app-agent");
@@ -76,13 +83,15 @@ const context =
     organization: { id: "org" },
     project: { id: "project" },
   } as Context;
+
 /* oxlint-enable typescript/no-unsafe-type-assertion */
 const scope = canonicalizeScope({ name: "org", value: { tenant: "one" } });
+
 const input = {
   body: {
     app: { id: "a3e7568a-c4f7-4ac0-8c35-71ff0f4cd002" },
     deployToken: "token",
-    hostUrl: "http://localhost:3000/api/tailorkit",
+    hostUrl: "http://localhost:3000/api/patchsmith",
     messages: [
       {
         id: "user-1",
@@ -101,6 +110,7 @@ const run = (parts: unknown[]) => ({
         for (const part of parts) {
           controller.enqueue(part);
         }
+
         controller.enqueue({ type: "finish" });
         controller.close();
       },
@@ -108,15 +118,20 @@ const run = (parts: unknown[]) => ({
   returnValue: Promise.resolve({ finishReason: "stop" }),
   runId: "wrun_test",
 });
+
 const defaultConsumeOptions = { context };
+
 const consume = async (options = defaultConsumeOptions) => {
   const chunks = await call(appAgentRouter.chat, input, options);
   const events = [];
+
   for await (const event of chunks) {
     events.push(event);
   }
+
   return events;
 };
+
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.thread.mockImplementation(
@@ -151,6 +166,7 @@ beforeEach(() => {
 describe("platform app chat", () => {
   it("rejects the old untyped request before starting a workflow", async () => {
     const handler = new OpenAPIHandler({ appAgent: appAgentRouter });
+
     const result = await handler.handle(
       new Request("https://platform.test/api/platform/app-agent/chat", {
         body: JSON.stringify({ ...input.body, type: undefined }),
@@ -159,6 +175,7 @@ describe("platform app chat", () => {
       }),
       { context, prefix: "/api/platform" }
     );
+
     expect(result.response?.status).toBe(400);
     expect(mocks.start).not.toHaveBeenCalled();
     expect(mocks.getRun).not.toHaveBeenCalled();
@@ -167,11 +184,13 @@ describe("platform app chat", () => {
     const threadId = "e773a870-df5a-4bea-9ebd-9be4c0b1897a";
     const getReadable = vi.fn(run([{ type: "finish" }]).getReadable);
     mocks.getRun.mockReturnValue({ ...run([]), getReadable });
+
     const resume = {
       runId: "wrun_test",
       startIndex: 12,
       token: createAgentStreamToken("app-one", threadId, "wrun_test"),
     };
+
     const stream = await call(
       appAgentRouter.chat,
       {
@@ -185,10 +204,13 @@ describe("platform app chat", () => {
       },
       { context }
     );
+
     const events = [];
+
     for await (const event of stream) {
       events.push(event);
     }
+
     expect(mocks.start).not.toHaveBeenCalled();
     expect(mocks.thread).not.toHaveBeenCalled();
     expect(mocks.getRun).toHaveBeenCalledWith("wrun_test");
@@ -204,6 +226,7 @@ describe("platform app chat", () => {
     "rejects a reconnect signed for %s before reading any run",
     async (mismatch) => {
       const threadId = "e773a870-df5a-4bea-9ebd-9be4c0b1897a";
+
       const resume = {
         runId: "wrun_test",
         startIndex: 0,
@@ -216,6 +239,7 @@ describe("platform app chat", () => {
                 "wrun_test"
               ),
       };
+
       await expect(
         call(
           appAgentRouter.chat,
@@ -258,7 +282,7 @@ describe("platform app chat", () => {
       await verifyAgentToken(
         first.agentToken,
         requireValue(env.AUTH_SECRET),
-        env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform"
+        env.OPENAPI_SERVER_URL ?? "https://patchsmith.io/api/platform"
       )
     ).toMatchObject({
       appId: "app-one",
@@ -271,6 +295,7 @@ describe("platform app chat", () => {
     expect(first.messages).toEqual([
       { content: [{ text: "Build", type: "text" }], role: "user" },
     ]);
+
     const followup = [
       ...input.body.messages,
       {
@@ -293,14 +318,17 @@ describe("platform app chat", () => {
         role: "user" as const,
       },
     ];
+
     const stream = await call(
       appAgentRouter.chat,
       { body: { ...input.body, messages: followup } },
       { context }
     );
+
     for await (const _ of stream) {
       /* consume */
     }
+
     const [, [agentInput]] = requireValue(mocks.start.mock.lastCall);
     expect(agentInput).toMatchObject({
       appId: first.appId,
@@ -328,14 +356,17 @@ describe("platform app chat", () => {
 
   it("passes an explicit thread ID to the resolver and workflow", async () => {
     const threadId = "266f1673-2079-4e0c-9f68-6cf3f0f98a40";
+
     const stream = await call(
       appAgentRouter.chat,
       { body: { ...input.body, threadId } },
       { context }
     );
+
     for await (const _ of stream) {
       /* consume */
     }
+
     expect(mocks.thread).toHaveBeenCalledWith("app-one", threadId);
     expect(requireValue(mocks.start.mock.lastCall)[1][0].threadId).toBe(
       threadId
@@ -347,6 +378,7 @@ describe("platform app chat", () => {
     const error = new AppAgentThreadError();
     mocks.thread.mockRejectedValueOnce(error);
     const handler = new OpenAPIHandler({ appAgent: appAgentRouter });
+
     const result = await handler.handle(
       new Request("https://platform.test/api/platform/app-agent/chat", {
         body: JSON.stringify({ ...input.body, threadId }),
@@ -355,6 +387,7 @@ describe("platform app chat", () => {
       }),
       { context, prefix: "/api/platform" }
     );
+
     const response = requireValue(result.response);
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({
@@ -374,14 +407,17 @@ describe("platform app chat", () => {
       version: 1,
       views: {},
     };
+
     const stream = await call(
       appAgentRouter.chat,
       { body: { ...input.body, schema } },
       { context }
     );
+
     for await (const _ of stream) {
       /* consume */
     }
+
     expect(requireValue(mocks.start.mock.lastCall)[1][0]).toMatchObject({
       hostUrl: input.body.hostUrl,
       schema,
@@ -392,6 +428,7 @@ describe("platform app chat", () => {
     "rejects missing or invalid host URL %s before starting a workflow",
     async (hostUrl) => {
       const handler = new OpenAPIHandler({ appAgent: appAgentRouter });
+
       const result = await handler.handle(
         new Request("https://platform.test/api/platform/app-agent/chat", {
           body: JSON.stringify({ ...input.body, hostUrl }),
@@ -400,6 +437,7 @@ describe("platform app chat", () => {
         }),
         { context, prefix: "/api/platform" }
       );
+
       expect(result.response?.status).toBe(400);
       expect(await result.response?.json()).toMatchObject({
         code: "BAD_REQUEST",
@@ -437,12 +475,14 @@ describe("platform app chat", () => {
     );
     const chunks = await call(appAgentRouter.chat, input, { context });
     let latest;
+
     for await (const message of readUIMessageStream({
       stream: asyncIteratorToUnproxiedDataStream(chunks),
       terminateOnError: true,
     })) {
       latest = message;
     }
+
     expect(latest?.parts).toContainEqual(
       expect.objectContaining({ state: "output-available", type: "tool-write" })
     );
@@ -515,38 +555,46 @@ describe("platform app chat", () => {
 
   it("waits for workflow cleanup before finishing the response", async () => {
     let finish!: () => void;
+
     const returnValue = (async () => {
       const {
         promise: pendingPromise,
         resolve,
         reject: rejectPending,
       } = Promise.withResolvers<ReturnType<() => void>>();
+
       try {
         finish = resolve;
       } catch (error) {
         rejectPending(error);
       }
+
       await pendingPromise;
     })();
+
     mocks.start.mockResolvedValueOnce({
       ...run([{ id: "text", type: "text-start" }]),
       returnValue,
     });
     let complete = false;
+
     const consuming = consume().then(() => {
       complete = true;
     });
+
     await (async () => {
       const {
         promise: pendingPromise,
         resolve,
         reject: rejectPending,
       } = Promise.withResolvers();
+
       try {
         setTimeout(resolve, 10);
       } catch (error) {
         rejectPending(error);
       }
+
       return await pendingPromise;
     })();
     expect(complete).toBe(false);
@@ -653,10 +701,12 @@ describe("platform app chat", () => {
         }),
     });
     const controller = new AbortController();
+
     const stream = await call(appAgentRouter.chat, input, {
       context,
       signal: controller.signal,
     });
+
     expect(await stream.next()).toMatchObject({ value: { type: "data-run" } });
     expect(await stream.next()).toMatchObject({ value: { type: "start" } });
     controller.abort();
@@ -667,11 +717,13 @@ describe("platform app chat", () => {
         resolve,
         reject: rejectPending,
       } = Promise.withResolvers();
+
       try {
         setTimeout(resolve, 0);
       } catch (error) {
         rejectPending(error);
       }
+
       return await pendingPromise;
     })();
     expect(cancelStream).toHaveBeenCalledOnce();
@@ -681,6 +733,7 @@ describe("platform app chat", () => {
 
 it("accepts another app in the JWT scope without extending the original deadline", async () => {
   mocks.app.mockResolvedValue({ createdByAgent: true, id: "app-two" });
+
   const jwt = await issueAgentToken(
     {
       appId: "app-one",
@@ -691,6 +744,7 @@ it("accepts another app in the JWT scope without extending the original deadline
     requireValue(env.AUTH_SECRET),
     requireValue(env.OPENAPI_SERVER_URL)
   );
+
   const agentToken = {
     ...(await verifyAgentToken(
       jwt,
@@ -699,14 +753,17 @@ it("accepts another app in the JWT scope without extending the original deadline
     )),
     token: jwt,
   };
+
   const events = await call(
     appAgentRouter.chat,
     { body: { ...input.body, deployToken: jwt } },
     { context: { ...context, agentToken } }
   );
+
   for await (const _ of events) {
     /* consume */
   }
+
   expect(requireValue(mocks.start.mock.lastCall)[1][0]).toMatchObject({
     agentToken: jwt,
     appId: "app-two",

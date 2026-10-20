@@ -1,4 +1,4 @@
-import { createEnv, warnIfMissing } from "@tailorkit/env";
+import { createEnv, warnIfMissing } from "@patchsmith/env";
 import * as z from "zod";
 
 export const env = createEnv({
@@ -28,6 +28,7 @@ export const env = createEnv({
 if (env.EMAIL_PROVIDER === "smtp") {
   warnIfMissing("email", { EMAIL_SMTP_URL: env.EMAIL_SMTP_URL });
 }
+
 if (env.EMAIL_PROVIDER === "ses") {
   warnIfMissing("email", {
     EMAIL_ACCESS_KEY_ID: env.EMAIL_ACCESS_KEY_ID,

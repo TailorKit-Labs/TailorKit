@@ -1,9 +1,9 @@
 ---
-"@tailorkit/react": minor
-"@tailorkit/core": minor
-"@tailorkit/client-core": minor
-"@tailorkit/app": minor
-"@tailorkit/sandbox": patch
+"@patchsmith/react": minor
+"@patchsmith/core": minor
+"@patchsmith/client-core": minor
+"@patchsmith/app": minor
+"@patchsmith/sandbox": patch
 ---
 
 Replace `useViewContext`'s status union with `{ context, loading?, error? }` so query data, loading, and errors can be passed together. Keep the view path as the first argument and infer the complete context type from that path. Loading defaults to false, errors take precedence, and loading/error states omit context. Update host examples to use the new API.

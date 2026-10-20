@@ -1,18 +1,21 @@
 import { randomBytes } from "node:crypto";
 
 import { call, ORPCError } from "@orpc/server";
-import { createAppAgentMcp } from "@tailorkit/agent/mcp";
-import type { AppAgentMcpExecution } from "@tailorkit/agent/mcp";
+import { createAppAgentMcp } from "@patchsmith/agent/mcp";
+import type {
+  AppAgentMcpExecution,
+  AppAgentMcpResult,
+} from "@patchsmith/agent/mcp";
 import {
   AppAgentThreadError,
   resolveAppAgentThread,
-} from "@tailorkit/agent/threads";
-import { issueAgentToken } from "@tailorkit/api-utils/agent-token";
-import { hashSecret } from "@tailorkit/api-utils/hashing";
-import { db } from "@tailorkit/db";
-import { cliToken } from "@tailorkit/db/schema/cli-auth";
-import { sanitizeErrorForLog } from "@tailorkit/observability";
-import type { UIMessage, UIMessageChunk } from "ai";
+} from "@patchsmith/agent/threads";
+import { issueAgentToken } from "@patchsmith/api-utils/agent-token";
+import { hashSecret } from "@patchsmith/api-utils/hashing";
+import { db } from "@patchsmith/db";
+import { cliToken } from "@patchsmith/db/schema/cli-auth";
+import { sanitizeErrorForLog } from "@patchsmith/observability";
+import type { UIMessageChunk } from "ai";
 import { eq } from "drizzle-orm";
 import type { Run } from "workflow/api";
 import { z } from "zod";
@@ -27,14 +30,14 @@ import {
 } from "./scope";
 
 interface AgentRunAttributes {
-  "tailorkit.projectId": string;
+  "patchsmith.projectId": string;
   [name: string]: string;
 }
 
 const contextSchema = z.strictObject({
   hostUrl: z.url({ protocol: /^https?$/u }),
   scopes: z.record(z.string(), scopeValueSchema),
-  subjectId: z.string().min(1).max(256).optional(),
+  subjectId: z.string().min(1).max(256),
 });
 
 /** Standard MCP endpoint. Host project keys authenticate caller context carried in headers. */
@@ -45,16 +48,20 @@ export const handleAppAgentMcpRequest = async (
   if (context.runtimeService === true || context.agentToken) {
     return new Response("Forbidden", { status: 403 });
   }
+
   if (request.method !== "POST") {
     return new Response("Method not allowed", {
       headers: { allow: "POST" },
       status: 405,
     });
   }
+
   let input: z.infer<typeof contextSchema>;
   let scopes: ReturnType<typeof canonicalizeScopes>;
+
   try {
-    const encoded = request.headers.get("x-tailorkit-context");
+    const encoded = request.headers.get("x-patchsmith-context");
+
     if (
       !(encoded !== undefined && encoded !== null && encoded !== "") ||
       encoded.length > 8192 ||
@@ -62,10 +69,13 @@ export const handleAppAgentMcpRequest = async (
     ) {
       throw new Error("Invalid MCP context header");
     }
+
     const bytes = Buffer.from(encoded, "base64url");
+
     if (bytes.toString("base64url") !== encoded) {
       throw new Error("Invalid MCP context encoding");
     }
+
     input = contextSchema.parse(
       JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes))
     );
@@ -73,10 +83,13 @@ export const handleAppAgentMcpRequest = async (
       Object.entries(input.scopes).map(([name, value]) => ({ name, value }))
     );
     const host = new URL(input.hostUrl);
+
     if (host.username || host.password || host.search || host.hash) {
       throw new Error("Invalid host URL");
     }
+
     const origin = request.headers.get("origin");
+
     if (
       origin !== undefined &&
       origin !== null &&
@@ -88,6 +101,7 @@ export const handleAppAgentMcpRequest = async (
   } catch {
     return new Response("Invalid MCP context header", { status: 400 });
   }
+
   const authorizedScopes = scopes.map(({ scope }) => scope);
 
   const runAgent = async (
@@ -95,22 +109,24 @@ export const handleAppAgentMcpRequest = async (
     prompt: string,
     execution: AppAgentMcpExecution,
     requestedThreadId?: string
-  ) => {
+  ): Promise<AppAgentMcpResult> => {
     execution.signal.throwIfAborted();
+
     // Discovery and tool definitions do not execute an agent. Keep workflow
     // startup and stream processing out of those requests' import graph.
-    const [{ appAgent, cancelAppAgent }, { readUIMessageStream }, { start }] =
-      await Promise.all([
-        import("@tailorkit/agent-fx/workflows"),
-        import("ai"),
-        import("workflow/api"),
-      ]);
+    const [{ appAgent, cancelAppAgent }, { start }] = await Promise.all([
+      import("@patchsmith/agent-fx/workflows"),
+      import("workflow/api"),
+    ]);
+
     execution.signal.throwIfAborted();
+
     const app = await findAppInScopes(
       context.project.id,
       z.uuid().safeParse(appId).success ? { id: appId } : { shortId: appId },
       scopes
     );
+
     if (
       !(
         env.AUTH_SECRET !== undefined &&
@@ -120,15 +136,19 @@ export const handleAppAgentMcpRequest = async (
     ) {
       throw new ORPCError("SERVICE_UNAVAILABLE");
     }
+
     let threadId: string;
+
     try {
       threadId = await resolveAppAgentThread(app.id, requestedThreadId);
     } catch (error) {
       if (error instanceof AppAgentThreadError) {
         throw new ORPCError("BAD_REQUEST", { message: error.message });
       }
+
       throw error;
     }
+
     // Reuse the existing CLI/JWT boundary for this agent's one-hour, single-scope grant.
     // A source row keeps revocation checks identical to existing app agent turns.
     const [grant] = await db
@@ -146,13 +166,16 @@ export const handleAppAgentMcpRequest = async (
         ),
       })
       .returning();
+
     if (!grant) {
       throw new ORPCError("SERVICE_UNAVAILABLE");
     }
+
     let run: Run<Awaited<ReturnType<typeof appAgent>>> | undefined;
     const controller = new AbortController();
     const signal = AbortSignal.any([execution.signal, controller.signal]);
     let finished = false;
+
     try {
       const agentToken = await issueAgentToken(
         {
@@ -162,19 +185,16 @@ export const handleAppAgentMcpRequest = async (
           scope: app.scope,
         },
         env.AUTH_SECRET,
-        env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform"
+        env.OPENAPI_SERVER_URL ?? "https://patchsmith.io/api/platform"
       );
+
       execution.signal.throwIfAborted();
+
       const attributes: AgentRunAttributes = {
-        "tailorkit.projectId": context.project.id,
+        "patchsmith.projectId": context.project.id,
+        "patchsmith.subjectId": input.subjectId,
       };
-      if (
-        input.subjectId !== undefined &&
-        input.subjectId !== null &&
-        input.subjectId !== ""
-      ) {
-        attributes["tailorkit.subjectId"] = input.subjectId;
-      }
+
       run = await start(
         appAgent,
         [
@@ -200,46 +220,54 @@ export const handleAppAgentMcpRequest = async (
           controller.abort(error);
         }
       })();
+
       await execution.onProgress({
         appId: app.shortId,
         runId: run.runId,
         status: "started",
         threadId,
       });
-      let message: UIMessage | undefined;
+      let answer = "";
       const { runId } = run;
-      const stream = run.getReadable<UIMessageChunk>().pipeThrough(
-        new TransformStream<UIMessageChunk, UIMessageChunk>({
-          async transform(chunk, writer) {
-            await execution.onProgress({
-              appId: app.shortId,
-              chunk,
-              runId,
-              status: "streaming",
-              threadId,
-            });
-            writer.enqueue(chunk);
-          },
-        }),
-        { signal }
-      );
-      for await (const update of readUIMessageStream({
-        stream,
-        terminateOnError: true,
-      })) {
-        message = update;
+
+      const stream = run
+        .getReadable<UIMessageChunk>()
+        .pipeThrough(new TransformStream<UIMessageChunk, UIMessageChunk>(), {
+          signal,
+        });
+
+      for await (const chunk of stream) {
+        // oxlint-disable-next-line no-await-in-loop -- Preserve the order of progress updates from the agent.
+        await execution.onProgress({
+          appId: app.shortId,
+          chunk,
+          runId,
+          status: "streaming",
+          threadId,
+        });
+
+        if (chunk.type === "text-delta") {
+          answer += chunk.delta;
+        } else if (chunk.type === "text-end") {
+          answer += "\n\n";
+        } else if (chunk.type === "error" || chunk.type === "abort") {
+          throw new Error("App agent stopped before completing its response.");
+        }
       }
+
       const output = await completed;
       finished = true;
+
       return {
-        ...output,
+        answer: answer.trim() || "App agent run ended.",
         appId: app.shortId,
-        message,
+        finishReason: output.finishReason,
         runId: run.runId,
         threadId,
       };
     } finally {
       controller.abort();
+
       try {
         if (run && !finished) {
           // Hard run cancellation doesn't execute workflow finally blocks.
@@ -273,15 +301,19 @@ export const handleAppAgentMcpRequest = async (
         execution
       ) => {
         execution.signal.throwIfAborted();
+
         const scope = authorizedScopes.find(
           (scopeValue) => scopeValue.name === scopeName
         );
+
         if (!scope) {
           throw new ORPCError("FORBIDDEN", {
             message: "Scope is not authorized by the host.",
           });
         }
+
         const { createAppRecord } = await import("./routes/apps");
+
         const app = await createAppRecord(
           context,
           {
@@ -291,6 +323,7 @@ export const handleAppAgentMcpRequest = async (
           },
           true
         );
+
         return await runAgent(app.id, prompt, execution);
       },
       editApp: async ({ appId, prompt, threadId }, execution) =>
@@ -303,18 +336,22 @@ export const handleAppAgentMcpRequest = async (
         ),
       listApps: async (pagination) => {
         const { appRouter } = await import("./routes/apps");
+
         const { body } = await call(
           appRouter.list,
           { body: { ...pagination, scopes: authorizedScopes } },
           { context }
         );
+
         return body;
       },
     },
     authorizedScopes.map(({ name }) => name)
   );
+
   const response = await handler.fetch(request);
   response.headers.set("cache-control", "no-store");
   response.headers.set("x-accel-buffering", "no");
+
   return response;
 };

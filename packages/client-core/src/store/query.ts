@@ -5,14 +5,14 @@ import { matchesApp } from "#client/apps";
 import { normalizeScopeSelection } from "#client/scope-query";
 import { refetchViews } from "#client/views";
 import type { ViewsQueryOptions } from "#client/views";
-import type { TailorKitApp } from "#types";
+import type { PatchsmithApp } from "#types";
 
 import type { FetchSnapshot } from "./fetch/cache";
 import { serializeCacheKey } from "./fetch/cache";
 import { createSlotStore } from "./fetch/slot";
 import type { SlotItem } from "./fetch/slot";
 import { createSnapshotStore, switchStore } from "./snapshot-store";
-import type { TailorKitStore } from "./store";
+import type { PatchsmithStore } from "./store";
 
 export interface AppsQueryOptions<TScopeNames extends string = string> {
   scopes?: readonly TScopeNames[];
@@ -58,17 +58,20 @@ const result = <T>(
 
 /** Discover and filter apps, with the same result shape in every framework. */
 export const createAppsQuery = (
-  store: TailorKitStore,
+  store: PatchsmithStore,
   options: AppsQueryOptions = {}
 ) => {
   const refetch = async () => {
     await store.fetchApps({ force: true });
   };
+
   let previous: ReturnType<typeof store.getAppsSnapshot> | undefined;
-  let snapshot: QueryResult<TailorKitApp[]>;
+  let snapshot: QueryResult<PatchsmithApp[]>;
+
   const state = createSnapshotStore(
     () => {
       const current = store.fetch.apps.state.get();
+
       if (current !== previous) {
         previous = current;
         snapshot = result(
@@ -84,31 +87,36 @@ export const createAppsQuery = (
           refetch
         );
       }
+
       return snapshot;
     },
     (listener) => {
       const stop = store.fetch.apps.state.listen(listener);
       void store.fetchApps();
+
       return stop;
     }
   );
+
   return { fetch: store.fetchApps, refetch, state };
 };
 
 const viewsQuery = (
-  store: TailorKitStore,
+  store: PatchsmithStore,
   options: ViewsQueryOptions,
-  app?: TailorKitApp
+  app?: PatchsmithApp
 ) => {
   let previousKey: string | undefined;
   let previousError: Error | null | undefined;
   let selected: ReadableAtom<ViewsQueryResult>;
   let query: ReturnType<typeof createSlotStore>;
+
   const refetch = async () => {
     // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
     selection.get();
     await (app ? query.fetch({ force: true }) : refetchViews(store, options));
   };
+
   const selection = computed(
     [store.fetch.apps.state, store.views.state],
     (discovery, active) => {
@@ -116,26 +124,33 @@ const viewsQuery = (
         if (app) {
           return [app];
         }
+
         if (discovery.status === "ready") {
           return discovery.apps.filter((candidate) =>
             matchesApp(candidate, options.scopes, options.appIds)
           );
         }
+
         return [];
       })();
+
       const appsStatus = app ? "ready" : discovery.status;
       const appsError = app ? null : discovery.error;
+
       const activeView =
         store.contract.slots[options.slot]?.multiple === true ? active : null;
+
       const key = serializeCacheKey([
         apps,
         options.slot,
         activeView,
         appsStatus,
       ]);
+
       if (key !== previousKey || appsError !== previousError) {
         previousKey = key;
         previousError = appsError;
+
         const slot = createSlotStore(store.client, store.contract, {
           activeView,
           apps,
@@ -143,6 +158,7 @@ const viewsQuery = (
           appsStatus,
           slot: options.slot,
         });
+
         query = slot;
         let last: ReturnType<typeof slot.getSnapshot> | undefined;
         let fetching: boolean | undefined;
@@ -150,8 +166,10 @@ const viewsQuery = (
         selected = createSnapshotStore(
           () => {
             const current = slot.state.get();
+
             const appsFetching =
               !app && store.fetch.apps.state.get().isFetching;
+
             if (current !== last || fetching !== appsFetching) {
               last = current;
               fetching = appsFetching;
@@ -160,16 +178,20 @@ const viewsQuery = (
                 refetch
               );
             }
+
             return snapshot;
           },
           (listener) => {
             const stopSlot = slot.state.listen(listener);
+
             const stopApps = app
               ? () => {
                   /* Intentionally no action is needed. */
                 }
               : store.fetch.apps.state.listen(listener);
+
             void slot.fetch();
+
             return () => {
               stopSlot();
               stopApps();
@@ -177,29 +199,35 @@ const viewsQuery = (
           }
         );
       }
+
       return selected;
     }
   );
+
   const source = switchStore(selection);
+
   const state = createSnapshotStore(source.get.bind(source), (listener) => {
     const stop = source.listen(listener);
+
     if (!app) {
       void store.fetchApps();
     }
+
     return stop;
   });
+
   return { refetch, state };
 };
 
 /** Resolve a slot reactively as discovery and registered context change. */
 export const createViewsQuery = (
-  store: TailorKitStore,
+  store: PatchsmithStore,
   options: ViewsQueryOptions
 ) => viewsQuery(store, options);
 
 /** Resolve an explicitly supplied app without initiating discovery. */
 export const createAppViewsQuery = (
-  store: TailorKitStore,
-  app: TailorKitApp,
+  store: PatchsmithStore,
+  app: PatchsmithApp,
   slot: string
 ) => viewsQuery(store, { slot }, app);

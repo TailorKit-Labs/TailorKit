@@ -1,4 +1,4 @@
-import { createClient } from "@tailorkit/client-platform/client/client/index";
+import { createClient } from "@patchsmith/client-platform/client/client/index";
 import { expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
@@ -24,34 +24,40 @@ it("installs from the public server API with host credentials and validated scop
     scope: { name: "org", value: { tenant: "workspace" } },
     shortId: "installed001",
   };
+
   const platformFetch = vi
     .fn<typeof fetch>()
     .mockResolvedValueOnce(Response.json(installed))
     .mockResolvedValueOnce(Response.json(installed));
+
   const requests = () =>
     platformFetch.mock.calls.map(([input, init]) =>
       input instanceof Request ? input : new Request(input, init)
     );
-  const tailorkit = createServer({
+
+  const patchsmith = createServer({
     $internal: {
       platformBaseUrl: "https://platform.test/api/platform",
       platformFetch,
     },
-    baseUrl: "https://host.test/api/tailorkit",
+    baseUrl: "https://host.test/api/patchsmith",
     contract,
     projectKey: "project-secret",
   });
+
   await expect(
-    tailorkit.experimental.installApp({
+    patchsmith.experimental.installApp({
       appId: "published001",
       scope: { name: "org", value: { tenant: "  workspace  " } },
     })
   ).resolves.toEqual(installed);
   expect(platformFetch).toHaveBeenCalledOnce();
   const [request] = requests();
+
   if (!request) {
     throw new Error("Expected installation request");
   }
+
   expect(request.url).toBe("https://platform.test/api/platform/apps/install");
   expect(request.method).toBe("POST");
   expect(request.headers.get("authorization")).toBe("Bearer project-secret");
@@ -60,7 +66,7 @@ it("installs from the public server API with host credentials and validated scop
     scope: installed.scope,
   });
 
-  await tailorkit.experimental.installApp({
+  await patchsmith.experimental.installApp({
     appId: "published001",
     scope: { name: "day", value: { at: new Date("2026-10-16T00:00:00.000Z") } },
   });
@@ -74,6 +80,7 @@ it("rejects invalid or undeclared scopes before sending a platform request", asy
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockResolvedValue(Response.json({}));
+
   const experimental = createExperimental({
     platform: createClient({
       fetch,
@@ -81,6 +88,7 @@ it("rejects invalid or undeclared scopes before sending a platform request", asy
     platformHeaders: { authorization: "Bearer secret" },
     scopeSchemas: contract.scopes,
   });
+
   await expect(
     experimental.installApp({
       appId: "app",
@@ -114,16 +122,19 @@ it("requires host credentials and propagates platform installation errors", asyn
           )
         ),
     },
-    baseUrl: "https://host.test/api/tailorkit",
+    baseUrl: "https://host.test/api/patchsmith",
     contract,
   });
+
   const input = {
     appId: "app",
     scope: { name: "org" as const, value: { tenant: "workspace" } },
   };
+
   await expect(server.experimental.installApp(input)).rejects.toThrow(
     "projectKey"
   );
+
   const authorized = createServer({
     $internal: {
       platformFetch: vi
@@ -135,10 +146,11 @@ it("requires host credentials and propagates platform installation errors", asyn
           )
         ),
     },
-    baseUrl: "https://host.test/api/tailorkit",
+    baseUrl: "https://host.test/api/patchsmith",
     contract,
     projectKey: "secret",
   });
+
   await expect(authorized.experimental.installApp(input)).rejects.toMatchObject(
     { code: "NOT_FOUND" }
   );

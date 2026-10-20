@@ -1,6 +1,6 @@
-# TailorKit React
+# Patchsmith React
 
-Use the React components and hooks in `@tailorkit/react` to integrate TailorKit into your SaaS product.
+Use the React components and hooks in `@patchsmith/react` to integrate Patchsmith into your SaaS product.
 
 ## Pressable
 

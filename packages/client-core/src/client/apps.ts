@@ -1,7 +1,7 @@
-import type { TailorKitApp } from "#types";
+import type { PatchsmithApp } from "#types";
 
 export const matchesApp = (
-  app: TailorKitApp,
+  app: PatchsmithApp,
   scopes?: readonly string[],
   appIds?: readonly string[]
 ): boolean =>

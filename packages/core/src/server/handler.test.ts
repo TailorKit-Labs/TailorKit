@@ -1,10 +1,10 @@
-import { asyncFixture } from "@tailorkit/config/testing";
+import { asyncFixture } from "@patchsmith/config/testing";
 import type { Mock } from "vite-plus/test";
 import { describe, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
-import { createTailorKitClient } from "./client";
-import { createTailorKitServer } from "./handler";
+import { createPatchsmithClient } from "./client";
+import { createPatchsmithServer } from "./handler";
 
 const platformRequests = (request: Mock<typeof fetch>): Request[] =>
   request.mock.calls.map(([input, init]) =>
@@ -12,15 +12,18 @@ const platformRequests = (request: Mock<typeof fetch>): Request[] =>
   );
 
 const testScopeSchema = z.record(z.string(), z.string().min(1));
-const tailor = createTailorKitServer({
-  baseUrl: "https://example.com/api/tailorkit",
+
+const tailor = createPatchsmithServer({
+  baseUrl: "https://example.com/api/patchsmith",
   components: {},
   scopes: { org: testScopeSchema },
 });
+
 const optionalSchemaTailor = tailor;
 
 const authenticateImplementation2Implementation = () => ({
   scopes: { org: { tenant: "workspace" } },
+  subjectId: "user",
 });
 
 const authenticateImplementationImplementation = () => ({
@@ -28,10 +31,11 @@ const authenticateImplementationImplementation = () => ({
     org: { tenant: "org" },
     userOrg: { tenant: "user_org" },
   },
+  subjectId: "user",
 });
 
 const requestImplementationImplementation = (origin: string) =>
-  new Request("http://internal:3000/custom/tailorkit/backend/session", {
+  new Request("http://internal:3000/custom/patchsmith/backend/session", {
     body: JSON.stringify({ appId: "app" }),
     headers: {
       "content-type": "application/json",
@@ -42,7 +46,40 @@ const requestImplementationImplementation = (origin: string) =>
     method: "POST",
   });
 
-describe("createTailorKitServer", () => {
+describe("createPatchsmithServer", () => {
+  it.each([undefined, null, "", 123, "x".repeat(257)])(
+    "rejects authenticated host contexts without a valid subject: %j",
+    async (subjectId) => {
+      const platformFetch = vi.fn<typeof fetch>();
+
+      const server = createPatchsmithServer({
+        $internal: { platformFetch },
+        baseUrl: "https://host.test/api/patchsmith",
+        components: {},
+        projectKey: "project-key",
+        scopes: { org: testScopeSchema },
+      });
+
+      await expect(
+        server.handler(
+          new Request("https://host.test/api/patchsmith/backend/session", {
+            body: JSON.stringify({ appId: "app" }),
+            headers: { "content-type": "application/json" },
+            method: "POST",
+          }),
+          {
+            authenticate: () => ({
+              scopes: { org: { tenant: "verified" } },
+              // @ts-expect-error Exercise host integrations supplying invalid runtime authentication data.
+              subjectId,
+            }),
+          }
+        )
+      ).rejects.toThrow("Invalid authenticated subject");
+      expect(platformFetch).not.toHaveBeenCalled();
+    }
+  );
+
   it.each([
     ["GET", "preview/metadata?sessionId=removed"],
     ["GET", `preview/${"a".repeat(43)}`],
@@ -50,31 +87,46 @@ describe("createTailorKitServer", () => {
     ["POST", "preview/start"],
   ])("returns 404 for removed %s %s routes", async (method, path) => {
     const response = await tailor.handler(
-      new Request(`https://example.com/api/tailorkit/${path}`, { method }),
+      new Request(`https://example.com/api/patchsmith/${path}`, { method }),
       { authenticate: authenticateImplementation2Implementation }
     );
+
     expect(response.status).toBe(404);
   });
 
   it("requests app backend tokens from the platform with host credentials and verified scopes", async () => {
-    const platformFetch = vi.fn<typeof fetch>().mockResolvedValueOnce(
-      Response.json({
+    const session = {
+      expiresAt: 123,
+      identity: {
+        appId: "app",
+        deploymentId: "deployment",
         expiresAt: 123,
-        token: "platform-token",
-        url: "https://runtime.test/rpc",
-      })
-    );
-    const server = createTailorKitServer({
+        installationId: "app",
+        projectId: "project",
+        scope: { name: "org", value: { tenant: "verified" } },
+        subjectId: "user",
+        toolUrl: "https://host.test/api/patchsmith/tools/execute",
+      },
+      token: "platform-token",
+      url: "https://runtime.test/rpc",
+    };
+
+    const platformFetch = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json(session));
+
+    const server = createPatchsmithServer({
       $internal: {
         platformFetch,
       },
-      baseUrl: "https://host.test/api/tailorkit",
+      baseUrl: "https://host.test/api/patchsmith",
       components: {},
       projectKey: "project-key",
       scopes: { org: testScopeSchema },
     });
+
     const response = await server.handler(
-      new Request("https://host.test/api/tailorkit/backend/session", {
+      new Request("https://host.test/api/patchsmith/backend/session", {
         body: JSON.stringify({ appId: "app" }),
         headers: {
           "content-type": "application/json",
@@ -82,19 +134,23 @@ describe("createTailorKitServer", () => {
         },
         method: "POST",
       }),
-      { authenticate: () => ({ scopes: { org: { tenant: "verified" } } }) }
+      {
+        authenticate: () => ({
+          scopes: { org: { tenant: "verified" } },
+          subjectId: "user",
+        }),
+      }
     );
-    expect(await response.json()).toEqual({
-      expiresAt: 123,
-      token: "platform-token",
-      url: "https://runtime.test/rpc",
-    });
+
+    expect(await response.json()).toEqual(session);
     const [issuedRequest] = platformRequests(platformFetch);
+
     if (!issuedRequest) {
       throw new Error("Expected a platform token request");
     }
+
     expect(issuedRequest.url).toBe(
-      "https://tailorkit.dev/api/platform/apps/runtime/session"
+      "https://patchsmith.io/api/platform/apps/runtime/session"
     );
     expect(issuedRequest.headers.get("authorization")).toBe(
       "Bearer project-key"
@@ -102,7 +158,8 @@ describe("createTailorKitServer", () => {
     expect(await issuedRequest.json()).toEqual({
       app: { shortId: "app" },
       scopes: [{ name: "org", value: { tenant: "verified" } }],
-      toolUrl: "https://host.test/api/tailorkit/tools/execute",
+      subjectId: "user",
+      toolUrl: "https://host.test/api/patchsmith/tools/execute",
     });
   });
 
@@ -116,45 +173,57 @@ describe("createTailorKitServer", () => {
         url: "https://runtime.test/rpc",
       })
     );
-    const server = createTailorKitServer({
+
+    const server = createPatchsmithServer({
       $internal: {
         platformFetch,
       },
-      baseUrl: "https://host.test/custom/tailorkit/",
+      baseUrl: "https://host.test/custom/patchsmith/",
       components: {},
       projectKey: "project-key",
       scopes: { org: testScopeSchema },
     });
+
     const request = requestImplementation;
+
     const authentication = {
-      authenticate: () => ({ scopes: { org: { tenant: "verified" } } }),
+      authenticate: () => ({
+        scopes: { org: { tenant: "verified" } },
+        subjectId: "user",
+      }),
     };
+
     const awaitedResult1 = await server.handler(
       request("https://host.test"),
       authentication
     );
+
     expect(awaitedResult1.status).toBe(200);
     expect(await platformRequests(platformFetch)[0]?.json()).toMatchObject({
-      toolUrl: "https://host.test/custom/tailorkit/tools/execute",
+      toolUrl: "https://host.test/custom/patchsmith/tools/execute",
     });
+
     const awaitedResult2 = await server.handler(
       request("https://attacker.test"),
       authentication
     );
+
     expect(awaitedResult2.status).toBe(400);
+
     const awaitedResult3 = await server.handler(
       request("http://internal:3000"),
       authentication
     );
+
     expect(awaitedResult3.status).toBe(400);
     expect(platformRequests(platformFetch)).toHaveLength(1);
   });
 
   it.each([
     {
-      baseUrl: "http://localhost:3000/api/tailorkit",
+      baseUrl: "http://localhost:3000/api/patchsmith",
       origin: "http://localhost:3000",
-      prefix: "/api/tailorkit",
+      prefix: "/api/patchsmith",
     },
     {
       baseUrl: "https://public.test/custom/routes///",
@@ -175,7 +244,8 @@ describe("createTailorKitServer", () => {
     "routes and issues sessions from baseUrl=$baseUrl",
     async ({ baseUrl, prefix, origin }) => {
       const bodies: unknown[] = [];
-      const server = createTailorKitServer({
+
+      const server = createPatchsmithServer({
         $internal: {
           platformFetch: async (input, init) => {
             bodies.push(
@@ -183,6 +253,7 @@ describe("createTailorKitServer", () => {
                 input instanceof Request ? input : new Request(input, init)
               ).json()
             );
+
             return Response.json({
               expiresAt: 123,
               token: "token",
@@ -194,18 +265,25 @@ describe("createTailorKitServer", () => {
         components: {},
         scopes: { org: testScopeSchema },
       });
+
       const authentication = {
-        authenticate: () => ({ scopes: { org: { tenant: "verified" } } }),
+        authenticate: () => ({
+          scopes: { org: { tenant: "verified" } },
+          subjectId: "user",
+        }),
       };
+
       await Promise.all(
         ["schema", "meta"].map(async (route) => {
           const awaitedResult4 = await server.handler(
             new Request(`https://request.test${prefix}/${route}`),
             authentication
           );
+
           expect(awaitedResult4.status).toBe(200);
         })
       );
+
       const response = await server.handler(
         new Request(`https://request.test${prefix}/backend/session`, {
           body: JSON.stringify({ appId: "app" }),
@@ -214,11 +292,13 @@ describe("createTailorKitServer", () => {
         }),
         authentication
       );
+
       expect(response.status).toBe(200);
       expect(bodies).toEqual([
         {
           app: { shortId: "app" },
           scopes: [{ name: "org", value: { tenant: "verified" } }],
+          subjectId: "user",
           toolUrl: `${origin + prefix}/tools/execute`,
         },
       ]);
@@ -230,7 +310,7 @@ describe("createTailorKitServer", () => {
     null,
     "",
     "/",
-    "/api/tailorkit",
+    "/api/patchsmith",
     "https:host.test/api",
     "https:/host.test/api",
     "https:///host.test/api",
@@ -245,7 +325,7 @@ describe("createTailorKitServer", () => {
   ])("rejects an ambiguous or invalid baseUrl=%s", (baseUrl) => {
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     expect(() =>
-      createTailorKitServer({
+      createPatchsmithServer({
         // oxlint-disable-next-line typescript/no-non-null-assertion -- Parameterized negative cases deliberately pass invalid inputs through the public API.
         baseUrl: baseUrl!,
         components: {},
@@ -263,23 +343,31 @@ describe("createTailorKitServer", () => {
           { status: 404 }
         )
       );
-    const server = createTailorKitServer({
+
+    const server = createPatchsmithServer({
       $internal: {
         platformFetch,
       },
-      baseUrl: "https://host.test/api/tailorkit",
+      baseUrl: "https://host.test/api/patchsmith",
       components: {},
       projectKey: "project-key",
       scopes: { org: testScopeSchema },
     });
+
     const response = await server.handler(
-      new Request("https://host.test/api/tailorkit/backend/session", {
+      new Request("https://host.test/api/patchsmith/backend/session", {
         body: JSON.stringify({ appId: "not-in-scope" }),
         headers: { "content-type": "application/json" },
         method: "POST",
       }),
-      { authenticate: () => ({ scopes: { org: { tenant: "verified" } } }) }
+      {
+        authenticate: () => ({
+          scopes: { org: { tenant: "verified" } },
+          subjectId: "user",
+        }),
+      }
     );
+
     expect(response.status).toBe(404);
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(await response.json()).toMatchObject({ code: "NOT_FOUND" });
@@ -290,30 +378,35 @@ describe("createTailorKitServer", () => {
 
   it("selects only requested authenticated scope names for host app reads", async () => {
     const platformBodies: unknown[] = [];
-    const server = createTailorKitServer({
+
+    const server = createPatchsmithServer({
       $internal: {
         platformFetch: async (input, init) => {
           const request =
             input instanceof Request ? input : new Request(input, init);
+
           platformBodies.push(await request.json());
+
           return Response.json({
             items: [],
             pagination: { hasMore: false, page: 1, pageSize: 100 },
           });
         },
       },
-      baseUrl: "https://example.com/api/tailorkit",
+      baseUrl: "https://example.com/api/patchsmith",
       components: {},
       scopes: { org: testScopeSchema, userOrg: testScopeSchema },
     });
+
     const authenticate = authenticateImplementation;
 
     const response = await server.handler(
       new Request(
-        "https://example.com/api/tailorkit/apps?scopes=userOrg&scopes=userOrg"
+        "https://example.com/api/patchsmith/apps?scopes=userOrg&scopes=userOrg"
       ),
       { authenticate }
     );
+
     expect(response.status).toBe(200);
     expect(platformBodies).toEqual([
       {
@@ -324,9 +417,10 @@ describe("createTailorKitServer", () => {
     ]);
 
     const invalid = await server.handler(
-      new Request("https://example.com/api/tailorkit/apps?scopes=missing"),
+      new Request("https://example.com/api/patchsmith/apps?scopes=missing"),
       { authenticate }
     );
+
     expect(invalid.status).toBe(400);
     expect(platformBodies).toHaveLength(1);
   });
@@ -337,19 +431,23 @@ describe("createTailorKitServer", () => {
     const platformFetch = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(Response.json({ items: [] }));
-    const server = createTailorKitServer({
+
+    const server = createPatchsmithServer({
       $internal: {
         platformFetch,
       },
-      baseUrl: "https://example.com/api/tailorkit",
+      baseUrl: "https://example.com/api/patchsmith",
       components: {},
       scopes: { org: testScopeSchema },
     });
+
     const authenticate = authenticateImplementation2;
+
     const apps = await server.handler(
-      new Request("https://example.com/api/tailorkit/apps?scopes="),
+      new Request("https://example.com/api/patchsmith/apps?scopes="),
       { authenticate }
     );
+
     expect(apps.status).toBe(200);
     await expect(apps.json()).resolves.toEqual([]);
 
@@ -362,7 +460,8 @@ describe("createTailorKitServer", () => {
         "https://abc123def4.tailorkit.app/p/22222222-2222-4222-8222-222222222222/a/33333333-3333-4333-8333-333333333333/d/44444444-4444-4444-8444-444444444444/client.js",
       id: "app",
     };
-    const server = createTailorKitServer({
+
+    const server = createPatchsmithServer({
       $internal: {
         platformFetch: vi.fn<typeof fetch>().mockResolvedValueOnce(
           Response.json({
@@ -371,24 +470,34 @@ describe("createTailorKitServer", () => {
           })
         ),
       },
-      baseUrl: "https://example.com/api/tailorkit",
+      baseUrl: "https://example.com/api/patchsmith",
       components: {},
       projectKey: "server-only-key",
       scopes: { org: testScopeSchema },
     });
+
     const response = await server.handler(
-      new Request("https://host.test/api/tailorkit/apps"),
+      new Request("https://host.test/api/patchsmith/apps"),
       {
-        authenticate: () => ({ scopes: { org: { tenant: "workspace" } } }),
+        authenticate: () => ({
+          scopes: { org: { tenant: "workspace" } },
+          subjectId: "user",
+        }),
       }
     );
+
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual([app]);
   });
   it("serves the serialized schema from the handler", async () => {
     const response = await optionalSchemaTailor.handler(
-      new Request("https://example.com/api/tailorkit/schema"),
-      { authenticate: () => ({ scopes: { org: { tenant: "test" } } }) }
+      new Request("https://example.com/api/patchsmith/schema"),
+      {
+        authenticate: () => ({
+          scopes: { org: { tenant: "test" } },
+          subjectId: "user",
+        }),
+      }
     );
 
     await expect(response.json()).resolves.toMatchObject({
@@ -401,9 +510,14 @@ describe("createTailorKitServer", () => {
   it("serves a built-in CLI auth approval page", async () => {
     const response = await optionalSchemaTailor.handler(
       new Request(
-        "https://example.com/api/tailorkit/cli-auth/approve?code=ABC-123-XYZ"
+        "https://example.com/api/patchsmith/cli-auth/approve?code=ABC-123-XYZ"
       ),
-      { authenticate: () => ({ scopes: { org: { tenant: "test" } } }) }
+      {
+        authenticate: () => ({
+          scopes: { org: { tenant: "test" } },
+          subjectId: "user",
+        }),
+      }
     );
 
     const html = await response.text();
@@ -414,15 +528,16 @@ describe("createTailorKitServer", () => {
   });
 
   it("redirects unauthenticated CLI approvals to the host sign-in page", async () => {
-    const server = createTailorKitServer({
-      baseUrl: "https://example.com/api/tailorkit",
-      cliAuth: { signInPath: "/admin/sign-in?source=tailorkit" },
+    const server = createPatchsmithServer({
+      baseUrl: "https://example.com/api/patchsmith",
+      cliAuth: { signInPath: "/admin/sign-in?source=patchsmith" },
       components: {},
       scopes: { org: testScopeSchema },
     });
+
     const response = await server.handler(
       new Request(
-        "https://example.com/api/tailorkit/cli-auth/approve?code=ABC-123-XYZ"
+        "https://example.com/api/patchsmith/cli-auth/approve?code=ABC-123-XYZ"
       ),
       { authenticate: () => null }
     );
@@ -431,24 +546,26 @@ describe("createTailorKitServer", () => {
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(response.headers.get("referrer-policy")).toBe("no-referrer");
     expect(response.headers.get("location")).toBe(
-      "https://example.com/admin/sign-in?source=tailorkit&returnTo=%2Fapi%2Ftailorkit%2Fcli-auth%2Fapprove%3Fcode%3DABC-123-XYZ"
+      "https://example.com/admin/sign-in?source=patchsmith&returnTo=%2Fapi%2Fpatchsmith%2Fcli-auth%2Fapprove%3Fcode%3DABC-123-XYZ"
     );
   });
 
   it("renders configured CLI approvals for authenticated users", async () => {
-    const server = createTailorKitServer({
-      baseUrl: "https://example.com/api/tailorkit",
+    const server = createPatchsmithServer({
+      baseUrl: "https://example.com/api/patchsmith",
       cliAuth: { signInPath: "/admin/sign-in" },
       components: {},
       scopes: { org: testScopeSchema, userOrg: testScopeSchema },
     });
+
     const response = await server.handler(
       new Request(
-        "https://example.com/api/tailorkit/cli-auth/approve?code=ABC-123-XYZ"
+        "https://example.com/api/patchsmith/cli-auth/approve?code=ABC-123-XYZ"
       ),
       {
         authenticate: () => ({
           scopes: { org: { tenant: "test" }, userOrg: { tenant: "user" } },
+          subjectId: "user",
         }),
       }
     );
@@ -462,13 +579,14 @@ describe("createTailorKitServer", () => {
   });
 
   it("preserves the scope selection when a CLI approval code is missing", async () => {
-    const server = createTailorKitServer({
-      baseUrl: "https://example.com/api/tailorkit",
+    const server = createPatchsmithServer({
+      baseUrl: "https://example.com/api/patchsmith",
       components: {},
       scopes: { org: testScopeSchema, userOrg: testScopeSchema },
     });
+
     const response = await server.handler(
-      new Request("https://example.com/api/tailorkit/cli-auth/approve", {
+      new Request("https://example.com/api/patchsmith/cli-auth/approve", {
         body: new URLSearchParams({
           intent: "approve",
           scope: "userOrg",
@@ -480,6 +598,7 @@ describe("createTailorKitServer", () => {
       {
         authenticate: () => ({
           scopes: { org: { tenant: "test" }, userOrg: { tenant: "user" } },
+          subjectId: "user",
         }),
       }
     );
@@ -491,8 +610,8 @@ describe("createTailorKitServer", () => {
   });
 
   it("rejects cross-origin CLI sign-in redirects", async () => {
-    const server = createTailorKitServer({
-      baseUrl: "https://example.com/api/tailorkit",
+    const server = createPatchsmithServer({
+      baseUrl: "https://example.com/api/patchsmith",
       cliAuth: { signInPath: "//evil.example/sign-in" },
       components: {},
       scopes: { org: testScopeSchema },
@@ -501,18 +620,18 @@ describe("createTailorKitServer", () => {
     await expect(
       server.handler(
         new Request(
-          "https://example.com/api/tailorkit/cli-auth/approve?code=ABC-123-XYZ"
+          "https://example.com/api/patchsmith/cli-auth/approve?code=ABC-123-XYZ"
         ),
         { authenticate: () => null }
       )
     ).rejects.toThrow(
-      "TailorKit cliAuth.signInPath must be a same-origin path."
+      "Patchsmith cliAuth.signInPath must be a same-origin path."
     );
   });
 
   it("rejects host scopes that fail Standard Schema validation before platform access", async () => {
-    const server = createTailorKitServer({
-      baseUrl: "https://example.com/api/tailorkit",
+    const server = createPatchsmithServer({
+      baseUrl: "https://example.com/api/patchsmith",
       cliAuth: { signInPath: "/sign-in" },
       components: {},
       scopes: { org: z.object({ orgId: z.string().min(1) }) },
@@ -521,9 +640,14 @@ describe("createTailorKitServer", () => {
     await expect(
       server.handler(
         new Request(
-          "https://example.com/api/tailorkit/cli-auth/approve?code=ABC-123-XYZ"
+          "https://example.com/api/patchsmith/cli-auth/approve?code=ABC-123-XYZ"
         ),
-        { authenticate: () => ({ scopes: { org: { orgId: "" } } }) }
+        {
+          authenticate: () => ({
+            scopes: { org: { orgId: "" } },
+            subjectId: "user",
+          }),
+        }
       )
     ).rejects.toThrow(/failed its Standard Schema validation/u);
   });
@@ -532,26 +656,34 @@ describe("createTailorKitServer", () => {
     const platformFetch = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(Response.json({ id: "cli_auth_session_1" }));
-    const server = createTailorKitServer({
+
+    const server = createPatchsmithServer({
       $internal: {
         platformBaseUrl: "http://localhost:3000/api/platform",
         platformFetch,
         platformHeaders: { authorization: "Bearer host-token" },
       },
-      baseUrl: "https://example.com/api/tailorkit",
+      baseUrl: "https://example.com/api/patchsmith",
       components: {},
       scopes: { org: testScopeSchema },
     });
+
     const body = new URLSearchParams({
       intent: "approve",
       userCode: "ABC-123-XYZ",
     });
+
     const response = await server.handler(
-      new Request("https://example.com/api/tailorkit/cli-auth/approve", {
+      new Request("https://example.com/api/patchsmith/cli-auth/approve", {
         body,
         method: "POST",
       }),
-      { authenticate: () => ({ scopes: { org: { orgId: "org_1" } } }) }
+      {
+        authenticate: () => ({
+          scopes: { org: { orgId: "org_1" } },
+          subjectId: "user",
+        }),
+      }
     );
 
     const html = await response.text();
@@ -572,27 +704,34 @@ describe("createTailorKitServer", () => {
     const platformFetch = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(Response.json({ id: "cli_auth_session_1" }));
-    const server = createTailorKitServer({
+
+    const server = createPatchsmithServer({
       $internal: {
         platformBaseUrl: "http://localhost:3000/api/platform",
         platformFetch,
       },
-      baseUrl: "https://example.com/api/tailorkit",
+      baseUrl: "https://example.com/api/patchsmith",
       components: {},
       projectKey: "project-key",
       scopes: { org: testScopeSchema },
     });
+
     const body = new URLSearchParams({
       intent: "approve",
       userCode: "ABC-123-XYZ",
     });
 
     await server.handler(
-      new Request("https://example.com/api/tailorkit/cli-auth/approve", {
+      new Request("https://example.com/api/patchsmith/cli-auth/approve", {
         body,
         method: "POST",
       }),
-      { authenticate: () => ({ scopes: { org: { orgId: "org_1" } } }) }
+      {
+        authenticate: () => ({
+          scopes: { org: { orgId: "org_1" } },
+          subjectId: "user",
+        }),
+      }
     );
 
     expect(
@@ -601,32 +740,36 @@ describe("createTailorKitServer", () => {
   });
 
   it("surfaces rejected project keys during CLI auth start", async () => {
-    const server = createTailorKitServer({
+    const server = createPatchsmithServer({
       $internal: {
         platformBaseUrl: "http://localhost:3000/api/platform",
         platformFetch: vi
           .fn<typeof fetch>()
           .mockResolvedValueOnce(new Response("Unauthorized", { status: 401 })),
       },
-      baseUrl: "https://example.com/api/tailorkit",
+      baseUrl: "https://example.com/api/patchsmith",
       components: {},
       projectKey: "invalid-project-key",
       scopes: { org: testScopeSchema },
     });
-    const client = createTailorKitClient({
+
+    const client = createPatchsmithClient({
       fetch: async (request, init) => {
         const hostRequest =
           request instanceof Request ? request : new Request(request, init);
 
         return await server.handler(hostRequest, {
-          authenticate: () => ({ scopes: { org: { orgId: "org_1" } } }),
+          authenticate: () => ({
+            scopes: { org: { orgId: "org_1" } },
+            subjectId: "user",
+          }),
         });
       },
-      url: "https://example.com/api/tailorkit",
+      url: "https://example.com/api/patchsmith",
     });
 
     await expect(client.cliAuth.start({})).rejects.toThrow(
-      "TailorKit platform rejected the host project key. Check TAILORKIT_PROJECT_KEY."
+      "Patchsmith platform rejected the host project key. Check PATCHSMITH_PROJECT_KEY."
     );
   });
 
@@ -641,7 +784,7 @@ describe("createTailorKitServer", () => {
   ])(
     "preserves platform $code during CLI token verification",
     async ({ code, message, status }) => {
-      const server = createTailorKitServer({
+      const server = createPatchsmithServer({
         $internal: {
           platformFetch: vi
             .fn<typeof fetch>()
@@ -649,12 +792,13 @@ describe("createTailorKitServer", () => {
               Response.json({ code, defined: false, message }, { status })
             ),
         },
-        baseUrl: "https://example.com/api/tailorkit",
+        baseUrl: "https://example.com/api/patchsmith",
         components: {},
         projectKey: "host-project-key",
         scopes: { org: testScopeSchema },
       });
-      const client = createTailorKitClient({
+
+      const client = createPatchsmithClient({
         fetch: async (request, init) => {
           const response = await server.handler(
             request instanceof Request ? request : new Request(request, init),
@@ -664,11 +808,13 @@ describe("createTailorKitServer", () => {
               },
             }
           );
+
           expect(response.status).toBe(status);
+
           return response;
         },
         headers: { authorization: "Bearer expired-cli-token" },
-        url: "https://example.com/api/tailorkit",
+        url: "https://example.com/api/patchsmith",
       });
 
       await expect(client.cliAuth.verifyToken({})).rejects.toMatchObject({
@@ -681,12 +827,14 @@ describe("createTailorKitServer", () => {
   it("calls the platform client with authorization headers", async () => {
     const requests: Request[] = [];
     const hostRequests: Request[] = [];
-    const server = createTailorKitServer({
+
+    const server = createPatchsmithServer({
       $internal: {
         platformBaseUrl: "http://localhost:3000/api/platform",
         platformFetch: asyncFixture((request, init) => {
           const platformRequest =
             request instanceof Request ? request : new Request(request, init);
+
           requests.push(platformRequest);
 
           if (platformRequest.url.endsWith("/cli-auth/verify-token")) {
@@ -702,11 +850,12 @@ describe("createTailorKitServer", () => {
         }),
         platformHeaders: { authorization: "Bearer host-token" },
       },
-      baseUrl: "https://example.com/api/tailorkit",
+      baseUrl: "https://example.com/api/patchsmith",
       components: {},
       scopes: { org: testScopeSchema },
     });
-    const client = createTailorKitClient({
+
+    const client = createPatchsmithClient({
       fetch: async (request, init) => {
         const hostRequest =
           request instanceof Request
@@ -720,6 +869,7 @@ describe("createTailorKitServer", () => {
                   ["authorization", "Bearer host-token"],
                 ]),
               });
+
         hostRequests.push(hostRequest);
 
         return await server.handler(hostRequest, {
@@ -730,7 +880,7 @@ describe("createTailorKitServer", () => {
           },
         });
       },
-      url: "https://example.com/api/tailorkit",
+      url: "https://example.com/api/patchsmith",
     });
 
     await expect(client.cliAuth.verifyToken({})).resolves.toEqual({
@@ -757,12 +907,14 @@ describe("createTailorKitServer", () => {
   it("validates host app mutations and attaches the CLI deploy token scope", async () => {
     const requests: Request[] = [];
     const hostRequests: Request[] = [];
-    const server = createTailorKitServer({
+
+    const server = createPatchsmithServer({
       $internal: {
         platformBaseUrl: "http://localhost:3000/api/platform",
         platformFetch: asyncFixture((request, init) => {
           const platformRequest =
             request instanceof Request ? request : new Request(request, init);
+
           requests.push(platformRequest);
 
           if (platformRequest.url.endsWith("/cli-auth/verify-token")) {
@@ -775,11 +927,12 @@ describe("createTailorKitServer", () => {
         }),
         platformHeaders: { authorization: "Bearer host-token" },
       },
-      baseUrl: "https://example.com/api/tailorkit",
+      baseUrl: "https://example.com/api/patchsmith",
       components: {},
       scopes: { org: testScopeSchema },
     });
-    const client = createTailorKitClient({
+
+    const client = createPatchsmithClient({
       fetch: async (request, init) => {
         const hostRequest =
           request instanceof Request
@@ -793,6 +946,7 @@ describe("createTailorKitServer", () => {
                   ["authorization", "Bearer cli-token"],
                 ]),
               });
+
         hostRequests.push(hostRequest);
 
         return await server.handler(hostRequest, {
@@ -803,7 +957,7 @@ describe("createTailorKitServer", () => {
           },
         });
       },
-      url: "https://example.com/api/tailorkit",
+      url: "https://example.com/api/patchsmith",
     });
 
     await expect(
@@ -814,11 +968,13 @@ describe("createTailorKitServer", () => {
     ).resolves.toEqual({
       id: "app_1",
     });
+
     const untrustedInput = {
       createdByAgent: true,
       description: null,
       name: "Forged AI app",
     };
+
     await expect(client.apps.create(untrustedInput)).rejects.toMatchObject({
       code: "BAD_REQUEST",
     });
@@ -854,31 +1010,35 @@ describe("createTailorKitServer", () => {
   it.each([true, false])(
     "returns AI provenance from app lookups: %s",
     async (createdByAgent) => {
-      const server = createTailorKitServer({
+      const server = createPatchsmithServer({
         $internal: {
           platformFetch: async (input, init) => {
             const request =
               input instanceof Request ? input : new Request(input, init);
+
             if (request.url.endsWith("/cli-auth/verify-token")) {
               return Response.json({
                 scope: { name: "org", value: { orgId: "org_1" } },
               });
             }
+
             expect(request.url).toBe(
-              "https://tailorkit.dev/api/platform/apps/lookup"
+              "https://patchsmith.io/api/platform/apps/lookup"
             );
             expect(await request.json()).toEqual({
               app: { shortId: "app_1" },
               scopes: [{ name: "org", value: { orgId: "org_1" } }],
             });
+
             return Response.json({ createdByAgent, id: "app_1" });
           },
         },
-        baseUrl: "https://example.com/api/tailorkit",
+        baseUrl: "https://example.com/api/patchsmith",
         components: {},
         scopes: { org: testScopeSchema },
       });
-      const client = createTailorKitClient({
+
+      const client = createPatchsmithClient({
         fetch: async (input, init) =>
           await server.handler(
             input instanceof Request ? input : new Request(input, init),
@@ -891,8 +1051,9 @@ describe("createTailorKitServer", () => {
             }
           ),
         headers: { authorization: "Bearer cli-token" },
-        url: "https://example.com/api/tailorkit",
+        url: "https://example.com/api/patchsmith",
       });
+
       await expect(client.apps.get({ appId: "app_1" })).resolves.toEqual({
         createdByAgent,
         id: "app_1",
@@ -902,28 +1063,33 @@ describe("createTailorKitServer", () => {
 
   it("preserves instance discovery when the CLI deploys through the host", async () => {
     const requests: Request[] = [];
-    const server = createTailorKitServer({
+
+    const server = createPatchsmithServer({
       $internal: {
         platformFetch: asyncFixture((input, init) => {
           const request =
             input instanceof Request ? input : new Request(input, init);
+
           requests.push(request);
+
           if (request.url.endsWith("/cli-auth/verify-token")) {
             return Response.json({
               scope: { name: "org", value: { orgId: "org_1" } },
             });
           }
+
           return Response.json({
             assets: [],
             deployment: { id: "deployment" },
           });
         }),
       },
-      baseUrl: "https://example.com/api/tailorkit",
+      baseUrl: "https://example.com/api/patchsmith",
       components: {},
       scopes: { org: testScopeSchema },
     });
-    const client = createTailorKitClient({
+
+    const client = createPatchsmithClient({
       fetch: async (input, init) =>
         await server.handler(
           input instanceof Request ? input : new Request(input, init),
@@ -934,13 +1100,15 @@ describe("createTailorKitServer", () => {
           }
         ),
       headers: { authorization: "Bearer cli-token" },
-      url: "https://host.test/api/tailorkit",
+      url: "https://host.test/api/patchsmith",
     });
+
     const views = [
       { instances: true as const, path: "/", slot: "page" },
       { path: "/", slot: "panel" },
       { disabled: true as const, path: "/disabled", slot: "page" },
     ];
+
     await client.deployments.create({
       appId: "app",
       assets: [
@@ -959,21 +1127,25 @@ describe("createTailorKitServer", () => {
 
   it("accepts a CLI token containing a transformed scope output", async () => {
     const platformBodies: unknown[] = [];
-    const server = createTailorKitServer({
+
+    const server = createPatchsmithServer({
       $internal: {
         platformFetch: async (input, init) => {
           const request =
             input instanceof Request ? input : new Request(input, init);
+
           if (request.url.endsWith("/cli-auth/verify-token")) {
             return Response.json({
               scope: { name: "org", value: { canonical: "org_1" } },
             });
           }
+
           platformBodies.push(await request.json());
+
           return Response.json({ id: "app_1" });
         },
       },
-      baseUrl: "https://example.com/api/tailorkit",
+      baseUrl: "https://example.com/api/patchsmith",
       components: {},
       scopes: {
         org: z
@@ -981,15 +1153,19 @@ describe("createTailorKitServer", () => {
           .transform(({ raw }) => ({ canonical: raw.trim() })),
       },
     });
-    const client = createTailorKitClient({
+
+    const client = createPatchsmithClient({
       fetch: async (input, init) => {
         const request =
           input instanceof Request ? input : new Request(input, init);
+
         request.headers.set("authorization", "Bearer cli-token");
+
         return await server.handler(request, { authenticate: () => null });
       },
-      url: "https://example.com/api/tailorkit",
+      url: "https://example.com/api/patchsmith",
     });
+
     await expect(
       client.apps.create({ description: null, name: "Calendar" })
     ).resolves.toEqual({

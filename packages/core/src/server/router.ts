@@ -5,12 +5,13 @@ import { appRouter } from "./routes/apps";
 import { cliAuthRouter } from "./routes/cli-auth";
 import { deploymentRouter } from "./routes/deployments";
 
-export const tailorkitRouter = {
+export const patchsmithRouter = {
   appAgent: appAgentRouter,
   apps: appRouter,
   cliAuth: cliAuthRouter,
   deployments: deploymentRouter,
 };
 
-export type TailorKitRouter = typeof tailorkitRouter;
-export type TailorKitRouterClient = RouterClient<TailorKitRouter>;
+export type PatchsmithRouter = typeof patchsmithRouter;
+
+export type PatchsmithRouterClient = RouterClient<PatchsmithRouter>;

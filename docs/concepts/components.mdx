@@ -6,19 +6,21 @@ description: "Share your components while keeping app code isolated."
 
 Apps run in a sandbox, without direct access to your components or the surrounding page. A component schema describes what they can use: its props, events, and children.
 
-TailorKit generates stand-in components for the sandbox. A local bridge passes UI updates to your real components and sends events back to app code. Updates cross this bridge in the browser without a server round trip.
+Patchsmith generates stand-in components for the sandbox. A local bridge passes UI updates to your real components and sends events back to app code. Updates cross this bridge in the browser without a server round trip.
 
 ## Define a component
 
-A button shows the three parts of a component schema:
+A button shows a component schema with behavior guidance:
 
-```ts title="tailorkit.ts"
-import { defineContract } from "tailorkit";
+```ts title="patchsmith.ts"
+import { defineContract } from "patchsmith";
 import { z } from "zod";
 
 export const contract = defineContract({
   components: {
     Button: {
+      description:
+        "Runs onClick when activated by pointer or keyboard. disabled blocks activation. Children provide the button label.",
       fields: z.object({
         variant: z.enum(["default", "secondary"]).optional(),
         disabled: z.boolean().optional(),
@@ -32,6 +34,7 @@ export const contract = defineContract({
 
 | Part | What it does | Button example |
 | --- | --- | --- |
+| `description` | Explains usage and behavior to app authors and agents | How activation and disabled state work |
 | `fields` | Describes data props | `variant="secondary"`, `disabled` |
 | `callbacks` | Describes events sent back to app code | `onClick` |
 | `children` | Allows text or nested components inside | The button's label |
@@ -40,14 +43,14 @@ export const contract = defineContract({
 
 Map the schema's name to your existing button when you create the client:
 
-```tsx title="tailorkit-client.tsx"
+```tsx title="patchsmith-client.tsx"
 import { Button } from "@/components/button";
-import { createClient } from "tailorkit/react";
-import { contract } from "./tailorkit";
+import { createClient } from "patchsmith/react";
+import { contract } from "./patchsmith";
 
-export const tailor = createClient({
+export const patchsmith = createClient({
   contract,
-  baseUrl: "http://localhost:3000/api/tailorkit/",
+  baseUrl: "http://localhost:3000/api/patchsmith/",
   components: {
     Button: ({ props, children }) => <Button {...props}>{children}</Button>,
   },
@@ -68,6 +71,7 @@ Each entry in `defineContract({ components })` describes one component. `Schema`
 
 | Field | Type | Meaning |
 | --- | --- | --- |
+| `description` | `string` | Optional usage and behavior guidance, included in generated component references and binding comments. |
 | `fields` | `Schema` | Data props. Field names must differ from callback names. |
 | `callbacks` | Callback definitions by name | Function props for events such as `onClick`. |
 | `children` | `boolean` | Defaults to `false`. Allows text or nested components inside. |

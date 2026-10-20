@@ -1,7 +1,7 @@
 import { call } from "@orpc/server";
-import { organization } from "@tailorkit/db/schema/auth";
-import { cliAuthSession, cliToken } from "@tailorkit/db/schema/cli-auth";
-import { project as projectTable } from "@tailorkit/db/schema/project";
+import { organization } from "@patchsmith/db/schema/auth";
+import { cliAuthSession, cliToken } from "@patchsmith/db/schema/cli-auth";
+import { project as projectTable } from "@patchsmith/db/schema/project";
 import { eq } from "drizzle-orm";
 import {
   afterEach,
@@ -19,7 +19,7 @@ import { createTestDb } from "#test/pglite";
 // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const testState = vi.hoisted(() => ({ db: undefined as unknown }));
 
-vi.mock("@tailorkit/db", () => ({
+vi.mock("@patchsmith/db", () => ({
   createDb: () => testState.db,
   get db() {
     return testState.db;
@@ -30,14 +30,17 @@ const { cliAuthRouter } = await import("./cli-auth");
 
 const organizationId = "11111111-1111-4111-8111-111111111111";
 const projectId = "22222222-2222-4222-8222-222222222222";
+
 const scope = {
   name: "user",
   value: { organizationId: "org_123", userId: "user_456" },
 };
+
 const expectedScope = {
   name: "user",
   value: { organizationId: "org_123", userId: "user_456" },
 };
+
 const expectedScopeKey = "83f6cbb3372e91fda7451be1728a9e91";
 
 const createContext = (): Context => ({
@@ -84,6 +87,7 @@ describe("platform CLI auth scopes", () => {
         "The CLI auth test requires AUTH_SECRET in its Vitest config."
       );
     }
+
     const testDb = await createTestDb();
     ({ client } = testDb);
     ({ db } = testDb);
@@ -125,9 +129,11 @@ describe("platform CLI auth scopes", () => {
       { body: { deviceCode: started.body.deviceCode } },
       { context }
     );
+
     if (polled.body.status !== "approved") {
       throw new Error("Expected CLI auth session to be approved.");
     }
+
     const { deployToken, ...approvedSession } = polled.body;
     expect(approvedSession).toEqual({
       scope: expectedScope,
@@ -140,6 +146,7 @@ describe("platform CLI auth scopes", () => {
       { body: { deployToken: polled.body.deployToken } },
       { context }
     );
+
     expect(verified.body).toEqual({ scope: expectedScope });
 
     const token = await db.query.cliToken.findFirst();
@@ -159,9 +166,11 @@ describe("platform CLI auth scopes", () => {
       { context }
     );
     const session = await db.query.cliAuthSession.findFirst();
+
     if (!session) {
       throw new Error("Expected CLI auth session.");
     }
+
     await db
       .update(cliAuthSession)
       .set({ scope: { name: "user", value: {} } })
@@ -190,18 +199,23 @@ describe("platform CLI auth scopes", () => {
       .update(cliAuthSession)
       .set({ scope: expectedScope, scopeKey: expectedScopeKey })
       .where(eq(cliAuthSession.id, session.id));
+
     const polled = await call(
       cliAuthRouter.poll,
       { body: { deviceCode: started.body.deviceCode } },
       { context }
     );
+
     if (polled.body.status !== "approved") {
       throw new Error("Expected approved CLI token.");
     }
+
     const token = await db.query.cliToken.findFirst();
+
     if (!token) {
       throw new Error("Expected CLI token.");
     }
+
     await db
       .update(cliToken)
       .set({ scope: { name: "user", value: {} } })

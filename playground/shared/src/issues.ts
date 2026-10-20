@@ -22,6 +22,7 @@ export const getIssue = (teamId: string, issueId: string) =>
 
 export const getOverview = (teamId: string) => {
   const rows = listIssues(teamId);
+
   return {
     done: rows.filter((issue) => issue.status === "Done").length,
     inProgress: rows.filter((issue) => issue.status === "In Progress").length,
@@ -47,12 +48,15 @@ export const createIssue = (
   title: string
 ) => {
   const team = getTeam(teamId);
+
   if (!team) {
     throw new Error("Team not found");
   }
+
   const keyNumber =
     listIssueKeys(teamId).filter(({ key }) => key.startsWith(`${team.key}-`))
       .length + 1;
+
   const issue = {
     createdAt: new Date(),
     createdBy,
@@ -63,7 +67,9 @@ export const createIssue = (
     teamId,
     title,
   };
+
   db.insert(issues).values(issue).run();
+
   return issue;
 };
 
@@ -77,9 +83,12 @@ export const updateIssueStatus = (
     .from(issues)
     .where(and(eq(issues.teamId, teamId), eq(issues.id, issueId)))
     .get();
+
   if (!issue) {
     return undefined;
   }
+
   db.update(issues).set({ status }).where(eq(issues.id, issueId)).run();
+
   return { ...issue, status };
 };

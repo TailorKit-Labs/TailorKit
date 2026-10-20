@@ -16,11 +16,14 @@ const reactWorkspaces = [
   "playground/apps/todo/**",
   "playground/tanstack-start/**",
 ];
+
 const tanstackWorkspaces = ["apps/web", "playground/tanstack-start"];
+
 const aliasWorkspaces = [
   "apps/web",
   "packages/agent",
   "packages/agent-fx",
+  "packages/ai-sdk",
   "packages/api",
   "packages/api-platform",
   "packages/api-utils",
@@ -42,15 +45,16 @@ const aliasWorkspaces = [
   "packages/react",
   "packages/sandbox",
   "packages/storage",
-  "packages/tailorkit",
+  "packages/patchsmith",
   "packages/ui",
   "packages/vite",
   "playground/apps/todo",
   "playground/tanstack-start",
 ];
+
 const ignorePatterns = [
   ".agents/skills",
-  "**/.agents/skills/tailorkit-capabilities/**",
+  "**/.agents/skills/patchsmith-capabilities/**",
   ".claude/skills",
   "**/wrangler.json",
   "**/wrangler.jsonc",
@@ -137,7 +141,7 @@ export default defineConfig({
     },
     settings: {
       shadcn: {
-        ui: "@tailorkit/ui",
+        ui: "@patchsmith/ui",
       },
     },
   },

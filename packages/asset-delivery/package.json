@@ -1,5 +1,5 @@
 {
-  "name": "@tailorkit/asset-delivery",
+  "name": "@patchsmith/asset-delivery",
   "version": "0.0.0",
   "private": true,
   "license": "BUSL-1.1",
@@ -27,7 +27,7 @@
     }
   },
   "scripts": {
-    "build": "vp pack src/index.ts src/logo-validation.ts --format esm --dts --clean",
+    "build": "vp pack src/index.ts src/logo-validation.ts --target node24 --format esm --dts --clean",
     "check-types": "tsc --noEmit",
     "test": "vp test run",
     "lint": "vp lint .",
@@ -37,8 +37,11 @@
     "effect": "catalog:"
   },
   "devDependencies": {
-    "@tailorkit/config": "workspace:*",
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=24.11"
   }
 }

@@ -1,27 +1,27 @@
 import {
   contextErrorResponse,
   createContext,
-} from "@tailorkit/api-platform/context";
+} from "@patchsmith/api-platform/context";
 import {
   initializeObservability,
   recordException,
   sanitizeErrorForLog,
   setSpanAttributes,
   withSpan,
-} from "@tailorkit/observability";
+} from "@patchsmith/observability";
 
 import { createApiEntry } from "./entry";
 
 export const handleMcpRequest = async ({ request }: { request: Request }) => {
-  await initializeObservability("tailorkit-web");
+  await initializeObservability("patchsmith-web");
   setSpanAttributes({
-    "tailorkit.adapter": "mcp",
-    "tailorkit.package": "apps-web",
+    "patchsmith.adapter": "mcp",
+    "patchsmith.package": "apps-web",
   });
 
   // oxlint-disable-next-line anti-slop/no-unknown-parameters -- JavaScript may reject with arbitrary values; this boundary records or preserves the original failure.
   const context = await createContext({ request }).catch((error: unknown) => {
-    recordException(error, { "tailorkit.adapter": "mcp" });
+    recordException(error, { "patchsmith.adapter": "mcp" });
     console.error("MCP authorization failed", sanitizeErrorForLog(error));
     // oxlint-disable-next-line typescript/only-throw-error -- Preserve the existing HTTP authorization response at the framework boundary.
     throw contextErrorResponse(error);
@@ -29,8 +29,9 @@ export const handleMcpRequest = async ({ request }: { request: Request }) => {
 
   const { handleAppAgentMcpRequest } = await withSpan(
     "mcp.load_handler",
-    async () => await import("@tailorkit/api-platform/app-agent-mcp")
+    async () => await import("@patchsmith/api-platform/app-agent-mcp")
   );
+
   return await withSpan(
     "mcp.dispatch",
     {

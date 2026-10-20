@@ -9,8 +9,10 @@ import { fileURLToPath } from "node:url";
 import rootManifest from "../package.json" with { type: "json" };
 
 const script = fileURLToPath(new URL("check-prerelease.mjs", import.meta.url));
+
 const packageDirectories = [
-  "tailorkit",
+  "patchsmith",
+  "ai-sdk",
   "app",
   "app-db",
   "cli",
@@ -27,9 +29,9 @@ const packageDirectories = [
  * @param {string} version Package version to validate.
  */
 const manifest = (directory, version) => ({
-  name: directory === "tailorkit" ? directory : `@tailorkit/${directory}`,
+  name: directory === "patchsmith" ? directory : `@patchsmith/${directory}`,
   publishConfig: { access: "public" },
-  repository: { url: "git+https://github.com/TailorKit-Labs/TailorKit.git" },
+  repository: { url: "git+https://github.com/patchsmith-io/patchsmith.git" },
   version,
 });
 
@@ -39,7 +41,7 @@ const manifest = (directory, version) => ({
  * @param {string} tag Prerelease channel.
  */
 const fixture = async (context, version = "0.1.0-beta.44", tag = "beta") => {
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-release-policy-"));
+  const root = await mkdtemp(path.join(tmpdir(), "patchsmith-release-policy-"));
   context.after(async () => {
     await rm(root, { force: true, recursive: true });
   });
@@ -58,6 +60,7 @@ const fixture = async (context, version = "0.1.0-beta.44", tag = "beta") => {
       );
     })
   );
+
   return root;
 };
 
@@ -92,13 +95,13 @@ for (const directory of ["", "pre/"]) {
     const root = await fixture(context);
     await writeFile(
       path.join(root, ".changeset", directory, "breaking.md"),
-      "---\n'@tailorkit/client-platform': major\n---\n\nBreaking change.\n"
+      "---\n'@patchsmith/client-platform': major\n---\n\nBreaking change.\n"
     );
     const result = check(root);
     assert.equal(result.status, 1);
     assert.match(
       result.stderr,
-      /requests a major bump for @tailorkit\/client-platform/u
+      /requests a major bump for @patchsmith\/client-platform/u
     );
     assert.match(result.stderr, /use minor for breaking changes/u);
   });
@@ -108,11 +111,11 @@ void test("accepts minor and patch changesets including archived prerelease chan
   const root = await fixture(context);
   await writeFile(
     path.join(root, ".changeset", "breaking.md"),
-    '---\n"@tailorkit/client-platform": minor\n---\n\nBreaking prerelease change.\n'
+    '---\n"@patchsmith/client-platform": minor\n---\n\nBreaking prerelease change.\n'
   );
   await writeFile(
     path.join(root, ".changeset", "pre", "fix.md"),
-    '---\n"tailorkit": patch\n---\n\nFix.\n'
+    '---\n"patchsmith": patch\n---\n\nFix.\n'
   );
   const result = check(root);
   assert.equal(result.status, 0, result.stderr);
@@ -122,7 +125,7 @@ void test("rejects an invalid Changeset bump instead of silently skipping it", a
   const root = await fixture(context);
   await writeFile(
     path.join(root, ".changeset", "invalid.md"),
-    '---\n"tailorkit": invalid\n---\n\nInvalid bump.\n'
+    '---\n"patchsmith": invalid\n---\n\nInvalid bump.\n'
   );
   assert.notEqual(check(root).status, 0);
 });
@@ -178,10 +181,12 @@ void test("the configured publish command works in prerelease mode", async (cont
 
   const [, publishCommand] =
     rootManifest.scripts["release:publish"].split("vp exec changeset ");
+
   assert.ok(
     publishCommand !== undefined && publishCommand.length > 0,
     "The release script must invoke Changesets"
   );
+
   const result = spawnSync(
     process.execPath,
     [
@@ -190,6 +195,7 @@ void test("the configured publish command works in prerelease mode", async (cont
     ],
     { cwd: root, encoding: "utf-8", timeout: 30_000 }
   );
+
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.match(result.stdout, /No unpublished projects to publish/u);
 });

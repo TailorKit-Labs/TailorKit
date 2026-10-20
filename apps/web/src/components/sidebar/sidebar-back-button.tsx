@@ -1,4 +1,4 @@
-import { SidebarMenuButton } from "@tailorkit/ui/sidebar";
+import { SidebarMenuButton } from "@patchsmith/ui/sidebar";
 import type { LinkProps } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
 import { ChevronLeftIcon } from "lucide-react";

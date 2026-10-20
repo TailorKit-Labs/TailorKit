@@ -1,9 +1,9 @@
 /* oxlint-disable typescript/no-unsafe-return -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/websocket";
-import type { Invocation, SubscriptionClient } from "@tailorkit/app/protocol";
-import type { Identity } from "@tailorkit/app/server";
-import { asyncFixture } from "@tailorkit/config/testing";
+import type { Invocation, SubscriptionClient } from "@patchsmith/app/protocol";
+import type { Identity } from "@patchsmith/app/server";
+import { asyncFixture } from "@patchsmith/config/testing";
 import { Effect, Semaphore } from "effect";
 import { expect, it, vi } from "vite-plus/test";
 
@@ -21,6 +21,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -29,6 +30,7 @@ const setup = () => {
   const records = new Map<string, string>();
   const events = new EventTarget();
   const coordinator = Semaphore.makeUnsafe(1);
+
   const queue = {
     run: async <A>(operation: () => Promise<A>) =>
       await Effect.runPromise(
@@ -38,7 +40,9 @@ const setup = () => {
         )
       ),
   };
+
   const values = { private: 2, public: 1 };
+
   // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   const query = vi.fn(
     asyncFixture((input: Invocation, identity: Identity) => ({
@@ -46,6 +50,7 @@ const setup = () => {
       value: `${identity.subjectId}:${Object.entries(values).find(([name]) => name === input.name)?.[1]}`,
     }))
   );
+
   const connection = (user = "alice"): SubscriptionConnection => {
     records.set(
       user,
@@ -54,9 +59,11 @@ const setup = () => {
         subscriptions: [],
       })
     );
+
     return {
       read: () => {
         const record = records.get(user);
+
         // SAFETY: The serialized fixture is produced by this test from the matching session contract before it is read back.
         return record !== undefined && record !== null && record !== ""
           ? // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
@@ -71,6 +78,7 @@ const setup = () => {
       },
     };
   };
+
   const socket = connection();
   const sockets = [socket];
   // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
@@ -92,6 +100,7 @@ const setup = () => {
           delete: (key: string) => records.delete(key.slice(7)),
           get: (key: string) => {
             const value = records.get(key.slice(7));
+
             return value !== undefined && value !== null && value !== ""
               ? JSON.parse(value)
               : undefined;
@@ -101,6 +110,7 @@ const setup = () => {
         },
       },
     } as unknown as DurableObjectState;
+
   /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
   const create = () =>
     createSubscriptions(
@@ -113,12 +123,16 @@ const setup = () => {
         }),
       coordinator
     );
+
   let subscriptions = create();
   let handler = createSubscriptionHandler();
+
   const subscribe = (input: Invocation) =>
     // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
     subscriptionStream((id) => subscriptions.subscribe(socket, input, id));
+
   const pending: Promise<void>[] = [];
+
   const client = createORPCClient<SubscriptionClient>(
     new RPCLink({
       connect: () => ({
@@ -140,6 +154,7 @@ const setup = () => {
       }),
     })
   );
+
   return {
     client,
     connection,
@@ -253,6 +268,7 @@ it("does not register a snapshot after the connection disappears during its quer
   test.query.mockImplementationOnce(
     asyncFixture(() => {
       test.records.delete("alice");
+
       return { tables: ["public"], value: "gone" };
     })
   );
@@ -271,6 +287,7 @@ it("does not fail mutation delivery when a disconnected socket throws", async ()
   test.socket.send = () => {
     throw new Error("Socket closed");
   };
+
   await expect(test.refresh(["public"])).resolves.toBeUndefined();
   expect(requireValue(test.socket.read()).subscriptions).toHaveLength(0);
   await stream.return?.();
@@ -280,35 +297,44 @@ it("does not fail mutation delivery when a disconnected socket throws", async ()
 it("registers the first snapshot before a concurrent mutation and replaces dependencies", async () => {
   const test = setup();
   let ready!: () => void;
+
   const started = (async () => {
     const {
       promise: pendingPromise,
       resolve,
       reject: rejectPending,
     } = Promise.withResolvers<ReturnType<() => void>>();
+
     try {
       ready = resolve;
     } catch (error) {
       rejectPending(error);
     }
+
     await pendingPromise;
   })();
+
   let finish!: (snapshot: { value: string; tables: string[] }) => void;
+
   const initial = (async () => {
     const {
       promise: pendingPromise,
       resolve,
       reject: rejectPending,
     } = Promise.withResolvers<{ value: string; tables: string[] }>();
+
     try {
       finish = resolve;
     } catch (error) {
       rejectPending(error);
     }
+
     return await pendingPromise;
   })();
+
   test.query.mockImplementationOnce(async () => {
     ready();
+
     return await initial;
   });
   test.query.mockResolvedValueOnce({ tables: ["private"], value: "alice:3" });

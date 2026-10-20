@@ -5,7 +5,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 const clientPath = fileURLToPath(
   new URL(
-    "../../../../../apps/todo/.tailorkit/client/client.js",
+    "../../../../../apps/todo/.patchsmith/client/client.js",
     import.meta.url
   )
 );
@@ -16,6 +16,7 @@ export const Route = createFileRoute("/api/playground/todo-client")({
       GET: async () => {
         try {
           const client = await readFile(clientPath);
+
           return new Response(client, {
             headers: {
               "Cache-Control": "no-store",

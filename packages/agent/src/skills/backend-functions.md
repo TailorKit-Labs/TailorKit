@@ -10,7 +10,7 @@ Import the shared `fn` from `#db`, configured once with `createFunctions({ datab
 
 ```ts
 // src/functions/todos.ts
-import { defineRouter } from "tailorkit/server";
+import { defineRouter } from "patchsmith/server";
 import * as v from "valibot";
 
 import { fn } from "#db";
@@ -33,14 +33,14 @@ export default defineRouter({ list, add });
 
 ```ts
 // src/server.ts
-import { defineServer } from "tailorkit/server";
+import { defineServer } from "patchsmith/server";
 
 import todos from "#functions/todos";
 
 export default defineServer({ todos });
 ```
 
-Under `ClientProvider`, use `useQuery(api.todos.list)` and `useMutation(api.todos.add)` from `tailorkit/client`. Render hook data/loading/error state directly; writes refresh affected queries. Use `mutate`/`execute` in ordinary callbacks, and their async variants when later work needs a result. Keep hooks unconditional; mount a record's query component when its required ID is available. For inputless queries with options, preserve the second argument: `useQuery(api.todos.list, undefined, { enabled: isOpen })`.
+Under `ClientProvider`, use `useQuery(api.todos.list)` and `useMutation(api.todos.add)` from `patchsmith/client`. Render hook data/loading/error state directly; writes refresh affected queries. Use `mutate`/`execute` in ordinary callbacks, and their async variants when later work needs a result. Keep hooks unconditional; mount a record's query component when its required ID is available. For inputless queries with options, preserve the second argument: `useQuery(api.todos.list, undefined, { enabled: isOpen })`.
 
 ## Runtime details when needed
 
@@ -48,4 +48,4 @@ Execute relational reads with `.sync()`, selects with `.all()`/`.get()`, and wri
 
 For actions calling app functions, declare `.functions({ todos })` and use `queries.todos.list()` or `mutations.todos.add(input)`. Public fetches use `signal`, status checks, and response validation. Product credentials remain behind exposed server tools. External effects and separate mutations do not form one transaction; choose retry behavior for the operation being implemented.
 
-`identity` is verified, but `subjectId` is optional. Installation isolation is not user authorization. Use `AppError` from `tailorkit/server` for expected failures. For uncovered APIs, inspect installed public declarations behind `tailorkit/server` or `tailorkit/client`.
+`identity.subjectId` is the authenticated user or service principal supplied by the host and is always a nonempty string. Installation isolation is not user authorization; filter private records by that subject. Use `AppError` from `patchsmith/server` for expected failures. For uncovered APIs, inspect installed public declarations behind `patchsmith/server` or `patchsmith/client`.

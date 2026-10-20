@@ -5,15 +5,15 @@ import path from "node:path";
 import * as v from "valibot";
 import { expect, expectTypeOf, it } from "vite-plus/test";
 
-import type { TailorKitConfig, ResolvedTailorKitConfig } from "./config";
-import { tailorkitConfigSchema } from "./config";
-import { loadTailorKitConfig } from "./loader";
+import type { PatchsmithConfig, ResolvedPatchsmithConfig } from "./config";
+import { patchsmithConfigSchema } from "./config";
+import { loadPatchsmithConfig } from "./loader";
 
 const config = { host: "https://host.test", name: "My App", slug: "my-app" };
 
 it("requires name and slug in the public and resolved config types", () => {
-  expectTypeOf<TailorKitConfig>().toExtend<{ name: string; slug: string }>();
-  expectTypeOf<ResolvedTailorKitConfig>().toExtend<{
+  expectTypeOf<PatchsmithConfig>().toExtend<{ name: string; slug: string }>();
+  expectTypeOf<ResolvedPatchsmithConfig>().toExtend<{
     name: string;
     slug: string;
   }>();
@@ -21,21 +21,22 @@ it("requires name and slug in the public and resolved config types", () => {
 
 it.each(["name", "slug"])("rejects a missing %s", (field) => {
   const input = { ...config, [field]: undefined };
-  expect(() => v.parse(tailorkitConfigSchema, input)).toThrow();
+  expect(() => v.parse(patchsmithConfigSchema, input)).toThrow();
 });
 
 it.each(["", "   "])("rejects a blank app name: %j", (name) => {
-  expect(() => v.parse(tailorkitConfigSchema, { ...config, name })).toThrow();
+  expect(() => v.parse(patchsmithConfigSchema, { ...config, name })).toThrow();
 });
 
 it("loads and trims the configured app name and description", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-named-config-"));
+  const root = await mkdtemp(path.join(tmpdir(), "patchsmith-named-config-"));
+
   try {
     await writeFile(
-      path.join(root, "tailorkit.config.mjs"),
+      path.join(root, "patchsmith.config.mjs"),
       'export default { host: "https://host.test", name: "  My App  ", slug: "my-app", description: "  My app description  " };'
     );
-    const loaded = await loadTailorKitConfig(undefined, root);
+    const loaded = await loadPatchsmithConfig(undefined, root);
     expect(loaded.config.name).toBe("My App");
     expect(loaded.config.description).toBe("My app description");
   } finally {
@@ -47,14 +48,14 @@ it.each([null, "", "a".repeat(255)])(
   "accepts a clear, empty, or maximum-length description: %j",
   (description) => {
     expect(
-      v.parse(tailorkitConfigSchema, { ...config, description })
+      v.parse(patchsmithConfigSchema, { ...config, description })
     ).toMatchObject({ description });
   }
 );
 
 it("rejects app descriptions longer than 255 characters", () => {
   expect(() =>
-    v.parse(tailorkitConfigSchema, {
+    v.parse(patchsmithConfigSchema, {
       ...config,
       description: "a".repeat(256),
     })
@@ -64,20 +65,22 @@ it("rejects app descriptions longer than 255 characters", () => {
 it.each([{ server: { entry: "./backend.ts" } }])(
   "accepts configured server entry points: %j",
   (override) => {
-    expect(v.parse(tailorkitConfigSchema, { ...config, ...override })).toEqual({
-      ...config,
-      ...override,
-    });
+    expect(v.parse(patchsmithConfigSchema, { ...config, ...override })).toEqual(
+      {
+        ...config,
+        ...override,
+      }
+    );
   }
 );
 
 it("defaults entries while preserving backend enablement and migration configuration", () => {
-  expect(v.parse(tailorkitConfigSchema, { ...config, server: {} })).toEqual({
+  expect(v.parse(patchsmithConfigSchema, { ...config, server: {} })).toEqual({
     ...config,
     server: { entry: "src/server.ts" },
   });
   expect(
-    v.parse(tailorkitConfigSchema, {
+    v.parse(patchsmithConfigSchema, {
       ...config,
       server: { migrations: "./migrations" },
     })
@@ -88,13 +91,14 @@ it("defaults entries while preserving backend enablement and migration configura
 });
 
 it("rejects unsupported storage configuration", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-invalid-config-"));
+  const root = await mkdtemp(path.join(tmpdir(), "patchsmith-invalid-config-"));
+
   try {
     await writeFile(
-      path.join(root, "tailorkit.config.mjs"),
+      path.join(root, "patchsmith.config.mjs"),
       'export default { host: "https://host.test", name: "My App", slug: "my-app", storage: { entry: "./server.ts" } };'
     );
-    await expect(loadTailorKitConfig(undefined, root)).rejects.toThrow(
+    await expect(loadPatchsmithConfig(undefined, root)).rejects.toThrow(
       "Invalid key"
     );
   } finally {
@@ -104,7 +108,7 @@ it("rejects unsupported storage configuration", async () => {
 
 it("rejects manual client entry configuration", () => {
   expect(() =>
-    v.parse(tailorkitConfigSchema, {
+    v.parse(patchsmithConfigSchema, {
       client: { entry: "./frontend.ts" },
       ...config,
     })
@@ -123,12 +127,14 @@ it.each([
   "my--app",
   "a".repeat(33),
 ])("rejects an invalid app slug: %j", (slug) => {
-  expect(() => v.parse(tailorkitConfigSchema, { ...config, slug })).toThrow();
+  expect(() => v.parse(patchsmithConfigSchema, { ...config, slug })).toThrow();
 });
 
 it.each(["abc", "a-b", "my-app-1", "a".repeat(32)])(
   "accepts app slug %j",
   (slug) => {
-    expect(v.parse(tailorkitConfigSchema, { ...config, slug }).slug).toBe(slug);
+    expect(v.parse(patchsmithConfigSchema, { ...config, slug }).slug).toBe(
+      slug
+    );
   }
 );

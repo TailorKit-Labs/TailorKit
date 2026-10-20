@@ -1,13 +1,13 @@
 import { ORPCError, os } from "@orpc/server";
-import { devDelayMiddleware } from "@tailorkit/api-utils/dev-delay";
+import { devDelayMiddleware } from "@patchsmith/api-utils/dev-delay";
 import {
   createRateLimiter,
   ratelimitMiddleware,
-} from "@tailorkit/api-utils/rate-limiting";
-import { auth } from "@tailorkit/auth";
-import type { ac } from "@tailorkit/auth/lib/permissions";
-import { db } from "@tailorkit/db";
-import { setSpanAttributes } from "@tailorkit/observability";
+} from "@patchsmith/api-utils/rate-limiting";
+import { auth } from "@patchsmith/auth";
+import type { ac } from "@patchsmith/auth/lib/permissions";
+import { db } from "@patchsmith/db";
+import { setSpanAttributes } from "@patchsmith/observability";
 
 import type { Context } from "./context";
 
@@ -33,8 +33,8 @@ export const publicProcedure = o
 
 const requireAuth = o.middleware(({ context, next }) => {
   setSpanAttributes({
-    "tailorkit.authenticated": Boolean(context.session && context.user),
-    "tailorkit.middleware": "require_auth",
+    "patchsmith.authenticated": Boolean(context.session && context.user),
+    "patchsmith.middleware": "require_auth",
   });
 
   if (!context.session || !context.user) {
@@ -83,10 +83,10 @@ export const requireOrg = (permissions?: OrgPermissions) =>
       input: { orgSlug: string } | { orgId: string }
     ) => {
       setSpanAttributes({
-        "tailorkit.middleware": "require_org",
-        "tailorkit.package": "api",
-        "tailorkit.permission_check": Boolean(permissions),
-        "tailorkit.resource_type": "organization",
+        "patchsmith.middleware": "require_org",
+        "patchsmith.package": "api",
+        "patchsmith.permission_check": Boolean(permissions),
+        "patchsmith.resource_type": "organization",
       });
 
       if (!context.user) {
@@ -136,10 +136,10 @@ type ProjectInput = ({ orgSlug: string } | { orgId: string }) &
 export const requireProject = (permissions?: OrgPermissions) =>
   o.middleware(async ({ context, next }, input: ProjectInput) => {
     setSpanAttributes({
-      "tailorkit.middleware": "require_project",
-      "tailorkit.package": "api",
-      "tailorkit.permission_check": Boolean(permissions),
-      "tailorkit.resource_type": "project",
+      "patchsmith.middleware": "require_project",
+      "patchsmith.package": "api",
+      "patchsmith.permission_check": Boolean(permissions),
+      "patchsmith.resource_type": "project",
     });
 
     if (!context.user) {

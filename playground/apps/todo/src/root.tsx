@@ -1,4 +1,4 @@
-import { ClientProvider, defineRoute, Route } from "tailorkit/client";
+import { ClientProvider, defineRoute, Route } from "patchsmith/client";
 
 const Shell = () => (
   <ClientProvider>

@@ -20,9 +20,11 @@ export const Slider = ({
     if (value !== undefined) {
       return Array.isArray(value) ? value.length : 1;
     }
+
     if (defaultValue !== undefined) {
       return Array.isArray(defaultValue) ? defaultValue.length : 1;
     }
+
     return 1;
   }, [value, defaultValue]);
 

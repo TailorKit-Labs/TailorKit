@@ -1,4 +1,4 @@
-import { AnchoredToastProvider, ToastProvider } from "@tailorkit/ui/toast";
+import { AnchoredToastProvider, ToastProvider } from "@patchsmith/ui/toast";
 import { a11yDevtoolsPlugin } from "@tanstack/devtools-a11y/react";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { formDevtoolsPlugin } from "@tanstack/react-form-devtools";
@@ -34,10 +34,13 @@ export interface RouterAppContext {
 
 const UserThemeSync = () => {
   const { setTheme, theme } = useTheme();
+
   const { data: session, isPending } = useQuery(
     orpc.user.getSession.queryOptions()
   );
+
   const lastSyncedTheme = useRef<string | null>(null);
+
   const userTheme = session
     ? (getUserTheme(session.user) ?? fallbackTheme)
     : fallbackTheme;
@@ -143,7 +146,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
         name: "viewport",
       },
       {
-        title: "TailorKit",
+        title: "Patchsmith",
       },
     ],
   }),

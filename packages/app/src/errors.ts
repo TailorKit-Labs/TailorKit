@@ -1,5 +1,6 @@
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
   typeof value === "object" && value !== null;
+
 export type ErrorCode =
   | "BAD_REQUEST"
   | "UNAUTHORIZED"
@@ -35,9 +36,11 @@ export const appError = (cause: unknown): AppError => {
   if (cause instanceof AppError) {
     return cause;
   }
+
   if (cause instanceof Error && cause.name === "AbortError") {
     return new AppError("UNAVAILABLE", "App connection interrupted");
   }
+
   if (
     isObjectValue(cause) &&
     "code" in cause &&
@@ -45,6 +48,7 @@ export const appError = (cause: unknown): AppError => {
   ) {
     return new AppError("UNAVAILABLE", "App connection interrupted");
   }
+
   if (
     isObjectValue(cause) &&
     "code" in cause &&
@@ -55,5 +59,6 @@ export const appError = (cause: unknown): AppError => {
       "message" in cause ? String(cause.message) : cause.code
     );
   }
+
   return new AppError("INTERNAL_SERVER_ERROR", "App function failed");
 };

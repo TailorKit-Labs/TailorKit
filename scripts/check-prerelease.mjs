@@ -8,7 +8,8 @@ import {
 } from "./package-manifest.mjs";
 
 const publishablePackages = [
-  "packages/tailorkit/package.json",
+  "packages/patchsmith/package.json",
+  "packages/ai-sdk/package.json",
   "packages/app/package.json",
   "packages/app-db/package.json",
   "packages/cli/package.json",
@@ -25,9 +26,11 @@ const allowedPrerelease =
 
 const releaseRepository =
   // oxlint-disable-next-line no-restricted-properties -- The standalone release script reads GitHub Actions metadata.
-  process.env.GITHUB_REPOSITORY ?? "tailorkit-labs/TailorKit";
+  process.env.GITHUB_REPOSITORY ?? "patchsmith-io/patchsmith";
+
 const expectedRepositoryUrl = `git+https://github.com/${releaseRepository}.git`;
 const errors = [];
+
 const manifests = await Promise.all(
   publishablePackages.map(async (manifestPath) =>
     parsePackageManifest(await readFile(manifestPath, "utf-8"))
@@ -94,7 +97,7 @@ for (const changeset of await readChangesets(process.cwd())) {
   for (const release of changeset.releases) {
     if (release.type === "major") {
       errors.push(
-        `.changeset/${changeset.id}.md requests a major bump for ${release.name}; use minor for breaking changes while TailorKit remains on 0.x`
+        `.changeset/${changeset.id}.md requests a major bump for ${release.name}; use minor for breaking changes while Patchsmith remains on 0.x`
       );
     }
   }
@@ -102,9 +105,11 @@ for (const changeset of await readChangesets(process.cwd())) {
 
 if (errors.length > 0) {
   console.error("Prerelease safety check failed:");
+
   for (const error of errors) {
     console.error(`- ${error}`);
   }
+
   process.exitCode = 1;
 } else {
   console.log(`Prerelease safety check passed (${preState.tag} channel).`);

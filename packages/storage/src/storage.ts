@@ -34,5 +34,6 @@ export const getStorage = (): StorageInstance => {
   }
 
   instance = createStorage();
+
   return instance;
 };

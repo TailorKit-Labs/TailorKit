@@ -3,11 +3,11 @@ import {
   AppAgentWorkspaceBusyError,
   exportAppAgentWorkspace,
   getAppAgentWorkspaceStatus,
-} from "@tailorkit/agent/source-export";
-import { withAppAssetUrl } from "@tailorkit/api-utils/app-asset-url";
-import { db } from "@tailorkit/db";
-import { app, appDeployment } from "@tailorkit/db/schema/apps";
-import { evaluateBooleanFlag } from "@tailorkit/flags";
+} from "@patchsmith/agent/source-export";
+import { withAppAssetUrl } from "@patchsmith/api-utils/app-asset-url";
+import { db } from "@patchsmith/db";
+import { app, appDeployment } from "@patchsmith/db/schema/apps";
+import { evaluateBooleanFlag } from "@patchsmith/flags";
 import { and, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -59,9 +59,11 @@ const getSourceExportApp = async (
   user: { id: string; email: string }
 ) => {
   const selectedApp = await getProjectApp(projectId, appId);
+
   if (!selectedApp) {
     throw new ORPCError("NOT_FOUND", { message: "App not found." });
   }
+
   if (!selectedApp.createdByAgent) {
     return { app: selectedApp, enabled: false };
   }
@@ -83,6 +85,7 @@ export const appsRouter = {
         input.appId,
         context.user
       );
+
       if (!enabled) {
         throw new ORPCError("NOT_FOUND", {
           message: "App source export is unavailable.",
@@ -90,12 +93,14 @@ export const appsRouter = {
       }
 
       const workspaceStatus = await getAppAgentWorkspaceStatus(selectedApp.id);
+
       if (workspaceStatus === "busy") {
         throw new ORPCError("CONFLICT", {
           message:
             "The app workspace is currently being edited. Try again when the agent finishes.",
         });
       }
+
       if (workspaceStatus === "missing") {
         throw new ORPCError("NOT_FOUND", {
           message: "App source export is unavailable.",
@@ -104,6 +109,7 @@ export const appsRouter = {
 
       try {
         const archive = await exportAppAgentWorkspace(selectedApp.id);
+
         if (!archive) {
           throw new ORPCError("NOT_FOUND", {
             message: "App source export is unavailable.",
@@ -114,12 +120,13 @@ export const appsRouter = {
           archive: new Blob([Uint8Array.from(archive)], {
             type: "application/gzip",
           }),
-          fileName: `tailorkit-app-${selectedApp.id}-source.tar.gz`,
+          fileName: `patchsmith-app-${selectedApp.id}-source.tar.gz`,
         };
       } catch (error) {
         if (error instanceof AppAgentWorkspaceBusyError) {
           throw new ORPCError("CONFLICT", { message: error.message });
         }
+
         throw error;
       }
     }),
@@ -153,6 +160,7 @@ export const appsRouter = {
 
       const { scopeKey, ...publicApp } = appWithDeployments;
       void scopeKey;
+
       return withAppAssetUrl(
         {
           ...publicApp,
@@ -171,10 +179,12 @@ export const appsRouter = {
       const pageSize = input.pageSize ?? 25;
       const search = input.search?.trim().toLowerCase();
       const offset = (page - 1) * pageSize;
+
       const searchPattern =
         search !== undefined && search !== null && search !== ""
           ? `%${search}%`
           : undefined;
+
       const where =
         searchPattern !== undefined &&
         searchPattern !== null &&
@@ -190,6 +200,7 @@ export const appsRouter = {
               )
             )
           : eq(app.projectId, context.project.id);
+
       const pageItems = await db
         .select()
         .from(app)
@@ -197,6 +208,7 @@ export const appsRouter = {
         .orderBy(desc(app.createdAt))
         .limit(pageSize + 1)
         .offset(offset);
+
       const items = pageItems.slice(0, pageSize);
 
       if (items.length === 0) {
@@ -211,9 +223,11 @@ export const appsRouter = {
       }
 
       const appIds = items.map((item) => item.id);
+
       const currentDeploymentIds = items
         .map((item) => item.currentDeploymentId)
         .filter((id): id is string => id !== null);
+
       const [deploymentCounts, latestDeployments, currentDeployments] =
         await Promise.all([
           db
@@ -233,18 +247,22 @@ export const appsRouter = {
               })
             : Promise.resolve([]),
         ]);
+
       const deploymentCountByAppId = new Map(
         deploymentCounts.map((item) => [item.appId, item.value])
       );
+
       const latestDeploymentByAppId = new Map<
         string,
         (typeof latestDeployments)[number]
       >();
+
       for (const deployment of latestDeployments) {
         if (!latestDeploymentByAppId.has(deployment.appId)) {
           latestDeploymentByAppId.set(deployment.appId, deployment);
         }
       }
+
       const currentDeploymentById = new Map(
         currentDeployments.map((deployment) => [deployment.id, deployment])
       );
@@ -253,6 +271,7 @@ export const appsRouter = {
         items: items.map((item) => {
           const { scopeKey, ...publicApp } = item;
           void scopeKey;
+
           return withAppAssetUrl(
             {
               ...publicApp,
@@ -286,9 +305,11 @@ export const appsRouter = {
         input.appId,
         context.user
       );
+
       if (!enabled) {
         return "disabled" as const;
       }
+
       return await getAppAgentWorkspaceStatus(selectedApp.id);
     }),
 };

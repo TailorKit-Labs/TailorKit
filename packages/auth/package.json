@@ -1,5 +1,5 @@
 {
-  "name": "@tailorkit/auth",
+  "name": "@patchsmith/auth",
   "version": "0.0.0",
   "private": true,
   "license": "BUSL-1.1",
@@ -27,7 +27,7 @@
     }
   },
   "scripts": {
-    "build": "vp pack src/index.ts src/lib/captcha-endpoints.ts src/lib/email.ts src/lib/permissions.ts src/lib/tenant-short-id.ts --format esm --dts --clean",
+    "build": "vp pack src/index.ts src/lib/captcha-endpoints.ts src/lib/email.ts src/lib/permissions.ts src/lib/tenant-short-id.ts --target node24 --format esm --dts --clean",
     "check-types": "tsc --noEmit",
     "generate": "auth generate --config src/index.ts --output ../db/src/schema/auth.generated.ts --yes",
     "test": "vp test run",
@@ -35,18 +35,18 @@
     "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
-    "@better-auth/api-key": "1.7.7",
-    "@better-auth/core": "1.7.7",
-    "@better-auth/drizzle-adapter": "1.7.7",
-    "@better-auth/infra": "^0.4.17",
-    "@better-auth/passkey": "1.7.7",
+    "@better-auth/api-key": "1.7.10",
+    "@better-auth/core": "1.7.10",
+    "@better-auth/drizzle-adapter": "1.7.10",
+    "@better-auth/infra": "^0.4.20",
+    "@better-auth/passkey": "1.7.10",
+    "@patchsmith/db": "workspace:*",
+    "@patchsmith/email": "workspace:*",
+    "@patchsmith/env": "workspace:*",
+    "@patchsmith/kv": "workspace:*",
+    "@patchsmith/observability": "workspace:*",
     "@simplewebauthn/server": "^13.3.1",
-    "@tailorkit/db": "workspace:*",
-    "@tailorkit/email": "workspace:*",
-    "@tailorkit/env": "workspace:*",
-    "@tailorkit/kv": "workspace:*",
-    "@tailorkit/observability": "workspace:*",
-    "@vercel/functions": "^3.9.11",
+    "@vercel/functions": "^3.10.1",
     "better-auth": "catalog:",
     "botid": "1.5.11",
     "jose": "6.2.12",
@@ -54,9 +54,12 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@tailorkit/config": "workspace:*",
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
-    "auth": "1.7.7",
+    "auth": "1.7.10",
     "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=24.11"
   }
 }

@@ -59,6 +59,9 @@ export const BetterAuthOtpTemplate = ({
 };
 
 export { ChangeEmailTemplate } from "./better-auth/change-email";
+
 export { EmailVerificationTemplate } from "./better-auth/email-verification";
+
 export { ForgetPasswordTemplate } from "./better-auth/forget-password";
+
 export { SignInTemplate } from "./better-auth/sign-in";

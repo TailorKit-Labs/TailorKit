@@ -12,6 +12,7 @@ export default defineConfig({
         if (id !== "\0canvas-client") {
           return undefined;
         }
+
         const result = await build({
           build: {
             lib: {
@@ -23,14 +24,18 @@ export default defineConfig({
           configFile: false,
           logLevel: "silent",
         });
+
         const output = Array.isArray(result) ? result[0] : result;
+
         const chunk =
           output && "output" in output
             ? output.output.find((item) => item.type === "chunk")
             : undefined;
+
         if (!chunk) {
           throw new Error("Benchmark app bundle is empty.");
         }
+
         return `export default ${JSON.stringify(chunk.code)}`;
       },
       name: "canvas-benchmark-client",

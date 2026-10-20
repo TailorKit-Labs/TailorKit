@@ -10,40 +10,50 @@ const createSurface = () => {
   // SAFETY: The controller fixture needs only events and dimensions; real drawing is covered by the browser harness.
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- No graphics operations are performed on this lifecycle fixture.
   const canvas = target as OffscreenCanvas;
+
   const present = vi
     .fn<experimental_CanvasSurface["present"]>()
     .mockResolvedValue();
+
   const close = vi.fn(() => {
     lifetime.abort(new Error("Closed"));
   });
+
   const surface: experimental_CanvasSurface = {
     canvas,
     close,
     present,
     signal: lifetime.signal,
   };
+
   return { lifetime, surface };
 };
+
 const settle = async () => {
   for (let index = 0; index < 16; index += 1) {
     // oxlint-disable-next-line no-await-in-loop -- Drain the controller's serialized async lifecycle and presentation steps.
     await Promise.resolve();
   }
 };
+
 const createBridge = () => {
   let listener: ((generation: string | null) => void) | null = null;
   const surfaces: ReturnType<typeof createSurface>[] = [];
+
   const request = vi.fn(async () => {
     const next = createSurface();
     surfaces.push(next);
+
     return await Promise.resolve(next.surface);
   });
+
   return {
     availability: (generation: string | null) => listener?.(generation),
     dependencies: {
       request,
       watch: (_name: string, next: (generation: string | null) => void) => {
         listener = next;
+
         return () => {
           listener = null;
         };
@@ -58,11 +68,13 @@ it("sets up once, uses fresh update closures, and disposes on replacement and un
   const setup = vi.fn(() => ({ value: 0 }));
   const dispose = vi.fn<(resource: number | { value: number }) => void>();
   const values: number[] = [];
+
   const controller = createCanvasController<{ value: number }>(
     "chart",
     () => {},
     bridge.dependencies
   );
+
   controller.update(
     {
       create: setup,
@@ -109,15 +121,18 @@ it("aborts an async setup and disposes its late result without drawing", async (
   const dispose = vi.fn<(resource: number | { value: number }) => void>();
   const draw = vi.fn<(resource: number, canvas: OffscreenCanvas) => void>();
   const signals: AbortSignal[] = [];
+
   const controller = createCanvasController<number>(
     "chart",
     () => {},
     bridge.dependencies
   );
+
   controller.update(
     {
       create: async (_canvas, context) => {
         signals.push(context.signal);
+
         return await promise;
       },
       dispose,
@@ -141,13 +156,16 @@ it("aborts an async setup and disposes its late result without drawing", async (
 it("reconnects once after closure, bounds automatic retries, and allows explicit retry", async () => {
   vi.useFakeTimers();
   const bridge = createBridge();
+
   const controller = createCanvasController(
     "chart",
     () => {},
     bridge.dependencies
   );
+
   controller.update(() => {}, [], {});
   const unmount = controller.mount();
+
   try {
     bridge.availability("first");
     await settle();
@@ -173,14 +191,17 @@ it("does not let an old pending draw block the replacement surface", async () =>
   const bridge = createBridge();
   const { promise, resolve } = Promise.withResolvers<boolean>();
   let calls = 0;
+
   const controller = createCanvasController(
     "chart",
     () => {},
     bridge.dependencies
   );
+
   controller.update(
     async () => {
       calls += 1;
+
       if (calls === 1) {
         await promise;
       }
@@ -208,15 +229,18 @@ it("aborts setup on connection loss and disposes the late resource", async () =>
   const pending = Promise.withResolvers<number>();
   const signals: AbortSignal[] = [];
   const dispose = vi.fn<(value: number) => void>();
+
   const controller = createCanvasController<number>(
     "chart",
     () => {},
     bridge.dependencies
   );
+
   controller.update(
     {
       create: async (_canvas, { signal }) => {
         signals.push(signal);
+
         return await pending.promise;
       },
       dispose,
@@ -226,6 +250,7 @@ it("aborts setup on connection loss and disposes the late resource", async () =>
     {}
   );
   const unmount = controller.mount();
+
   try {
     bridge.availability("first");
     await settle();
@@ -245,11 +270,13 @@ it("aborts setup on connection loss and disposes the late resource", async () =>
 
 it("reconnects when effects remount the same controller and ignores retries after teardown", async () => {
   const bridge = createBridge();
+
   const controller = createCanvasController(
     "chart",
     () => {},
     bridge.dependencies
   );
+
   controller.update(() => {}, [], {});
   const firstUnmount = controller.mount();
   bridge.availability("first");
@@ -268,14 +295,17 @@ it("reconnects when effects remount the same controller and ignores retries afte
 it("orders create, resize, update, draw and only updates data when dependencies change", async () => {
   const bridge = createBridge();
   const calls: string[] = [];
+
   const controller = createCanvasController<number>(
     "chart",
     () => {},
     bridge.dependencies
   );
+
   const definition = {
     create: () => {
       calls.push("create");
+
       return 1;
     },
     dispose: () => {
@@ -291,6 +321,7 @@ it("orders create, resize, update, draw and only updates data when dependencies 
       calls.push("update");
     },
   };
+
   controller.update(definition, [1], {});
   const unmount = controller.mount();
   bridge.availability("first");
@@ -325,17 +356,21 @@ it("orders create, resize, update, draw and only updates data when dependencies 
 it("recreates only on creation dependencies and ignores invalidation from retired resources", async () => {
   const bridge = createBridge();
   const invalidations: (() => void)[] = [];
+
   const controller = createCanvasController<number>(
     "chart",
     () => {},
     bridge.dependencies
   );
+
   const create = vi.fn(
     (_canvas: OffscreenCanvas, context: { invalidate: () => void }) => {
       invalidations.push(context.invalidate);
+
       return invalidations.length;
     }
   );
+
   const dispose = vi.fn<(value: number) => void>();
   const update = vi.fn<(value: number) => void>();
   const definition = { create, dispose, update };
@@ -369,11 +404,13 @@ it("serializes async updates and applies the latest dependencies before the next
   const bridge = createBridge();
   const pending = Promise.withResolvers<boolean>();
   const calls: string[] = [];
+
   const controller = createCanvasController<number>(
     "chart",
     () => {},
     bridge.dependencies
   );
+
   controller.update(
     {
       create: () => 1,
@@ -417,11 +454,13 @@ it("disposes a created resource if resize fails", async () => {
   const failure = new Error("Resize failed");
   const notify = vi.fn<(state: experimental_CanvasHookState) => void>();
   const dispose = vi.fn<(value: number) => void>();
+
   const controller = createCanvasController<number>(
     "chart",
     notify,
     bridge.dependencies
   );
+
   controller.update(
     {
       create: () => 42,
@@ -449,15 +488,18 @@ it("cancels pending resize and disposes its resource without presenting after te
   const dispose = vi.fn<(value: number) => void>();
   const update = vi.fn<(value: number) => void>();
   const signals: AbortSignal[] = [];
+
   const controller = createCanvasController<number>(
     "chart",
     () => {},
     bridge.dependencies
   );
+
   controller.update(
     {
       create: (_canvas, { signal }) => {
         signals.push(signal);
+
         return 7;
       },
       dispose,
@@ -484,11 +526,13 @@ it("cancels pending resize and disposes its resource without presenting after te
 it("skips snapshots on false and presents again on explicit invalidation", async () => {
   const bridge = createBridge();
   let skip = true;
+
   const controller = createCanvasController(
     "chart",
     () => {},
     bridge.dependencies
   );
+
   controller.update(() => !skip, [], {});
   const unmount = controller.mount();
   bridge.availability("first");
@@ -506,16 +550,19 @@ it("paces skipped library frames, supplies timing, and cancels waits on unmount"
   vi.setSystemTime(1000);
   const bridge = createBridge();
   const frames: { timestamp: number; deltaTime: number }[] = [];
+
   const controller = createCanvasController<number>("chart", () => {}, {
     ...bridge.dependencies,
     now: Date.now,
   });
+
   controller.update(
     {
       create: () => 1,
       draw: async (_resource, _canvas, frame) => {
         frames.push(frame);
         await Promise.resolve();
+
         return false;
       },
     },
@@ -523,6 +570,7 @@ it("paces skipped library frames, supplies timing, and cancels waits on unmount"
     { continuous: true, framesPerSecond: 20 }
   );
   const unmount = controller.mount();
+
   try {
     bridge.availability("first");
     await settle();
@@ -550,20 +598,24 @@ it("yields skipped continuous frames even without a requested rate", async () =>
   vi.useFakeTimers();
   const bridge = createBridge();
   let draws = 0;
+
   const controller = createCanvasController(
     "chart",
     () => {},
     bridge.dependencies
   );
+
   controller.update(
     () => {
       draws += 1;
+
       return false;
     },
     [],
     { continuous: true }
   );
   const unmount = controller.mount();
+
   try {
     bridge.availability("first");
     await settle();
@@ -583,10 +635,12 @@ it("coalesces redraws under the requested cap and resets timing on replacement",
   vi.setSystemTime(1000);
   const bridge = createBridge();
   const frames: { timestamp: number; deltaTime: number }[] = [];
+
   const controller = createCanvasController("chart", () => {}, {
     ...bridge.dependencies,
     now: Date.now,
   });
+
   controller.update(
     (_canvas, frame) => {
       frames.push(frame);
@@ -595,6 +649,7 @@ it("coalesces redraws under the requested cap and resets timing on replacement",
     { framesPerSecond: 20 }
   );
   const unmount = controller.mount();
+
   try {
     bridge.availability("first");
     await settle();
@@ -625,11 +680,13 @@ it("coalesces redraws under the requested cap and resets timing on replacement",
 
 it("rejects invalid requested frame rates before starting a connection", () => {
   const bridge = createBridge();
+
   const controller = createCanvasController(
     "chart",
     () => {},
     bridge.dependencies
   );
+
   for (const framesPerSecond of [
     0,
     -1,
@@ -641,6 +698,7 @@ it("rejects invalid requested frame rates before starting a connection", () => {
       controller.update(() => {}, [], { framesPerSecond });
     }).toThrow(RangeError);
   }
+
   expect(bridge.dependencies.request).not.toHaveBeenCalled();
 });
 
@@ -649,10 +707,12 @@ it("does not overflow timers for very low requested rates", async () => {
   vi.setSystemTime(1000);
   const bridge = createBridge();
   let draws = 0;
+
   const controller = createCanvasController("chart", () => {}, {
     ...bridge.dependencies,
     now: Date.now,
   });
+
   controller.update(
     () => {
       draws += 1;
@@ -661,6 +721,7 @@ it("does not overflow timers for very low requested rates", async () => {
     { framesPerSecond: 0.0000001 }
   );
   const unmount = controller.mount();
+
   try {
     bridge.availability("first");
     await settle();

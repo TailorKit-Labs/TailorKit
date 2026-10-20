@@ -1,4 +1,4 @@
-import type { TailorKitSchemaSpec } from "#spec/index";
+import type { PatchsmithSchemaSpec } from "#spec/index";
 
 import type {
   ComponentDefinitions,
@@ -25,13 +25,13 @@ const isStringValue = <TValue>(value: TValue): value is TValue & string =>
 
 type EmptyToolMap = EmptyDefinitionMap;
 
-export interface TailorKitSchema<
+export interface PatchsmithSchema<
   TComponents extends Record<string, unknown> = ComponentDefinitions,
   TViews extends Record<string, unknown> = ContextDefinitions,
   TTools extends ContractTools = EmptyToolMap,
 > {
   /**
-   * Internal TailorKit implementation details.
+   * Internal Patchsmith implementation details.
    *
    * This API is not covered by semantic versioning and may change or break at
    * any time. Avoid depending on it in application code. If you need something
@@ -53,7 +53,7 @@ export interface TailorKitSchema<
   tools: TTools;
   components: TComponents;
   views: TViews;
-  serialize: (schemaSerializer?: SchemaSerializer) => TailorKitSchemaSpec;
+  serialize: (schemaSerializer?: SchemaSerializer) => PatchsmithSchemaSpec;
 }
 
 // JSON Schema cannot represent undefined at its root. Preserve that information
@@ -61,6 +61,7 @@ export interface TailorKitSchema<
 const contextMayBeOmitted = (schema: Schema): boolean => {
   // oxlint-disable-next-line unicorn/no-useless-undefined -- Probe whether the schema accepts an omitted context.
   const result = schema["~standard"].validate(undefined);
+
   if (result instanceof Promise) {
     // Serialization is synchronous; conservatively allow omission for async schemas.
     void (async () => {
@@ -70,12 +71,14 @@ const contextMayBeOmitted = (schema: Schema): boolean => {
         /* Intentionally no action is needed. */
       }
     })();
+
     return true;
   }
+
   return !result.issues;
 };
 
-export function createTailorKitSchema<
+export function createPatchsmithSchema<
   const TComponents extends Record<string, unknown>,
   const TViews extends ContextDefinitions = Record<string, never>,
   const TTools extends ContractTools = EmptyToolMap,
@@ -86,8 +89,8 @@ export function createTailorKitSchema<
   components: TComponents &
     NoComponentFieldCallbackConflicts<NoInfer<TComponents>>;
   views?: TViews & ViewContextHierarchy<NoInfer<TViews>>;
-}): TailorKitSchema<TComponents, TViews, TTools>;
-export function createTailorKitSchema(schema: {
+}): PatchsmithSchema<TComponents, TViews, TTools>;
+export function createPatchsmithSchema(schema: {
   slots?: SlotDefinitions;
   scopes?: Record<string, Schema>;
   tools?: ContractTools;
@@ -98,15 +101,18 @@ export function createTailorKitSchema(schema: {
     if (slot.description !== undefined && !isStringValue(slot.description)) {
       throw new TypeError(`Slot "${name}" description must be a string.`);
     }
+
     if (slot.multiple !== undefined && !isBooleanValue(slot.multiple)) {
       throw new TypeError(`Slot "${name}" multiple must be a boolean.`);
     }
+
     for (const view of slot.views) {
       if (!Object.hasOwn(schema.views ?? {}, view)) {
         throw new Error(`Slot "${name}" references undeclared view "${view}".`);
       }
     }
   }
+
   const components: Record<string, ResolvedComponentMetadata> = {};
   const views: Record<string, ResolvedViewMetadata> = {};
 
@@ -125,19 +131,21 @@ export function createTailorKitSchema(schema: {
 
   const serialize = (
     schemaSerializer: SchemaSerializer = jsonSchemaSerializer
-  ): TailorKitSchemaSpec => {
-    const serializedComponents: TailorKitSchemaSpec["components"] = {};
-    const serializedViews: TailorKitSchemaSpec["views"] = {};
+  ): PatchsmithSchemaSpec => {
+    const serializedComponents: PatchsmithSchemaSpec["components"] = {};
+    const serializedViews: PatchsmithSchemaSpec["views"] = {};
 
     for (const [name, metadata] of Object.entries(components)) {
-      const callbacks: TailorKitSchemaSpec["components"][string]["callbacks"] =
+      const callbacks: PatchsmithSchemaSpec["components"][string]["callbacks"] =
         {};
+
       for (const [callbackName, callback] of Object.entries(
         metadata.callbacks
       )) {
         if (callback === undefined) {
           continue;
         }
+
         callbacks[callbackName] = {
           input: serializeSchema(callback.input, schemaSerializer),
           output: serializeSchema(callback.output, schemaSerializer),
@@ -149,32 +157,40 @@ export function createTailorKitSchema(schema: {
         children: metadata.children,
         fields: serializeSchema(metadata.fields, schemaSerializer),
       };
+
+      if (metadata.description !== undefined) {
+        serializedComponents[name].description = metadata.description;
+      }
     }
 
     for (const [name, metadata] of Object.entries(views)) {
       serializedViews[name] = {
         context: serializeSchema(metadata.context, schemaSerializer),
       };
+
       if (metadata.context && contextMayBeOmitted(metadata.context)) {
         serializedViews[name].contextOptional = true;
       }
     }
 
-    const serialized: TailorKitSchemaSpec = {
+    const serialized: PatchsmithSchemaSpec = {
       components: serializedComponents,
 
       slots: Object.fromEntries(
         Object.entries(schema.slots ?? {}).map(([name, slot]) => {
-          const definition: NonNullable<TailorKitSchemaSpec["slots"]>[string] =
+          const definition: NonNullable<PatchsmithSchemaSpec["slots"]>[string] =
             {
               views: [...slot.views],
             };
+
           if (slot.multiple !== undefined) {
             definition.multiple = slot.multiple;
           }
+
           if (slot.description !== undefined) {
             definition.description = slot.description;
           }
+
           return [name, definition];
         })
       ),
@@ -185,14 +201,17 @@ export function createTailorKitSchema(schema: {
 
       views: serializedViews,
     };
+
     if (schema.scopes) {
       serialized.scopes = Object.fromEntries(
         Object.entries(schema.scopes).flatMap(([name, scope]) => {
           const value = serializeSchema(scope, schemaSerializer);
+
           return value ? [[name, value]] : [];
         })
       );
     }
+
     return serialized;
   };
 
@@ -210,7 +229,7 @@ export function createTailorKitSchema(schema: {
   };
 }
 
-export type { TailorKitTheme } from "#primitives/theme";
+export type { PatchsmithTheme } from "#primitives/theme";
 
 export { tool } from "./tools";
 
@@ -262,4 +281,4 @@ export {
   type SchemaSerializer,
 } from "./shared";
 
-export type { TailorKitSchema as TailorKit };
+export type { PatchsmithSchema as Patchsmith };

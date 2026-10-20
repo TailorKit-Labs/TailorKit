@@ -70,15 +70,20 @@ const handleRequest = async (
     method: request.method,
     path: request.url,
   });
+
   switch (request.url ?? "") {
     case "/cli-auth/verify-token": {
       respond(response, { scope });
+
       return;
     }
+
     case "/apps/lookup": {
       respond(response, { description, name: currentName });
+
       return;
     }
+
     case "/apps/update": {
       respond(
         response,
@@ -87,32 +92,44 @@ const handleRequest = async (
           : { id: "app-one" },
         updateFails ? 403 : 200
       );
+
       return;
     }
+
     case "/apps": {
       missingApp = false;
       respond(response, { id: "new-app" });
+
       return;
     }
+
     case "/deployments": {
       if (missingApp) {
         respond(response, { message: "App not found" }, 404);
+
         return;
       }
+
       respond(response, {
         assets: [{ uploadUrl: `${host}/upload` }],
         deployment: { id: "deployment" },
       });
+
       return;
     }
+
     case "/upload": {
       response.end();
+
       return;
     }
+
     case "/deployments/deployment": {
       respond(response, { id: "deployment", status: "published" });
+
       return;
     }
+
     default: {
       respond(response, { message: "Unexpected request" }, 500);
     }
@@ -137,30 +154,30 @@ beforeEach(async () => {
   host = `http://127.0.0.1:${address.port}`;
   const now = Math.floor(Date.now() / 1000);
   vi.stubEnv(
-    "TAILORKIT_AGENT_TOKEN",
+    "PATCHSMITH_AGENT_TOKEN",
     await new SignJWT({
       appId: "app-one",
-      aud: "tailorkit-platform-cli",
+      aud: "patchsmith-platform-cli",
       exp: now + 3600,
       iat: now,
-      iss: "tailorkit-agent",
+      iss: "patchsmith-agent",
       platformUrl: host,
       projectId: "project",
       scope,
     })
-      .setProtectedHeader({ alg: "HS256", typ: "tailorkit-agent+jwt" })
+      .setProtectedHeader({ alg: "HS256", typ: "patchsmith-agent+jwt" })
       .sign(new TextEncoder().encode("test-only-key"))
   );
-  root = await mkdtemp(path.join(tmpdir(), "tailorkit-deploy-name-"));
+  root = await mkdtemp(path.join(tmpdir(), "patchsmith-deploy-name-"));
   await linkTestDependencies(root);
   await mkdir(path.join(root, "src"));
   await writeFile(
     path.join(root, "src/root.tsx"),
-    'import { defineRoute } from "tailorkit/client"; export default defineRoute({ shellComponent: () => null });'
+    'import { defineRoute } from "patchsmith/client"; export default defineRoute({ shellComponent: () => null });'
   );
   await writeFile(
     path.join(root, "vite.config.mjs"),
-    'import { tailorkit } from "tailorkit/vite"; export default { plugins: [tailorkit()] };'
+    'import { patchsmith } from "patchsmith/vite"; export default { plugins: [patchsmith()] };'
   );
   await writeFile(
     path.join(root, "package.json"),
@@ -181,7 +198,7 @@ const writeConfig = async (
   appDescription?: string | null
 ) => {
   await writeFile(
-    path.join(root, "tailorkit.config.ts"),
+    path.join(root, "patchsmith.config.ts"),
     `export default ${JSON.stringify({ description: appDescription, host, name, slug: "my-app" })};`
   );
 };
@@ -191,16 +208,18 @@ it.each(["  My app description  ", undefined, null])(
   async (appDescription) => {
     missingApp = true;
     await writeConfig("  My App  ", appDescription);
+
     const onMissingAppId = vi
       .fn<NonNullable<Parameters<typeof runDeploy>[0]["onMissingAppId"]>>()
       .mockResolvedValue(true);
+
     expect(await runDeploy({ cwd: root, onMissingAppId })).toMatchObject({
       appId: "new-app",
       createdApp: true,
     });
     expect(onMissingAppId).toHaveBeenCalledExactlyOnceWith({
       appName: "My App",
-      configPath: path.join(root, "tailorkit.config.ts"),
+      configPath: path.join(root, "patchsmith.config.ts"),
       hostUrl: host,
       reason: "not-found",
     });
@@ -213,7 +232,7 @@ it.each(["  My app description  ", undefined, null])(
       slug: "my-app",
     });
     expect(
-      await readFile(path.join(root, "tailorkit.config.ts"), "utf-8")
+      await readFile(path.join(root, "patchsmith.config.ts"), "utf-8")
     ).toContain('appId: "new-app"');
     expect(requests.some((r) => r.path === "/apps/update")).toBe(false);
   }

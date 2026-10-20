@@ -7,6 +7,7 @@ export const primitiveNames = [
 ] as const;
 
 export type PrimitiveName = (typeof primitiveNames)[number];
+
 export const mapPrimitiveDefinitions = <T>(
   create: (name: PrimitiveName) => T
 ): Record<PrimitiveName, T> => ({

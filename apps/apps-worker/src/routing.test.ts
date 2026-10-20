@@ -1,5 +1,5 @@
-import { AppError } from "@tailorkit/app/server";
-import { asyncFixture } from "@tailorkit/config/testing";
+import { AppError } from "@patchsmith/app/server";
+import { asyncFixture } from "@patchsmith/config/testing";
 import { Effect } from "effect";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import type { z } from "zod";
@@ -14,6 +14,7 @@ const require = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -98,6 +99,7 @@ it("forwards stable app RPC routes and body to the installation without caching"
   const response = await call(
     post(`${rpc}/mutations`, { json: { name: "add" } }, "session")
   );
+
   expect(response.status).toBe(200);
   expect(response.headers.get("cache-control")).toBe("no-store");
   const [request] = require(fetchInstallation.mock.calls[0]);
@@ -128,7 +130,7 @@ it("authenticates query WebSockets and preserves the protocol while normalizing 
   await call(
     new Request(`${rpc}/queries`, {
       headers: {
-        "sec-websocket-protocol": "tailorkit, jwt.session",
+        "sec-websocket-protocol": "patchsmith, jwt.session",
         upgrade: "websocket",
       },
     })
@@ -144,6 +146,7 @@ it("handles preflight without a token or installation lookup", async () => {
   const response = await call(
     new Request(`${rpc}/queries`, { method: "OPTIONS" })
   );
+
   expect(response.status).toBe(204);
   expect(response.headers.get("access-control-allow-headers")).toContain(
     "authorization"
@@ -161,9 +164,11 @@ it("accepts authenticated publication only on the internal hostname", async () =
     { expirationTtl: 300 }
   );
   put.mockClear();
+
   const awaitedResult4 = await call(
     post(publication.replace("internal", projectShortId))
   );
+
   expect(awaitedResult4.status).toBe(404);
   expect(put).not.toHaveBeenCalled();
 });
@@ -183,6 +188,7 @@ it.each([
     const awaitedResult5 = await call(
       post(publication, { ...metadata, ...override })
     );
+
     expect(awaitedResult5.status).toBe(400);
     expect(put).not.toHaveBeenCalled();
   }

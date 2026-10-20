@@ -1,6 +1,6 @@
-import { createRemoteElementProps } from "@tailorkit/client-core";
-import type { PrimitiveProps } from "@tailorkit/client-core";
-import type { HostToIframePayload } from "@tailorkit/sandbox/protocol";
+import { createRemoteElementProps } from "@patchsmith/client-core";
+import type { PrimitiveProps } from "@patchsmith/client-core";
+import type { HostToIframePayload } from "@patchsmith/sandbox/protocol";
 import {
   act,
   cleanup,
@@ -68,16 +68,18 @@ describe("react primitives", () => {
     expect(node?.tagName).toBe("DIV");
     expect(style?.textContent).toContain("display: flex;");
     expect(style?.textContent).toContain(
-      "border-style: var(--tailorkit-border-solid);"
+      "border-style: var(--patchsmith-border-solid);"
     );
     expect(style?.textContent).toContain("border-width: 1px;");
-    expect(style?.textContent).toContain("padding: var(--tailorkit-space-md);");
     expect(style?.textContent).toContain(
-      "color: var(--tailorkit-textColor-muted);"
+      "padding: var(--patchsmith-space-md);"
+    );
+    expect(style?.textContent).toContain(
+      "color: var(--patchsmith-textColor-muted);"
     );
     expect(style?.textContent).toContain("@media (min-width: 1024px)");
     expect(style?.textContent).toContain(
-      "color: var(--tailorkit-textColor-foreground);"
+      "color: var(--patchsmith-textColor-foreground);"
     );
     expect(style?.textContent).toContain("flex-direction: row;");
   });
@@ -110,6 +112,7 @@ const ThemedPressable = ({
 
 const renderPressable = (overrides: PrimitiveProps = {}) => {
   const events: HostToIframePayload[] = [];
+
   const props = createRemoteElementProps(
     {
       callbacks: [{ callback: "onPress", event: "press", inputCount: 0 }],
@@ -124,8 +127,10 @@ const renderPressable = (overrides: PrimitiveProps = {}) => {
       await Promise.resolve();
     }
   );
+
   const rendered = render(<ThemedPressable props={props} />);
   const button = screen.getByRole("button");
+
   return { ...rendered, button, events, props };
 };
 
@@ -145,7 +150,7 @@ describe("Pressable", () => {
       `display: ${display};`
     );
     expect(container.querySelector("style")?.textContent).toContain(
-      "padding: var(--tailorkit-space-md);"
+      "padding: var(--patchsmith-space-md);"
     );
     // Styles stay outside the accessible name.
     expect(button.querySelector("style")).toBeNull();
@@ -177,8 +182,10 @@ describe("Pressable", () => {
     fireEvent.pointerDown(button, { button: 0 });
     fireEvent.click(button, { detail: 1 });
     const [callback] = events;
+
     const callbackId =
       callback?.type === "dispatchCallback" ? callback.data.id : undefined;
+
     expect(callbackId).toEqual(expect.any(String));
     expect(events).toEqual([
       {

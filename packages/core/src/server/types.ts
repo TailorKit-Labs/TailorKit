@@ -1,8 +1,8 @@
-import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type {
   AppsInstallResponses,
   ClientOptions as PlatformClientOptions,
-} from "@tailorkit/client-platform/client/types.gen";
+} from "@patchsmith/client-platform/client/types.gen";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 
 import type {
   ContractTools,
@@ -12,29 +12,29 @@ import type {
   ContextDefinitions,
   SlotDefinitions,
   SchemaSerializer,
-  TailorKitSchema,
+  PatchsmithSchema,
 } from "#schema/index";
 import type { EmptyDefinitionMap } from "#schema/shared";
 
-import type { TailorKitRouter } from "./router";
+import type { PatchsmithRouter } from "./router";
 
 type HeaderInput = ConstructorParameters<typeof Headers>[0];
 
-export interface TailorKitPlatformOptions {
+export interface PatchsmithPlatformOptions {
   baseUrl?: PlatformClientOptions["baseUrl"];
   fetch?: typeof fetch;
   headers?: HeaderInput | (() => HeaderInput | Promise<HeaderInput>);
 }
 
-export interface TailorKitServerBaseOptions<
+export interface PatchsmithServerBaseOptions<
   TScopes extends Record<string, StandardSchemaV1> = Record<
     string,
     StandardSchemaV1
   >,
 > {
   /**
-   * TailorKit.dev project key. The host application must read its
-   * `TAILORKIT_PROJECT_KEY` environment variable and pass the value here.
+   * Patchsmith project key. The host application must read its
+   * `PATCHSMITH_PROJECT_KEY` environment variable and pass the value here.
    */
   projectKey?: string;
   /** Standard Schema validators keyed by the names used to identify app scopes. */
@@ -47,7 +47,7 @@ export interface TailorKitServerBaseOptions<
    */
   baseUrl: string | URL;
   /**
-   * Configuration for browser-based TailorKit CLI authentication.
+   * Configuration for browser-based Patchsmith CLI authentication.
    */
   cliAuth?: {
     /**
@@ -60,7 +60,7 @@ export interface TailorKitServerBaseOptions<
     signInPath: `/${string}`;
   };
   /**
-   * Internal TailorKit implementation options.
+   * Internal Patchsmith implementation options.
    *
    * These options are not covered by semantic versioning and may change or
    * break at any time. Avoid using them in application code. If you need one of
@@ -70,13 +70,13 @@ export interface TailorKitServerBaseOptions<
    * @internal
    */
   $internal?: {
-    platformBaseUrl?: TailorKitPlatformOptions["baseUrl"];
+    platformBaseUrl?: PatchsmithPlatformOptions["baseUrl"];
     platformFetch?: typeof fetch;
-    platformHeaders?: TailorKitPlatformOptions["headers"];
+    platformHeaders?: PatchsmithPlatformOptions["headers"];
   };
 }
 
-export interface TailorKitServerSchemaOptions<
+export interface PatchsmithServerSchemaOptions<
   TComponents extends ComponentDefinitions,
   TViews extends ContextDefinitions,
   TTools extends ContractTools = EmptyDefinitionMap,
@@ -87,50 +87,50 @@ export interface TailorKitServerSchemaOptions<
   slots?: SlotDefinitions<keyof TViews & string>;
 }
 
-export interface TailorKitServerInputOptions extends TailorKitServerBaseOptions {
+export interface PatchsmithServerInputOptions extends PatchsmithServerBaseOptions {
   slots?: SlotDefinitions;
   tools?: ContractTools;
   components: ComponentDefinitions;
   views?: ContextDefinitions;
 }
 
-export type InferTailorKitServerComponents<
-  TOptions extends TailorKitServerInputOptions,
+export type InferPatchsmithServerComponents<
+  TOptions extends PatchsmithServerInputOptions,
 > = TOptions["components"];
 
-export type InferTailorKitServerViews<
-  TOptions extends TailorKitServerInputOptions,
+export type InferPatchsmithServerViews<
+  TOptions extends PatchsmithServerInputOptions,
 > = TOptions extends { views: infer TViews } ? TViews : EmptyDefinitionMap;
 
-/** @deprecated Use InferTailorKitServerViews instead. */
-export type InferTailorKitServerContexts<
-  TOptions extends TailorKitServerInputOptions,
-> = InferTailorKitServerViews<TOptions>;
+/** @deprecated Use InferPatchsmithServerViews instead. */
+export type InferPatchsmithServerContexts<
+  TOptions extends PatchsmithServerInputOptions,
+> = InferPatchsmithServerViews<TOptions>;
 
-export type InferTailorKitServerTools<
-  TOptions extends TailorKitServerInputOptions,
+export type InferPatchsmithServerTools<
+  TOptions extends PatchsmithServerInputOptions,
 > = TOptions extends { tools: infer TTools } ? TTools : EmptyDefinitionMap;
 
-export type TailorKitJsonValue =
+export type PatchsmithJsonValue =
   | string
   | number
   | boolean
   | null
-  | TailorKitJsonValue[]
-  | { [key: string]: TailorKitJsonValue };
+  | PatchsmithJsonValue[]
+  | { [key: string]: PatchsmithJsonValue };
 
 /** A JSON object that identifies one named app scope. */
-export type TailorKitScope = Record<string, TailorKitJsonValue>;
+export type PatchsmithScope = Record<string, PatchsmithJsonValue>;
 
-export interface TailorKitNamedScope {
+export interface PatchsmithNamedScope {
   name: string;
-  value: TailorKitScope;
+  value: PatchsmithScope;
 }
 
-export type TailorKitScopes = Record<string, TailorKitScope>;
+export type PatchsmithScopes = Record<string, PatchsmithScope>;
 
 /** Install a deployed app into exactly one scope declared by the host. */
-export interface TailorKitInstallAppOptions<TScopes = TailorKitScopes> {
+export interface PatchsmithInstallAppOptions<TScopes = PatchsmithScopes> {
   /** Public app ID or UUID of a deployed app in this project. */
   appId: string;
   scope: {
@@ -141,10 +141,10 @@ export interface TailorKitInstallAppOptions<TScopes = TailorKitScopes> {
   }[keyof TScopes & string];
 }
 
-export type TailorKitInstalledApp = AppsInstallResponses[200];
+export type PatchsmithInstalledApp = AppsInstallResponses[200];
 
-export type InferTailorKitServerScopes<
-  TOptions extends TailorKitServerInputOptions,
+export type InferPatchsmithServerScopes<
+  TOptions extends PatchsmithServerInputOptions,
 > = TOptions extends {
   scopes: infer TSchemas extends Record<string, StandardSchemaV1>;
 }
@@ -163,7 +163,7 @@ export type InferTailorKitServerScopes<
     }[keyof TSchemas]
   : EmptyDefinitionMap;
 
-export interface TailorKitServerOptions<
+export interface PatchsmithServerOptions<
   TComponents extends ComponentDefinitions,
   TViews extends ContextDefinitions,
   TTools extends ContractTools = EmptyDefinitionMap,
@@ -173,50 +173,53 @@ export interface TailorKitServerOptions<
   >,
 >
   extends
-    TailorKitServerBaseOptions<TScopes>,
-    TailorKitServerSchemaOptions<TComponents, TViews, TTools> {}
+    PatchsmithServerBaseOptions<TScopes>,
+    PatchsmithServerSchemaOptions<TComponents, TViews, TTools> {}
 
-export interface TailorKitHostContext<TScopes = TailorKitScopes> {
+export interface PatchsmithHostContext<TScopes = PatchsmithScopes> {
   scopes: TScopes;
-  subjectId?: string;
+  /** Stable identifier of the authenticated product user or service principal. */
+  subjectId: string;
 }
-export interface TailorKitHandlerOptions<TScopes = TailorKitScopes> {
+
+export interface PatchsmithHandlerOptions<TScopes = PatchsmithScopes> {
   authenticate: (ctx: {
     request: Request;
   }) =>
-    | TailorKitHostContext<TScopes>
+    | PatchsmithHostContext<TScopes>
     | null
-    | Promise<TailorKitHostContext<TScopes> | null>;
+    | Promise<PatchsmithHostContext<TScopes> | null>;
 }
-export type TailorKitHandlerContext<TScopes = TailorKitScopes> =
-  TailorKitHostContext<TScopes>;
 
-export interface TailorKitServer<
+export type PatchsmithHandlerContext<TScopes = PatchsmithScopes> =
+  PatchsmithHostContext<TScopes>;
+
+export interface PatchsmithServer<
   TComponents extends ComponentDefinitions,
   TViews extends ContextDefinitions,
   TTools extends ContractTools = EmptyDefinitionMap,
-  TScopes = TailorKitScopes,
+  TScopes = PatchsmithScopes,
 > {
   /** Experimental server APIs may change outside semantic versioning. */
   experimental: {
     /** Create an independent installation pinned to the app's published deployment. */
     installApp: (
-      options: TailorKitInstallAppOptions<TScopes>
-    ) => Promise<TailorKitInstalledApp>;
+      options: PatchsmithInstallAppOptions<TScopes>
+    ) => Promise<PatchsmithInstalledApp>;
   };
   /** Prepare direct platform MCP HTTP configuration for a server-side client. */
   mcp: {
-    transport: (options: TailorKitHostContext<TScopes>) => Promise<{
+    transport: (options: PatchsmithHostContext<TScopes>) => Promise<{
       url: string;
       headers: Record<string, string>;
     }>;
   };
   handler: (
     request: Request,
-    options: TailorKitHandlerOptions<TScopes>
+    options: PatchsmithHandlerOptions<TScopes>
   ) => Response | Promise<Response>;
   /**
-   * Internal TailorKit implementation details.
+   * Internal Patchsmith implementation details.
    *
    * This API is not covered by semantic versioning and may change or break at
    * any time. Avoid depending on it in application code. If you need something
@@ -227,7 +230,7 @@ export interface TailorKitServer<
    */
   $internal: {
     platformBaseUrl: string;
-    router: TailorKitRouter;
-    schema: TailorKitSchema<TComponents, TViews, TTools>;
+    router: PatchsmithRouter;
+    schema: PatchsmithSchema<TComponents, TViews, TTools>;
   };
 }

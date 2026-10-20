@@ -4,7 +4,7 @@ import { BaseRedisRateLimiter } from "@orpc/ratelimit/base-redis";
 import { MemoryRateLimiter } from "@orpc/ratelimit/memory";
 import { UpstashRateLimiter } from "@orpc/ratelimit/upstash";
 import type { Context, MiddlewareOptions } from "@orpc/server";
-import { getKV } from "@tailorkit/kv";
+import { getKV } from "@patchsmith/kv";
 import { Ratelimit } from "@upstash/ratelimit";
 import { waitUntil as vercelWaitUntil } from "@vercel/functions";
 
@@ -24,9 +24,10 @@ export const createRateLimiter = ({
   if (kv?.type === "upstash") {
     const upstashRatelimit = new Ratelimit({
       limiter: Ratelimit.slidingWindow(maxRequests, `${window} ms`),
-      prefix: "tailorkit:ratelimit:",
+      prefix: "patchsmith:ratelimit:",
       redis: kv.engine,
     });
+
     return new UpstashRateLimiter(upstashRatelimit, {
       waitUntil: env.VERCEL === true ? vercelWaitUntil : undefined,
     });
@@ -34,6 +35,7 @@ export const createRateLimiter = ({
 
   if (kv?.type === "redis") {
     const redis = kv.engine;
+
     // Keep the shared ioredis connection through oRPC's Redis adapter base.
     class IORedisRateLimiter extends BaseRedisRateLimiter {
       private readonly redis = redis;
@@ -48,7 +50,7 @@ export const createRateLimiter = ({
 
     return new IORedisRateLimiter({
       maxRequests,
-      prefix: "tailorkit:ratelimit:",
+      prefix: "patchsmith:ratelimit:",
       window,
     });
   }

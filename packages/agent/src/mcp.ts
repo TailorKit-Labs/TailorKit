@@ -5,12 +5,12 @@ import type {
 } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
-import { createProgressMessage } from "./mcp-progress";
-import type { AppAgentMcpProgress } from "./mcp-progress";
+import { createProgressReporter } from "./mcp-progress";
+import type { AppAgentMcpEvent } from "./mcp-progress";
 
-export type { AppAgentMcpProgress } from "./mcp-progress";
+export type { AppAgentMcpEvent } from "./mcp-progress";
 
-const serverInfo = { name: "tailorkit-app-agent", version: "1.0.0" };
+const serverInfo = { name: "patchsmith-app-agent", version: "1.0.0" };
 const capabilities = { tools: { listChanged: true } };
 
 /** Public protocol advertisement only; no tool handlers or backend dependencies. */
@@ -31,6 +31,7 @@ const editSchema = z.strictObject({
       "Continue this app’s existing conversation. Omit to start a new thread for an independent change."
     ),
 });
+
 const createSchema = z.strictObject({
   description: z.string().trim().max(255).optional(),
   name: z.string().trim().min(1).max(127),
@@ -41,19 +42,21 @@ const createSchema = z.strictObject({
     .describe("Name of one scope authorized by the host."),
 });
 
-const agentStreamMetadata = {
-  "dev.tailorkit/agent-stream": {
-    eventKey: "dev.tailorkit/agent-stream",
-    notification: "notifications/progress",
-    version: 1,
-  },
-};
-
 export interface AppAgentMcpExecution {
   signal: AbortSignal;
-  /** Stream agent events through the MCP request's progress notifications. */
-  onProgress: (event: AppAgentMcpProgress) => Promise<void>;
+  /** Supply internal agent events for compact MCP activity reporting. */
+  onProgress: (event: AppAgentMcpEvent) => Promise<void>;
 }
+
+const agentResultSchema = z.object({
+  answer: z.string(),
+  appId: z.string(),
+  finishReason: z.string(),
+  runId: z.string(),
+  threadId: z.string(),
+});
+
+export type AppAgentMcpResult = z.infer<typeof agentResultSchema>;
 
 /** Implementations receive authorization from the host, never from tool arguments. */
 export interface AppAgentMcpBackend {
@@ -65,38 +68,12 @@ export interface AppAgentMcpBackend {
   createApp: (
     input: z.infer<typeof createSchema>,
     execution: AppAgentMcpExecution
-    // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-  ) => Promise<NonNullable<CallToolResult["structuredContent"]>>;
+  ) => Promise<AppAgentMcpResult>;
   editApp: (
     input: z.infer<typeof editSchema>,
     execution: AppAgentMcpExecution
-    // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-  ) => Promise<NonNullable<CallToolResult["structuredContent"]>>;
+  ) => Promise<AppAgentMcpResult>;
 }
-
-const execution = (context: ServerContext): AppAgentMcpExecution => {
-  let progress = 0;
-  const progressToken = context.mcpReq._meta?.progressToken;
-  const progressMessage = createProgressMessage();
-  return {
-    onProgress: async (event) => {
-      context.mcpReq.signal.throwIfAborted();
-      if (progressToken === undefined) {
-        return;
-      }
-      await context.mcpReq.notify({
-        method: "notifications/progress",
-        params: {
-          _meta: { "dev.tailorkit/agent-stream": event },
-          message: progressMessage(event),
-          progress: (progress += 1),
-          progressToken,
-        },
-      });
-    },
-    signal: context.mcpReq.signal,
-  };
-};
 
 // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
 const result = (value: NonNullable<CallToolResult["structuredContent"]>) => ({
@@ -104,59 +81,51 @@ const result = (value: NonNullable<CallToolResult["structuredContent"]>) => ({
   structuredContent: value,
 });
 
-const agentResultSchema = z.object({
-  appId: z.string(),
-  message: z
-    .object({
-      parts: z.array(
-        z.object({ text: z.string().optional(), type: z.string() })
-      ),
-    })
-    .optional(),
-  runId: z.string().optional(),
-  threadId: z.string().optional(),
-});
-
-const agentResult = (
-  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- Match MCP's structuredContent type without introducing arbitrary keys.
-  value: NonNullable<CallToolResult["structuredContent"]>
+const runAgentTool = async (
+  context: ServerContext,
+  operation: (execution: AppAgentMcpExecution) => Promise<AppAgentMcpResult>
 ) => {
-  const parsed = agentResultSchema.safeParse(value);
-  if (!parsed.success) {
-    return result(value);
-  }
-  const { appId, message, runId, threadId } = parsed.data;
-  const answer = message?.parts
-    .filter((part) => part.type === "text" && part.text !== undefined)
-    .map((part) => part.text)
-    .join("\n\n");
-  const summary =
-    answer === undefined || answer === "" ? "App agent run ended." : answer;
-  const lines = [summary, `App ID: ${appId}`];
-  if (threadId !== undefined) {
-    lines.push(`Thread ID: ${threadId}`);
-  }
-  if (runId !== undefined) {
-    lines.push(`Run ID: ${runId}`);
-  }
-  if (threadId !== undefined) {
-    lines.push(
-      "For a related follow-up, call edit_app with this appId and threadId."
-    );
-  }
-  return {
-    content: [
-      { text: lines.join("\n\n"), type: "text" as const },
-      // MCP recommends a serialized JSON fallback for structuredContent.
-      // Keep the readable summary first and mark the transcript for models.
-      {
-        annotations: { audience: ["assistant" as const], priority: 0.2 },
-        text: JSON.stringify(value),
-        type: "text" as const,
+  let progress = 0;
+  const { signal } = context.mcpReq;
+  const progressToken = context.mcpReq._meta?.progressToken;
+
+  const reporter =
+    progressToken === undefined
+      ? undefined
+      : createProgressReporter(async (message) => {
+          await context.mcpReq.notify({
+            method: "notifications/progress",
+            params: {
+              message,
+              progress: (progress += 1),
+              progressToken,
+            },
+          });
+        }, signal);
+
+  try {
+    const value = await operation({
+      onProgress: async (event) => {
+        signal.throwIfAborted();
+        await reporter?.onProgress(event);
       },
-    ],
-    structuredContent: value,
-  };
+      signal,
+    });
+
+    await reporter?.flush();
+
+    return {
+      content: [
+        {
+          text: value.answer,
+          type: "text" as const,
+        },
+      ],
+      structuredContent: value,
+    };
+  } finally {
+    reporter?.close();
+  }
 };
 
 /** MCP 2026-07-28 only: stateless HTTP, request-scoped SSE, no legacy sessions. */
@@ -167,6 +136,7 @@ export const createAppAgentMcp = (
   if (!scopeNames.length) {
     throw new Error("At least one host scope is required.");
   }
+
   const authorizedCreateSchema = createSchema.extend({
     scope: z
       .enum(scopeNames)
@@ -174,6 +144,7 @@ export const createAppAgentMcp = (
         "Name of the host-authorized scope in which to create the app."
       ),
   });
+
   return createMcpHandler(
     () => {
       const server = new McpServer(serverInfo, { capabilities });
@@ -197,7 +168,6 @@ export const createAppAgentMcp = (
       server.registerTool(
         "create_app",
         {
-          _meta: agentStreamMetadata,
           annotations: {
             destructiveHint: false,
             idempotentHint: false,
@@ -207,14 +177,17 @@ export const createAppAgentMcp = (
           description:
             "Create a new app and create an autonomous app agent to build and deploy it from your prompt. The agent writes code, runs commands, and publishes the app. Wait for the streamed agent progress and final result. A new conversation is created and its threadId is returned. Continue it with edit_app and that threadId; do not automatically retry a disconnected call.",
           inputSchema: authorizedCreateSchema,
+          outputSchema: agentResultSchema,
         },
         async (input, context) =>
-          agentResult(await backend.createApp(input, execution(context)))
+          await runAgentTool(
+            context,
+            async (progress) => await backend.createApp(input, progress)
+          )
       );
       server.registerTool(
         "edit_app",
         {
-          _meta: agentStreamMetadata,
           annotations: {
             destructiveHint: true,
             idempotentHint: false,
@@ -224,10 +197,15 @@ export const createAppAgentMcp = (
           description:
             "Create an autonomous app agent to edit and deploy an existing app from your prompt. The agent writes code, runs commands, and publishes the changes. Wait for the streamed agent progress and final result. Omit threadId to start a new conversation; supply a returned threadId for a related follow-up. Do not automatically retry a disconnected call.",
           inputSchema: editSchema,
+          outputSchema: agentResultSchema,
         },
         async (input, context) =>
-          agentResult(await backend.editApp(input, execution(context)))
+          await runAgentTool(
+            context,
+            async (progress) => await backend.editApp(input, progress)
+          )
       );
+
       return server;
     },
     { legacy: "reject", responseMode: "sse" }

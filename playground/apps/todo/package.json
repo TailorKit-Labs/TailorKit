@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "imports": {
-    "#tailorkit": "./src/tailorkit.gen.ts",
+    "#patchsmith": "./src/patchsmith.gen.ts",
     "#*": [
       "./src/*",
       "./src/*.ts",
@@ -13,7 +13,7 @@
     ]
   },
   "scripts": {
-    "generate": "tailorkit generate --schema ../../schema.json",
+    "generate": "patchsmith generate --schema ../../schema.json",
     "build": "vp build",
     "check-types": "tsc --noEmit",
     "lint": "vp lint .",
@@ -24,13 +24,16 @@
   },
   "dependencies": {
     "chart.js": "4.5.1",
-    "preact": "^11.0.1",
-    "tailorkit": "workspace:*"
+    "patchsmith": "workspace:*",
+    "preact": "^11.0.1"
   },
   "devDependencies": {
-    "@tailorkit/cli": "workspace:*",
+    "@patchsmith/cli": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"
+  },
+  "engines": {
+    "node": ">=24.11"
   }
 }

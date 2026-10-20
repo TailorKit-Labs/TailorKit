@@ -1,5 +1,5 @@
 {
-  "name": "@tailorkit/api-platform",
+  "name": "@patchsmith/api-platform",
   "version": "0.0.0",
   "private": true,
   "license": "BUSL-1.1",
@@ -35,7 +35,7 @@
     }
   },
   "scripts": {
-    "build": "vp pack src/index.ts src/app-agent-mcp.ts src/runtime/auth.ts src/context.ts src/pagination.ts src/procedures.ts src/cli-token.ts src/asset-url.ts src/assets.ts src/scope.ts src/routes/apps.ts src/routes/runtime.ts src/routes/cli-auth.ts src/routes/deployments.ts src/routes/app-agent.ts --format esm --dts --clean",
+    "build": "vp pack src/index.ts src/app-agent-mcp.ts src/runtime/auth.ts src/context.ts src/pagination.ts src/procedures.ts src/cli-token.ts src/asset-url.ts src/assets.ts src/scope.ts src/routes/apps.ts src/routes/runtime.ts src/routes/cli-auth.ts src/routes/deployments.ts src/routes/app-agent.ts --target node24 --format esm --dts --clean",
     "check-types": "tsc --noEmit",
     "generate:openapi": "node --conditions=development --import tsx scripts/generate-openapi.ts && vp fmt openapi.json",
     "test": "vp test run",
@@ -46,29 +46,32 @@
     "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
     "@orpc/zod": "catalog:",
-    "@tailorkit/agent": "workspace:*",
-    "@tailorkit/agent-fx": "workspace:*",
-    "@tailorkit/api-utils": "workspace:*",
-    "@tailorkit/app": "workspace:*",
-    "@tailorkit/asset-delivery": "workspace:*",
-    "@tailorkit/auth": "workspace:*",
-    "@tailorkit/db": "workspace:*",
-    "@tailorkit/env": "workspace:*",
-    "@tailorkit/kv": "workspace:*",
-    "@tailorkit/observability": "workspace:*",
-    "@tailorkit/storage": "workspace:*",
+    "@patchsmith/agent": "workspace:*",
+    "@patchsmith/agent-fx": "workspace:*",
+    "@patchsmith/api-utils": "workspace:*",
+    "@patchsmith/app": "workspace:*",
+    "@patchsmith/asset-delivery": "workspace:*",
+    "@patchsmith/auth": "workspace:*",
+    "@patchsmith/db": "workspace:*",
+    "@patchsmith/env": "workspace:*",
+    "@patchsmith/kv": "workspace:*",
+    "@patchsmith/observability": "workspace:*",
+    "@patchsmith/storage": "workspace:*",
     "ai": "catalog:",
     "drizzle-orm": "catalog:",
     "effect": "catalog:",
-    "workflow": "5.2.0",
+    "workflow": "5.2.2",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "0.5.8",
+    "@electric-sql/pglite": "0.5.10",
     "@modelcontextprotocol/client": "2.3.1",
-    "@tailorkit/config": "workspace:*",
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=24.11"
   }
 }

@@ -10,6 +10,7 @@ const pngImplementation = (width: number, height: number): Uint8Array => {
   view.setUint32(8, 13);
   view.setUint32(16, width);
   view.setUint32(20, height);
+
   return content;
 };
 
@@ -20,6 +21,7 @@ describe("logo validation", () => {
     const content = new TextEncoder().encode(
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path d="M0 0h32v32H0z"/></svg>'
     );
+
     expect(validateLogoAsset(content, "image/svg+xml")).toEqual({});
   });
 
@@ -27,6 +29,7 @@ describe("logo validation", () => {
     const content = new TextEncoder().encode(
       "<svg><script>alert(1)</script></svg>"
     );
+
     expect(() => validateLogoAsset(content, "image/svg+xml")).toThrow(
       "cannot contain scripts or external resources"
     );
@@ -36,6 +39,7 @@ describe("logo validation", () => {
     const content = new TextEncoder().encode(
       '<?xml-stylesheet href="https://example.com/logo.css"?><svg></svg>'
     );
+
     expect(() => validateLogoAsset(content, "image/svg+xml")).toThrow(
       "cannot contain scripts or external resources"
     );

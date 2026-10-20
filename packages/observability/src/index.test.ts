@@ -8,13 +8,14 @@ import {
 } from "./index";
 
 const registerOTel = vi.fn();
+
 // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const mockEnv = vi.hoisted(() => ({
   NODE_ENV: "development" as "development" | "production" | "test",
   OTEL_SERVICE_NAME: undefined as string | undefined,
   OTEL_TRACES_SAMPLER_ARG: undefined as string | undefined,
-  TAILORKIT_OTEL_DISABLED: false,
-  TAILORKIT_OTEL_SAMPLE_RATE: undefined as string | undefined,
+  PATCHSMITH_OTEL_DISABLED: false,
+  PATCHSMITH_OTEL_SAMPLE_RATE: undefined as string | undefined,
   VERCEL: undefined as boolean | undefined,
   VERCEL_ENV: undefined as "production" | "preview" | "development" | undefined,
   VERCEL_GIT_COMMIT_SHA: undefined as string | undefined,
@@ -35,8 +36,8 @@ describe("observability helpers", () => {
       NODE_ENV: "development",
       OTEL_SERVICE_NAME: undefined,
       OTEL_TRACES_SAMPLER_ARG: undefined,
-      TAILORKIT_OTEL_DISABLED: false,
-      TAILORKIT_OTEL_SAMPLE_RATE: undefined,
+      PATCHSMITH_OTEL_DISABLED: false,
+      PATCHSMITH_OTEL_SAMPLE_RATE: undefined,
       VERCEL: undefined,
       VERCEL_ENV: undefined,
       VERCEL_GIT_COMMIT_SHA: undefined,
@@ -67,7 +68,7 @@ describe("observability helpers", () => {
   });
 
   it("can be disabled in tests without registering an SDK", async () => {
-    mockEnv.TAILORKIT_OTEL_DISABLED = true;
+    mockEnv.PATCHSMITH_OTEL_DISABLED = true;
     await expect(
       initializeObservability("test-service")
     ).resolves.toBeUndefined();
@@ -78,7 +79,7 @@ describe("observability helpers", () => {
     mockEnv.VERCEL = true;
     mockEnv.VERCEL_ENV = "preview";
     mockEnv.VERCEL_GIT_COMMIT_SHA = "abc123";
-    mockEnv.TAILORKIT_OTEL_SAMPLE_RATE = "0.25";
+    mockEnv.PATCHSMITH_OTEL_SAMPLE_RATE = "0.25";
 
     await Promise.all([
       initializeObservability("test-service"),
@@ -87,14 +88,17 @@ describe("observability helpers", () => {
     ]);
 
     expect(registerOTel).toHaveBeenCalledTimes(1);
+
     const expectedInstrumentationsMatcher2: unknown = expect.arrayContaining([
       "auto",
     ]);
+
     const expectedAttributesMatcher1: unknown = expect.objectContaining({
       "deployment.environment.name": "preview",
       "service.name": "test-service",
       "service.version": "abc123",
     });
+
     expect(registerOTel).toHaveBeenCalledWith(
       expect.objectContaining({
         attributes: expectedAttributesMatcher1,

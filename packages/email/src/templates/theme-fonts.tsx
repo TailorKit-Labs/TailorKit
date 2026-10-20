@@ -1,6 +1,6 @@
 import { Font } from "react-email";
 
-export const TailorKitFonts = () => (
+export const PatchsmithFonts = () => (
   <>
     <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@700&display=swap');

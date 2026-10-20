@@ -1,12 +1,12 @@
 import { createPrivateKey, createPublicKey } from "node:crypto";
 
-import type { AppTokenIdentity } from "@tailorkit/api-utils/app-auth";
+import type { AppTokenIdentity } from "@patchsmith/api-utils/app-auth";
 import {
   APP_AUDIENCE,
   appRuntimeIssuer,
   issueAppToken,
   parseAppPublicKeys,
-} from "@tailorkit/api-utils/app-auth";
+} from "@patchsmith/api-utils/app-auth";
 import { z } from "zod";
 
 import { env } from "#env";
@@ -23,6 +23,7 @@ const signingKey = () => {
       "APP_RUNTIME_SIGNING_KEY is required for app runtime tokens"
     );
   }
+
   const parsed = z
     .object({
       crv: z.literal("P-256"),
@@ -34,22 +35,28 @@ const signingKey = () => {
     })
     .loose()
     .safeParse(JSON.parse(env.APP_RUNTIME_SIGNING_KEY));
+
   if (!parsed.success) {
     throw new Error("Configure an ES256 private JWK with a kid");
   }
+
   const key = parsed.data;
+
   return key;
 };
 
 export const appRuntimePublicKeys = () => {
   const key = signingKey();
+
   const publicKey = createPublicKey(
     createPrivateKey({ format: "jwk", key })
   ).export({
     format: "jwk",
   });
+
   // Publish retired public keys for at least six minutes after rotation (token + cache lifetime).
   let previous;
+
   try {
     previous = parseAppPublicKeys(
       JSON.parse(env.APP_RUNTIME_PREVIOUS_PUBLIC_KEYS ?? '{"keys":[]}')
@@ -57,6 +64,7 @@ export const appRuntimePublicKeys = () => {
   } catch {
     throw new Error("Previous signing keys must be public ES256 keys");
   }
+
   return {
     keys: [
       { ...publicKey, alg: "ES256", kid: key.kid, use: "sig" },
@@ -67,11 +75,12 @@ export const appRuntimePublicKeys = () => {
 
 export const issueAppRuntimeToken = async (identity: AppTokenIdentity) => {
   const key = signingKey();
+
   return await issueAppToken(
     {
       audience: APP_AUDIENCE,
       issuer: appRuntimeIssuer(
-        env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform"
+        env.OPENAPI_SERVER_URL ?? "https://patchsmith.io/api/platform"
       ),
       keyId: key.kid,
       privateKey: key,

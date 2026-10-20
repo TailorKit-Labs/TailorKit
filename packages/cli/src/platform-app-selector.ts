@@ -6,5 +6,6 @@ export const platformAppSelector = (appId: string) => {
   if (uuidPattern.test(appId)) {
     return { id: appId };
   }
+
   return { shortId: appId };
 };

@@ -1,12 +1,12 @@
-import { buildPrimitiveCss } from "@tailorkit/client-core";
-import type { PrimitiveProps } from "@tailorkit/client-core";
-import type { TailorKitTheme } from "@tailorkit/core/schema";
+import { buildPrimitiveCss } from "@patchsmith/client-core";
+import type { PrimitiveProps } from "@patchsmith/client-core";
+import type { PatchsmithTheme } from "@patchsmith/core/schema";
 import { createContext, useContext, useId, useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
 interface PrimitiveThemeContextValue {
   viewId: string;
-  theme: TailorKitTheme;
+  theme: PatchsmithTheme;
 }
 
 export const PrimitiveThemeContext =
@@ -14,7 +14,8 @@ export const PrimitiveThemeContext =
 
 const usePrimitiveNodeId = (): string => {
   const id = useId();
-  return useMemo(() => `tailorkit-${id.replaceAll(":", "")}`, [id]);
+
+  return useMemo(() => `patchsmith-${id.replaceAll(":", "")}`, [id]);
 };
 
 const Primitive = ({
@@ -31,6 +32,7 @@ const Primitive = ({
   const context = useContext(PrimitiveThemeContext);
   const nodeId = usePrimitiveNodeId();
   const Element = element;
+
   const css = context
     ? buildPrimitiveCss({
         display,
@@ -42,9 +44,9 @@ const Primitive = ({
     : "";
 
   return (
-    <Element data-tailorkit-node={nodeId}>
+    <Element data-patchsmith-node={nodeId}>
       {css === "" ? null : (
-        <style data-tailorkit-node-style={nodeId}>{css}</style>
+        <style data-patchsmith-node-style={nodeId}>{css}</style>
       )}
       {children}
     </Element>
@@ -67,23 +69,29 @@ const Pressable = ({
 }): ReactNode => {
   const context = useContext(PrimitiveThemeContext);
   const nodeId = usePrimitiveNodeId();
+
   const displays = {
     box: "block",
     flex: "flex",
     grid: "grid",
     inline: "inline-flex",
   } as const;
+
   const { ariaLabel, layout, onPress } = props;
+
   const display =
     layout === "box" || layout === "flex" || layout === "grid"
       ? displays[layout]
       : displays.inline;
+
   const disabled = props.disabled === true;
   const [pressedKey, setPressedKey] = useState<"Enter" | " " | null>(null);
+
   // Cancel a held key when disabled, including if re-enabled before keyup.
   if (disabled && pressedKey !== null) {
     setPressedKey(null);
   }
+
   const css = context
     ? buildPrimitiveCss({
         display,
@@ -98,14 +106,14 @@ const Pressable = ({
   return (
     <>
       {css === "" ? null : (
-        <style data-tailorkit-node-style={nodeId}>{css}</style>
+        <style data-patchsmith-node-style={nodeId}>{css}</style>
       )}
       {/* oxlint-disable jsx-a11y/prefer-tag-over-role -- Pressable owns a div to support nested block layout primitives. */}
       <div
         aria-disabled={disabled || undefined}
         aria-label={isStringValue(ariaLabel) ? ariaLabel : undefined}
         data-pressed={!disabled && pressedKey !== null ? "" : undefined}
-        data-tailorkit-node={nodeId}
+        data-patchsmith-node={nodeId}
         onBlur={() => {
           setPressedKey(null);
         }}
@@ -113,42 +121,52 @@ const Pressable = ({
           if (disabled) {
             event.preventDefault();
             event.stopPropagation();
+
             return;
           }
+
           if (event.button === 0 && isPressCallback(onPress)) {
             onPress();
           }
         }}
         onKeyDown={(event) => {
           const { key } = event;
+
           if (
             event.target !== event.currentTarget ||
             (key !== "Enter" && key !== " ")
           ) {
             return;
           }
+
           // A div has no native keyboard activation. Prevent defaults (including
           // Space scrolling) and dispatch directly, without synthesizing a click.
           event.preventDefault();
+
           if (disabled || event.repeat || pressedKey !== null) {
             return;
           }
+
           setPressedKey(key);
+
           if (key === "Enter" && isPressCallback(onPress)) {
             onPress();
           }
         }}
         onKeyUp={(event) => {
           const { key } = event;
+
           if (
             event.target !== event.currentTarget ||
             (key !== "Enter" && key !== " ")
           ) {
             return;
           }
+
           event.preventDefault();
           const activate = !disabled && key === " " && pressedKey === " ";
           setPressedKey(null);
+
           if (activate && isPressCallback(onPress)) {
             onPress();
           }
@@ -156,8 +174,10 @@ const Pressable = ({
         onPointerDown={(event) => {
           if (disabled) {
             event.preventDefault();
+
             return;
           }
+
           if (event.button === 0) {
             event.currentTarget.focus();
           }

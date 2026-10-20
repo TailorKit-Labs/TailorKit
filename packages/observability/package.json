@@ -1,5 +1,5 @@
 {
-  "name": "@tailorkit/observability",
+  "name": "@patchsmith/observability",
   "version": "0.0.0",
   "private": true,
   "license": "BUSL-1.1",
@@ -22,7 +22,7 @@
     }
   },
   "scripts": {
-    "build": "vp pack src/index.ts --format esm --dts --clean",
+    "build": "vp pack src/index.ts --target node24 --format esm --dts --clean",
     "check-types": "tsc --noEmit",
     "test": "vp test run",
     "lint": "vp lint .",
@@ -35,13 +35,16 @@
     "@opentelemetry/instrumentation-undici": "catalog:",
     "@opentelemetry/sdk-trace-base": "catalog:",
     "@orpc/opentelemetry": "catalog:",
-    "@tailorkit/env": "workspace:*",
+    "@patchsmith/env": "workspace:*",
     "@vercel/otel": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@tailorkit/config": "workspace:*",
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=24.11"
   }
 }

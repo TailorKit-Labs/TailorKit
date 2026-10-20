@@ -27,9 +27,11 @@ import { env } from "#env";
 import { createAppAgent } from "./agent";
 
 const { dirname, join } = nodePath;
+
 // oxlint-disable-next-line typescript/strict-void-return -- promisify consumes execFile's completion callback, not its ChildProcess return value.
 const execute = promisify(execFile);
 const bytes = async (path: string) => await readFile(path).catch(() => null);
+
 const write = async (path: string, content: Uint8Array | string) => {
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, content);
@@ -44,6 +46,7 @@ const localSession = (
   readBinaryFile: async ({ path }) => await bytes(path),
   readFile: async ({ path }) => {
     const content = await bytes(path);
+
     return content
       ? new ReadableStream({
           start(controller) {
@@ -55,6 +58,7 @@ const localSession = (
   },
   readTextFile: async ({ path }) => {
     const content = await bytes(path);
+
     return content?.toString("utf-8") ?? null;
   },
   run: async ({ command, env: commandEnv, workingDirectory, abortSignal }) => {
@@ -65,13 +69,16 @@ const localSession = (
         stdout: Buffer.from(sessionHome).toString("base64"),
       };
     }
+
     const gnu = "/opt/homebrew/opt/coreutils/libexec/gnubin";
     const path = existsSync(gnu) ? `${gnu}:/usr/bin:/bin` : "/usr/bin:/bin";
+
     const { stdout, stderr } = await execute("bash", ["-c", command], {
       cwd: workingDirectory ?? workspace,
       env: { PATH: path, ...commandEnv },
       signal: abortSignal,
     });
+
     return { exitCode: 0, stderr, stdout };
   },
   spawn: () => {
@@ -82,9 +89,11 @@ const localSession = (
   },
   writeFile: async ({ path, content }) => {
     const chunks: Uint8Array[] = [];
+
     for await (const chunk of content) {
       chunks.push(chunk);
     }
+
     await write(path, Buffer.concat(chunks));
   },
   writeTextFile: async ({ path, content }) => {
@@ -96,6 +105,7 @@ const gatewayEvents = (requestIndex: number, text: string) => {
   const first = requestIndex === 1;
   const second = requestIndex === 2;
   const toolCall = first || second;
+
   const parts = [
     { type: "stream-start", warnings: [] },
     ...(toolCall
@@ -128,6 +138,7 @@ const gatewayEvents = (requestIndex: number, text: string) => {
       usage: { inputTokens: { total: 10 }, outputTokens: { total: 5 } },
     },
   ];
+
   return parts.map((part) => `data: ${JSON.stringify(part)}\n\n`).join("");
 };
 
@@ -138,40 +149,49 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
     delete env.AI_GATEWAY_API_KEY;
     delete env.VERCEL_OIDC_TOKEN;
     env.AI_GATEWAY_BASE_URL = "https://gateway.test";
+
     const token =
       mode === "api-key"
         ? "local-test-token"
         : `header.${Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })).toString("base64url")}.signature`;
+
     // libfx 0.0.13 caches libc's environment pointer on Linux. Supply test
     // credentials through #env to avoid invalidating it between native sessions.
     if (mode === "api-key") {
       env.AI_GATEWAY_API_KEY = token;
     }
+
     if (mode === "environment-oidc") {
       env.VERCEL_OIDC_TOKEN = token;
     }
+
     vi.stubGlobal(Symbol.for("@vercel/request-context"), {
       get: () => ({
         headers:
           mode === "runtime-oidc" ? { "x-vercel-oidc-token": token } : {},
       }),
     });
+
     const directory = await realpath(
-      await mkdtemp(join(tmpdir(), "tailorkit-fx-"))
+      await mkdtemp(join(tmpdir(), "patchsmith-fx-"))
     );
+
     const workspace = join(directory, "app");
     const sessionHome = join(directory, "home");
     await mkdir(workspace);
     await mkdir(sessionHome);
+
     const requests: {
       body: string;
       authorization: string | null;
       url: string;
     }[] = [];
+
     vi.stubGlobal(
       "fetch",
       vi.fn<typeof fetch>(async (url, options) => {
         const request = new Request(url, options);
+
         if (request.method === "GET") {
           return Response.json({
             data: [
@@ -185,12 +205,14 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
             ],
           });
         }
+
         const body = await request.text();
         requests.push({
           authorization: request.headers.get("authorization"),
           body,
           url: request.url,
         });
+
         return new Response(
           gatewayEvents(
             requests.length,
@@ -200,15 +222,18 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
         );
       })
     );
+
     const input = {
       agentToken: "private-deployment-token",
       appId: randomUUID(),
-      hostUrl: "https://host.test/api/tailorkit",
+      hostUrl: "https://host.test/api/patchsmith",
       messages: [],
       model: "openai/gpt-6.1-sol",
       threadId: randomUUID(),
     };
+
     const sandboxSession = localSession(workspace, sessionHome);
+
     let session:
       | Awaited<
           ReturnType<
@@ -216,17 +241,20 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
           >
         >
       | undefined;
+
     try {
       const agent = await createAppAgent(input, "fixture");
       expect(agent.harnessId).toBe("fx");
       expect(requests).toHaveLength(0);
       const chunks: HarnessWorkflowChunk[] = [];
+
       const writable = () =>
         new WritableStream<HarnessWorkflowChunk>({
           write(chunk) {
             chunks.push(chunk);
           },
         });
+
       let state = await runHarnessAgentStep({
         agent,
         sandboxSession,
@@ -236,6 +264,7 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
         }),
         writable: writable(),
       });
+
       expect(state.status).toBe("ready_for_next_step");
       expect(state.continueFrom?.harnessId).toBe("fx");
       expect(chunks.some((chunk) => chunk.type === "finish")).toBe(false);
@@ -256,6 +285,7 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
         writable: writable(),
       });
       expect(state.status).toBe("finished");
+
       // Consume the same event sequence as MCP, including tools after a checkpoint.
       const stream = new ReadableStream<UIMessageChunk>({
         start(controller) {
@@ -264,16 +294,20 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
             // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The runner exposes a structural chunk type to avoid depending on ai.
             controller.enqueue(chunk as UIMessageChunk);
           }
+
           controller.close();
         },
       });
+
       let finalMessage;
+
       for await (const message of readUIMessageStream({
         stream,
         terminateOnError: true,
       })) {
         finalMessage = message;
       }
+
       expect(finalMessage?.parts).toContainEqual({
         state: "done",
         text: "Built",
@@ -304,11 +338,14 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
         expect.objectContaining({ delta: "Built", type: "text-delta" })
       );
       const { resumeFrom } = state;
+
       if (resumeFrom === undefined) {
         throw new Error("Missing fx resume state");
       }
+
       expect(resumeFrom.harnessId).toBe("fx");
       expect(JSON.stringify(resumeFrom)).not.toContain(token);
+
       const savedState = await readFile(
         join(
           sessionHome,
@@ -318,24 +355,30 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
         ),
         "utf-8"
       );
+
       expect(savedState).not.toContain(token);
       expect(savedState).not.toContain(input.agentToken);
+
       const nextAgent = await createAppAgent(
         { ...input, agentToken: "fresh-deployment-token" },
         "fixture"
       );
+
       session = await nextAgent.createSession({
         resumeFrom,
         sandboxSession,
         sessionId: input.threadId,
       });
+
       const next = await nextAgent.generate({
         prompt: "Now update it",
         session,
       });
+
       expect(next.text).toBe("Updated");
       expect(requests.at(-1)?.body).toContain("Build a file");
       expect(requests.at(-1)?.body).toContain("Now update it");
+
       for (const request of requests) {
         expect(JSON.parse(request.body)).toMatchObject({
           reasoning: "low",
@@ -345,14 +388,16 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
         expect(request.body).not.toContain("private-deployment-token");
         expect(request.body).not.toContain(token);
       }
+
       for (const name of [
-        "tailorkit-frontend",
-        "tailorkit-views",
-        "tailorkit-functions",
-        "tailorkit-database",
+        "patchsmith-frontend",
+        "patchsmith-views",
+        "patchsmith-functions",
+        "patchsmith-database",
       ]) {
         expect(requests[0]?.body).toContain(name);
       }
+
       expect(requests[0]?.body).toContain("deploy");
       expect(requests[0]?.body).not.toContain("src/functions/notes.ts");
     } finally {

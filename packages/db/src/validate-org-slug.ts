@@ -473,7 +473,6 @@ const reservedOrgSlugs = new Set([
   "solutions",
   "startups",
   "students",
-  "tailorkit",
   "tour",
   "use-case",
   "use-cases",
@@ -483,7 +482,7 @@ const reservedOrgSlugs = new Set([
   "webinar-replay",
   "webinar-replays",
   "why",
-  "why-tailorkit",
+  "why-patchsmith",
 
   // Documentation & Learning
   "academy",
@@ -813,6 +812,7 @@ export const validateOrgSlug = (slug: string) => {
   }
 
   const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
+
   if (!SLUG_RE.test(slug)) {
     return {
       reason: `Slug "${slug}" contains invalid characters.`,

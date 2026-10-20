@@ -1,8 +1,8 @@
-import type { Scope } from "@tailorkit/db/schema/scope";
-import { Badge } from "@tailorkit/ui/badge";
-import { Button } from "@tailorkit/ui/button";
-import { CardFrame } from "@tailorkit/ui/card";
-import { DateAgo } from "@tailorkit/ui/date";
+import type { Scope } from "@patchsmith/db/schema/scope";
+import { Badge } from "@patchsmith/ui/badge";
+import { Button } from "@patchsmith/ui/button";
+import { CardFrame } from "@patchsmith/ui/card";
+import { DateAgo } from "@patchsmith/ui/date";
 import {
   Empty,
   EmptyContent,
@@ -10,12 +10,12 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@tailorkit/ui/empty";
+} from "@patchsmith/ui/empty";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
-} from "@tailorkit/ui/input-group";
+} from "@patchsmith/ui/input-group";
 import {
   Table,
   TableBody,
@@ -23,7 +23,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@tailorkit/ui/table";
+} from "@patchsmith/ui/table";
 import { useInfiniteQuery } from "@tanstack/react-query";
 /* oxlint-disable react/no-unstable-nested-components */
 import {
@@ -77,12 +77,15 @@ const getDeploymentStatusVariant = (
   if (status === "published") {
     return "success";
   }
+
   if (status === "deploying" || status === "verifying") {
     return "warning";
   }
+
   if (status === "uploading") {
     return "info";
   }
+
   return "outline";
 };
 
@@ -102,6 +105,7 @@ const AppsTable = ({
   projectSlug: string;
 }) => {
   const navigate = useNavigate();
+
   const [sorting, setSorting] = useState<SortingState>([
     { desc: true, id: "createdAt" },
   ]);
@@ -267,10 +271,12 @@ const AppsIndexPage = () => {
   const { orgSlug, projectSlug } = useParams({
     from: "/(app)/$orgSlug/$projectSlug/apps/",
   });
+
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState("");
   const normalizedSearch = search.trim();
   const projectApiKey = getProjectApiKey(orgSlug, projectSlug);
+
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
     useInfiniteQuery(
       appsListQueryOptions({
@@ -283,6 +289,7 @@ const AppsIndexPage = () => {
 
   useEffect((): (() => void) | undefined => {
     const loadMoreElement = loadMoreRef.current;
+
     if (!loadMoreElement || !hasNextPage) {
       return undefined;
     }
@@ -305,6 +312,7 @@ const AppsIndexPage = () => {
 
   const apps = data?.pages.flatMap((page) => page.items) ?? [];
   const isEmptyProject = !isPending && !normalizedSearch && apps.length === 0;
+
   const searchControl = (
     <div className="relative w-full sm:w-72">
       <InputGroup>
@@ -322,6 +330,7 @@ const AppsIndexPage = () => {
       </InputGroup>
     </div>
   );
+
   let content;
 
   if (isPending) {
@@ -362,7 +371,7 @@ const AppsIndexPage = () => {
               render={
                 <a
                   aria-label="Read the installation guide"
-                  href="https://tailorkit.dev/docs/installation"
+                  href="https://patchsmith.io/docs/installation"
                   rel="noopener noreferrer"
                   target="_blank"
                 />
@@ -395,8 +404,8 @@ const AppsIndexPage = () => {
       actions={isEmptyProject ? undefined : searchControl}
       description={
         isEmptyProject
-          ? "No apps yet. Set up TailorKit to deploy your first app."
-          : "Apps uploaded to this project through TailorKit."
+          ? "No apps yet. Set up Patchsmith to deploy your first app."
+          : "Apps uploaded to this project through Patchsmith."
       }
       title="Apps"
     >

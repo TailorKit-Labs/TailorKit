@@ -1,4 +1,4 @@
-import { defineView } from "tailorkit/client";
+import { defineView } from "patchsmith/client";
 
 import { CanvasPrototype } from "#slots/panel/canvas-prototype";
 

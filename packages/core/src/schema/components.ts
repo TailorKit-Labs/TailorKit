@@ -11,6 +11,9 @@ import type {
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
   typeof value === "object" && value !== null;
 
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 type EmptyCallbackMap = EmptyDefinitionMap;
 
 export type Fields = Schema;
@@ -21,6 +24,8 @@ export interface ComponentDefinition<
   TChildren extends boolean | undefined = boolean | undefined,
 > {
   experimental_canvas?: experimental_CanvasPolicy;
+  /** Usage and behavior guidance included in generated app references. */
+  description?: string;
   callbacks?: TCallbacks;
   fields?: TFields;
   children?: TChildren;
@@ -43,6 +48,7 @@ export type ComponentProps<TComponent> = MergeProps<
 >;
 
 export interface ResolvedComponentMetadata {
+  description?: string;
   callbacks: CallbackMap;
   fields?: Schema;
   children: boolean;
@@ -61,7 +67,7 @@ type NoFieldCallbackConflicts<TFields, TCallbacks> =
   FieldCallbackConflictKeys<TFields, TCallbacks> extends never
     ? unknown
     : {
-        readonly __tailorkit_error__: `Field and callback keys must be unique. Conflicting key: ${FieldCallbackConflictKeys<TFields, TCallbacks>}`;
+        readonly __patchsmith_error__: `Field and callback keys must be unique. Conflicting key: ${FieldCallbackConflictKeys<TFields, TCallbacks>}`;
       };
 
 export type NoComponentFieldCallbackConflicts<TComponents> = {
@@ -80,6 +86,7 @@ const getObjectKeys = (value: Schema | undefined): string[] => {
 
   if ("shape" in value) {
     const fields = value.shape;
+
     if (isObjectValue(fields)) {
       return Object.keys(fields);
     }
@@ -87,6 +94,7 @@ const getObjectKeys = (value: Schema | undefined): string[] => {
 
   if ("entries" in value) {
     const { entries } = value;
+
     if (isObjectValue(entries)) {
       return Object.keys(entries);
     }
@@ -101,6 +109,7 @@ const assertNoLocalFieldCallbackConflicts = (
   callbackKeys: readonly string[]
 ): void => {
   const callbackKeySet = new Set(callbackKeys);
+
   for (const fieldKey of fieldKeys) {
     if (callbackKeySet.has(fieldKey)) {
       throw new Error(
@@ -110,21 +119,41 @@ const assertNoLocalFieldCallbackConflicts = (
   }
 };
 
+export const assertComponentDescription = (
+  name: string,
+  definition: ComponentDefinition
+): void => {
+  if (
+    definition.description !== undefined &&
+    !isStringValue(definition.description)
+  ) {
+    throw new TypeError(`Component "${name}" description must be a string.`);
+  }
+};
+
 export const resolveComponentMetadata = (
   name: string,
   definition: ComponentDefinition
 ): ResolvedComponentMetadata => {
+  assertComponentDescription(name, definition);
   const { fields } = definition;
   const fieldKeys = fields ? getObjectKeys(fields) : [];
   const callbackKeys = Object.keys(definition.callbacks ?? {});
   assertNoLocalFieldCallbackConflicts(name, fieldKeys, callbackKeys);
 
-  return {
+  const metadata: ResolvedComponentMetadata = {
     callbacks: definition.callbacks ?? {},
     children: definition.children ?? false,
     fields,
   };
+
+  if (definition.description !== undefined) {
+    metadata.description = definition.description;
+  }
+
+  return metadata;
 };
 
 export type Component = AnyComponentDefinition;
+
 export type Components = ComponentDefinitions;

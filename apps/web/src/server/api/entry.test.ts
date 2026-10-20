@@ -5,8 +5,10 @@ import { createApiEntry } from "./entry";
 describe("API server entry", () => {
   it("rejects unsupported methods before running the handler", async () => {
     let calls = 0;
+
     const entry = createApiEntry(() => {
       calls += 1;
+
       return new Response("ok");
     }, ["POST"]);
 
@@ -24,6 +26,7 @@ describe("API server entry", () => {
       { code: "UNAUTHORIZED" },
       { headers: { "www-authenticate": "Bearer" }, status: 401 }
     );
+
     const entry = createApiEntry(() => {
       // oxlint-disable-next-line typescript/only-throw-error -- Authorization handlers throw HTTP responses; the API adapter must preserve them.
       throw unauthorized;
@@ -40,6 +43,7 @@ describe("API server entry", () => {
 
   it("leaves unexpected failures to the server error boundary", async () => {
     const failure = new Error("storage unavailable");
+
     const entry = createApiEntry(() => {
       throw failure;
     }, ["GET"]);
@@ -51,19 +55,25 @@ describe("API server entry", () => {
 
   it("returns a live stream and preserves the request cancellation signal", async () => {
     const abort = new AbortController();
+
     const request = new Request("https://platform.test/api/test", {
       method: "POST",
       signal: abort.signal,
     });
+
     const { promise, resolve } =
       Promise.withResolvers<ReadableStreamDefaultController<Uint8Array>>();
+
     const stream = new ReadableStream<Uint8Array>({ start: resolve });
+
     const response = new Response(stream, {
       headers: { "content-type": "text/event-stream", "set-cookie": "test=1" },
     });
+
     const entry = createApiEntry(
       ({ request: incoming }) => {
         expect(incoming).toBe(request);
+
         return response;
       },
       ["POST"]

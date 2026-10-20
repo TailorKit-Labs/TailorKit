@@ -1,6 +1,9 @@
 export { createS3CompatibleStorage } from "./s3.js";
+
 export { getStorage } from "./storage.js";
+
 export { uploadToUrl } from "./upload-url.js";
+
 export type {
   CreateDownloadUrlInput,
   CreateDownloadUrlOutput,

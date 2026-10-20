@@ -9,12 +9,15 @@ export const gatewayModelProviders = (
   const useGateway =
     auth.AI_GATEWAY_API_KEY !== undefined ||
     auth.VERCEL_OIDC_TOKEN !== undefined;
+
   if (!useGateway || modelId !== "openai/gpt-6.1-sol") {
     return {};
   }
+
   const baseUrl = (
     auth.AI_GATEWAY_BASE_URL ?? "https://ai-gateway.vercel.sh"
   ).replace(/\/$/u, "");
+
   return {
     "vercel-ai-gateway": {
       api: "openai-responses",

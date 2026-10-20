@@ -1,8 +1,8 @@
 ---
-"tailorkit": minor
-"@tailorkit/core": minor
-"@tailorkit/client-core": minor
-"@tailorkit/react": minor
+"patchsmith": minor
+"@patchsmith/core": minor
+"@patchsmith/client-core": minor
+"@patchsmith/react": minor
 ---
 
 Define shared browser-safe contracts with `defineContract` and `action().input().output()`. Use `createServer` from `tailorkit/server` to implement actions and `createClient` from `tailorkit/react` to infer component, view, slot, and scope types from the same contract.

@@ -15,8 +15,10 @@ export const agentStep = async (
 ): Promise<HarnessWorkflowState> => {
   "use step";
   const { createAppAgent } = await import("./agent");
+
   const { getSandbox, networkSession, removeLegacyAgentToken } =
     await import("./sandbox");
+
   const { renewSession } = await import("./session-store");
   await renewSession(input.appId, runId);
   const { threadSandboxName } = await import("./identity");
@@ -26,6 +28,7 @@ export const agentStep = async (
   await removeLegacyAgentToken(sandbox);
   const sandboxSession = await networkSession(sandbox);
   const agent = await createAppAgent(input, sandboxName);
+
   return await runHarnessAgentStep({
     agent,
     sandboxSession,

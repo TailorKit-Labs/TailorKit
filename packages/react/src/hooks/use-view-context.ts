@@ -1,8 +1,8 @@
-import type { ViewName, ViewState } from "@tailorkit/client-core";
-import type { ViewDefinition } from "@tailorkit/core/schema";
+import type { ViewName, ViewState } from "@patchsmith/client-core";
+import type { ViewDefinition } from "@patchsmith/core/schema";
 import { useEffect, useMemo } from "react";
 
-import { useTailorkitContext } from "#components/context";
+import { usePatchsmithContext } from "#components/context";
 
 export type {
   ViewName,
@@ -10,7 +10,7 @@ export type {
   ViewContextInput,
   ViewOptions,
   ViewState,
-} from "@tailorkit/client-core";
+} from "@patchsmith/client-core";
 
 type DefaultViews = Record<`/${string}`, ViewDefinition>;
 
@@ -28,8 +28,8 @@ export const useViewContext = <
   view: TView,
   options: ViewState<TViews, NoInfer<TView>>
 ): void => {
-  const { store } = useTailorkitContext("useViewContext");
-  const id = useMemo(() => Symbol("tailorkit-current-view"), []);
+  const { store } = usePatchsmithContext("useViewContext");
+  const id = useMemo(() => Symbol("patchsmith-current-view"), []);
   const { context, loading, error } = options;
 
   useEffect(

@@ -16,7 +16,7 @@ concurrency:
 env:
   CI: true
   TURBO_TELEMETRY_DISABLED: 1
-  TAILORKIT_OTEL_DISABLED: true
+  PATCHSMITH_OTEL_DISABLED: true
   OTEL_SDK_DISABLED: true
 
 jobs:
@@ -68,13 +68,13 @@ jobs:
 
   tests:
     name: Tests
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
     steps:
       - name: Checkout
-        uses: useblacksmith/checkout@v1
+        uses: actions/checkout@v7
 
       - name: Setup Vite+
         uses: voidzero-dev/setup-vp@v1.21.2
@@ -95,7 +95,8 @@ jobs:
           team: ${{ vars.TURBO_TEAM }}
 
       - name: Run tests
-        run: vp run test
+        # Each package also starts its own test workers; budget both levels on this 4-vCPU runner.
+        run: vp run test --concurrency=2
 
       - name: Test release policy
         run: vp exec turbo run test:release --filter=//

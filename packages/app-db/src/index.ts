@@ -1,17 +1,22 @@
 export { defineDatabase } from "./definition";
+
 export type { DatabaseDefinition } from "./definition";
+
 export { defineRelations } from "./relations";
+
 export type {
   DatabaseSchema,
   RelationConfig,
   RelationHelpers,
 } from "./relations";
+
 export type {
   DatabaseRelations,
   EmptyDatabaseRelations,
   QueryDatabase,
   MutationDatabase,
 } from "./types";
+
 export {
   table,
   text,

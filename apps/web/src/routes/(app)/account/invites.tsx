@@ -1,5 +1,5 @@
-import { Badge } from "@tailorkit/ui/badge";
-import { Button } from "@tailorkit/ui/button";
+import { Badge } from "@patchsmith/ui/badge";
+import { Button } from "@patchsmith/ui/button";
 import {
   Card,
   CardAction,
@@ -8,15 +8,15 @@ import {
   CardHeader,
   CardPanel,
   CardTitle,
-} from "@tailorkit/ui/card";
+} from "@patchsmith/ui/card";
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@tailorkit/ui/empty";
-import { toastManager } from "@tailorkit/ui/toast";
+} from "@patchsmith/ui/empty";
+import { toastManager } from "@patchsmith/ui/toast";
 import {
   useMutation,
   useQueryClient,
@@ -37,6 +37,7 @@ const formatDate = (value: Date | string) =>
 const InvitesPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
   const { data: invitations } = useSuspenseQuery(
     orpc.user.getPendingInvitations.queryOptions()
   );
@@ -47,6 +48,7 @@ const InvitesPage = () => {
     onError: (cause: unknown) => {
       const message =
         cause instanceof Error ? cause.message : "Failed to accept invitation";
+
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: () => {
@@ -64,6 +66,7 @@ const InvitesPage = () => {
     onError: (cause: unknown) => {
       const message =
         cause instanceof Error ? cause.message : "Failed to decline invitation";
+
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: () => {

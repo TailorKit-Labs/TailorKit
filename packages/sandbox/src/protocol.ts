@@ -1,3 +1,4 @@
+import { sessionSchema } from "@patchsmith/app/protocol";
 import * as v from "valibot";
 
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
@@ -8,16 +9,19 @@ const ObjectInput = v.custom<object>(
   (input) => input !== null && isObjectValue(input) && !Array.isArray(input),
   "Expected an object"
 );
+
 export const RemotePropsSchema = v.pipe(
   ObjectInput,
   v.record(v.string(), v.unknown())
 );
+
 const strictObject = <const TEntries extends v.ObjectEntries>(
   entries: TEntries
 ) => v.pipe(ObjectInput, v.strictObject(entries));
 
 const FiniteNumber = v.pipe(v.number(), v.finite());
 const SessionId = v.pipe(v.string(), v.minLength(1), v.maxLength(128));
+
 // Preserve WHATWG URL validation, including non-HTTP absolute URLs.
 const SessionUrl = v.pipe(
   v.string(),
@@ -149,9 +153,7 @@ const HostToIframePayloadSchema = v.pipe(
         id: SessionId,
         session: v.optional(
           strictObject({
-            expiresAt: FiniteNumber,
-            subjectId: v.optional(v.string()),
-            token: v.pipe(v.string(), v.maxLength(8192)),
+            ...sessionSchema.entries,
             url: SessionUrl,
           })
         ),
@@ -181,6 +183,7 @@ const HostToIframePayloadSchema = v.pipe(
     }),
   ])
 );
+
 export type HostToIframePayload = v.InferOutput<
   typeof HostToIframePayloadSchema
 >;
@@ -192,6 +195,7 @@ const RemoteCallbackBindingSchema = strictObject({
 });
 
 type RemoteNodeSchemaType = v.GenericSchema<unknown, RemoteNode>;
+
 const RemoteNodeSchema: RemoteNodeSchemaType = v.lazy(() =>
   v.pipe(
     ObjectInput,
@@ -315,6 +319,7 @@ const IframeToHostPayloadSchema = v.pipe(
     }),
   ])
 );
+
 export type IframeToHostPayload = v.InferOutput<
   typeof IframeToHostPayloadSchema
 >;

@@ -1,17 +1,18 @@
-import { auth } from "@tailorkit/auth";
+import { auth } from "@patchsmith/auth";
 import {
   initializeObservability,
   setSpanAttributes,
-} from "@tailorkit/observability";
+} from "@patchsmith/observability";
 
 import { createApiEntry } from "./entry";
 
 export const handleAuthRequest = async ({ request }: { request: Request }) => {
-  await initializeObservability("tailorkit-web");
+  await initializeObservability("patchsmith-web");
   setSpanAttributes({
-    "tailorkit.adapter": "better-auth",
-    "tailorkit.package": "apps-web",
+    "patchsmith.adapter": "better-auth",
+    "patchsmith.package": "apps-web",
   });
+
   return await auth.handler(request);
 };
 

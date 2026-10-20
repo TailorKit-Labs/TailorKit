@@ -227,6 +227,7 @@ const SubmitButton = ({
   ...props
 }: Omit<ButtonProps, "type" | "loading">) => {
   const form = useFormContext();
+
   return (
     <form.Subscribe<SubmitButtonState>
       selector={(state) => ({

@@ -4,16 +4,31 @@ import { handleBackendSession } from "./backend";
 
 const session = {
   expiresAt: 123,
+  identity: {
+    appId: "app",
+    appShortId: "short-app",
+    deploymentId: "deployment",
+    expiresAt: 123,
+    installationId: "app",
+    projectId: "project",
+    projectShortId: "short-project",
+    scope: { name: "workspace", value: { id: "authorized-workspace" } },
+    subjectId: "principal",
+    toolUrl: "https://host.test/api/patchsmith/tools/execute",
+  },
   token: "platform-issued-token",
   url: "https://runtime.test/rpc",
 };
+
 const issueSession = vi
   .fn<() => Promise<typeof session>>()
   .mockResolvedValue(session);
+
 const authenticate = vi
   .fn<Parameters<typeof handleBackendSession>[1]>()
   .mockResolvedValue({
     scopes: { workspace: { id: "authorized-workspace" } },
+    subjectId: "principal",
   });
 
 interface BackendSessionFixture {
@@ -28,7 +43,7 @@ const request = (
   body: BackendSessionFixture | null,
   origin = "https://host.test"
 ) =>
-  new Request("https://host.test/api/tailorkit/backend/session", {
+  new Request("https://host.test/api/patchsmith/backend/session", {
     body: JSON.stringify(body),
     headers: { "content-type": "application/json", origin },
     method: "POST",
@@ -36,26 +51,26 @@ const request = (
 
 beforeEach(() => vi.clearAllMocks());
 
-it("uses existing host authentication and passes only verified scopes to the platform", async () => {
+it("uses existing host authentication and passes the verified subject and scopes to the platform", async () => {
   const input = request({ appId: "installed-app" });
+
   const response = await handleBackendSession(
     input,
     authenticate,
     issueSession
   );
+
   expect(response.status).toBe(200);
   expect(response.headers.get("cache-control")).toBe("no-store");
   expect(await response.json()).toEqual(session);
   expect(authenticate).toHaveBeenCalledWith({ request: input });
-  // oxlint-disable unicorn/no-useless-undefined -- The exact mock call includes its optional subject argument.
   expect(issueSession).toHaveBeenCalledExactlyOnceWith(
     "installed-app",
     {
       workspace: { id: "authorized-workspace" },
     },
-    undefined
+    "principal"
   );
-  // oxlint-enable unicorn/no-useless-undefined
 });
 
 it("rejects unauthenticated requests before issuing tokens", async () => {
@@ -64,6 +79,7 @@ it("rejects unauthenticated requests before issuing tokens", async () => {
     vi.fn<Parameters<typeof handleBackendSession>[1]>().mockResolvedValue(null),
     issueSession
   );
+
   expect(response.status).toBe(401);
   expect(issueSession).not.toHaveBeenCalled();
 });
@@ -83,6 +99,7 @@ it.each([
     authenticate,
     issueSession
   );
+
   expect(response.status).toBe(400);
   expect(issueSession).not.toHaveBeenCalled();
 });
@@ -93,6 +110,7 @@ it("rejects cross-origin requests before authenticating or issuing tokens", asyn
     authenticate,
     issueSession
   );
+
   expect(response.status).toBe(400);
   expect(authenticate).not.toHaveBeenCalled();
   expect(issueSession).not.toHaveBeenCalled();
@@ -100,10 +118,11 @@ it("rejects cross-origin requests before authenticating or issuing tokens", asyn
 
 it.each(["GET", "PUT"])("rejects %s session requests", async (method) => {
   const response = await handleBackendSession(
-    new Request("https://host.test/api/tailorkit/backend/session", { method }),
+    new Request("https://host.test/api/patchsmith/backend/session", { method }),
     authenticate,
     issueSession
   );
+
   expect(response.status).toBe(400);
   expect(issueSession).not.toHaveBeenCalled();
 });
@@ -114,13 +133,14 @@ it("bounds chunked session request bodies", async () => {
     authenticate,
     issueSession
   );
+
   expect(response.status).toBe(413);
   expect(issueSession).not.toHaveBeenCalled();
 });
 
 it("rejects malformed JSON", async () => {
   const response = await handleBackendSession(
-    new Request("https://host.test/api/tailorkit/backend/session", {
+    new Request("https://host.test/api/patchsmith/backend/session", {
       body: "{",
       headers: { "content-type": "application/json" },
       method: "POST",
@@ -128,6 +148,7 @@ it("rejects malformed JSON", async () => {
     authenticate,
     issueSession
   );
+
   expect(response.status).toBe(400);
   expect(issueSession).not.toHaveBeenCalled();
 });

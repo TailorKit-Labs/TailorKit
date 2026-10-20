@@ -1,6 +1,6 @@
-# TailorKit sandbox
+# Patchsmith sandbox
 
-`@tailorkit/sandbox` runs TailorKit extensions in an opaque-origin iframe. Apps describe UI; the host owns the rendered DOM and sensitive capabilities.
+`@patchsmith/sandbox` runs Patchsmith extensions in an opaque-origin iframe. Apps describe UI; the host owns the rendered DOM and sensitive capabilities.
 
 ## Experimental canvas surfaces
 
@@ -9,8 +9,8 @@ All public canvas APIs and types use the `experimental_` prefix. They may change
 ### Host contract and renderer
 
 ```tsx
-import { defineContract, experimental_canvas } from "tailorkit";
-import { createClient, experimental_canvasRenderer } from "tailorkit/react";
+import { defineContract, experimental_canvas } from "patchsmith";
+import { createClient, experimental_canvasRenderer } from "patchsmith/react";
 import { z } from "zod";
 
 const contract = defineContract({
@@ -25,23 +25,23 @@ const contract = defineContract({
   slots: { panel: { views: ["/"] } },
 });
 
-const tailor = createClient({
+const patchsmith = createClient({
   contract,
-  baseUrl: "/api/tailorkit/",
+  baseUrl: "/api/patchsmith/",
   components: { experimental_Canvas: experimental_canvasRenderer },
 });
 ```
 
-Use `tailor.Provider` and `tailor.RenderSlot` normally. The renderer binds each canvas to its mounted remote node and sandbox instance. It registers the visible element, enforces the contract policy, and revokes the old registration when dimensions change or the component unmounts. A generation identifier prevents stale requests from attaching to a replacement surface. App props cannot raise the host's limits.
+Use `patchsmith.Provider` and `patchsmith.RenderSlot` normally. The renderer binds each canvas to its mounted remote node and sandbox instance. It registers the visible element, enforces the contract policy, and revokes the old registration when dimensions change or the component unmounts. A generation identifier prevents stale requests from attaching to a replacement surface. App props cannot raise the host's limits.
 
 ### App hook and generated component
 
 The normal generator produces `experimental_Canvas` from that contract. Alias the import for JSX, and alias the hook so hook lint rules recognize it:
 
 ```tsx
-import { experimental_useCanvasSurface as useCanvasSurface } from "tailorkit/client";
+import { experimental_useCanvasSurface as useCanvasSurface } from "patchsmith/client";
 
-import { experimental_Canvas as Canvas } from "#tailorkit";
+import { experimental_Canvas as Canvas } from "#patchsmith";
 
 const Chart = ({ value }: { value: number }) => {
   const surface = useCanvasSurface(
@@ -119,7 +119,7 @@ const surface = experimental_useCanvasSurface<ChartJS<"bar">>(
 );
 ```
 
-`create(canvas, { signal, invalidate })` returns the resource or a promise for it. For each grant, callbacks run in order: **create → resize → update → draw → present**. Only `create` is required. `resize(resource, { width, height })` receives the granted backing-pixel dimensions before the first update. `update(resource, canvas)` runs initially and when update dependencies change. Optional `draw(resource, canvas)` runs for each presentation, including input, explicit invalidation, and continuous animation; use it for per-frame rendering rather than ordinary data updates. With no draw callback, TailorKit presents the pixels already drawn by the library. Repeated invalidations coalesce while a presentation is pending. Updates and drawing are serialized; an update arriving during an async update is applied before drawing. Callbacks use current update/draw closures without recreating the instance.
+`create(canvas, { signal, invalidate })` returns the resource or a promise for it. For each grant, callbacks run in order: **create → resize → update → draw → present**. Only `create` is required. `resize(resource, { width, height })` receives the granted backing-pixel dimensions before the first update. `update(resource, canvas)` runs initially and when update dependencies change. Optional `draw(resource, canvas)` runs for each presentation, including input, explicit invalidation, and continuous animation; use it for per-frame rendering rather than ordinary data updates. With no draw callback, Patchsmith presents the pixels already drawn by the library. Repeated invalidations coalesce while a presentation is pending. Updates and drawing are serialized; an update arriving during an async update is applied before drawing. Callbacks use current update/draw closures without recreating the instance.
 
 Changing `createDependencies` aborts and disposes the old resource before requesting a replacement. Function identity changes alone do not recreate it. Resize still revokes the host registration and grants a new surface: the old resource is disposed, then the replacement runs create, resize, and update with the current data. The resize callback initializes each replacement's library dimensions; it does not preserve the old instance. Revocation, sandbox restart, and unmount also abort the creation signal and dispose the resource. Disposal uses the callback paired with that resource's create call. Async creation or resize results arriving after teardown are disposed without drawing. Async work must honor the signal; it cannot be forcibly stopped. Use an explicit resource type parameter when TypeScript cannot infer it from the object.
 
@@ -157,7 +157,7 @@ The canvas must support `getContext("bitmaprenderer")` and must not already have
 Inside the app:
 
 ```ts
-import { experimental_requestCanvas } from "tailorkit/client";
+import { experimental_requestCanvas } from "patchsmith/client";
 
 const surface = await experimental_requestCanvas("visualization");
 try {
@@ -193,8 +193,8 @@ These limits bound accepted output and retained application queues, not all brow
 Build the sandbox's dependencies from the repository root, then start the harness:
 
 ```sh
-pnpm exec turbo run build --filter=@tailorkit/sandbox
-pnpm --filter @tailorkit/sandbox bench:canvas
+pnpm exec turbo run build --filter=@patchsmith/sandbox
+pnpm --filter @patchsmith/sandbox bench:canvas
 ```
 
 Open http://127.0.0.1:5190 and click **Run checks and throughput measurements**. Keep the tab visible. Browser automation can also await `window.runCanvasChecks()`; failures reject and successful results are available in `window.canvasResults`.
@@ -219,10 +219,10 @@ The playground has a canvas-only slot and a standalone host that uses the real g
 ```sh
 pnpm playground:generate
 pnpm playground:todo:build
-pnpm --filter @tailorkit/ui build
+pnpm --filter @patchsmith/ui build
 pnpm --filter @playground/tanstack-start dev:canvas
 ```
 
-Open http://127.0.0.1:5191/canvas-demo.html. No database or TailorKit platform process is needed for this demo. Try redraw, resize, animation, hide/show, a second app instance, and sandbox restart. The ordinary Todo panel also contains the same chart.
+Open http://127.0.0.1:5191/canvas-demo.html. No database or Patchsmith platform process is needed for this demo. Try redraw, resize, animation, hide/show, a second app instance, and sandbox restart. The ordinary Todo panel also contains the same chart.
 
 From a freshly loaded standalone demo, browser automation can await `window.experimental_runCanvasChecks()`. It reads back real host pixels and checks dependency redraw, resize, unmount/remount, animation start/stop, hover and on-canvas tooltips with CSS-scaled coordinates, keyboard allowlists, focused key input, key release on blur, isolation between two app instances, sandbox restart, and iframe cleanup. It throws on failure. The existing low-level throughput harness remains available through `bench:canvas`.

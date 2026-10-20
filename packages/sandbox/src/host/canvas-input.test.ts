@@ -21,6 +21,7 @@ const fixture = (policy: Parameters<typeof createCanvasInput>[2]) => {
   const post = vi.spyOn(port1, "postMessage");
   const invalid = vi.fn<() => void>();
   const input = createCanvasInput(canvas, port1, policy, invalid);
+
   return {
     canvas,
     close: () => {
@@ -36,6 +37,7 @@ const fixture = (policy: Parameters<typeof createCanvasInput>[2]) => {
 
 it("defaults to no input and never makes an output-only canvas focusable", async () => {
   const test = fixture({});
+
   try {
     test.canvas.dispatchEvent(
       new PointerEvent("pointermove", { clientX: 30, clientY: 40 })
@@ -52,6 +54,7 @@ it("defaults to no input and never makes an output-only canvas focusable", async
 
 it("scales coordinates, coalesces movement, and waits for input acknowledgement", async () => {
   const test = fixture({ pointer: true });
+
   try {
     for (let index = 0; index < 1000; index += 1) {
       test.canvas.dispatchEvent(
@@ -63,6 +66,7 @@ it("scales coordinates, coalesces movement, and waits for input acknowledgement"
         })
       );
     }
+
     await vi.advanceTimersByTimeAsync(20);
     expect(test.post).toHaveBeenCalledTimes(1);
     expect(test.post).toHaveBeenCalledWith({
@@ -103,6 +107,7 @@ it("scales coordinates, coalesces movement, and waits for input acknowledgement"
 
 it("forwards only focused, approved keys and preserves browser shortcuts and Tab", async () => {
   const test = fixture({ keyboard: ["ArrowLeft"] });
+
   const key = (code: string, options: KeyboardEventInit = {}) => {
     const event = new KeyboardEvent("keydown", {
       cancelable: true,
@@ -110,9 +115,12 @@ it("forwards only focused, approved keys and preserves browser shortcuts and Tab
       key: code,
       ...options,
     });
+
     test.canvas.dispatchEvent(event);
+
     return event;
   };
+
   try {
     expect(key("ArrowLeft").defaultPrevented).toBe(false);
     test.canvas.focus();
@@ -153,12 +161,14 @@ it("forwards only focused, approved keys and preserves browser shortcuts and Tab
 
 it("resets held input on bounded queue overflow and removes listeners on close", async () => {
   const test = fixture({ pointer: true });
+
   try {
     for (let index = 0; index < 63; index += 1) {
       test.canvas.dispatchEvent(
         new PointerEvent("pointerdown", { pointerId: 1 })
       );
     }
+
     await vi.advanceTimersByTimeAsync(20);
     expect(test.post).toHaveBeenCalledExactlyOnceWith({
       events: [{ type: "blur" }],
@@ -176,17 +186,20 @@ it("resets held input on bounded queue overflow and removes listeners on close",
 
 it("releases captured keys when modifiers change without suppressing shortcuts", async () => {
   const test = fixture({ keyboard: ["ArrowLeft"] });
+
   try {
     test.canvas.focus();
     test.canvas.dispatchEvent(
       new KeyboardEvent("keydown", { code: "ArrowLeft", key: "ArrowLeft" })
     );
+
     const release = new KeyboardEvent("keyup", {
       cancelable: true,
       code: "ArrowLeft",
       ctrlKey: true,
       key: "ArrowLeft",
     });
+
     test.canvas.dispatchEvent(release);
     expect(release.defaultPrevented).toBe(false);
     await vi.advanceTimersByTimeAsync(20);

@@ -1,28 +1,31 @@
 import { allTasks } from "nanostores";
 import { expect, it, vi } from "vite-plus/test";
 
-import { createTailorKitFetchClient } from "#client/fetch-client";
-import { createTailorKitStore } from "#store/store";
+import { createPatchsmithFetchClient } from "#client/fetch-client";
+import { createPatchsmithStore } from "#store/store";
 import { testContract } from "#test-contract";
-import type { TailorKitApp } from "#types";
+import type { PatchsmithApp } from "#types";
 
 import { createSlotRuntime } from "./slot-runtime";
 import type { SlotRuntimeOptions } from "./slot-runtime";
 
 const setup = (multiple = false) => {
   const fetch = vi.fn<typeof globalThis.fetch>();
-  const client = createTailorKitFetchClient({
+
+  const client = createPatchsmithFetchClient({
     baseUrl: "https://host.test/api/",
     fetch,
   });
-  const store = createTailorKitStore({
+
+  const store = createPatchsmithStore({
     apps: [],
     assetsBaseUrl: "https://assets.test/",
     baseUrl: client.baseUrl,
     client,
     contract: testContract(multiple),
   });
-  const app: TailorKitApp = {
+
+  const app: PatchsmithApp = {
     currentDeployment: { id: "deployment" },
     id: "app",
     projectId: "project",
@@ -32,20 +35,24 @@ const setup = (multiple = false) => {
         : { path: "/", slot: "page" },
     ],
   };
+
   return { app, client, fetch, store };
 };
 
 it("waits for an active managed view and constructs deployment URL and hierarchy props in core", async () => {
   const { client, store, app, fetch } = setup();
   client.clear();
+
   const runtime = createSlotRuntime(store, {
     app,
     mode: "managed",
     slot: "page",
   });
+
   const stop = runtime.state.listen(
     vi.fn<NonNullable<Parameters<typeof runtime.state.listen>[0]>>()
   );
+
   expect(runtime.state.get().status).toBe("hidden");
   expect(fetch).not.toHaveBeenCalled();
   const id = Symbol("view");
@@ -74,27 +81,34 @@ it("waits for an active managed view and constructs deployment URL and hierarchy
 
 it("selects instances and validates keys without a framework", async () => {
   const { client, store, app } = setup(true);
+
   const instance = {
     data: { record: "customer" },
     key: "overview",
     metadata: { title: "Overview" },
   };
+
   const instances = vi
     .spyOn(client.endpoints, "slotInstances")
     .mockResolvedValue([instance]);
+
   const id = Symbol("view");
   store.views.register({ context: { customer: "registered" }, id, view: "/" });
   await Promise.resolve();
+
   const options: SlotRuntimeOptions = {
     app,
     instanceKey: "overview",
     mode: "managed",
     slot: "page",
   };
+
   const runtime = createSlotRuntime(store, options);
+
   const stop = runtime.state.listen(
     vi.fn<NonNullable<Parameters<typeof runtime.state.listen>[0]>>()
   );
+
   await allTasks();
   expect(runtime.state.get()).toMatchObject({
     props: { context: { customer: "registered" }, controlled: true, instance },
@@ -114,6 +128,7 @@ it("selects instances and validates keys without a framework", async () => {
 
 it("keeps controlled state independent and removes stale context and instances while loading", async () => {
   const { client, store, app } = setup(true);
+
   const options: SlotRuntimeOptions = {
     app,
     context: { supplied: true },
@@ -123,11 +138,14 @@ it("keeps controlled state independent and removes stale context and instances w
     status: "ready",
     view: "/",
   };
+
   const runtime = createSlotRuntime(store, options);
   const instances = vi.spyOn(client.endpoints, "slotInstances");
+
   const stop = runtime.state.listen(
     vi.fn<NonNullable<Parameters<typeof runtime.state.listen>[0]>>()
   );
+
   const initial = runtime.state.get();
   const id = Symbol("other");
   store.views.register({ context: { unrelated: true }, id, view: "/" });
@@ -139,9 +157,11 @@ it("keeps controlled state independent and removes stale context and instances w
     props: { context: undefined, status: "loading" },
     status: "render",
   });
+
   if (snapshot.status !== "render") {
     throw new Error("Expected render");
   }
+
   expect(snapshot.props).not.toHaveProperty("instance");
   runtime.setInput({ ...options, instance: undefined });
   expect(runtime.state.get()).toMatchObject({ status: "error" });
@@ -152,6 +172,7 @@ it("keeps controlled state independent and removes stale context and instances w
 
 it("updates the session provider when deployment changes behind the same custom client URL", () => {
   const { store, app } = setup();
+
   const options: SlotRuntimeOptions = {
     app: { ...app, clientPath: "/client.js" },
     context: {},
@@ -160,6 +181,7 @@ it("updates the session provider when deployment changes behind the same custom 
     status: "ready",
     view: "/",
   };
+
   const runtime = createSlotRuntime(store, options);
   const initial = runtime.state.get();
   runtime.setInput({
@@ -168,9 +190,11 @@ it("updates the session provider when deployment changes behind the same custom 
   });
   const updated = runtime.state.get();
   expect(updated).not.toBe(initial);
+
   if (initial.status !== "render" || updated.status !== "render") {
     throw new Error("Expected render");
   }
+
   expect(updated.appUrl).toBe(initial.appUrl);
   expect(updated.getBackendSession).not.toBe(initial.getBackendSession);
 });
@@ -182,6 +206,7 @@ it("cancels an instance request when switching to a controlled slot", async () =
   vi.spyOn(client.endpoints, "slotInstances").mockImplementation(
     async (_app, _input, abort) => {
       signal = abort;
+
       return await (async () => {
         const {
           promise: pendingPromise,
@@ -190,11 +215,13 @@ it("cancels an instance request when switching to a controlled slot", async () =
         } = Promise.withResolvers<
           Awaited<ReturnType<typeof client.endpoints.slotInstances>>
         >();
+
         try {
           respond = resolve;
         } catch (error) {
           rejectPending(error);
         }
+
         return await pendingPromise;
       })();
     }
@@ -202,15 +229,18 @@ it("cancels an instance request when switching to a controlled slot", async () =
   const id = Symbol("view");
   store.views.register({ context: {}, id, view: "/" });
   await Promise.resolve();
+
   const runtime = createSlotRuntime(store, {
     app,
     instanceKey: "one",
     mode: "managed",
     slot: "page",
   });
+
   const stop = runtime.state.listen(
     vi.fn<NonNullable<Parameters<typeof runtime.state.listen>[0]>>()
   );
+
   await vi.waitFor(() => {
     expect(signal).toBeDefined();
   });

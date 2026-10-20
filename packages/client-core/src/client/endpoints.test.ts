@@ -1,23 +1,35 @@
-import { asyncFixture } from "@tailorkit/config/testing";
+import { asyncFixture } from "@patchsmith/config/testing";
 import { expect, it, vi } from "vite-plus/test";
 
-import type { TailorKitApp } from "#types";
+import type { PatchsmithApp } from "#types";
 
 import { createEndpointClient } from "./endpoints";
-import { createTailorKitFetchClient } from "./fetch-client";
+import { createPatchsmithFetchClient } from "./fetch-client";
+
+const identity = {
+  appId: "app",
+  deploymentId: "deployment",
+  expiresAt: Date.now() + 300_000,
+  installationId: "app",
+  projectId: "project",
+  scope: { name: "workspace", value: { id: "workspace" } },
+  subjectId: "principal",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
+};
 
 const session = (token: string) =>
   Response.json({
     expiresAt: Date.now() + 300_000,
-    subjectId: "principal",
+    identity,
     token,
     url: "https://runtime.test/rpc",
   });
 
-const deployedApp: TailorKitApp = {
+const deployedApp: PatchsmithApp = {
   currentDeployment: { id: "first" },
   id: "app",
 };
+
 it.each([
   ["deployment", { ...deployedApp, currentDeployment: { id: "second" } }],
 ])(
@@ -29,10 +41,12 @@ it.each([
       .mockResolvedValueOnce(session("other"))
       .mockResolvedValueOnce(session("second"))
       .mockResolvedValueOnce(session("third"));
+
     const client = createEndpointClient({
       baseUrl: "https://host.test/",
       fetch: request,
     });
+
     const held = client.getSessionProvider(deployedApp);
     const other = client.getSessionProvider({ id: "other" });
     await expect(held({ refresh: false })).resolves.toMatchObject({
@@ -69,6 +83,7 @@ const respondImplementation = () => {};
 
 it("clears sessions for held consumers through the public client and shares replacement requests", async () => {
   let respond: (response: Response) => void = respondImplementation;
+
   const request = vi
     .fn<typeof fetch>()
     .mockResolvedValueOnce(session("before"))
@@ -80,19 +95,23 @@ it("clears sessions for held consumers through the public client and shares repl
             resolve,
             reject: rejectPending,
           } = Promise.withResolvers<Response>();
+
           try {
             respond = resolve;
           } catch (error) {
             rejectPending(error);
           }
+
           return await pendingPromise;
         })()
     )
     .mockResolvedValueOnce(session("after-again"));
-  const fetchClient = createTailorKitFetchClient({
+
+  const fetchClient = createPatchsmithFetchClient({
     baseUrl: "https://host.test/",
     fetch: request,
   });
+
   const client = fetchClient.endpoints;
   const held = client.getSessionProvider(deployedApp);
   await held({ refresh: false });
@@ -117,22 +136,25 @@ it("clears sessions for held consumers through the public client and shares repl
 
 it("reauthorizes held consumers after host sign-out and account changes", async () => {
   let user: string | null = "first-user";
+
   const request = vi.fn<typeof fetch>().mockImplementation(
     asyncFixture(() =>
       user !== undefined && user !== null && user !== ""
         ? Response.json({
             expiresAt: Date.now() + 300_000,
-            subjectId: user,
+            identity: { ...identity, subjectId: user },
             token: `${user}-token`,
             url: "https://runtime.test/rpc",
           })
         : new Response(null, { status: 401 })
     )
   );
-  const fetchClient = createTailorKitFetchClient({
+
+  const fetchClient = createPatchsmithFetchClient({
     baseUrl: "https://host.test/",
     fetch: request,
   });
+
   const held = fetchClient.endpoints.getSessionProvider(deployedApp);
   await expect(held({ refresh: false })).resolves.toMatchObject({
     token: "first-user-token",
@@ -167,6 +189,7 @@ it.each(["clear", "deployment"])(
   "rejects a late session response after %s invalidates its credentials",
   async (change) => {
     let respond: (response: Response) => void = respondImplementation2;
+
     const request = vi
       .fn<typeof fetch>()
       .mockImplementationOnce(
@@ -177,25 +200,31 @@ it.each(["clear", "deployment"])(
               resolve,
               reject: rejectPending,
             } = Promise.withResolvers<Response>();
+
             try {
               respond = resolve;
             } catch (error) {
               rejectPending(error);
             }
+
             return await pendingPromise;
           })()
       )
       .mockResolvedValueOnce(session("current"));
-    const fetchClient = createTailorKitFetchClient({
+
+    const fetchClient = createPatchsmithFetchClient({
       baseUrl: "https://host.test/",
       fetch: request,
     });
+
     const client = fetchClient.endpoints;
     const held = client.getSessionProvider(deployedApp);
     const pending = held({ refresh: false });
+
     const rejected = expect(pending).rejects.toMatchObject({
       name: "AbortError",
     });
+
     if (change === "clear") {
       fetchClient.clear();
     } else {
@@ -204,6 +233,7 @@ it.each(["clear", "deployment"])(
         currentDeployment: { id: "second" },
       });
     }
+
     await expect(held({ refresh: false })).resolves.toMatchObject({
       token: "current",
     });

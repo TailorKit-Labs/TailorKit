@@ -1,7 +1,7 @@
 import {
   agentChunkSchema,
   agentRunCompleteChunkSchema,
-} from "@tailorkit/client-platform/agent";
+} from "@patchsmith/client-platform/agent";
 import {
   appsCreate,
   appsList,
@@ -16,10 +16,10 @@ import {
   cliAuthVerifyToken,
   appAgentChat,
   appAgentCreate,
-} from "@tailorkit/client-platform/client";
-import { createClient } from "@tailorkit/client-platform/client/client/index";
-import { createTailorKitClient } from "@tailorkit/core/server";
-import type { TailorKitRouterClient } from "@tailorkit/core/server";
+} from "@patchsmith/client-platform/client";
+import { createClient } from "@patchsmith/client-platform/client/client/index";
+import { createPatchsmithClient } from "@patchsmith/core/server";
+import type { PatchsmithRouterClient } from "@patchsmith/core/server";
 import * as v from "valibot";
 
 import { getAgentAuth, validatePlatformUrl } from "./agent-auth";
@@ -32,9 +32,9 @@ const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
 
 type Input<
-  Group extends keyof TailorKitRouterClient,
-  Method extends keyof TailorKitRouterClient[Group],
-> = TailorKitRouterClient[Group][Method] extends (
+  Group extends keyof PatchsmithRouterClient,
+  Method extends keyof PatchsmithRouterClient[Group],
+> = PatchsmithRouterClient[Group][Method] extends (
   ...args: infer Args
 ) => infer _Output
   ? Args[0]
@@ -48,6 +48,7 @@ const request = async <T>(operation: Promise<T>): Promise<T> => {
     if (error instanceof Error) {
       throw error;
     }
+
     if (
       isObjectValue(error) &&
       "message" in error &&
@@ -57,15 +58,16 @@ const request = async <T>(operation: Promise<T>): Promise<T> => {
         code: "code" in error ? error.code : undefined,
       });
     }
+
     throw new Error(String(error), { cause: error });
   }
 };
 
 export type CliClient = Pick<
-  TailorKitRouterClient,
+  PatchsmithRouterClient,
   "apps" | "deployments" | "appAgent"
 > & {
-  cliAuth: Pick<TailorKitRouterClient["cliAuth"], "verifyToken">;
+  cliAuth: Pick<PatchsmithRouterClient["cliAuth"], "verifyToken">;
 };
 
 /** All authenticated CLI commands share one credential selection and routing boundary. */
@@ -75,16 +77,20 @@ export const createCliClient = (options: {
   fetch?: typeof fetch;
 }): CliClient => {
   const agent = getAgentAuth();
+
   if (!agent) {
-    const clientOptions: Parameters<typeof createTailorKitClient>[0] = {
+    const clientOptions: Parameters<typeof createPatchsmithClient>[0] = {
       headers: { authorization: `Bearer ${options.token}` },
       url: options.url,
     };
+
     if (options.fetch) {
       clientOptions.fetch = options.fetch;
     }
-    return createTailorKitClient(clientOptions);
+
+    return createPatchsmithClient(clientOptions);
   }
+
   const client = createClient({
     baseUrl: validatePlatformUrl(agent.platformUrl),
     fetch: options.fetch,
@@ -93,11 +99,14 @@ export const createCliClient = (options: {
     responseStyle: "data",
     throwOnError: true,
   });
+
   const { scope } = agent;
+
   const scopes = (names?: string[]) => {
     if (names && (names.length !== 1 || names[0] !== scope.name)) {
       throw new Error("Requested scope is not authorized by the agent token.");
     }
+
     return [scope];
   };
   // These map the host RPC shapes to existing OpenAPI routes. Both return compact bodies.
@@ -115,6 +124,7 @@ export const createCliClient = (options: {
           let streamError: unknown;
           let streamFailed = false;
           let done = false;
+
           const { stream } = await appAgentChat({
             body: {
               ...turn,
@@ -129,20 +139,26 @@ export const createCliClient = (options: {
             signal: optionsValue?.signal,
             sseMaxRetryAttempts: 1,
           });
+
           for await (const chunk of stream) {
             const event = await v.parseAsync(agentChunkSchema, chunk);
+
             if (
               v.safeParse(agentRunCompleteChunkSchema, event).success ||
               event.type === "error"
             ) {
               done = true;
             }
+
             yield event;
           }
+
           optionsValue?.signal?.throwIfAborted();
+
           if (!done && !streamFailed) {
             throw new Error("The agent stream ended unexpectedly. Try again.");
           }
+
           if (streamFailed) {
             throw new Error("The app agent stream failed. Try again.", {
               cause: streamError,
@@ -221,6 +237,7 @@ export const createCliClient = (options: {
       deployments: {
         create: async (input: Input<"deployments", "create">) => {
           const { appId, ...deployment } = input;
+
           return await request(
             deploymentsCreate({
               body: { ...deployment, app: platformAppSelector(appId), scope },

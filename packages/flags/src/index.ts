@@ -21,6 +21,7 @@ export const evaluateBooleanFlag = async (
       defaultValue,
       entities ? { ...entities } : undefined
     );
+
     return result.value ?? defaultValue;
   } catch {
     return defaultValue;

@@ -1,3 +1,3 @@
-# TailorKit authentication
+# Patchsmith authentication
 
-`@tailorkit/auth` manages authentication and access for the TailorKit platform.
+`@patchsmith/auth` manages authentication and access for the Patchsmith platform.

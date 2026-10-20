@@ -32,6 +32,7 @@ export interface InitOptions {
 }
 
 const PACKAGE_MANAGERS = ["pnpm", "yarn", "npm", "bun"] as const;
+
 type PackageManager = (typeof PACKAGE_MANAGERS)[number];
 
 const isPackageManager = (value: string): value is PackageManager =>
@@ -47,6 +48,7 @@ const normalizePackageName = (value: string): string =>
 const isPromptValue = <T extends string | boolean>(
   value: T | typeof CANCEL_SYMBOL
 ): value is T => !isCancel(value);
+
 const abortIfCancelled = <T extends string | boolean>(
   value: T | typeof CANCEL_SYMBOL
 ): T => {
@@ -54,6 +56,7 @@ const abortIfCancelled = <T extends string | boolean>(
     cancel("Init cancelled.");
     process.exit(0);
   }
+
   return value;
 };
 
@@ -65,10 +68,12 @@ const promptPackageName = async (
   baseDir: string
 ): Promise<string> => {
   const defaultName =
-    normalizePackageName(path.basename(baseDir)) || "tailorkit-app";
+    normalizePackageName(path.basename(baseDir)) || "patchsmith-app";
+
   if (given !== undefined) {
     return normalizePackageName(given);
   }
+
   const answer = abortIfCancelled(
     await text({
       defaultValue: defaultName,
@@ -80,6 +85,7 @@ const promptPackageName = async (
           : undefined,
     })
   );
+
   return normalizePackageName(answer);
 };
 
@@ -90,10 +96,12 @@ const promptPackageManager = async (
     if (isPackageManager(given)) {
       return given;
     }
+
     throw new Error(
       `--package-manager must be one of: ${PACKAGE_MANAGERS.join(", ")}.`
     );
   }
+
   const answer = abortIfCancelled(
     await select<PackageManager>({
       initialValue: "pnpm",
@@ -101,6 +109,7 @@ const promptPackageManager = async (
       options: PACKAGE_MANAGERS.map((value) => ({ label: value, value })),
     })
   );
+
   return answer;
 };
 
@@ -111,8 +120,10 @@ const promptTooling = async (
     if (given === "vite-plus" || given === "vite") {
       return given;
     }
+
     throw new Error("--tooling must be vite-plus or vite.");
   }
+
   return abortIfCancelled(
     await select<"vite-plus" | "vite">({
       initialValue: "vite-plus",
@@ -136,6 +147,7 @@ const promptTooling = async (
 const validateHostUrl = (value: string | undefined): string | undefined => {
   try {
     normalizeHostUrl(value ?? "");
+
     return undefined;
   } catch {
     return "Enter a valid host URL.";
@@ -145,13 +157,16 @@ const validateHostUrl = (value: string | undefined): string | undefined => {
 const promptHostUrl = async (given: string | undefined): Promise<string> => {
   if (given !== undefined) {
     const error = validateHostUrl(given);
+
     if (error !== undefined) {
       throw new Error(error);
     }
+
     return normalizeHostUrl(given);
   }
 
-  const defaultValue = "https://example.com/api/tailorkit";
+  const defaultValue = "https://example.com/api/patchsmith";
+
   const answer = abortIfCancelled(
     await text({
       defaultValue,
@@ -160,6 +175,7 @@ const promptHostUrl = async (given: string | undefined): Promise<string> => {
       validate: validateHostUrl,
     })
   );
+
   return normalizeHostUrl(answer);
 };
 
@@ -167,6 +183,7 @@ const promptInstall = async (given: boolean | undefined): Promise<boolean> => {
   if (given !== undefined) {
     return given;
   }
+
   return abortIfCancelled(
     await confirm({ initialValue: true, message: "Install dependencies?" })
   );
@@ -179,6 +196,7 @@ const promptForce = async (
   if (given || !existsSync(targetDir)) {
     return given;
   }
+
   return abortIfCancelled(
     await confirm({
       initialValue: false,
@@ -198,6 +216,7 @@ const exec = async (
       resolve,
       reject,
     } = Promise.withResolvers<number>();
+
     try {
       const proc = spawn(cmd, args, { cwd, stdio: "inherit" });
       proc.on("close", resolve);
@@ -205,6 +224,7 @@ const exec = async (
     } catch (error) {
       reject(error);
     }
+
     return await pendingPromise;
   })();
 
@@ -215,10 +235,12 @@ const runInstall = async (
   const s = spinner();
   s.start(`Installing dependencies with ${packageManager}`);
   const code = await exec(packageManager, ["install"], targetDir);
+
   if (code !== 0) {
     s.stop("Install failed.");
     throw new Error(`${packageManager} install exited with code ${code}.`);
   }
+
   s.stop("Installed dependencies.");
 };
 
@@ -229,12 +251,14 @@ const runFormat = async (
   const s = spinner();
   s.start("Formatting project");
   const code = await exec(packageManager, ["run", "format:fix"], targetDir);
+
   if (code !== 0) {
     s.stop("Formatting failed.");
     throw new Error(
       `${packageManager} run format:fix exited with code ${code}.`
     );
   }
+
   s.stop("Formatted project.");
 };
 
@@ -256,6 +280,7 @@ export const runInit = async (options: InitOptions): Promise<string> => {
       : "Reading host schema"
   );
   let schema;
+
   try {
     schema =
       options.schemaPath === undefined
@@ -266,6 +291,7 @@ export const runInit = async (options: InitOptions): Promise<string> => {
     s.stop("Unable to load host schema.");
     throw error;
   }
+
   s.start("Resolving package versions");
   const packageVersions = await resolveTemplatePackageVersions(tooling);
   s.stop("Resolved package versions.");
@@ -286,6 +312,7 @@ export const runInit = async (options: InitOptions): Promise<string> => {
 
   if (install) {
     await runInstall(targetDirectory, packageManager);
+
     if (tooling === "vite-plus") {
       await runFormat(targetDirectory, packageManager);
     }

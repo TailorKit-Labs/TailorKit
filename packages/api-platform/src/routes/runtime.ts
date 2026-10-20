@@ -1,11 +1,11 @@
 import { openapi } from "@orpc/openapi";
 import { ORPCError } from "@orpc/server";
-import type { AppDeploymentMetadata } from "@tailorkit/api-utils/app-auth";
+import type { AppDeploymentMetadata } from "@patchsmith/api-utils/app-auth";
 import {
   APP_PUBLIC_KEYS_CACHE_SECONDS,
   appDeploymentMetadata,
-} from "@tailorkit/api-utils/app-auth";
-import { db } from "@tailorkit/db";
+} from "@patchsmith/api-utils/app-auth";
+import { db } from "@patchsmith/db";
 import { Effect } from "effect";
 import { catch as catchEffect } from "effect/Effect";
 import { z } from "zod";
@@ -41,6 +41,7 @@ export const handlePublicRuntimeRequest = (
   ) {
     return undefined;
   }
+
   return appRuntimeKeysResponse();
 };
 
@@ -52,9 +53,10 @@ export const runtimeSession = protectedRouter
       body: z.strictObject({
         app: appSelectorSchema,
         scopes: scopesSchema,
-        subjectId: z.string().min(1).max(256).optional(),
+        subjectId: z.string().min(1).max(256),
         toolUrl: z.url().refine((value) => {
           const url = new URL(value);
+
           return (
             !url.username &&
             !url.password &&
@@ -81,11 +83,10 @@ export const runtimeSession = protectedRouter
           projectId: z.string(),
           projectShortId: z.string(),
           scope: scopeSchema,
-          subjectId: z.string().optional(),
+          subjectId: z.string().min(1).max(256),
           toolUrl: z.url(),
         }),
         token: z.string(),
-        toolUrl: z.url(),
         url: z.url(),
       }),
     })
@@ -93,18 +94,22 @@ export const runtimeSession = protectedRouter
   .use(requireAppInScopes.adaptInput(({ body }) => body))
   .handler(async ({ context, input }) => {
     const deployment = context.app.currentDeployment;
+
     if (!deployment) {
       throw new ORPCError("NOT_FOUND", {
         message: "App has no published deployment.",
       });
     }
+
     const runtime = new URL(
       env.APP_RUNTIME_URL ??
         `https://${context.project.shortId}.${env.ASSET_DOMAIN ?? "tailorkit.app"}`
     );
+
     const localRuntime =
       runtime.protocol === "http:" &&
       ["localhost", "127.0.0.1", "[::1]"].includes(runtime.hostname);
+
     if (
       runtime.username ||
       runtime.password ||
@@ -116,8 +121,10 @@ export const runtimeSession = protectedRouter
         message: "Invalid app runtime configuration.",
       });
     }
+
     const projectPath = localRuntime ? `/p/${context.project.shortId}` : "";
     const url = new URL(`${projectPath}/a/${context.app.shortId}/rpc`, runtime);
+
     // Each app belongs to one installation scope. Resolve identity from the authorized
     // database record, never from browser input or the ordering of the viewer's scopes.
     const identity = {
@@ -131,12 +138,13 @@ export const runtimeSession = protectedRouter
       subjectId: input.body.subjectId,
       toolUrl: input.body.toolUrl,
     };
+
     const session = await issueAppRuntimeToken(identity);
+
     return {
       body: {
         ...session,
         identity: { ...identity, expiresAt: session.expiresAt },
-        toolUrl: identity.toolUrl,
         url: url.href,
       },
     };
@@ -165,6 +173,7 @@ export const getRuntimeBundle = protectedRouter
             },
           },
         });
+
         if (!app) {
           throw new ORPCError("NOT_FOUND");
         }
@@ -175,11 +184,14 @@ export const getRuntimeBundle = protectedRouter
   )
   .handler(async ({ context }) => {
     const deployment = context.app.currentDeployment;
+
     if (!deployment) {
       throw new ORPCError("NOT_FOUND");
     }
+
     const assetAppId = deployment.app?.shortId ?? context.app.shortId;
     const key = `projects/${context.project.shortId}/apps/${assetAppId}/deployments/${deployment.shortId}/server/server.js`;
+
     const file = await db.query.appDeploymentFile.findFirst({
       where: {
         appDeploymentId: deployment.id,
@@ -187,6 +199,7 @@ export const getRuntimeBundle = protectedRouter
         status: "verified",
       },
     });
+
     if (
       !(
         file?.checksum !== undefined &&
@@ -196,6 +209,7 @@ export const getRuntimeBundle = protectedRouter
     ) {
       throw new ORPCError("NOT_FOUND");
     }
+
     return {
       body: {
         appId: context.app.id,
@@ -228,14 +242,17 @@ export const publishRuntimeMetadata = async (
         ) {
           return;
         }
+
         const url = new URL(
           `/p/${metadata.projectId}/a/${appShortId}/new-deployment`,
           env.APP_RUNTIME_INTERNAL_URL ??
             `https://internal.${env.ASSET_DOMAIN ?? "tailorkit.app"}`
         );
+
         if (url.protocol !== "https:") {
           throw new Error("App runtime URL requires HTTPS");
         }
+
         const response = await fetch(url, {
           body: JSON.stringify(metadata),
           headers: {
@@ -246,6 +263,7 @@ export const publishRuntimeMetadata = async (
           redirect: "error",
           signal: AbortSignal.timeout(10_000),
         });
+
         if (!response.ok) {
           throw new Error(
             `Runtime metadata publication failed (${response.status})`

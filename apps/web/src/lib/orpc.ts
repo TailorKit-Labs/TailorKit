@@ -3,7 +3,7 @@ import { RPCLink } from "@orpc/client/fetch";
 import { createRouterClient } from "@orpc/server";
 import type { RouterClient } from "@orpc/server";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
-import { createContext, appRouter } from "@tailorkit/api";
+import { createContext, appRouter } from "@patchsmith/api";
 import { QueryClient } from "@tanstack/react-query";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";

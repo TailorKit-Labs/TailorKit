@@ -3,6 +3,7 @@ const isStringValue = <TValue>(value: TValue): value is TValue & string =>
 
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
   typeof value === "object" && value !== null;
+
 export const formatFieldErrors = (issueors: unknown[] = []): string =>
   issueors
     .flatMap((issue) => {
@@ -39,6 +40,9 @@ export const formatFieldErrors = (issueors: unknown[] = []): string =>
 
       return [String(issue)];
     })
-    .map((formattedMessage) => formattedMessage.trim())
-    .filter(Boolean)
+    .flatMap((formattedMessage) => {
+      const trimmedMessage = formattedMessage.trim();
+
+      return trimmedMessage ? [trimmedMessage] : [];
+    })
     .join(", ");

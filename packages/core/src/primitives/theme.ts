@@ -4,7 +4,7 @@ export type ThemeBreakpoints = Record<string, string> & {
   [state: `:${string}`]: never;
 };
 
-export interface TailorKitTheme {
+export interface PatchsmithTheme {
   /**
    * Responsive breakpoint names used by responsive primitive props.
    *
@@ -219,15 +219,15 @@ const defaultTokenGroups = {
   textAlign: defaultTextAlign,
   textOverflow: defaultTextOverflow,
   textTransform: defaultTextTransform,
-} satisfies TailorKitTheme["tokens"];
+} satisfies PatchsmithTheme["tokens"];
 
 const isTokenName = (name: string): name is keyof typeof defaultTokenGroups =>
   Object.hasOwn(defaultTokenGroups, name);
 
 const resolveTokens = (
-  theme: TailorKitTheme | undefined
-): TailorKitTheme["tokens"] => {
-  const tokens: NonNullable<TailorKitTheme["tokens"]> = { ...theme?.tokens };
+  theme: PatchsmithTheme | undefined
+): PatchsmithTheme["tokens"] => {
+  const tokens: NonNullable<PatchsmithTheme["tokens"]> = { ...theme?.tokens };
 
   for (const [key, value] of Object.entries(defaultTokenGroups)) {
     if (isTokenName(key)) {
@@ -239,9 +239,10 @@ const resolveTokens = (
 };
 
 export const resolveTheme = (
-  theme: TailorKitTheme | undefined
-): TailorKitTheme => {
+  theme: PatchsmithTheme | undefined
+): PatchsmithTheme => {
   const breakpoints = theme?.breakpoints ?? defaultBreakpoints;
+
   for (const name of Object.keys(breakpoints)) {
     if (name === "default" || name.startsWith(":")) {
       throw new Error(
@@ -249,5 +250,6 @@ export const resolveTheme = (
       );
     }
   }
+
   return { breakpoints, tokens: resolveTokens(theme) };
 };

@@ -4,13 +4,13 @@ sidebarTitle: "Overview"
 description: "Create an app and find your way around its files."
 ---
 
-Create an app against a host product’s contract to use its components, tools, and slots. You need Node.js, a package manager, and the host’s TailorKit API URL. Start with the TailorKit command-line interface (CLI):
+Create an app against a host product’s contract to use its components, tools, and slots. You need Node.js, a package manager, and the host’s Patchsmith API URL. Start with the Patchsmith command-line interface (CLI):
 
 ```sh
-npx tailorkit@beta init
+npx patchsmith@beta init
 ```
 
-Follow the prompts for your app name and the product's TailorKit API URL. The CLI reads its contract, creates a starter app, and generates bindings for its capabilities.
+Follow the prompts for your app name and the product's Patchsmith API URL. The CLI reads its contract, creates a starter app, and generates bindings for its capabilities.
 
 ## App structure
 
@@ -35,9 +35,9 @@ These are the main files for a host with a `panel` slot and a `/` view:
       </Tree.Folder>
       <Tree.File name="root.tsx" />
       <Tree.File name="server.ts" />
-      <Tree.File name="tailorkit.gen.ts" />
+      <Tree.File name="patchsmith.gen.ts" />
     </Tree.Folder>
-    <Tree.File name="tailorkit.config.ts" />
+    <Tree.File name="patchsmith.config.ts" />
     <Tree.File name="vite.config.ts" />
     <Tree.File name="package.json" />
     <Tree.File name="tsconfig.json" />
@@ -52,8 +52,8 @@ Use these files to add UI, backend logic, and configuration:
 | `src/root.tsx` | The shared UI shell. |
 | `src/functions/` and `src/server.ts` | Backend functions and their registration. |
 | `src/db/` | Database schema, connection, and migrations. |
-| `src/tailorkit.gen.ts` | Generated components, tools, and types; refreshed by `tailorkit generate`. |
-| `tailorkit.config.ts` | The host URL and app logos. |
+| `src/patchsmith.gen.ts` | Generated components, tools, and types; refreshed by `patchsmith generate`. |
+| `patchsmith.config.ts` | The host URL and app logos. |
 | `vite.config.ts` | Build configuration. |
 
 Start by [writing UI for a slot](/writing-apps/ui).

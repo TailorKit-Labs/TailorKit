@@ -1,11 +1,11 @@
 ---
-"tailorkit": minor
-"@tailorkit/app": minor
-"@tailorkit/cli": minor
-"@tailorkit/client-platform": minor
-"@tailorkit/core": minor
-"@tailorkit/react": minor
-"@tailorkit/sandbox": minor
+"patchsmith": minor
+"@patchsmith/app": minor
+"@patchsmith/cli": minor
+"@patchsmith/client-platform": minor
+"@patchsmith/core": minor
+"@patchsmith/react": minor
+"@patchsmith/sandbox": minor
 ---
 
 Publish the initial TailorKit beta packages.

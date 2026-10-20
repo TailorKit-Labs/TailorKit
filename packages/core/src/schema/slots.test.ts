@@ -2,10 +2,10 @@ import * as v from "valibot";
 import { describe, expect, it } from "vite-plus/test";
 import { z } from "zod";
 
-import { TailorKitSchemaSpec } from "#spec/spec";
+import { PatchsmithSchemaSpec } from "#spec/spec";
 
 import { defineContract } from "./contract";
-import { createTailorKitSchema } from "./schema";
+import { createPatchsmithSchema } from "./schema";
 
 describe("slot view contracts", () => {
   it("preserves descriptions through contract serialization and schema parsing", () => {
@@ -25,8 +25,9 @@ describe("slot view contracts", () => {
       },
       views: { "/": z.object({}) },
     });
-    const schema = createTailorKitSchema(contract).serialize();
-    expect(v.parse(TailorKitSchemaSpec, schema).slots).toEqual({
+
+    const schema = createPatchsmithSchema(contract).serialize();
+    expect(v.parse(PatchsmithSchemaSpec, schema).slots).toEqual({
       empty: { description: "", views: ["/"] },
       navbar: { views: ["/"] },
       page: {
@@ -52,7 +53,7 @@ describe("slot view contracts", () => {
         })
       ).toThrow('Slot "panel" description must be a string.');
       expect(() =>
-        createTailorKitSchema({
+        createPatchsmithSchema({
           components: {},
           // @ts-expect-error Exercise runtime validation for JavaScript hosts.
           slots: { panel: { description, views: ["/"] } },
@@ -60,7 +61,7 @@ describe("slot view contracts", () => {
         })
       ).toThrow('Slot "panel" description must be a string.');
       expect(
-        v.safeParse(TailorKitSchemaSpec, {
+        v.safeParse(PatchsmithSchemaSpec, {
           components: {},
           slots: { panel: { description, views: ["/"] } },
           version: 1,
@@ -71,7 +72,7 @@ describe("slot view contracts", () => {
   );
 
   it("preserves true, false, and omitted multiplicity through serialization", () => {
-    const host = createTailorKitSchema({
+    const host = createPatchsmithSchema({
       components: {},
       slots: {
         navbar: { views: ["/"] },
@@ -80,13 +81,14 @@ describe("slot view contracts", () => {
       },
       views: { "/": z.object({}) },
     });
-    expect(v.parse(TailorKitSchemaSpec, host.serialize()).slots).toEqual({
+
+    expect(v.parse(PatchsmithSchemaSpec, host.serialize()).slots).toEqual({
       navbar: { views: ["/"] },
       page: { multiple: true, views: ["/"] },
       panel: { multiple: false, views: ["/"] },
     });
     expect(
-      v.safeParse(TailorKitSchemaSpec, {
+      v.safeParse(PatchsmithSchemaSpec, {
         ...host.serialize(),
         slots: { page: { multiple: "true", views: ["/"] } },
       }).success
@@ -94,11 +96,13 @@ describe("slot view contracts", () => {
   });
   it("serializes supported view lists", () => {
     const userView = z.object({ userId: z.string() });
-    const host = createTailorKitSchema({
+
+    const host = createPatchsmithSchema({
       components: {},
       slots: { navbar: { views: ["/"] }, panel: { views: ["/users"] } },
       views: { "/": z.object({}), "/users": userView },
     });
+
     expect(host.views["/users"]).toBe(userView);
     const schema = host.serialize();
     expect(schema.views["/users"]?.context).toMatchObject({
@@ -106,7 +110,7 @@ describe("slot view contracts", () => {
       required: ["userId"],
       type: "object",
     });
-    expect(v.parse(TailorKitSchemaSpec, schema).slots).toEqual({
+    expect(v.parse(PatchsmithSchemaSpec, schema).slots).toEqual({
       navbar: { views: ["/"] },
       panel: { views: ["/users"] },
     });
@@ -114,7 +118,7 @@ describe("slot view contracts", () => {
 
   it("rejects unknown view references in serialized schemas", () => {
     expect(
-      v.safeParse(TailorKitSchemaSpec, {
+      v.safeParse(PatchsmithSchemaSpec, {
         components: {},
         slots: { panel: { views: ["/missing"] } },
         version: 1,
@@ -125,7 +129,7 @@ describe("slot view contracts", () => {
 
   it("rejects invalid multiplicity in JavaScript host configurations", () => {
     expect(() =>
-      createTailorKitSchema({
+      createPatchsmithSchema({
         components: {},
 
         // @ts-expect-error Exercise runtime validation for JavaScript hosts.
@@ -138,7 +142,7 @@ describe("slot view contracts", () => {
 
   it("rejects untyped host configurations with undeclared views", () => {
     expect(() =>
-      createTailorKitSchema({
+      createPatchsmithSchema({
         components: {},
 
         // @ts-expect-error Exercise runtime validation for JavaScript hosts.

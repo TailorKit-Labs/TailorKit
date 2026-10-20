@@ -1,4 +1,4 @@
-import { Button } from "@tailorkit/ui/button";
+import { Button } from "@patchsmith/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -9,16 +9,16 @@ import {
   DialogPopup,
   DialogTitle,
   DialogTrigger,
-} from "@tailorkit/ui/dialog";
-import { Input } from "@tailorkit/ui/input";
+} from "@patchsmith/ui/dialog";
+import { Input } from "@patchsmith/ui/input";
 import {
   Select,
   SelectItem,
   SelectPopup,
   SelectTrigger,
   SelectValue,
-} from "@tailorkit/ui/select";
-import { toastManager } from "@tailorkit/ui/toast";
+} from "@patchsmith/ui/select";
+import { toastManager } from "@patchsmith/ui/toast";
 import { useMutation } from "@tanstack/react-query";
 import { PlusIcon, TrashIcon, UserPlusIcon } from "lucide-react";
 import { useState } from "react";
@@ -40,9 +40,11 @@ export const InviteMembersDialog = ({
   onSuccess: () => void;
 }) => {
   const [open, setOpen] = useState(false);
+
   const [invites, setInvites] = useState<InviteRow[]>([
     { email: "", role: "member" },
   ]);
+
   const [errors, setErrors] = useState<string[]>([]);
 
   const mutation = useMutation({
@@ -57,6 +59,7 @@ export const InviteMembersDialog = ({
             })
         )
       );
+
       const failed = results
         .map((result, index) =>
           result.status === "rejected"
@@ -68,6 +71,7 @@ export const InviteMembersDialog = ({
             : null
         )
         .filter((message) => message !== null);
+
       if (failed.length > 0) {
         throw new Error(failed.join("\n"));
       }
@@ -75,6 +79,7 @@ export const InviteMembersDialog = ({
     onError: (cause: unknown) => {
       const message =
         cause instanceof Error ? cause.message : "Some invitations failed";
+
       setErrors(message.split("\n"));
     },
     onSuccess: () => {
@@ -95,15 +100,18 @@ export const InviteMembersDialog = ({
   const handleSubmit = (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     const valid = invites.filter((row) => row.email.trim());
+
     if (valid.length === 0) {
       return;
     }
+
     setErrors([]);
     mutation.mutate(valid);
   };
 
   const handleOpenChange = (next: boolean) => {
     setOpen(next);
+
     if (!next) {
       setInvites([{ email: "", role: "member" }]);
       setErrors([]);

@@ -1,7 +1,8 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile } from "node:fs/promises";
 
 import { build } from "vite";
 
+// The loader needs the isolated facet as source text, separate from the trusted worker.
 await build({
   build: {
     outDir: ".generated",
@@ -16,8 +17,5 @@ await build({
   logLevel: "error",
   ssr: { noExternal: true, target: "webworker" },
 });
-await mkdir(".generated", { recursive: true });
-await writeFile(
-  ".generated/bootstrap.txt",
-  await readFile(".generated/bootstrap.js")
-);
+
+await copyFile(".generated/bootstrap.js", ".generated/bootstrap.txt");

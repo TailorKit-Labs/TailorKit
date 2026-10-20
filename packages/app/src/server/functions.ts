@@ -1,20 +1,20 @@
-import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type {
   DatabaseRelations,
   EmptyDatabaseRelations,
   DatabaseDefinition,
   QueryDatabase,
   MutationDatabase,
-} from "@tailorkit/app-db";
+} from "@patchsmith/app-db";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 
-import type { TailorKitServerTools } from "#client/tools";
+import type { PatchsmithServerTools } from "#client/tools";
 import type { JsonValue } from "#validation";
 
 // oxlint-disable-next-line typescript/no-generated-empty-object-type -- Omitted function tables must have no keys so actions expose no undeclared capabilities.
 export type EmptyFunctions = Record<never, never>;
 
 export interface Identity {
-  readonly subjectId?: string;
+  readonly subjectId: string;
   readonly scope: {
     name: string;
     value: Record<string, JsonValue>;
@@ -28,6 +28,7 @@ export interface Identity {
 }
 
 export type FunctionKind = "query" | "mutation" | "action";
+
 export type FunctionResult<D> = D extends {
   result: infer R extends StandardSchemaV1;
 }
@@ -35,6 +36,7 @@ export type FunctionResult<D> = D extends {
   : D extends { handler: (context: never) => infer O }
     ? Awaited<O>
     : never;
+
 export type FunctionCalls<F, K extends "query" | "mutation"> = {
   readonly [
     N in keyof F as F[N] extends { kind: FunctionKind }
@@ -70,7 +72,7 @@ export type FunctionCalls<F, K extends "query" | "mutation"> = {
 
 export interface ActionContext<F extends Functions = EmptyFunctions> {
   readonly identity: Identity;
-  readonly tools: TailorKitServerTools;
+  readonly tools: PatchsmithServerTools;
   readonly requestId: string;
   readonly scope: Identity["scope"];
   readonly signal: AbortSignal;
@@ -108,6 +110,7 @@ export const query = <A extends StandardSchemaV1, O>(
           : unknown);
   }
 ) => Object.freeze({ ...definition, kind: "query" as const });
+
 export const mutation = <A extends StandardSchemaV1, O>(
   definition: Omit<FunctionDefinition<"mutation", A, O>, "kind"> & {
     handler: FunctionDefinition<"mutation", A, O>["handler"] &
@@ -138,6 +141,7 @@ export interface RegisteredFunction<TOutput = unknown> {
   functions?: Functions;
   database?: DatabaseDefinition;
 }
+
 export interface Functions {
   readonly [name: string]: RegisteredFunction | Functions;
 }
@@ -155,13 +159,16 @@ export const defineRouter = <const F extends Functions>(functions: F): F => {
     if (!functionNamePattern.test(name)) {
       throw new Error("Invalid function name");
     }
+
     if (!isFunction(value)) {
       defineRouter(value);
     }
   }
+
   return Object.freeze(functions);
 };
 
 export const defineServer = <const F extends Functions>(functions: F) =>
   Object.freeze({ functions: defineRouter(functions) });
+
 export type AppDefinition = ReturnType<typeof defineServer>;

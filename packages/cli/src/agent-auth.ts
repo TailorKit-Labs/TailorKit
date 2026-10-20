@@ -9,6 +9,7 @@ import { readAgentEnvironment } from "./env";
 export const validatePlatformUrl = (value: string) => {
   const url = new URL(value);
   const loopback = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+
   if (
     (url.protocol !== "https:" && !(url.protocol === "http:" && loopback)) ||
     url.username ||
@@ -20,15 +21,16 @@ export const validatePlatformUrl = (value: string) => {
       "Agent platform URL must use HTTPS, except for loopback hosts."
     );
   }
+
   return url.href.replace(/\/$/u, "");
 };
 
 const agentClaimsSchema = z.object({
   appId: z.string().min(1),
-  aud: z.literal("tailorkit-platform-cli"),
+  aud: z.literal("patchsmith-platform-cli"),
   exp: z.number().int(),
   iat: z.number().int(),
-  iss: z.literal("tailorkit-agent"),
+  iss: z.literal("patchsmith-agent"),
   platformUrl: z.url({ protocol: /^https?$/u }),
   projectId: z.string().min(1),
   scope: z.object({
@@ -42,31 +44,37 @@ export const getAgentAuth = ():
   | (z.output<typeof agentClaimsSchema> & { token: string })
   | undefined => {
   const environment = readAgentEnvironment();
-  let token = environment.TAILORKIT_AGENT_TOKEN;
+  let token = environment.PATCHSMITH_AGENT_TOKEN;
+
   if (
     token === undefined &&
-    environment.TAILORKIT_AGENT_TOKEN_FILE !== undefined
+    environment.PATCHSMITH_AGENT_TOKEN_FILE !== undefined
   ) {
     try {
       token = readFileSync(
-        environment.TAILORKIT_AGENT_TOKEN_FILE,
+        environment.PATCHSMITH_AGENT_TOKEN_FILE,
         "utf-8"
       ).trim();
     } catch {
       throw new Error("Unable to read agent authorization file.");
     }
   }
+
   if (token === undefined) {
     return undefined;
   }
+
   try {
     const header = decodeProtectedHeader(token);
-    if (header.alg !== "HS256" || header.typ !== "tailorkit-agent+jwt") {
+
+    if (header.alg !== "HS256" || header.typ !== "patchsmith-agent+jwt") {
       throw new Error("Invalid credential.");
     }
+
     const claims = agentClaimsSchema.parse(decodeJwt(token));
     const now = Math.floor(Date.now() / 1000);
     validatePlatformUrl(claims.platformUrl);
+
     if (
       claims.iat > now ||
       claims.exp <= claims.iat ||
@@ -74,9 +82,11 @@ export const getAgentAuth = ():
     ) {
       throw new Error("Invalid credential.");
     }
+
     if (claims.exp <= now) {
       throw new Error("Agent authorization expired. Start a new agent turn.");
     }
+
     return { ...claims, token };
   } catch (error) {
     throw new Error(

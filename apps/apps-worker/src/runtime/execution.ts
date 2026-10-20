@@ -1,6 +1,6 @@
-import { invocationSchema } from "@tailorkit/app/protocol";
-import type { Invocation } from "@tailorkit/app/protocol";
-import type { AppDefinition, Identity } from "@tailorkit/app/server";
+import { invocationSchema } from "@patchsmith/app/protocol";
+import type { Invocation } from "@patchsmith/app/protocol";
+import type { AppDefinition, Identity } from "@patchsmith/app/server";
 import { Effect } from "effect";
 import { catch as catchEffect } from "effect/Effect";
 import * as v from "valibot";
@@ -20,13 +20,15 @@ import { prepareFunction, functionValue } from "./functions";
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
   typeof value === "object" && value !== null;
 
-export { invocationSchema } from "@tailorkit/app/protocol";
-export type { Invocation } from "@tailorkit/app/protocol";
+export { invocationSchema } from "@patchsmith/app/protocol";
+
+export type { Invocation } from "@patchsmith/app/protocol";
 
 export interface ExecutionResult {
   value: unknown;
   tables: string[];
 }
+
 export interface MutationResult extends ExecutionResult {
   committed: boolean;
 }
@@ -38,9 +40,10 @@ export const createExecution = (
 ) => {
   migrateDatabase(persistence, migrations);
   persistence.execute(
-    "CREATE TABLE IF NOT EXISTS tailorkit_receipts (id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, result TEXT NOT NULL)",
+    "CREATE TABLE IF NOT EXISTS patchsmith_receipts (id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, result TEXT NOT NULL)",
     []
   );
+
   const execute = (
     input: Invocation,
     identity: Identity,
@@ -48,11 +51,13 @@ export const createExecution = (
     tables?: Set<string>
   ): ExecutionResult => {
     const { fn, args } = prepareFunction(app, input, identity, kind);
+
     const scope = databaseScope(
       persistence,
       kind === "mutation",
       fn.database?.relations
     );
+
     try {
       // SAFETY: prepareFunction validated args using this registered function, and this transaction supplies its matching database capability.
       const value = inExecutionContext({ active: true, kind }, () =>
@@ -62,6 +67,7 @@ export const createExecution = (
           /* oxlint-enable typescript/no-unsafe-type-assertion */
         )
       );
+
       if (isObjectValue(value) && "then" in value) {
         // Revoke DB access before any continuation can run outside the transaction.
         void (async () => {
@@ -71,20 +77,25 @@ export const createExecution = (
             /* Intentionally no action is needed. */
           }
         })();
+
         throw new AppError("BAD_REQUEST", "App handlers must be synchronous");
       }
+
       const result = {
         tables: [...(kind === "query" ? scope.reads : scope.writes)],
         value: functionValue(fn, value),
       };
+
       return result;
     } finally {
       for (const table of kind === "query" ? scope.reads : scope.writes) {
         tables?.add(table);
       }
+
       scope.close();
     }
   };
+
   const mutate = (
     input: Invocation & { requestId: string },
     identity: Identity,
@@ -93,9 +104,11 @@ export const createExecution = (
     if (identity.expiresAt <= Date.now()) {
       throw new AppError("UNAUTHORIZED", "App token expired");
     }
+
     z.uuid().parse(input.requestId);
+
     const fingerprint = JSON.stringify([
-      identity.subjectId ?? null,
+      identity.subjectId,
       identity.projectId,
       identity.appId,
       identity.installationId,
@@ -103,11 +116,13 @@ export const createExecution = (
       input.args,
       ...(input.args === undefined ? ["undefined"] : []),
     ]);
+
     return persistence.transaction(() => {
       const [prior] = persistence.execute(
-        "SELECT fingerprint, result FROM tailorkit_receipts WHERE id = ?",
+        "SELECT fingerprint, result FROM patchsmith_receipts WHERE id = ?",
         [input.requestId]
       ).rows;
+
       if (prior !== undefined && prior !== null) {
         if (prior[0] !== fingerprint) {
           throw new AppError(
@@ -115,23 +130,29 @@ export const createExecution = (
             "Mutation ID was already used for different arguments or identity"
           );
         }
+
         const stored = z
           .object({
             tables: z.array(z.string()),
             value: z.unknown().optional(),
           })
           .parse(JSON.parse(z.string().parse(prior[1])));
+
         return { committed: false, tables: stored.tables, value: stored.value };
       }
+
       const result = execute(input, identity, "mutation", tables);
       persistence.execute(
-        "INSERT INTO tailorkit_receipts (id, fingerprint, result) VALUES (?, ?, ?)",
+        "INSERT INTO patchsmith_receipts (id, fingerprint, result) VALUES (?, ?, ?)",
         [input.requestId, fingerprint, JSON.stringify(result)]
       );
+
       return { ...result, committed: true };
     });
   };
+
   const action = createActionExecution(app);
+
   return {
     action: (
       input: Invocation,
@@ -149,14 +170,17 @@ export const createExecution = (
               fetch: services.fetch,
               mutate: async (call) => {
                 const result = mutate(call, identity);
+
                 if (result.committed && result.tables.length) {
                   await services.committed(result.tables);
                 }
+
                 return result.value;
               },
               query: async (call) =>
                 await (async () => {
                   await Promise.resolve();
+
                   return execute(call, identity, "query").value;
                 })(),
               tool: services.tool,
@@ -184,6 +208,7 @@ export const createExecution = (
     ): Effect.Effect<InvocationResult> =>
       Effect.suspend(() => {
         const tables = new Set<string>();
+
         return Effect.try({
           catch: appError,
           try: () => {
@@ -196,9 +221,11 @@ export const createExecution = (
                 : invocationSchema,
               input
             );
+
             if (!parsed.success) {
               throw new AppError("BAD_REQUEST", "Invalid database invocation");
             }
+
             // SAFETY: kind selected the mutation schema above, which required a UUID requestId before parsed.output reaches this branch.
             const result =
               kind === "mutation"
@@ -210,6 +237,7 @@ export const createExecution = (
                     tables
                   )
                 : execute(parsed.output, identity, kind, tables);
+
             return {
               committed: "committed" in result && result.committed === true,
               result: { ok: true as const, value: result.value },

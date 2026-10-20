@@ -12,6 +12,9 @@ build
 *.sqlite
 *.sqlite-*
 
+# Place to dump files locally to help agents
+.local
+
 # Environment variables
 .dev.vars
 .dev.vars.*
@@ -72,6 +75,9 @@ temp
 .tailorkit
 .tailorkit-storage
 .tailorkit-server
+.patchsmith
+.patchsmith-storage
+.patchsmith-server
 examples/apps/persistent-todo/storage/public-keys.json
 
 apps/apps-runtime/src/worker-env.d.ts

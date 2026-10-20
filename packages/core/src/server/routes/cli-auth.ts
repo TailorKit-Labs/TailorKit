@@ -4,11 +4,11 @@ import {
   cliAuthDeny,
   cliAuthPoll,
   cliAuthStart,
-} from "@tailorkit/client-platform/client";
+} from "@patchsmith/client-platform/client";
 import * as v from "valibot";
 
 import {
-  getTailorKitScope,
+  getPatchsmithScope,
   o,
   requireCliDeployToken,
   requireHostAuth,
@@ -26,7 +26,7 @@ const runPlatformCliAuthRequest = async <T>(
     if (isStringValue(error) && error.toLowerCase() === "unauthorized") {
       throw new ORPCError("UNAUTHORIZED", {
         message:
-          "TailorKit platform rejected the host project key. Check TAILORKIT_PROJECT_KEY.",
+          "Patchsmith platform rejected the host project key. Check PATCHSMITH_PROJECT_KEY.",
       });
     }
 
@@ -48,7 +48,7 @@ export const cliAuthRouter = {
         await runPlatformCliAuthRequest(
           cliAuthApprove({
             body: {
-              scope: getTailorKitScope(context, input.scope),
+              scope: getPatchsmithScope(context, input.scope),
               userCode: input.userCode,
             },
             client: context.platform,
@@ -98,5 +98,5 @@ export const cliAuthRouter = {
   verifyToken: o
     .input(v.object({}))
     .use(requireCliDeployToken)
-    .handler(({ context }) => ({ scope: getTailorKitScope(context) })),
+    .handler(({ context }) => ({ scope: getPatchsmithScope(context) })),
 };

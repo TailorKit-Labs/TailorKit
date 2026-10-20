@@ -1,9 +1,9 @@
 import {
   initializeObservability,
   withRequestSpan,
-} from "@tailorkit/observability";
+} from "@patchsmith/observability";
 
-await initializeObservability("tailorkit-web");
+await initializeObservability("patchsmith-web");
 
 const { default: handler, createServerEntry } =
   await import("@tanstack/react-start/server-entry");
@@ -13,6 +13,7 @@ export default createServerEntry({
     await withRequestSpan(request, "web.request", async (span) => {
       const response = await handler.fetch(request);
       span.setAttribute("http.response.status_code", response.status);
+
       return response;
     }),
 });

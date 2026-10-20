@@ -12,12 +12,14 @@ const storage = createS3CompatibleStorage({
 
 void test("presigned upload signs the exact checksum and content-type headers returned to clients", async () => {
   const checksum = Buffer.alloc(32).toString("base64");
+
   const result = await storage.createUploadUrl({
     checksumSha256: checksum,
     contentType: "application/javascript",
     key: "assets/client.js",
     metadata: { fileId: "test-file" },
   });
+
   const url = new URL(result.uploadUrl);
   assert.equal(url.searchParams.has("x-amz-checksum-sha256"), false);
   assert.deepEqual(url.searchParams.get("X-Amz-SignedHeaders").split(";"), [
@@ -34,6 +36,7 @@ void test("upload signing still supports callers without a checksum", async () =
     contentType: "application/javascript",
     key: "client.js",
   });
+
   const url = new URL(result.uploadUrl);
   assert.equal(url.searchParams.has("x-amz-checksum-sha256"), false);
   assert.equal(result.headers["x-amz-checksum-sha256"], undefined);
@@ -49,9 +52,11 @@ void test("presigned gzip uploads sign and return content-encoding", async () =>
     contentType: "application/javascript",
     key: "client.js",
   });
+
   const signedHeaders = new URL(result.uploadUrl).searchParams
     .get("X-Amz-SignedHeaders")
     .split(";");
+
   assert.ok(signedHeaders.includes("content-encoding"));
   assert.equal(result.headers["content-encoding"], "gzip");
 });

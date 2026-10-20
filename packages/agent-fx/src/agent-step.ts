@@ -18,6 +18,7 @@ export const agentStep = async (
   const { getSandbox, sandboxName, sandboxSession } = await import("./sandbox");
   await assertOwnership(input.appId, runId);
   const name = sandboxName(input.threadId);
+
   return await runHarnessAgentStep({
     agent: await createAppAgent(input, name),
     sandboxSession: sandboxSession(await getSandbox(name)),

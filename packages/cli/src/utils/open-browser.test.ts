@@ -20,6 +20,7 @@ vi.mock("node:os", async (importOriginal) => ({
 const createChildProcess = () => {
   const child = new ChildProcess();
   const unref = vi.spyOn(child, "unref").mockImplementation(() => {});
+
   return { child, unref };
 };
 

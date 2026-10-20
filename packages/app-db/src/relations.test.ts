@@ -6,14 +6,16 @@ import { describe, expect, it } from "vite-plus/test";
 import { defineDatabase, defineRelations, table, text, boolean } from "#index";
 
 const users = table("users", { id: text().primaryKey() });
+
 const posts = table("posts", {
   id: text().primaryKey(),
   published: boolean().notNull().default(false),
   userId: text(),
 });
+
 const schema = { posts, users };
 
-describe("TailorKit relations", () => {
+describe("Patchsmith relations", () => {
   it("includes every table when navigation is omitted", () => {
     const relations = defineRelations(schema);
     expect(Object.keys(relations).toSorted()).toEqual(["posts", "users"]);
@@ -31,8 +33,10 @@ describe("TailorKit relations", () => {
         posts: r.many.posts({ from: r.users.id, to: r.posts.userId }),
       },
     }));
+
     const database = defineDatabase({ relations });
     const sqlite = new DatabaseSync(":memory:");
+
     try {
       sqlite.exec(`
         CREATE TABLE users (id TEXT PRIMARY KEY);

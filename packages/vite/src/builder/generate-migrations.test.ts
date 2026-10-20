@@ -12,20 +12,23 @@ import { readAppMigrations } from "./migrations";
 it.each([undefined, "history"])(
   "generates Drizzle migrations for the new layout with directory %s",
   async (directory) => {
-    const root = await mkdtemp(path.join(tmpdir(), "tailorkit-db-generate-"));
+    const root = await mkdtemp(path.join(tmpdir(), "patchsmith-db-generate-"));
+
     try {
       await mkdir(path.join(root, "src/db"), { recursive: true });
       await writeFile(path.join(root, "package.json"), '{"type":"module"}');
       await linkTestDependencies(root);
       await writeFile(path.join(root, "src/db/schema.ts"), testSchema);
       await writeFile(
-        path.join(root, "tailorkit.config.mjs"),
+        path.join(root, "patchsmith.config.mjs"),
         `export default { name: "Test App", slug: "test-app", host: "https://host.example.com", server: ${JSON.stringify(directory !== undefined && directory !== null && directory !== "" ? { migrations: directory } : {})} };`
       );
+
       const migrations = await generateAppMigrations({
         cwd: root,
         name: "init",
       });
+
       expect(migrations).toBe(
         path.join(root, directory ?? "src/db/migrations")
       );
@@ -37,5 +40,7 @@ it.each([undefined, "history"])(
     } finally {
       await rm(root, { force: true, recursive: true });
     }
-  }
+  },
+  // Each case runs real Drizzle subprocesses for generation and schema checks.
+  10_000
 );

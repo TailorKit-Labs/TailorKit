@@ -40,6 +40,7 @@ export const ToggleGroup = ({
   }
 
   const contextValue1 = useMemo(() => ({ size, variant }), [size, variant]);
+
   return (
     <ToggleGroupPrimitive
       className={cn(

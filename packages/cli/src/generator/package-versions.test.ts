@@ -53,11 +53,13 @@ it("skips releases younger than three days", async () => {
 
 it("scaffolds against the CLI's SDK version", async () => {
   vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+
   const { default: packageJson } = await import("#package.json", {
     with: { type: "json" },
   });
+
   const awaitedResult4 = await resolveTemplatePackageVersions();
-  expect(awaitedResult4.tailorkit).toBe(packageJson.version);
+  expect(awaitedResult4.patchsmith).toBe(packageJson.version);
 });
 
 it("selects stable Valibot 1 releases that satisfy the release-age policy", async () => {

@@ -1,7 +1,7 @@
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 
-import type { TailorKitRouterClient } from "./router";
+import type { PatchsmithRouterClient } from "./router";
 
 const isFunctionValue = <TValue>(
   value: TValue
@@ -9,23 +9,26 @@ const isFunctionValue = <TValue>(
 
 type HeaderInput = ConstructorParameters<typeof Headers>[0];
 
-export interface TailorKitClientOptions {
+export interface PatchsmithClientOptions {
   fetch?: typeof fetch;
   headers?: HeaderInput | (() => HeaderInput | Promise<HeaderInput>);
   url: string;
 }
 
-export const createTailorKitClient = (
-  options: TailorKitClientOptions
-): TailorKitRouterClient => {
+export const createPatchsmithClient = (
+  options: PatchsmithClientOptions
+): PatchsmithRouterClient => {
   const url = URL.canParse(options.url) ? new URL(options.url) : undefined;
+
   // SAFETY: The configured URL is normalized into a pathname before the client uses it as an absolute route path.
   const link = new RPCLink({
     fetch: async (urlValue, init) => {
       const configuredHeaders = await (isFunctionValue(options.headers)
         ? options.headers()
         : options.headers);
+
       const headers = new Headers(configuredHeaders);
+
       for (const [key, value] of new Headers(init.headers)) {
         headers.set(key, value);
       }
@@ -44,5 +47,5 @@ export const createTailorKitClient = (
     /* oxlint-enable typescript/no-unsafe-type-assertion */
   });
 
-  return createORPCClient<TailorKitRouterClient>(link);
+  return createORPCClient<PatchsmithRouterClient>(link);
 };

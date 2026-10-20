@@ -1,7 +1,7 @@
 "use client";
 
-import { cn } from "@tailorkit/ui";
-import { Button } from "@tailorkit/ui/button";
+import { cn } from "@patchsmith/ui";
+import { Button } from "@patchsmith/ui/button";
 import {
   Card,
   CardFooter,
@@ -10,16 +10,16 @@ import {
   CardHeader,
   CardPanel,
   CardTitle,
-} from "@tailorkit/ui/card";
-import { Field, FieldDescription, FieldError } from "@tailorkit/ui/field";
-import { useAppForm } from "@tailorkit/ui/form";
-import { Logo } from "@tailorkit/ui/logo";
+} from "@patchsmith/ui/card";
+import { Field, FieldDescription, FieldError } from "@patchsmith/ui/field";
+import { useAppForm } from "@patchsmith/ui/form";
+import { Logo } from "@patchsmith/ui/logo";
 import {
   OTPField,
   OTPFieldInput,
   OTPFieldSeparator,
-} from "@tailorkit/ui/otp-field";
-import { toastManager } from "@tailorkit/ui/toast";
+} from "@patchsmith/ui/otp-field";
+import { toastManager } from "@patchsmith/ui/toast";
 import {
   useNavigate,
   createFileRoute,
@@ -40,6 +40,7 @@ const RouteComponent = () => {
   const { email: emailFromSearch, return_to } = useSearch({
     from: "/(auth)/forgot-password",
   });
+
   const navigate = useNavigate({ from: "/forgot-password" });
   const [step, setStep] = useState<Step>("email");
   const [visible, setVisible] = useState(true);
@@ -57,6 +58,7 @@ const RouteComponent = () => {
       if (nextEmail !== undefined) {
         setEmail(nextEmail);
       }
+
       setStep(nextStep);
       setVisible(true);
     }, 150);
@@ -70,8 +72,10 @@ const RouteComponent = () => {
           if (timerRef.current) {
             clearInterval(timerRef.current);
           }
+
           return 0;
         }
+
         return prev - 1;
       });
     }, 1000);
@@ -82,15 +86,19 @@ const RouteComponent = () => {
       email: targetEmail,
       type: "forget-password",
     });
+
     if (result.error) {
       toastManager.add({
         description: result.error.message ?? "Failed to send code",
         title: "Error",
         type: "error",
       });
+
       return false;
     }
+
     startResendTimer();
+
     return true;
   };
 
@@ -98,6 +106,7 @@ const RouteComponent = () => {
     defaultValues: { email: emailFromSearch ?? "" },
     onSubmit: async ({ value }) => {
       const sent = await sendOtp(value.email);
+
       if (sent) {
         transition("otp", value.email);
       }
@@ -110,15 +119,20 @@ const RouteComponent = () => {
   const verifyOtp = async (code = otp) => {
     if (!code || code.length < OTP_LENGTH) {
       setOtpInvalid(true);
+
       return;
     }
+
     setVerifyingOtp(true);
+
     const result = await authClient.emailOtp.checkVerificationOtp({
       email,
       otp: code,
       type: "forget-password",
     });
+
     setVerifyingOtp(false);
+
     if (result.error) {
       if (
         result.error.code === "INVALID_OTP" ||
@@ -127,13 +141,16 @@ const RouteComponent = () => {
         setOtpInvalid(true);
         setOtp("");
       }
+
       toastManager.add({
         description: result.error.message ?? "Failed to verify code",
         title: "Verification failed",
         type: "error",
       });
+
       return;
     }
+
     setOtpInvalid(false);
     transition("reset");
   };
@@ -146,14 +163,17 @@ const RouteComponent = () => {
         otp,
         password: value.password,
       });
+
       if (result.error) {
         toastManager.add({
           description: result.error.message ?? "Failed to reset password",
           title: "Reset failed",
           type: "error",
         });
+
         return;
       }
+
       toastManager.add({
         description: "Your password has been updated. Please sign in.",
         title: "Password reset",
@@ -183,9 +203,11 @@ const RouteComponent = () => {
     if (step === "email") {
       return "Forgot password?";
     }
+
     if (step === "otp") {
       return "Verify code";
     }
+
     return "Reset password";
   };
 
@@ -193,9 +215,11 @@ const RouteComponent = () => {
     if (step === "email") {
       return "Enter your email and we'll send you a code";
     }
+
     if (step === "otp") {
       return "Check your email for a reset code";
     }
+
     return "Choose a new password for your account";
   };
 
@@ -254,6 +278,7 @@ const RouteComponent = () => {
                     onValueChange={(value) => {
                       setOtp(value);
                       setOtpInvalid(false);
+
                       if (value.length === OTP_LENGTH) {
                         void verifyOtp(value);
                       }
@@ -367,10 +392,10 @@ const RouteComponent = () => {
       <div className="flex w-full max-w-sm flex-col items-center gap-4">
         <a
           className="flex items-center gap-2"
-          href="https://tailorkit.dev/home"
+          href="https://patchsmith.io/home"
         >
           <Logo className="size-6" />
-          <span className="text-lg font-semibold">TailorKit</span>
+          <span className="text-lg font-semibold">Patchsmith</span>
         </a>
         <CardFrame className="w-full">
           <Card>

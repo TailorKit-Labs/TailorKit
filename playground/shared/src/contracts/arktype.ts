@@ -1,6 +1,6 @@
 import { type } from "arktype";
-import { experimental_canvas, tool, defineContract } from "tailorkit";
-import { primitives } from "tailorkit/arktype";
+import { experimental_canvas, tool, defineContract } from "patchsmith";
+import { primitives } from "patchsmith/arktype";
 
 import { theme } from "./theme";
 

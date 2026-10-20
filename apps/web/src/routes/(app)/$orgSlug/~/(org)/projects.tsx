@@ -1,4 +1,4 @@
-import { Button } from "@tailorkit/ui/button";
+import { Button } from "@patchsmith/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogPopup,
   DialogTrigger,
-} from "@tailorkit/ui/dialog";
+} from "@patchsmith/ui/dialog";
 import {
   Empty,
   EmptyContent,
@@ -17,9 +17,9 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@tailorkit/ui/empty";
-import { useAppForm } from "@tailorkit/ui/form";
-import { toastManager } from "@tailorkit/ui/toast";
+} from "@patchsmith/ui/empty";
+import { useAppForm } from "@patchsmith/ui/form";
+import { toastManager } from "@patchsmith/ui/toast";
 import { useSelector } from "@tanstack/react-form";
 import {
   useMutation,
@@ -109,6 +109,7 @@ const CreateProjectDialog = ({
     onError: (cause: unknown) => {
       const message =
         cause instanceof Error ? cause.message : "Failed to create project";
+
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: (project) => {
@@ -133,6 +134,7 @@ const CreateProjectDialog = ({
         value.slug,
         existingProjectSlugs
       );
+
       if (submitAvailability.status !== "available") {
         setSlugSubmitError(
           submitAvailability.message ?? "This project slug is not available."
@@ -143,6 +145,7 @@ const CreateProjectDialog = ({
           title: "Error",
           type: "error",
         });
+
         return;
       }
 
@@ -156,6 +159,7 @@ const CreateProjectDialog = ({
   });
 
   const slug = useSelector(form.store, (state) => state.values.slug);
+
   const slugAvailability = getProjectSlugAvailability(
     slug,
     existingProjectSlugs
@@ -216,7 +220,7 @@ const CreateProjectDialog = ({
                 {(field) => (
                   <field.TextField
                     autoComplete="off"
-                    description={`tailorkit.com/${orgSlug}/${field.state.value || "project-slug"}`}
+                    description={`patchsmith.com/${orgSlug}/${field.state.value || "project-slug"}`}
                     endAdornment={
                       <OrgSlugAvailabilityIndicator
                         availability={slugAvailability}
@@ -257,9 +261,11 @@ const CreateProjectDialog = ({
 
 const ProjectsPage = () => {
   const { orgSlug } = useParams({ from: "/(app)/$orgSlug/~/(org)/projects" });
+
   const { data: projects } = useSuspenseQuery(
     orpc.project.list.queryOptions({ input: { orgSlug } })
   );
+
   const existingProjectSlugs = new Set(projects.map((project) => project.slug));
 
   return (
