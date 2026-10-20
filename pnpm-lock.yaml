@@ -707,9 +707,12 @@ importers:
       '@tailorkit/core':
         specifier: workspace:*
         version: link:../core
-      zod:
+      '@valibot/to-json-schema':
+        specifier: ^1.8.0
+        version: 1.8.0(valibot@1.5.0(typescript@7.0.2))
+      valibot:
         specifier: 'catalog:'
-        version: 4.6.5
+        version: 1.5.0(typescript@7.0.2)
     devDependencies:
       '@modelcontextprotocol/server':
         specifier: 2.3.1

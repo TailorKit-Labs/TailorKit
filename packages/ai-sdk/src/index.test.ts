@@ -10,10 +10,11 @@ import type {
 } from "@modelcontextprotocol/server";
 import { defineContract } from "@tailorkit/core/schema";
 import { createServer } from "@tailorkit/core/server";
+import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import { asSchema, generateText, simulateReadableStream, streamText } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
+import * as v from "valibot";
 import { afterEach, describe, expect, it } from "vite-plus/test";
-import { z } from "zod";
 
 import { createTools } from "./index";
 import type { TailorKitToolInput, TailorKitTools } from "./index";
@@ -33,12 +34,12 @@ const finalResult = {
   runId: "run-one",
   threadId: "a6a61bac-770d-4538-a2df-2119281f7db8",
 };
-const resultSchema = z.object({
-  answer: z.string(),
-  appId: z.string(),
-  finishReason: z.string(),
-  runId: z.string(),
-  threadId: z.string(),
+const resultSchema = v.object({
+  answer: v.string(),
+  appId: v.string(),
+  finishReason: v.string(),
+  runId: v.string(),
+  threadId: v.string(),
 });
 const result = (): CallToolResult => ({
   content: [{ text: finalResult.answer, type: "text" }],
@@ -65,10 +66,18 @@ const connect = async (
         "list_apps",
         {
           description: "List authorized apps.",
-          inputSchema: z.strictObject({
-            page: z.number().int().min(1).default(1),
-            pageSize: z.number().int().min(1).max(100).default(100),
-          }),
+          inputSchema: toStandardJsonSchema(
+            v.strictObject({
+              page: v.optional(
+                v.pipe(v.number(), v.integer(), v.minValue(1)),
+                1
+              ),
+              pageSize: v.optional(
+                v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100)),
+                100
+              ),
+            })
+          ),
         },
         async () =>
           await Promise.resolve({
@@ -80,12 +89,14 @@ const connect = async (
         "create_app",
         {
           description: "Build and publish an app.",
-          inputSchema: z.strictObject({
-            name: z.string(),
-            prompt: z.string(),
-            scope: z.enum(["org"]),
-          }),
-          outputSchema: resultSchema,
+          inputSchema: toStandardJsonSchema(
+            v.strictObject({
+              name: v.string(),
+              prompt: v.string(),
+              scope: v.picklist(["org"]),
+            })
+          ),
+          outputSchema: toStandardJsonSchema(resultSchema),
         },
         async (input, context) => {
           calls.push({ input, name: "create_app" });
@@ -96,12 +107,14 @@ const connect = async (
         "edit_app",
         {
           description: "Edit an existing app.",
-          inputSchema: z.strictObject({
-            appId: z.string(),
-            prompt: z.string(),
-            threadId: z.uuid().optional(),
-          }),
-          outputSchema: resultSchema,
+          inputSchema: toStandardJsonSchema(
+            v.strictObject({
+              appId: v.string(),
+              prompt: v.string(),
+              threadId: v.optional(v.pipe(v.string(), v.uuid())),
+            })
+          ),
+          outputSchema: toStandardJsonSchema(resultSchema),
         },
         async (input, context) => {
           calls.push({ input, name: "edit_app" });
@@ -159,10 +172,10 @@ const connect = async (
     http.close();
     await closed;
   });
-  const address = z.object({ port: z.number() }).parse(http.address());
+  const address = v.parse(v.object({ port: v.number() }), http.address());
   const url = `http://127.0.0.1:${address.port}/api/platform/app-agent/mcp`;
   const contract = defineContract({
-    scopes: { org: z.object({ tenant: z.string() }) },
+    scopes: { org: v.object({ tenant: v.string() }) },
   });
   const server = createServer({
     $internal: { platformBaseUrl: url.replace("/app-agent/mcp", "") },
@@ -257,6 +270,19 @@ describe("MCP-backed AI SDK tools", () => {
     });
     expect(
       await schema.validate?.({ name: "App", prompt: "Build", scope: "other" })
+    ).toMatchObject({ success: false });
+    expect(
+      await schema.validate?.({
+        name: "  App  ",
+        prompt: "  Build  ",
+        scope: "org",
+      })
+    ).toMatchObject({
+      success: true,
+      value: { name: "App", prompt: "Build", scope: "org" },
+    });
+    expect(
+      await schema.validate?.({ name: "App", prompt: "   ", scope: "org" })
     ).toMatchObject({ success: false });
     await generate(client);
     for (const request of requests) {
@@ -496,11 +522,10 @@ describe("MCP-backed AI SDK tools", () => {
     expect(response.content).toContainEqual(
       expect.objectContaining({ type: "tool-error" })
     );
-    const error = z
-      .object({ message: z.string() })
-      .parse(
-        response.content.find((chunk) => chunk.type === "tool-error")?.error
-      );
+    const error = v.parse(
+      v.object({ message: v.string() }),
+      response.content.find((chunk) => chunk.type === "tool-error")?.error
+    );
     expect(error.message).toContain("Unknown tool");
     expect(calls).toEqual([]);
   });

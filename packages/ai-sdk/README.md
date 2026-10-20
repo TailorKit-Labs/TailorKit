@@ -2,6 +2,8 @@
 
 Use `createTools` from `tailorkit/ai-sdk` (or `@tailorkit/ai-sdk`) to let an AI SDK model list, create, and edit TailorKit apps through the app agent's MCP endpoint. Requires AI SDK 7 and Node.js 22 or newer.
 
+The adapter uses Valibot for its tool schemas and validation. Your own tools and TailorKit contract can use any schema library supported by their respective APIs.
+
 Create the tools on your host server for each authenticated request. Pass your configured TailorKit server and the same `scopes` and `subjectId` context used by the host SDK. Scope values are checked against your server's configured schemas before each MCP call. Credentials and authorization stay on the host.
 
 ```ts

@@ -9,9 +9,10 @@ import type {
   Tool as McpTool,
 } from "@modelcontextprotocol/client";
 import type { TailorKitHostContext } from "@tailorkit/core/server/types";
-import { tool } from "ai";
+import { toJsonSchema } from "@valibot/to-json-schema";
+import { jsonSchema, tool } from "ai";
 import type { ToolExecutionOptions } from "ai";
-import { z } from "zod";
+import * as v from "valibot";
 
 export type TailorKitToolInput = Record<string, JSONValue>;
 export type TailorKitToolOutput =
@@ -136,19 +137,35 @@ const executeTool = async function* executeTool(
   }
 };
 
-const objectJsonSchema = z.looseObject({
-  properties: z.record(z.string(), z.json()).optional(),
-  required: z.array(z.string()).optional(),
-  type: z.literal("object"),
-});
+// The converter supplies the schema fields; narrow its object discriminator for MCP.
+const objectJsonSchema = v.looseObject({ type: v.literal("object") });
+// JSON Schema cannot express trimming; Valibot still applies it during validation.
+const toObjectJsonSchema = (schema: v.GenericSchema) =>
+  v.parse(objectJsonSchema, toJsonSchema(schema, { ignoreActions: ["trim"] }));
 
-const promptSchema = z.string().trim().min(1).max(32_000);
-const agentResultSchema = z.object({
-  answer: z.string(),
-  appId: z.string(),
-  finishReason: z.string(),
-  runId: z.string(),
-  threadId: z.string(),
+const withJsonSchema = <TSchema extends v.GenericSchema>(schema: TSchema) =>
+  jsonSchema<v.InferOutput<TSchema>>(toObjectJsonSchema(schema), {
+    validate: (value) => {
+      const result = v.safeParse(schema, value);
+      if (!result.success) {
+        return { error: new Error(v.summarize(result.issues)), success: false };
+      }
+      return { success: true, value: result.output };
+    },
+  });
+
+const promptSchema = v.pipe(
+  v.string(),
+  v.trim(),
+  v.minLength(1),
+  v.maxLength(32_000)
+);
+const agentResultSchema = v.object({
+  answer: v.string(),
+  appId: v.string(),
+  finishReason: v.string(),
+  runId: v.string(),
+  threadId: v.string(),
 });
 
 /** Create fixed MCP-backed tools. Each invocation owns and closes its connection. */
@@ -161,42 +178,49 @@ export const createTools = <TScopes extends Record<string, JSONValue>>(
     throw new Error("At least one host scope is required.");
   }
   const transport = async () => await tailorkit.mcp.transport(context);
-  const createSchema = z.strictObject({
-    description: z.string().trim().max(255).optional(),
-    name: z.string().trim().min(1).max(127),
+  const createSchema = v.strictObject({
+    description: v.optional(v.pipe(v.string(), v.trim(), v.maxLength(255))),
+    name: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(127)),
     prompt: promptSchema,
-    scope: z
-      .enum(scopes)
-      .describe(
+    scope: v.pipe(
+      v.picklist(scopes),
+      v.description(
         "Name of the host-authorized scope in which to create the app."
-      ),
+      )
+    ),
   });
-  const editSchema = z.strictObject({
-    appId: z.string().min(1),
+  const editSchema = v.strictObject({
+    appId: v.pipe(v.string(), v.minLength(1)),
     prompt: promptSchema,
-    threadId: z
-      .uuid()
-      .optional()
-      .describe(
-        "Continue an existing app conversation; omit for an independent change."
-      ),
+    threadId: v.optional(
+      v.pipe(
+        v.string(),
+        v.uuid(),
+        v.description(
+          "Continue an existing app conversation; omit for an independent change."
+        )
+      )
+    ),
   });
-  const listSchema = z.strictObject({
-    page: z.number().int().min(1).default(1),
-    pageSize: z.number().int().min(1).max(100).default(100),
+  const listSchema = v.strictObject({
+    page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)), 1),
+    pageSize: v.optional(
+      v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100)),
+      100
+    ),
   });
   const createDefinition = {
-    inputSchema: objectJsonSchema.parse(z.toJSONSchema(createSchema)),
+    inputSchema: toObjectJsonSchema(createSchema),
     name: "create_app",
-    outputSchema: objectJsonSchema.parse(z.toJSONSchema(agentResultSchema)),
+    outputSchema: toObjectJsonSchema(agentResultSchema),
   };
   const editDefinition = {
-    inputSchema: objectJsonSchema.parse(z.toJSONSchema(editSchema)),
+    inputSchema: toObjectJsonSchema(editSchema),
     name: "edit_app",
-    outputSchema: objectJsonSchema.parse(z.toJSONSchema(agentResultSchema)),
+    outputSchema: toObjectJsonSchema(agentResultSchema),
   };
   const listDefinition = {
-    inputSchema: objectJsonSchema.parse(z.toJSONSchema(listSchema)),
+    inputSchema: toObjectJsonSchema(listSchema),
     name: "list_apps",
   };
   return {
@@ -205,21 +229,21 @@ export const createTools = <TScopes extends Record<string, JSONValue>>(
         "Create a new app and run an autonomous agent to build and deploy it from your prompt. Wait for progress and the final result. Use the returned threadId with editApp for follow-ups. Do not automatically retry a disconnected call.",
       execute: (input, execution) =>
         executeTool(transport, createDefinition, input, execution),
-      inputSchema: createSchema,
+      inputSchema: withJsonSchema(createSchema),
     }),
     editApp: tool({
       description:
         "Run an autonomous agent to edit and deploy an existing app. Omit threadId for a new conversation or supply a returned threadId for a follow-up. Wait for progress and the final result. Do not automatically retry a disconnected call.",
       execute: (input, execution) =>
         executeTool(transport, editDefinition, input, execution),
-      inputSchema: editSchema,
+      inputSchema: withJsonSchema(editSchema),
     }),
     listApps: tool({
       description:
         "List apps in the host-authorized scopes to choose an app to edit. This is a read-only lookup.",
       execute: (input, execution) =>
         executeTool(transport, listDefinition, input, execution),
-      inputSchema: listSchema,
+      inputSchema: withJsonSchema(listSchema),
     }),
   };
 };

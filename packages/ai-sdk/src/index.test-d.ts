@@ -1,13 +1,13 @@
 import { defineContract } from "@tailorkit/core/schema";
 import { createServer } from "@tailorkit/core/server";
-import { z } from "zod";
+import * as v from "valibot";
 
 import { createTools } from "./index";
 
 const server = createServer({
   baseUrl: "https://host.test/api/tailorkit",
   contract: defineContract({
-    scopes: { org: z.object({ tenant: z.string() }) },
+    scopes: { org: v.object({ tenant: v.string() }) },
   }),
 });
 
