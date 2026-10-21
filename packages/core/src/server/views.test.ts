@@ -156,6 +156,9 @@ it("discovers authorized apps on the host and calls the compiled action with val
   const response = await run();
   expect(response.status).toBe(200);
   expect(response.headers.get("cache-control")).toBe("no-store");
+  expect(response.headers.get("server-timing")).toMatch(
+    /^views_auth;dur=\d+\.\d, views_discovery;dur=\d+\.\d, views_instances;dur=\d+\.\d$/u
+  );
   expect(await response.json()).toEqual({
     data: [{ ...instance, app }],
     status: "ready",

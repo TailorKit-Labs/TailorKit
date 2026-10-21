@@ -1,6 +1,8 @@
 import { createSlotStore } from "#store/fetch/slot";
 import type { PatchsmithStore } from "#store/store";
 
+import { slotActiveView } from "./slot-active-view";
+
 export interface ViewsQueryOptions<
   TScopeNames extends string = string,
   TSlot extends string = string,
@@ -17,9 +19,10 @@ export const refetchViews = async (
 ): Promise<void> => {
   await createSlotStore(store.client, {
     ...options,
-    activeView:
-      store.contract.slots[options.slot]?.multiple === true
-        ? store.views.getSnapshot()
-        : null,
+    activeView: slotActiveView(
+      store.contract,
+      options.slot,
+      store.views.getSnapshot()
+    ),
   }).fetch({ force: true });
 };

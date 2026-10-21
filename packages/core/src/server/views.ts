@@ -64,13 +64,22 @@ export const handleViews = async (
   toolUrl: string
 ): Promise<Response> => {
   const { request, schema } = context;
-  const headers = { "cache-control": "no-store" };
+  const headers = new Headers({ "cache-control": "no-store" });
+
+  const recordTiming = (stage: string, started: number) => {
+    headers.append(
+      "server-timing",
+      `${stage};dur=${(performance.now() - started).toFixed(1)}`
+    );
+  };
 
   if (!isViewsRequest(request, publicOrigin)) {
     return new Response("Invalid request", { headers, status: 400 });
   }
 
+  const authenticationStarted = performance.now();
   const viewer = await context.authenticate({ request });
+  recordTiming("views_auth", authenticationStarted);
 
   if (!viewer) {
     return new Response("Unauthorized", { headers, status: 401 });
@@ -110,6 +119,8 @@ export const handleViews = async (
   try {
     request.signal.throwIfAborted();
 
+    const discoveryStarted = performance.now();
+
     const { apps: discovered, sessions } = await discoverViewApps(
       context,
       input,
@@ -119,6 +130,8 @@ export const handleViews = async (
       toolUrl,
       controller.signal
     );
+
+    recordTiming("views_discovery", discoveryStarted);
 
     const apps = discovered.filter(
       (app) => input.appIds === undefined || input.appIds.includes(app.id)
@@ -194,6 +207,8 @@ export const handleViews = async (
       return Response.json({ status: "loading" }, { headers });
     }
 
+    const instancesStarted = performance.now();
+
     const data = await Promise.all(
       resolved.map(async ({ app, props }) => {
         if (props.status !== "ready") {
@@ -235,6 +250,8 @@ export const handleViews = async (
         }
       })
     );
+
+    recordTiming("views_instances", instancesStarted);
 
     const result: ViewsResult = { data: data.flat(), status: "ready" };
 

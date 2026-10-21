@@ -2,6 +2,8 @@ import { computed } from "nanostores";
 
 import { matchesApp } from "#client/apps";
 import { normalizeScopeSelection } from "#client/scope-query";
+import { slotActiveView } from "#client/slot-active-view";
+import { createValueMemo } from "#client/value-memo";
 import { refetchViews } from "#client/views";
 import type { ViewsQueryOptions } from "#client/views";
 import type { PatchsmithApp } from "#types";
@@ -105,8 +107,10 @@ const viewsQuery = (store: PatchsmithStore, options: ViewsQueryOptions) => {
     await refetchViews(store, options);
   };
 
+  const memoActive = createValueMemo<ReturnType<typeof slotActiveView>>();
+
   const activeView = computed(store.views.state, (active) =>
-    store.contract.slots[options.slot]?.multiple === true ? active : null
+    memoActive(slotActiveView(store.contract, options.slot, active))
   );
 
   const selection = computed(activeView, (active) => {

@@ -1,5 +1,8 @@
+import { asyncFixture } from "@patchsmith/config/testing";
+import { defineContract } from "@patchsmith/core/schema";
 import { allTasks } from "nanostores";
 import { expect, it, vi } from "vite-plus/test";
+import { z } from "zod";
 
 import { createPatchsmithFetchClient } from "#client/fetch-client";
 import { testContract } from "#test-contract";
@@ -186,4 +189,83 @@ it("refetches an explicit installation through the host with current context", a
     appIds: [app.id],
   });
   store.views.unregister(id);
+});
+
+it("keeps root-slot discovery stable across child context changes and refreshes with relevant context", async () => {
+  const contract = defineContract({
+    slots: { page: { multiple: true, views: ["/"] } },
+    views: {
+      "/": z.object({ page: z.string(), workspace: z.string() }),
+      "/details": z.object({ selected: z.string() }),
+    },
+  });
+
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockImplementation(
+      asyncFixture(() => Response.json({ data: [], status: "ready" }))
+    );
+
+  const client = createPatchsmithFetchClient({
+    baseUrl: "https://host.test/api/",
+    fetch,
+  });
+
+  const store = createPatchsmithStore({
+    baseUrl: client.baseUrl,
+    client,
+    contract,
+  });
+
+  const root = Symbol("root");
+  const child = Symbol("child");
+  const context = { page: "/details", workspace: "first" };
+  store.views.register({ context, id: root, view: "/" });
+  await Promise.resolve();
+
+  const query = createViewsQuery(store, {
+    scopes: ["workspace"],
+    slot: "page",
+  });
+
+  const stop = query.state.listen(() => {});
+  await allTasks();
+  expect(fetch).toHaveBeenCalledOnce();
+  store.views.register({
+    context: { selected: "one" },
+    id: child,
+    view: "/details",
+  });
+  await allTasks();
+  await Promise.resolve();
+  store.views.register({
+    context: { selected: "two" },
+    id: child,
+    view: "/details",
+  });
+  await allTasks();
+  expect(fetch).toHaveBeenCalledOnce();
+  expect(query.state.get().isSuccess).toBe(true);
+  await query.refetch();
+  expect(fetch).toHaveBeenCalledTimes(2);
+  expect(await new Response(fetch.mock.calls[1]?.[1]?.body).json()).toEqual({
+    activeView: {
+      layers: [{ context, path: "/", status: "ready" }],
+      view: "/",
+    },
+    scopes: ["workspace"],
+    slot: "page",
+  });
+  store.views.register({
+    context: { ...context, workspace: "second" },
+    id: root,
+    view: "/",
+  });
+  await allTasks();
+  await vi.waitFor(() => {
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
+  stop();
+  store.views.unregister(root);
+  store.views.unregister(child);
 });
