@@ -167,8 +167,8 @@
   --warning: var(--color-amber-500);
   --warning-foreground: var(--color-amber-700);
   --border: --alpha(var(--color-black) / 8%);
-  --input: --alpha(var(--color-black) / 10%);
-  --ring: var(--color-neutral-400);
+  --input: var(--color-neutral-500);
+  --ring: var(--color-neutral-500);
   --sidebar: var(--color-neutral-50);
   --sidebar-foreground: color-mix(
     in srgb,
@@ -219,7 +219,7 @@
   --warning: var(--color-amber-500);
   --warning-foreground: var(--color-amber-400);
   --border: --alpha(var(--color-white) / 6%);
-  --input: --alpha(var(--color-white) / 8%);
+  --input: var(--color-neutral-400);
   --ring: var(--color-neutral-500);
   --sidebar: color-mix(
     in srgb,
