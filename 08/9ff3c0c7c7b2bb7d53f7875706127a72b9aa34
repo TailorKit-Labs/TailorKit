@@ -1,0 +1,41 @@
+packages/agent/package.json
+  s_05a5d8c5ed772e::t_72bdf56400953a 61
+pnpm-workspace.yaml
+  s_05a5d8c5ed772e::t_aa2be0602c8857 66
+packages/core/package.json
+  s_05a5d8c5ed772e::t_72bdf56400953a 94
+packages/sandbox/package.json
+  s_05a5d8c5ed772e::t_72bdf56400953a 47
+packages/app/package.json
+  s_05a5d8c5ed772e::t_72bdf56400953a 77
+apps/apps-worker/package.json
+  s_05a5d8c5ed772e::t_72bdf56400953a 27
+packages/cli/package.json
+  s_05a5d8c5ed772e::t_72bdf56400953a 55
+packages/client-platform/package.json
+  s_05a5d8c5ed772e::t_72bdf56400953a 70
+playground/shared/package.json
+  s_05a5d8c5ed772e::t_72bdf56400953a 30
+packages/vite/package.json
+  s_05a5d8c5ed772e::t_72bdf56400953a 59
+packages/client-core/package.json
+  s_05a5d8c5ed772e::t_72bdf56400953a 73
+pnpm-lock.yaml
+  s_05a5d8c5ed772e::t_82cf429d1b391f 278-280,367,597,826,976,1022,1050,1099,1392,1564,1641
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "089ff3c0c7c7b2bb7d53f7875706127a72b9aa34",
+  "prompts": {},
+  "sessions": {
+    "s_05a5d8c5ed772e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a147db-9d06-7bb1-a637-664c37f768b0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+apps/web/src/server/libfx.test.ts
+  s_bd5290081ec550::t_29c04231db6ad7 7,11
+  s_bd5290081ec550::t_b46123d935282e 1-6,8-10,12-18
+apps/web/package.json
+  s_bd5290081ec550::t_d3750e45ab0f5c 63
+packages/agent-fx/README.md
+  s_bd5290081ec550::t_b46123d935282e 11-12
+pnpm-lock.yaml
+  s_bd5290081ec550::t_eb0db543fe1189 523-524
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "088360b57adf1bf317322dad1d6a258d18ecbef1",
+  "prompts": {},
+  "sessions": {
+    "s_bd5290081ec550": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15dd8-89ee-7082-8b03-0ef80b187b8b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+packages/agent/src/agent.integration.test.ts
+  s_da91d340b0dd4f::t_eaf77ae0748d8c 157,164,197-199
+packages/agent/src/gateway-model.ts
+  s_da91d340b0dd4f::t_7c54c87c034c78 25-26,31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "90927875e05ca69d134881b7b86b1c1d99f1fa7f",
+  "prompts": {},
+  "sessions": {
+    "s_da91d340b0dd4f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1390d-3036-7a80-96e1-1cc19a2f2b8b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

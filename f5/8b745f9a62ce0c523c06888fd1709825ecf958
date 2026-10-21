@@ -1,0 +1,49 @@
+.changeset/config.json
+  s_e2a93c9200bfeb::t_7861ffc095ffe8 8
+.changeset/mcp-ai-sdk-tools.md
+  s_e2a93c9200bfeb::t_49e2dd5c3ca7fe 1-6
+package.json
+  s_e2a93c9200bfeb::t_215b9396d61291 33
+packages/ai-sdk/LICENSE.md
+  s_e2a93c9200bfeb::t_7a68d96ecc373a 1-74
+packages/ai-sdk/README.md
+  s_e2a93c9200bfeb::t_c29aea86c3a3c3 1-68
+packages/ai-sdk/package.json
+  s_e2a93c9200bfeb::t_92ae15af82de23 1-72
+packages/ai-sdk/src/index.test.ts
+  s_e2a93c9200bfeb::t_8655df07e8cecb 1-427
+packages/ai-sdk/src/index.ts
+  s_e2a93c9200bfeb::t_e643f69e4583b0 1-184
+packages/ai-sdk/tsconfig.build.json
+  s_e2a93c9200bfeb::t_3aa20893761e2f 1-14
+packages/ai-sdk/tsconfig.json
+  s_e2a93c9200bfeb::t_45b6095e44211a 1-17
+packages/tailorkit/package.json
+  s_e2a93c9200bfeb::t_e5ce62feccb218 88-91,98,104,119,125-127
+packages/tailorkit/src/ai-sdk.ts
+  s_e2a93c9200bfeb::t_426a1cbfbad08f 1-7
+pnpm-lock.yaml
+  s_e2a93c9200bfeb::t_88c03b52daf085 702-729,1574-1576,1595-1597
+scripts/check-prerelease.mjs
+  s_e2a93c9200bfeb::t_5ecddb9929abe1 12
+scripts/check-prerelease.test.mjs
+  s_e2a93c9200bfeb::t_a8cf16fa08e2fc 14
+vite.config.ts
+  s_e2a93c9200bfeb::t_0f5343b60c9c36 24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f58b745f9a62ce0c523c06888fd1709825ecf958",
+  "prompts": {},
+  "sessions": {
+    "s_e2a93c9200bfeb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a156aa-d86b-7633-a29f-9bfa636c44d6",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

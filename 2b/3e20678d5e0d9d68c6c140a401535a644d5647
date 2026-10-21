@@ -1,0 +1,37 @@
+.changeset/calm-canvas-recovery.md
+  s_9755bae67d995b::t_2d4aff80e6eb6b 1-7
+packages/app/src/client/canvas-controller.test.ts
+  s_9755bae67d995b::t_e67ce4e53a7c44 44-47,153,524,746-910
+packages/app/src/client/canvas-controller.ts
+  s_9755bae67d995b::t_a7627090c368d6 73,124,158-159,181-190,209-211,230,333,413,422,449,463-480,529-530,532,555
+packages/cli/src/generator/reference-examples.ts
+  s_9755bae67d995b::t_3a994229df1e8a 16-18
+packages/core/src/schema/canvas.test.ts
+  s_9755bae67d995b::t_6383419a29c659 35-45
+packages/sandbox/README.md
+  s_9755bae67d995b::t_c7e6a5bc54d19d 213
+packages/sandbox/src/host/canvas.test.ts
+  s_9755bae67d995b::t_ffaa6e987c6c08 1-125
+packages/sandbox/src/host/canvas.ts
+  s_9755bae67d995b::t_b446cbb3b6b0b5 95,99-111,121-122,141-155,157-159,165,187-198,249
+playground/apps/todo/.agents/skills/patchsmith-capabilities/references/components/Input.md
+  s_9755bae67d995b::t_60259bf1677759 26
+playground/apps/todo/.agents/skills/patchsmith-capabilities/references/components/experimental_Canvas.md
+  s_9755bae67d995b::t_92fbf4febefb33 28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2b3e20678d5e0d9d68c6c140a401535a644d5647",
+  "prompts": {},
+  "sessions": {
+    "s_9755bae67d995b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a158b1-b258-7370-8b8c-c5d2125f405e",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

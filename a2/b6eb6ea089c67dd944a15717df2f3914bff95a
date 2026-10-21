@@ -1,0 +1,32 @@
+apps/web/src/server/api/mcp-authenticated.ts
+  s_e0340f5dbc88ff::t_e157193d3bad74 1-52
+packages/agent/src/mcp.ts
+  s_e0340f5dbc88ff::t_20ef4e88875851 19
+  s_e0340f5dbc88ff::t_9d31418502284f 18
+  s_e0340f5dbc88ff::t_0f20440783e765 13-17,20-21,179
+apps/web/src/server/api/mcp.ts
+  s_e0340f5dbc88ff::t_4936b44a3f75ec 1,4-13,15-17,20-22
+packages/agent/src/mcp.test.ts
+  s_e0340f5dbc88ff::t_9ca5b43ddec1bf 8,70-90,93-94
+  s_e0340f5dbc88ff::t_9bbbe6fdcf040e 91-92
+apps/web/src/server/api/mcp.test.ts
+  s_e0340f5dbc88ff::t_9ca5b43ddec1bf 1-11,14-57,61-74
+  s_e0340f5dbc88ff::t_97fba58418c158 12-13
+  s_e0340f5dbc88ff::t_9d31418502284f 58-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a2b6eb6ea089c67dd944a15717df2f3914bff95a",
+  "prompts": {},
+  "sessions": {
+    "s_e0340f5dbc88ff": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14e97-18c1-7793-8ec8-853d21a973a7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

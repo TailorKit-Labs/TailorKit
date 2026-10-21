@@ -1,0 +1,105 @@
+.changeset/pre/experimental-deployed-app-installation.md
+  s_a748042919c25e::t_7f1c4a5c8dd16e 1-7
+.coderabbit.yaml
+  s_a748042919c25e::t_6acf0563126a4c 5-8
+packages/api-platform/openapi.json
+  s_3bbb961d705295::t_3321e259e7a603 933,1685-2022
+packages/api-platform/src/procedures.ts
+  s_a748042919c25e::t_e6e4a474fe8332 51-56
+packages/api-platform/src/routes/apps.test.ts
+  s_a748042919c25e::t_9a8c69b5ade887 217-543
+packages/api-platform/src/routes/apps.ts
+  s_a748042919c25e::t_317cfdf0bed52d 11-17,37,92,193-250,264,272-305,451
+packages/api-platform/src/routes/runtime.ts
+  s_a748042919c25e::t_82c5ad016023ec 165-170,185-186
+packages/api-utils/src/app-asset-url.ts
+  s_a748042919c25e::t_4adde38c768136 9,44-45
+packages/api/src/routers/apps.ts
+  s_a748042919c25e::t_5dba1db1d70e72 143,159,231-234
+packages/app/CHANGELOG.md
+  s_a748042919c25e::t_7a69c8adc06e6c 3-6
+packages/app/package.json
+  s_a748042919c25e::t_eae6ac1dc4a936 3
+packages/cli/CHANGELOG.md
+  s_a748042919c25e::t_e7bd7129f821d2 3-11
+packages/cli/package.json
+  s_a748042919c25e::t_9ae10b2e07c9d8 3
+packages/client-core/CHANGELOG.md
+  s_a748042919c25e::t_029a2bde956fd5 3-12
+packages/client-core/package.json
+  s_a748042919c25e::t_85c3611f928bea 3
+packages/client-platform/CHANGELOG.md
+  s_a748042919c25e::t_18c03f158cf7a4 3-8
+packages/client-platform/openapi-ts.config.ts
+  s_a748042919c25e::t_13ba1a53f01170 7-9
+packages/client-platform/package.json
+  s_a748042919c25e::t_527a4428c1ca04 3,61
+packages/client-platform/src/client/client/index.ts
+  s_3bbb961d705295::t_1383a68d4d857e 3-4,9-14,26-27
+packages/client-platform/src/client/index.ts
+  s_3bbb961d705295::t_be4083c189db1d 3-4
+packages/client-platform/src/client/sdk.gen.ts
+  s_3bbb961d705295::t_7ecbf417ff75c3 4-5,84-92
+packages/client-platform/src/client/types.gen.ts
+  s_3bbb961d705295::t_d00d130f201283 451-521
+packages/core/CHANGELOG.md
+  s_a748042919c25e::t_b6f3c430539178 3-13
+packages/core/package.json
+  s_a748042919c25e::t_b25d44cc6a90ec 3
+packages/core/src/server/contract.ts
+  s_a748042919c25e::t_6436c07227cc3e 22,164-172
+packages/core/src/server/experimental.test.ts
+  s_a748042919c25e::t_368d1f19910522 1-140
+packages/core/src/server/experimental.ts
+  s_a748042919c25e::t_43654ced6574c9 1-56
+packages/core/src/server/handler.ts
+  s_a748042919c25e::t_8e342a77484403 21,296-300
+packages/core/src/server/types.test-d.ts
+  s_a748042919c25e::t_3dd1837040443d 5,8,135-161
+packages/core/src/server/types.ts
+  s_a748042919c25e::t_eb859250a4b217 2-5,132-145,200-206
+packages/react/CHANGELOG.md
+  s_a748042919c25e::t_c03e1f069a38b8 3-13
+packages/react/package.json
+  s_a748042919c25e::t_bca8cc5c5dd860 3
+packages/sandbox/CHANGELOG.md
+  s_a748042919c25e::t_7900e6e8dd0da3 3-10
+packages/sandbox/package.json
+  s_a748042919c25e::t_09a648414f6ca0 3
+packages/tailorkit/CHANGELOG.md
+  s_a748042919c25e::t_ddfe9141a6a20d 3-17
+packages/tailorkit/package.json
+  s_a748042919c25e::t_636a28cad7a2f9 3
+packages/tailorkit/src/server.ts
+  s_a748042919c25e::t_b5833e8f7189dd 14-15
+packages/vite/CHANGELOG.md
+  s_a748042919c25e::t_0e32d52aa453dc 3-8
+packages/vite/package.json
+  s_a748042919c25e::t_a7fd76c258f7ba 3
+vite.config.ts
+  s_a748042919c25e::t_04861ebfa50859 59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a904c84e90ee2a0b284266b97fad4f37a63eef8f",
+  "prompts": {},
+  "sessions": {
+    "s_3bbb961d705295": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14376-dd68-7200-ae25-35fedaff8ce9",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_a748042919c25e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1437b-c998-71b1-81bc-878f9c881dc7",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

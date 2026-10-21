@@ -1,0 +1,63 @@
+packages/agent-fx/src/agent.ts
+  s_a0bf9224ecab6e::t_3f858d459977bd 19-22,33,43
+packages/agent-fx/src/input.ts
+  s_a0bf9224ecab6e::t_5129eb41906d7f 7-8
+packages/api-platform/openapi.json
+  s_a0bf9224ecab6e::t_848e74db8b40e0 70-73
+packages/api-platform/src/app-agent-mcp.ts
+  s_a0bf9224ecab6e::t_7e339e6a5ace66 39,206
+packages/api-platform/src/routes/app-agent.test.ts
+  s_a0bf9224ecab6e::t_6add58e8c84e66 773-792
+packages/api-platform/src/routes/app-agent.ts
+  s_a0bf9224ecab6e::t_2d0108df4f4f68 73,200
+packages/core/src/server/agent.test.ts
+  s_a0bf9224ecab6e::t_896b85119acea9 66-71,123,251-277
+packages/core/src/server/context.ts
+  s_a0bf9224ecab6e::t_5311609ed6567e 18,35,59
+packages/core/src/server/handler.ts
+  s_a0bf9224ecab6e::t_6ab58af9de3fdc 8,98-105,143,240,292,313
+packages/core/src/server/mcp.test.ts
+  s_a0bf9224ecab6e::t_f2005590213c74 22,35,47,99-137
+packages/core/src/server/mcp.ts
+  s_a0bf9224ecab6e::t_0f06b45842d150 16,44,52
+packages/core/src/server/routes/app-agent.ts
+  s_a0bf9224ecab6e::t_44eec980ab3757 39-43,46
+packages/core/src/server/types.ts
+  s_a0bf9224ecab6e::t_b23d7f7af9fd31 49-53
+.changeset/fresh-agents-follow-designs.md
+  s_f50ea48cafc4cd::t_937ce64af5dcb6 1-7
+packages/agent-fx/src/agent.integration.test.ts
+  s_f50ea48cafc4cd::t_7dc5db2cb798e3 230,364-368,386-388,409-412
+packages/ai-sdk/README.md
+  s_f50ea48cafc4cd::t_80b02bbef21a4b 7-8
+packages/api-platform/src/app-agent-mcp-isolation.test.ts
+  s_f50ea48cafc4cd::t_917ce5f4a4e91c 83-87,115,286-290,314-315,332-340,356-358
+packages/client-platform/src/client/types.gen.ts
+  s_a0bf9224ecab6e::t_0217f69ed9172b 24
+packages/core/README.md
+  s_f50ea48cafc4cd::t_45cb0d36a52ca6 5-24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d26ee48b5b569a2518142f5166787c414ecc8b3f",
+  "prompts": {},
+  "sessions": {
+    "s_a0bf9224ecab6e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a156f7-f6c7-7d12-81e0-7055869efe72",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_f50ea48cafc4cd": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1586f-8b7f-7b40-b159-4ee1e73cacef",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

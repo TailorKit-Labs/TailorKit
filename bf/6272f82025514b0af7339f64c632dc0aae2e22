@@ -1,0 +1,61 @@
+apps/apps-worker/package.json
+  s_bb8a80c7d2300f::t_60f8e4ee7c7668 41
+apps/web/package.json
+  s_bb8a80c7d2300f::t_0358106bd4092a 87
+package.json
+  s_bb8a80c7d2300f::t_5044f5886cbc6b 60
+packages/agent-fx/package.json
+  s_bb8a80c7d2300f::t_8b1d8e9465c67b 52
+packages/agent/package.json
+  s_bb8a80c7d2300f::t_5246134f6132b9 74
+packages/api-platform/package.json
+  s_bb8a80c7d2300f::t_64b3896c89ab08 75
+packages/api-utils/package.json
+  s_bb8a80c7d2300f::t_5a01d4762d1a02 75
+packages/api/package.json
+  s_bb8a80c7d2300f::t_07ee59e9356d71 59
+packages/asset-delivery/package.json
+  s_bb8a80c7d2300f::t_d71d7016bded8c 45
+packages/auth/package.json
+  s_bb8a80c7d2300f::t_684b12ce1871b6 63
+packages/config/package.json
+  s_bb8a80c7d2300f::t_724e34701a10f3 28
+packages/db/package.json
+  s_bb8a80c7d2300f::t_fe6cb59da89fbf 56
+packages/email/package.json
+  s_bb8a80c7d2300f::t_19358fb4a693a8 56
+packages/env/package.json
+  s_bb8a80c7d2300f::t_63333ba7d365d3 39
+packages/flags/package.json
+  s_bb8a80c7d2300f::t_17978d05cc676a 39
+packages/kv/package.json
+  s_bb8a80c7d2300f::t_140ee319411b97 61
+packages/observability/package.json
+  s_bb8a80c7d2300f::t_13ced80d63f269 48
+packages/storage/package.json
+  s_bb8a80c7d2300f::t_d851a5f903decc 61
+packages/ui/package.json
+  s_bb8a80c7d2300f::t_2570f746c63eeb 101
+playground/apps/todo/package.json
+  s_bb8a80c7d2300f::t_e85cc487701e1c 36
+playground/shared/package.json
+  s_bb8a80c7d2300f::t_c3b70a41ea0ac2 40
+playground/tanstack-start/package.json
+  s_bb8a80c7d2300f::t_0ff99527fbc819 45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bf6272f82025514b0af7339f64c632dc0aae2e22",
+  "prompts": {},
+  "sessions": {
+    "s_bb8a80c7d2300f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15844-712c-70a3-aa81-739c9a9646d3",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+packages/vite/package.json
+  s_2f40b5dc18ecb8::t_4bd9cb8d45ad05 51-52
+playground/apps/todo/package.json
+  s_2f40b5dc18ecb8::t_455df10b319089 25
+playground/shared/package.json
+  s_2f40b5dc18ecb8::t_94d4e0cc3c245e 25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "04f4aae6937fad4cf58fbbd57a76a9992a4b93a2",
+  "prompts": {},
+  "sessions": {
+    "s_2f40b5dc18ecb8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1335c-f897-7d11-a78a-d7756d0c881a",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

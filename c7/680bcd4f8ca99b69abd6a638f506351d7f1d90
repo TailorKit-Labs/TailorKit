@@ -1,0 +1,172 @@
+playground/shared/src/contracts/arktype.ts
+  s_cf0fb7db315121::t_71de6d725349a0 1-12,14-41
+  s_cf0fb7db315121::t_7cb1abfcacf41b 13
+  s_cf0fb7db315121::t_98c2b9cc837f87 42-50
+playground/shared/scripts/prepare-db.ts
+  s_cf0fb7db315121::t_9ecd0d2ff82697 1-3
+playground/host/src/routes/issues.$issueId.tsx
+  s_cf0fb7db315121::t_b7c89093dd8dd7 1-49
+  s_cf0fb7db315121::t_69ce97a42c714b 50-62
+playground/apps/todo/src/root.tsx
+  s_cf0fb7db315121::t_3d322ed71d0892 1-11
+playground/shared/scripts/seed.ts
+  s_cf0fb7db315121::t_71de6d725349a0 1-69
+playground/README.md
+  s_cf0fb7db315121::t_620dd9e557b92e 42
+  s_cf0fb7db315121::t_3a0df824da1e94 47-49
+  s_cf0fb7db315121::t_9ecd0d2ff82697 1-41,43-46,50-65
+package.json
+  s_cf0fb7db315121::t_3a0df824da1e94 38
+  s_cf0fb7db315121::t_7cb1abfcacf41b 37
+  s_cf0fb7db315121::t_d0fdfbce990565 33
+  s_cf0fb7db315121::t_ee5dc479615d43 34-36,39-40
+playground/shared/src/contracts/valibot.ts
+  s_cf0fb7db315121::t_7cb1abfcacf41b 27
+  s_cf0fb7db315121::t_71de6d725349a0 1-26,28-55,57-61
+  s_cf0fb7db315121::t_313b3c772e1b0e 56
+  s_cf0fb7db315121::t_a70c4b57893eaa 62-76
+playground/host/src/lib/tailorkit-client.tsx
+  s_cf0fb7db315121::t_fd81e9a8bd7b03 5,41-42
+  s_cf0fb7db315121::t_86e20ebc042ff8 7,22,25-30,47-50
+  s_cf0fb7db315121::t_b7c89093dd8dd7 1-4,6,8-21,23-24,31-40,43-46,51-55
+playground/host/src/router.tsx
+  s_cf0fb7db315121::t_b7c89093dd8dd7 1-17
+pnpm-workspace.yaml
+  s_cf0fb7db315121::t_e37aab686d5139 13-14
+playground/shared/package.json
+  s_cf0fb7db315121::t_71de6d725349a0 1-8,10-17,21-24,26-27,29-37
+  s_cf0fb7db315121::t_f5dcae771a5780 28
+  s_cf0fb7db315121::t_85a88456b7094b 18-20
+  s_cf0fb7db315121::t_b02a1fd5cdc3ae 25
+  s_cf0fb7db315121::t_fd81e9a8bd7b03 9
+playground/host/src/routes/api/playground/todos.ts
+  s_cf0fb7db315121::t_b7c89093dd8dd7 1-45
+  s_cf0fb7db315121::t_c8d17670499ba3 46-49
+playground/shared/src/contracts/active.ts
+  s_cf0fb7db315121::t_71de6d725349a0 1-2
+playground/host/src/components/auth-screen.tsx
+  s_cf0fb7db315121::t_b7c89093dd8dd7 1-58
+  s_cf0fb7db315121::t_7361afa429cf87 59-64
+playground/host/src/components/app-sidebar.tsx
+  s_cf0fb7db315121::t_bca574118db65a 31
+  s_cf0fb7db315121::t_b7c89093dd8dd7 1-30,32-75
+  s_cf0fb7db315121::t_0e1594d3ec482b 76-78
+playground/host/src/lib/auth.functions.ts
+  s_cf0fb7db315121::t_fd81e9a8bd7b03 1-11
+playground/apps/todo/tailorkit.config.ts
+  s_cf0fb7db315121::t_3d322ed71d0892 1-6
+playground/apps/todo/tsconfig.json
+  s_cf0fb7db315121::t_a9d57fdd815a6f 1-11,13-18
+  s_cf0fb7db315121::t_7cb1abfcacf41b 12
+playground/schema.json
+  s_cf0fb7db315121::t_d17365f1cf9d14 1-7327
+playground/shared/.gitignore
+  s_cf0fb7db315121::t_71de6d725349a0 1
+playground/host/src/lib/auth-client.ts
+  s_cf0fb7db315121::t_b7c89093dd8dd7 1-66
+playground/host/tsconfig.json
+  s_cf0fb7db315121::t_b7c89093dd8dd7 1-21
+playground/apps/todo/src/slots/panel/home.view.tsx
+  s_cf0fb7db315121::t_3d322ed71d0892 1-82,84-96,100-119
+  s_cf0fb7db315121::t_95361403de94a6 83,97-99
+  s_cf0fb7db315121::t_50c61087f1a5bc 120-122
+playground/shared/src/db/schema.ts
+  s_cf0fb7db315121::t_71de6d725349a0 1-55
+  s_cf0fb7db315121::t_e2931e833f8648 56-57
+playground/host/src/lib/issues.functions.ts
+  s_cf0fb7db315121::t_b7c89093dd8dd7 1-52
+  s_cf0fb7db315121::t_d8dfae5b424c52 53-58
+playground/host/src/routeTree.gen.ts
+  s_cf0fb7db315121::t_881a1da090654a 1-207
+playground/shared/src/auth.ts
+  s_cf0fb7db315121::t_71de6d725349a0 1-62
+playground/shared/src/contracts/theme.ts
+  s_cf0fb7db315121::t_71de6d725349a0 1-15
+playground/shared/src/todos.ts
+  s_cf0fb7db315121::t_71de6d725349a0 2-30,33
+  s_cf0fb7db315121::t_d0fdfbce990565 1,31-32
+  s_cf0fb7db315121::t_c68301b4a23418 34-41
+playground/host/src/routes/index.tsx
+  s_cf0fb7db315121::t_b7c89093dd8dd7 1-24,27-72
+  s_cf0fb7db315121::t_86e20ebc042ff8 25-26
+  s_cf0fb7db315121::t_745e93ceafc071 73-86
+playground/host/src/components/tailorkit-shell.tsx
+  s_cf0fb7db315121::t_9ef1080bf80d67 24
+  s_cf0fb7db315121::t_86e20ebc042ff8 70
+  s_cf0fb7db315121::t_b7c89093dd8dd7 1-23,25-69,71-74
+  s_cf0fb7db315121::t_39ca61091b6fbe 75-86
+playground/host/src/routes/__root.tsx
+  s_cf0fb7db315121::t_fd81e9a8bd7b03 1,3,7-16,30-31
+  s_cf0fb7db315121::t_b7c89093dd8dd7 2,4-6,17-29,32,34-46
+  s_cf0fb7db315121::t_9ef1080bf80d67 33
+  s_cf0fb7db315121::t_73e1e2ef6d57c9 47-51
+playground/shared/scripts/export-schema.ts
+  s_cf0fb7db315121::t_71de6d725349a0 1-12
+playground/host/src/styles.css
+  s_cf0fb7db315121::t_b7c89093dd8dd7 1-17
+playground/shared/src/issues.ts
+  s_cf0fb7db315121::t_d0fdfbce990565 1,15-16
+  s_cf0fb7db315121::t_71de6d725349a0 2-14,17-32,62-64
+  s_cf0fb7db315121::t_52b0dba5e0fc35 33-61
+  s_cf0fb7db315121::t_5180ef4f7a1157 65-75
+playground/apps/todo/package.json
+  s_cf0fb7db315121::t_941500c2cc58c9 2
+  s_cf0fb7db315121::t_8a709ff046e5f6 10
+  s_cf0fb7db315121::t_95361403de94a6 11-12
+  s_cf0fb7db315121::t_3d322ed71d0892 1,3-9,13-22
+  s_cf0fb7db315121::t_fed36bb78d2d43 23-28
+playground/shared/src/contracts/zod.ts
+  s_cf0fb7db315121::t_313b3c772e1b0e 46
+  s_cf0fb7db315121::t_71de6d725349a0 1-16,18-45,47-51
+  s_cf0fb7db315121::t_7cb1abfcacf41b 17
+  s_cf0fb7db315121::t_ed9cb600cd4071 52-60
+playground/host/package.json
+  s_cf0fb7db315121::t_b7c89093dd8dd7 1-35
+  s_cf0fb7db315121::t_ecdf2d62a02fdf 36-42
+playground/host/src/routes/issues.tsx
+  s_cf0fb7db315121::t_b7c89093dd8dd7 1-94
+  s_cf0fb7db315121::t_7726e1254734db 95-113
+playground/host/src/routes/login.tsx
+  s_cf0fb7db315121::t_9ef1080bf80d67 1-12
+playground/apps/todo/src/tailorkit.gen.ts
+  s_cf0fb7db315121::t_d78e2a9bde654b 214
+  s_cf0fb7db315121::t_19550237d751c0 1-213,215-236,239
+  s_cf0fb7db315121::t_2853dee96dd383 237-238,240-394
+playground/host/src/routes/api/auth.ts
+  s_cf0fb7db315121::t_b7c89093dd8dd7 1-49
+  s_cf0fb7db315121::t_aebfd5726d5a3f 50-62
+playground/shared/drizzle.config.ts
+  s_cf0fb7db315121::t_71de6d725349a0 1-7
+playground/host/src/routes/api/tailorkit.$.ts
+  s_cf0fb7db315121::t_b7c89093dd8dd7 2-3,6-9
+  s_cf0fb7db315121::t_86e20ebc042ff8 1,4-5
+playground/shared/src/db/index.ts
+  s_cf0fb7db315121::t_71de6d725349a0 1-16
+  s_cf0fb7db315121::t_3e376b47cdf78b 17
+playground/host/src/lib/tailorkit-server.ts
+  s_cf0fb7db315121::t_86e20ebc042ff8 13-24
+  s_cf0fb7db315121::t_b7c89093dd8dd7 1-12
+  s_cf0fb7db315121::t_b0b36f7f1beab5 25
+playground/apps/todo/src/server.ts
+  s_cf0fb7db315121::t_3d322ed71d0892 1-3
+playground/host/vite.config.ts
+  s_cf0fb7db315121::t_b7c89093dd8dd7 1-9
+pnpm-lock.yaml
+  s_cf0fb7db315121::t_164525d9d834f5 380,383,1063,1066,1069,1072,1075,1124,1707-1817,13350,13352,13372,13374-13388,13393,13395,13406,13408,13419,13421,13426,13428,13431,13433,13436,13438,13443,13445,13448,13450,13455,13457,13460,13462,13465,13467,16996-17021,17097-17125,17345-17383,18901,18906-18907,19015-19020,19047-19052
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c7680bcd4f8ca99b69abd6a638f506351d7f1d90",
+  "prompts": {},
+  "sessions": {
+    "s_cf0fb7db315121": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13299-2aad-7903-a0fd-d5c80194fa73",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

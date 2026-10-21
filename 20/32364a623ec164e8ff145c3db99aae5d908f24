@@ -1,0 +1,25 @@
+packages/api-platform/src/index.ts
+  s_7d1277528c5eb4::t_0fdf644a79af31 3-16,19-40
+packages/api-platform/src/lazy-router.test.ts
+  s_7d1277528c5eb4::t_b061986ff58410 1-109
+packages/api-platform/src/lazy-router.ts
+  s_7d1277528c5eb4::t_94adc9055b78dc 1-10
+packages/api/src/routers/index.ts
+  s_7d1277528c5eb4::t_6faea3dbad3ced 1,5-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2032364a623ec164e8ff145c3db99aae5d908f24",
+  "prompts": {},
+  "sessions": {
+    "s_7d1277528c5eb4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1497e-9fb2-72a0-980b-c455db548beb",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

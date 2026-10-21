@@ -1,0 +1,23 @@
+packages/app/src/client/canvas-controller.test.ts
+  s_a0bf9224ecab6e::t_d93b89f29a628e 646-678
+packages/app/src/client/canvas-controller.ts
+  s_a0bf9224ecab6e::t_d93b89f29a628e 188-190,192-195
+packages/app/src/client/canvas-scheduler.ts
+  s_a0bf9224ecab6e::t_d93b89f29a628e 10-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "caac74624fb7cb4b786e90ad6e7c981d56b0fe97",
+  "prompts": {},
+  "sessions": {
+    "s_a0bf9224ecab6e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a156f7-f6c7-7d12-81e0-7055869efe72",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

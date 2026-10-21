@@ -1,0 +1,103 @@
+playground/apps/todo/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 34-36
+.changeset/quick-cups-pack.md
+  s_bf2407f2747f3e::t_11db12e89705b5 1-16
+packages/core/vite.config.ts
+  s_bf2407f2747f3e::t_11db12e89705b5 1-22
+packages/observability/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 25,46-48
+packages/db/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 30,54-56
+packages/asset-delivery/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 30,43-45
+packages/client-core/vite.config.ts
+  s_bf2407f2747f3e::t_11db12e89705b5 1-17
+packages/api-utils/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 50,73-75
+packages/client-platform/vite.config.ts
+  s_bf2407f2747f3e::t_11db12e89705b5 1-12
+packages/sandbox/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 56-58
+packages/auth/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 30,61-63
+packages/env/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 24,37-39
+packages/client-core/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 61,79,81-83
+packages/react/vite.config.ts
+  s_bf2407f2747f3e::t_11db12e89705b5 1-12
+packages/ui/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 68,99-101
+apps/apps-worker/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 39-41
+packages/react/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 47,73,78-80
+packages/cli/src/generator/templates/package.json.liquid
+  s_bf2407f2747f3e::t_11db12e89705b5 5-7
+packages/client-platform/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 60,78,80-82
+packages/tailorkit/vite.config.ts
+  s_bf2407f2747f3e::t_11db12e89705b5 1-26
+playground/tanstack-start/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 43-45
+packages/vite/vite.config.ts
+  s_bf2407f2747f3e::t_11db12e89705b5 17
+packages/vite/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 80-82
+packages/api-platform/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 38,73-75
+package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 59-61
+packages/api/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 30,57-59
+packages/app/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 64,91-93
+packages/email/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 30,54-56
+packages/storage/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 30,59-61
+packages/tailorkit/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 98,115-116,137-139
+packages/cli/vite.config.ts
+  s_bf2407f2747f3e::t_11db12e89705b5 43
+packages/cli/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 66-68
+packages/sandbox/vite.config.ts
+  s_bf2407f2747f3e::t_11db12e89705b5 22
+packages/kv/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 30,59-61
+packages/app-db/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 49,61-65
+packages/app-db/vite.config.ts
+  s_bf2407f2747f3e::t_11db12e89705b5 1-12
+packages/config/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 26-28
+packages/flags/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 25,37-39
+playground/shared/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 38-40
+packages/app/vite.config.ts
+  s_bf2407f2747f3e::t_11db12e89705b5 1-22
+apps/web/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 85-87
+packages/core/package.json
+  s_bf2407f2747f3e::t_11db12e89705b5 81,105,123-125
+pnpm-lock.yaml
+  s_bf2407f2747f3e::t_c6508ca19a6809 957,960,980-982,1161-1163,1195-1197,1256-1258,1506-1508,1617-1619,24907
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c9047d973f8888bb05c45617367ef26f917e0df0",
+  "prompts": {},
+  "sessions": {
+    "s_bf2407f2747f3e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a156ba-665c-75c3-9e65-8bb94000a003",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

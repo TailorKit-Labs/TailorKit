@@ -1,0 +1,25 @@
+apps/web/config/api-functions.ts
+  s_7d1277528c5eb4::t_fd0b5a6b5cc947 12,21,29,35,41,47
+apps/web/src/server/api/entry.test.ts
+  s_7d1277528c5eb4::t_437e5442297ff6 28
+apps/web/src/server/api/entry.ts
+  s_7d1277528c5eb4::t_7c386939aaf625 22
+apps/web/vite.config.ts
+  s_7d1277528c5eb4::t_ff4f5f3bb67f83 76-88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a77b8e9265838427e3e8b19c70c1d7efb3203c9f",
+  "prompts": {},
+  "sessions": {
+    "s_7d1277528c5eb4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1497e-9fb2-72a0-980b-c455db548beb",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+docs/docs.json
+  s_35012a91b914e4::t_5c6a712a790e9b 29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a11d4fd82b941a993857b4d4a756bb729dd9f0cb",
+  "prompts": {},
+  "sessions": {
+    "s_35012a91b914e4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a123fb-4e04-7eb2-af76-566a5e408879",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

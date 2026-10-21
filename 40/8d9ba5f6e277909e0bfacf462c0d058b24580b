@@ -1,0 +1,43 @@
+packages/agent/src/workspace.ts
+  s_0ead419c6156be::t_5b674ffe59432f 8,68-76,78-90,92-129,133,139,143-146
+  s_0ead419c6156be::t_c97822a8b309bc 1-5,7,9-14,18-42,46-67,91,130-132,134-138,140-142,147-148
+  s_0ead419c6156be::t_5f1c6e233d02d4 6
+  s_0ead419c6156be::t_01e302d43887db 43-45
+  s_0ead419c6156be::t_00c94ce71f9975 15-17
+  s_0ead419c6156be::t_7baf65521c3b38 77
+packages/agent/src/workspace.test.ts
+  s_0ead419c6156be::t_01e302d43887db 66-71,75-77,87-89,91,98-103,118-120,122
+  s_0ead419c6156be::t_00c94ce71f9975 43,73
+  s_0ead419c6156be::t_da7f8bb0a99201 72,74
+  s_0ead419c6156be::t_5f1c6e233d02d4 1-42,44-49,51-58,60-65,78-86,90,92-97,104-115,117,121,123-128,133-135
+  s_0ead419c6156be::t_5b674ffe59432f 50,59,116,129-132,136-154
+packages/agent/src/sandbox.ts
+  s_0ead419c6156be::t_c97822a8b309bc 131-137
+packages/agent/src/agent.ts
+  s_0ead419c6156be::t_c97822a8b309bc 22-23,25-26
+packages/agent/README.md
+  s_0ead419c6156be::t_c97822a8b309bc 18
+  s_0ead419c6156be::t_5b674ffe59432f 17
+packages/agent/src/instructions.md
+  s_0ead419c6156be::t_c97822a8b309bc 9,11
+packages/agent/src/sandbox.test.ts
+  s_0ead419c6156be::t_c97822a8b309bc 21,32,91-98
+  s_0ead419c6156be::t_5f1c6e233d02d4 122-127,129-146
+  s_0ead419c6156be::t_512b2e13b48fd8 128
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "408d9ba5f6e277909e0bfacf462c0d058b24580b",
+  "prompts": {},
+  "sessions": {
+    "s_0ead419c6156be": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1395e-4bfc-7793-8914-5977db756be9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+packages/api-platform/src/routes/apps.test.ts
+  s_601064c831fbf6::t_f416587c19db50 394-480
+packages/api-platform/src/routes/apps.ts
+  s_601064c831fbf6::t_3c44283b8ba7c8 284-308
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b5421f3837352bee364a4acdb4234c76f48e098d",
+  "prompts": {},
+  "sessions": {
+    "s_601064c831fbf6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14347-33e3-7441-9b76-2c31215668ee",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

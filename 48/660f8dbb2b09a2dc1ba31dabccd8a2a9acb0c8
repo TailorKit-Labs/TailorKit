@@ -1,0 +1,46 @@
+packages/app/src/client.ts
+  s_a0bf9224ecab6e::t_94478ed4295676 27
+packages/app/src/client/canvas-hook.ts
+  s_a0bf9224ecab6e::t_94478ed4295676 14
+packages/sandbox/benchmarks/client.ts
+  s_a0bf9224ecab6e::t_94478ed4295676 46-65,67-69
+packages/sandbox/src/host/index.ts
+  s_a0bf9224ecab6e::t_94478ed4295676 73
+packages/sandbox/README.md
+  s_a0bf9224ecab6e::t_94478ed4295676 73-93,179,187
+playground/apps/todo/src/slots/panel/canvas-prototype.tsx
+  s_a0bf9224ecab6e::t_94478ed4295676 111,113,133
+packages/sandbox/src/host/index.test.ts
+  s_a0bf9224ecab6e::t_94478ed4295676 126-128
+packages/sandbox/benchmarks/main.ts
+  s_a0bf9224ecab6e::t_94478ed4295676 136
+packages/sandbox/benchmarks/shared.ts
+  s_a0bf9224ecab6e::t_94478ed4295676 7
+.changeset/tidy-canvas-surfaces.md
+  s_a0bf9224ecab6e::t_94478ed4295676 15-18
+packages/app/src/client/canvas-controller.ts
+  s_a0bf9224ecab6e::t_94478ed4295676 5-12,15-18,43-46,53-54,66-67,87-98,103-107,118-119,161-192,203-207,220-221,288,310,312,316,318,332,404-406,417,421
+playground/README.md
+  s_a0bf9224ecab6e::t_94478ed4295676 95
+  s_a0bf9224ecab6e::t_0fdd317fc1a163 101
+packages/app/src/client/canvas-controller.test.ts
+  s_a0bf9224ecab6e::t_94478ed4295676 483-645
+packages/app/src/client/canvas-scheduler.ts
+  s_a0bf9224ecab6e::t_94478ed4295676 1-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "48660f8dbb2b09a2dc1ba31dabccd8a2a9acb0c8",
+  "prompts": {},
+  "sessions": {
+    "s_a0bf9224ecab6e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a156f7-f6c7-7d12-81e0-7055869efe72",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

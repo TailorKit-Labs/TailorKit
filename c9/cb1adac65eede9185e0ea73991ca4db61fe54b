@@ -1,0 +1,23 @@
+packages/storage/package.json
+  s_4309e34fe2b036::t_5dac83fb28a16c 32
+packages/vite/src/builder/file-routes.test.ts
+  s_4309e34fe2b036::t_ac999459b2e560 318,323,325,327-333
+packages/vite/src/builder/server.test.ts
+  s_4309e34fe2b036::t_c95557bba08797 539-542,549-554,564,570-573
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c9cb1adac65eede9185e0ea73991ca4db61fe54b",
+  "prompts": {},
+  "sessions": {
+    "s_4309e34fe2b036": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13d0c-2e32-7141-b980-d10e6701e261",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

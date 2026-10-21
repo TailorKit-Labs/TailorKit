@@ -1,0 +1,113 @@
+packages/sandbox/src/iframe/canvas.ts
+  s_555b68ee903b8c::t_226e29a86486e7 1,11,16,22-23,25-28,34,41,50-62,70-76,78,114-125
+packages/react/src/canvas-context.ts
+  s_555b68ee903b8c::t_ccab9f26396899 1-12
+playground/tanstack-start/src/lib/tailorkit-client.tsx
+  s_555b68ee903b8c::t_2524c5dcb581fa 5-9,50
+playground/apps/todo/src/slots/canvas/index.view.tsx
+  s_555b68ee903b8c::t_41ad7f6faa9412 1-9
+playground/tanstack-start/canvas-demo.html
+  s_555b68ee903b8c::t_fb9136958d7b7e 1-12
+playground/tanstack-start/canvas-demo/main.tsx
+  s_555b68ee903b8c::t_130571b100f640 1-88
+packages/sandbox/src/protocol.ts
+  s_555b68ee903b8c::t_3cee4f1422efb3 98-104,262-266
+packages/react/src/canvas.tsx
+  s_555b68ee903b8c::t_dc3708d351c9f0 1-70
+packages/sandbox/src/iframe/canvas.test.ts
+  s_555b68ee903b8c::t_a1bff7554a1552 5-23
+packages/app/src/client/canvas.ts
+  s_555b68ee903b8c::t_ec7babdb5d5e5f 4,12-17,19-22,26,39-42,47
+packages/sandbox/src/host/canvas.ts
+  s_555b68ee903b8c::t_f6d11cbb049932 18,21,27,30,39-42
+playground/shared/src/contracts/arktype.ts
+  s_555b68ee903b8c::t_ee9b70d3ef5751 2,11-14,35
+packages/react/src/__tests__/canvas.test.tsx
+  s_555b68ee903b8c::t_7fe6db81ebd395 1-84
+packages/sandbox/README.md
+  s_555b68ee903b8c::t_ec9c247e51f8f3 7-72,78-84,95,97,114,149-163
+playground/schema.json
+  s_555b68ee903b8c::t_943ab6282b924a 3-29,8422-8424
+packages/core/src/schema/index.ts
+  s_555b68ee903b8c::t_3a68d99c10cfe4 2-6
+playground/apps/todo/.agents/skills/tailorkit-capabilities/references/components/experimental_Canvas.md
+  s_555b68ee903b8c::t_18a54f414ea9ec 1-37
+packages/react/src/index.ts
+  s_555b68ee903b8c::t_c125fb03e239fb 2
+packages/app/src/client/canvas-hook.ts
+  s_555b68ee903b8c::t_9529c7d03b3d2f 1-163
+playground/apps/todo/.agents/skills/tailorkit-capabilities/references/views.md
+  s_555b68ee903b8c::t_167f5d86eafa5a 7-32
+packages/sandbox/benchmarks/main.ts
+  s_555b68ee903b8c::t_09420b820ad61e 89-91
+playground/tanstack-start/package.json
+  s_555b68ee903b8c::t_a17932e2bcefbd 20-21
+packages/client-core/src/store/local/remote-view.test.ts
+  s_555b68ee903b8c::t_e0e4b56808a865 50-53,59,244-247,249
+packages/client-core/src/store/local/remote-view.ts
+  s_555b68ee903b8c::t_7d356c3fcb91e0 5,98-113
+packages/react/src/remote-view.tsx
+  s_555b68ee903b8c::t_2f8f0f40dcc622 5,9-12,30-31,72,96-101,109-118,180,184-195,231-237
+packages/react/src/components/render-slot.tsx
+  s_555b68ee903b8c::t_4a3e196ee59d3c 76
+.changeset/tidy-canvas-surfaces.md
+  s_555b68ee903b8c::t_a577f4be44f342 5-7,11-12
+packages/sandbox/src/iframe/runtime.ts
+  s_555b68ee903b8c::t_27b1bcb96a5c17 94,217-220,301-303
+playground/apps/todo/src/slots/panel/index.view.tsx
+  s_555b68ee903b8c::t_0bb581f5aa216a 6,182
+playground/apps/todo/src/slots/panel/canvas-prototype.tsx
+  s_555b68ee903b8c::t_662503f372499f 1-100
+playground/apps/todo/.agents/skills/tailorkit-capabilities/references/index.md
+  s_555b68ee903b8c::t_8174fc4990a170 13
+playground/README.md
+  s_555b68ee903b8c::t_f6dcd5a7164f97 37,90-97
+packages/app/src/client.ts
+  s_555b68ee903b8c::t_2dfbba1828f2c8 21-31
+packages/core/src/schema/components.ts
+  s_555b68ee903b8c::t_a8d6f157eb254b 2,23
+playground/shared/src/contracts/valibot.ts
+  s_555b68ee903b8c::t_c1f95865b748cf 2,35-38,74
+packages/sandbox/src/host/index.ts
+  s_555b68ee903b8c::t_a118950f443788 16,22,32,35,132-135,188-198,200-204,246-251,399,448,460-467,471,474-479,483-498
+packages/sandbox/src/host/index.test.ts
+  s_555b68ee903b8c::t_31c92c1e3e9ca6 72,83-85
+packages/core/src/schema/canvas.test.ts
+  s_555b68ee903b8c::t_d8e4c43b6b09bd 1-60
+playground/tanstack-start/canvas-demo/checks.ts
+  s_555b68ee903b8c::t_c4b9b5540ee8d0 1-178
+playground/apps/todo/src/tailorkit.gen.ts
+  s_555b68ee903b8c::t_d3e2a98da89acc 40,121-131
+playground/tanstack-start/canvas-demo.vite.config.ts
+  s_555b68ee903b8c::t_ee2cef832b7613 1-37
+playground/shared/src/contracts/zod.ts
+  s_555b68ee903b8c::t_3b4c1024b7d9f8 1,15-18,43
+packages/core/src/schema/canvas.ts
+  s_555b68ee903b8c::t_b67cb66e12536e 1-77
+packages/core/src/schema/shared.ts
+  s_555b68ee903b8c::t_a35ed82e80e13b 79-82,85
+packages/sandbox/benchmarks/client.ts
+  s_555b68ee903b8c::t_f880fa12de59a9 4,13,56
+packages/cli/src/generator/types.test.ts
+  s_555b68ee903b8c::t_568462b7e8543e 8,814-825
+playground/tanstack-start/tsconfig.json
+  s_555b68ee903b8c::t_bc3c104ce3c3d4 2-9
+packages/tailorkit/src/index.ts
+  s_555b68ee903b8c::t_83d7cd9d2c5897 2-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "eb3758eb017359a298f86066d33a3cea8c54fd15",
+  "prompts": {},
+  "sessions": {
+    "s_555b68ee903b8c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a153e3-6fd7-77b1-aba2-c8715cf11230",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

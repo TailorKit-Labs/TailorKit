@@ -1,0 +1,16 @@
+package.json
+  h_18044dd1b61a81 44
+pnpm-lock.yaml
+  h_18044dd1b61a81 296-298,2385-2423,13749-13779
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fec3919171cd7f6ac79019af88d1a248db8fe8b4",
+  "prompts": {},
+  "humans": {
+    "h_18044dd1b61a81": {
+      "author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

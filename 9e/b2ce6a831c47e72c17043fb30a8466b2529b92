@@ -1,0 +1,21 @@
+.agents/skills/tailorkit-db-changes/references/rollout-patterns.md
+  s_be4c8e4ffc016f::t_2a3cd148f4a92a 1-40
+AGENTS.md
+  s_be4c8e4ffc016f::t_71f26ea279ee3b 1,3-7,9,11,13-20,22,24-27,29,31-34,36-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9eb2ce6a831c47e72c17043fb30a8466b2529b92",
+  "prompts": {},
+  "sessions": {
+    "s_be4c8e4ffc016f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13c6b-f653-7363-92ec-cfbe26c406ce",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

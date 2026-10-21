@@ -1,0 +1,25 @@
+packages/agent-fx/README.md
+  s_bb1128fc3a1bf0::t_fc27cc3aefe5e7 9-10
+packages/agent-fx/src/agent.integration.test.ts
+  s_bb1128fc3a1bf0::t_965ca008981685 341
+  s_bb1128fc3a1bf0::t_fffd8642f80dea 176-186
+  s_bb1128fc3a1bf0::t_fc27cc3aefe5e7 340,342
+packages/agent-fx/src/agent.ts
+  s_bb1128fc3a1bf0::t_d1ed1cae75b835 27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fd7a42c21b26e1b2b864a13119f98aef49779c32",
+  "prompts": {},
+  "sessions": {
+    "s_bb1128fc3a1bf0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1521e-a2bd-7f40-b8cc-c38121fd3c26",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

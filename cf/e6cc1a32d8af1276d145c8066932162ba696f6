@@ -1,0 +1,19 @@
+packages/auth/src/lib/tenant-short-id.ts
+  s_70fc9ff29fa205::t_dc09083fb91a27 4-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cfe6cc1a32d8af1276d145c8066932162ba696f6",
+  "prompts": {},
+  "sessions": {
+    "s_70fc9ff29fa205": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15bfa-1604-7970-9c87-490f04a41a8a",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

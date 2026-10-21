@@ -1,0 +1,41 @@
+packages/ai-sdk/src/index.test-d.ts
+  s_bf2407f2747f3e::t_44c440a0ea542b 1-33
+packages/ai-sdk/package.json
+  s_bf2407f2747f3e::t_d13fab578ece59 55-57,65
+.changeset/mcp-ai-sdk-tools.md
+  s_bf2407f2747f3e::t_d13fab578ece59 6
+packages/ai-sdk/README.md
+  s_bf2407f2747f3e::t_459f322465c443 3,5,9,11-14,17-22,25,53,55,57
+packages/ai-sdk/src/index.ts
+  s_bf2407f2747f3e::t_d9a7038edd5f9b 168-172,177-182,188-201,204-207,211-214,218-221
+  s_bf2407f2747f3e::t_d13fab578ece59 11,13-14,21-28,31,35,38,50,56-57,105-117,124-125,127-128,130,132-134,138-167,173-176,183-187,203,209-210,217,223-227
+  s_bf2407f2747f3e::t_459f322465c443 208,215,222
+  s_bf2407f2747f3e::t_392cc929c25167 202,216
+packages/ai-sdk/src/index.test.ts
+  s_bf2407f2747f3e::t_459f322465c443 3,54,149,158-160,472,490
+  s_bf2407f2747f3e::t_2c8ca9e3b7a5ad 164-167
+  s_bf2407f2747f3e::t_d9a7038edd5f9b 11-12,118-131,150-152,173-175,177-178,238,242,244,247,249-250,263,265-272,484-488,493-495,506-514
+  s_bf2407f2747f3e::t_973b10c770e209 499
+  s_bf2407f2747f3e::t_6a559771352ee9 68-71,137,153,161,172,329-340,376,405,491
+  s_bf2407f2747f3e::t_4e621dc51ad4ec 1-2,4-5,18,53,132-136,138-148,154-157,162-163,168-171,273-277,305,341,437,467-471,481-483,489,496-498,500-501,505
+packages/tailorkit/src/ai-sdk.ts
+  s_bf2407f2747f3e::t_d13fab578ece59 1,6
+pnpm-lock.yaml
+  s_bf2407f2747f3e::t_0916b2a3bc7bc0 707-712
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e39919d9e7ac4cf97660d2f772cc3c9699053fd3",
+  "prompts": {},
+  "sessions": {
+    "s_bf2407f2747f3e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a156ba-665c-75c3-9e65-8bb94000a003",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

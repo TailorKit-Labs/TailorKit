@@ -1,0 +1,105 @@
+apps/apps-worker/README.md
+  s_3d130e08251b54::t_7b6404efa10c19 3-11,13-15,19-25,27,29,31-39,43,45,47-51,55,66-70,74,76,78,80-84,88-89,98,100,103,106-112,118-120,124-125,132,136,140-141,148-154,158-162,168-170,174,182-184,190-194
+docs/concepts/components.mdx
+  s_f113f3d0af95a0::t_3d8be9cc0424bc 2-3,9,59,61,91-92
+docs/concepts/slots.mdx
+  s_f113f3d0af95a0::t_0be6aa117b4d28 2-3,75,79,114,116,134,138-139
+docs/concepts/tools.mdx
+  s_f113f3d0af95a0::t_d582c1fe869d9b 2-3,7,65,94-95
+docs/concepts/views.mdx
+  s_f113f3d0af95a0::t_4d295901a6f547 2-3,78,88,92,111-112,122-123
+docs/getting-started/installation.mdx
+  s_f113f3d0af95a0::t_dad939f9fbe916 2-3,7-9,95,321,386,437,627,745-747,802-804,856-858,918,920
+docs/writing-apps/ui.mdx
+  s_f113f3d0af95a0::t_873c1d297588f8 2-3,127,141-142
+packages/agent/README.md
+  s_3d130e08251b54::t_44f014aa37b9f9 1,3,7,9-18,24-38,40,42,44,46,48,50,56,58,60-64,66-76,83,86,88-92,124-128
+README.md
+  s_f3bff407025201::t_8d16c9e67ba523 11,13,15,17,19-25,27-35,41-45,50,54
+RELEASING.md
+  s_f3bff407025201::t_687a7096a98351 3,7,9,13,15,17
+SECURITY.md
+  s_f3bff407025201::t_86460ddb9b11d0 3,5,7-10,12
+docs/README.md
+  s_f3bff407025201::t_e35196459d72e2 1,3,5,7,9-11,14,16,18,20-22,24,26,28,30,32-35,37,39-41,43,45
+docs/getting-started/introduction.mdx
+  s_f3bff407025201::t_5424aa9b110a09 3,6,8,10,12,14,16,18,20,22,24,26,28,30-32,34,36,38-41,43,45
+docs/writing-apps/overview.mdx
+  s_f3bff407025201::t_8d555229833898 2-3,7,47-49
+packages/api-platform/README.md
+  s_f3bff407025201::t_d7a6376d1c600c 1,3,5,7,11-12,14-16,20,22
+packages/api-utils/README.md
+  s_f3bff407025201::t_670cab1ac96788 1,3
+packages/api/README.md
+  s_f3bff407025201::t_497fb664f99569 3
+packages/app/README.md
+  s_f3bff407025201::t_da6414e113e913 1,3,7,23-27,37,52-56,78-82
+packages/asset-delivery/README.md
+  s_f3bff407025201::t_72fd39b35095dd 1,3
+packages/auth/README.md
+  s_f3bff407025201::t_a52822723946b0 1,3
+packages/cli/README.md
+  s_f3bff407025201::t_06291ed543ef08 3,5,7,10-22,26-30,32,34,36,38,40,42,44-60,62
+packages/client-core/README.md
+  s_f3bff407025201::t_876dc7e87b2391 1,3
+packages/client-platform/README.md
+  s_f3bff407025201::t_e42dafe089fbcd 1,3
+packages/config/README.md
+  s_f3bff407025201::t_18da5c69794d42 1,3
+packages/core/README.md
+  s_f3bff407025201::t_06ee9d2eb04393 1,3,5,7-9,22-24,26,28
+packages/db/README.md
+  s_f3bff407025201::t_49d750f587d85e 1,3
+packages/email/README.md
+  s_f3bff407025201::t_dc3aa1e8da61bb 1,3
+packages/env/README.md
+  s_f3bff407025201::t_52b98c17d6a88b 1,3
+packages/kv/README.md
+  s_f3bff407025201::t_59e14f8880130f 3
+packages/observability/README.md
+  s_f3bff407025201::t_d945cd069e1c8d 1,3
+packages/react/README.md
+  s_f3bff407025201::t_70208ac73cb70d 3
+packages/sandbox/README.md
+  s_f3bff407025201::t_127edb4a09e478 1,3
+packages/storage/README.md
+  s_f3bff407025201::t_6b1261bde8e6ac 1,3
+packages/ui/README.md
+  s_f3bff407025201::t_d4b20013976eab 3
+packages/vite/README.md
+  s_f3bff407025201::t_ad74581dc9191a 3,5-7,20-21
+playground/README.md
+  s_f3bff407025201::t_9b84dff4a562e9 3,22,28,37,41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6615e8e9290f3ffe05c628862a34977b4f23dd19",
+  "prompts": {},
+  "sessions": {
+    "s_3d130e08251b54": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13e32-e2dc-77f3-b2bf-1b552eac1a42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_f113f3d0af95a0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13e33-1808-7451-834b-0d4ace3a1062",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_f3bff407025201": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13e31-b198-7db3-a247-57a12f64c66c",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

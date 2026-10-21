@@ -1,0 +1,39 @@
+apps/web/src/routes/api/platform.$.ts
+  s_cdcdb73f1aae8e::t_98a917562cafa7 2,33-36
+packages/api-platform/package.json
+  s_cdcdb73f1aae8e::t_5b9c95db6dbc14 43
+packages/api-platform/src/app-agent-mcp.test.ts
+  s_cdcdb73f1aae8e::t_54fd549399ad76 1-163
+packages/api-platform/src/app-agent-mcp.ts
+  s_cdcdb73f1aae8e::t_dfbb061e72eafe 1-115
+packages/api-platform/src/routes/app-agent.ts
+  s_cdcdb73f1aae8e::t_1020d461e74e54 19
+packages/app-agent/README.md
+  s_cdcdb73f1aae8e::t_92b7cf175bbbe4 4-114
+packages/app-agent/package.json
+  s_cdcdb73f1aae8e::t_fcd0a869d1349d 15-18,28
+packages/app-agent/src/mcp.test.ts
+  s_cdcdb73f1aae8e::t_f4ecadb41ec948 1-387
+packages/app-agent/src/mcp.ts
+  s_cdcdb73f1aae8e::t_5e61018cc67b07 1-435
+packages/app-agent/vite.config.ts
+  s_cdcdb73f1aae8e::t_d2cff16915efe4 7
+pnpm-lock.yaml
+  s_cdcdb73f1aae8e::t_3b7ace327cae7a 1008-1010,3691-3700,14786-14807,18917-18930,20069-20076,20146-20178,20322-20332,23686-23695,23797-23812,23848-23856,25640-25643
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cfa004a1926c7b89143b398082e17135cba5ab49",
+  "prompts": {},
+  "sessions": {
+    "s_cdcdb73f1aae8e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12960-dac0-7540-a8f6-421667b1826c",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

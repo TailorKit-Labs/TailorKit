@@ -1,0 +1,19 @@
+packages/agent/src/instructions.md
+  s_000cb31593473a::t_677eb679327c9c 48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "212c83c9d3220306e96ecaf6376a93cbefbfe8f6",
+  "prompts": {},
+  "sessions": {
+    "s_000cb31593473a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13cec-9cc0-7a23-a12d-67bd839b9c56",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

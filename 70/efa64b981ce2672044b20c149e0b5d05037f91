@@ -1,0 +1,31 @@
+playground/host/src/routes/index.tsx
+  s_cf0fb7db315121::t_ae1746444f008a 31,57
+playground/host/src/components/auth-screen.tsx
+  s_cf0fb7db315121::t_babb83f223a4b9 44
+playground/host/src/routes/issues.$issueId.tsx
+  s_cf0fb7db315121::t_ae1746444f008a 30
+playground/host/src/routeTree.gen.ts
+  s_cf0fb7db315121::t_0b70c12a94a198 16,41-45,68,77,88,100,109,119,163-169,196,201
+playground/host/src/routes/issues.tsx
+  s_cf0fb7db315121::t_ae1746444f008a 1,4
+playground/host/src/routes/issues.index.tsx
+  s_cf0fb7db315121::t_ae1746444f008a 1-113
+playground/host/src/components/app-sidebar.tsx
+  s_cf0fb7db315121::t_ae1746444f008a 19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "70efa64b981ce2672044b20c149e0b5d05037f91",
+  "prompts": {},
+  "sessions": {
+    "s_cf0fb7db315121": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13299-2aad-7903-a0fd-d5c80194fa73",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

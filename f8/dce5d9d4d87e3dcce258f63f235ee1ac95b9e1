@@ -1,0 +1,85 @@
+packages/cli/src/generator/templates/src/db/index.ts.liquid
+  s_1fee9365510c9b::t_80c85d7fd30b58 1
+examples/apps/todo/src/functions/todos.ts
+  s_1fee9365510c9b::t_cb73da1265880f 1,5,9,22,36,46
+docs/tools.mdx
+  s_1fee9365510c9b::t_81f858cdea2d6b 143
+examples/apps/backend-todo/README.md
+  s_1fee9365510c9b::t_cb73da1265880f 5,37
+  s_1fee9365510c9b::t_81f858cdea2d6b 3
+examples/apps/backend-todo/src/server.ts
+  s_1fee9365510c9b::t_cb73da1265880f 1
+packages/tailorkit/package.json
+  s_1fee9365510c9b::t_80c85d7fd30b58 29-32,66
+packages/app/src/builder/index.ts
+  s_1fee9365510c9b::t_4b1ba92d60c579 160
+packages/app/src/server/builder.test-d.ts
+  s_1fee9365510c9b::t_cb73da1265880f 3,10,19-20,27,32,38,77,79,81,83,105
+packages/app/src/builder/server.ts
+  s_1fee9365510c9b::t_80c85d7fd30b58 48
+packages/app/src/builder/file-routes.test.ts
+  s_1fee9365510c9b::t_ae41a864055466 134
+apps/apps-worker/src/runtime/bundle.test.ts
+  s_1fee9365510c9b::t_81f858cdea2d6b 2,6
+examples/apps/todo/src/db/schema.ts
+  s_1fee9365510c9b::t_cb73da1265880f 1
+examples/apps/todo/README.md
+  s_1fee9365510c9b::t_81f858cdea2d6b 3
+  s_1fee9365510c9b::t_cb73da1265880f 5,21
+packages/cli/src/generator/templates/src/server.ts.liquid
+  s_1fee9365510c9b::t_80c85d7fd30b58 1
+packages/app/src/database/definition.test-d.ts
+  s_1fee9365510c9b::t_cb73da1265880f 3,18,32,51,53
+packages/app/src/server/builder.ts
+  s_1fee9365510c9b::t_80c85d7fd30b58 108
+examples/apps/todo/src/server.ts
+  s_1fee9365510c9b::t_cb73da1265880f 1
+apps/apps-worker/src/runtime/builder.test.ts
+  s_1fee9365510c9b::t_81f858cdea2d6b 3,34,42,46-47,74-75,95,99,104,133-136
+packages/tailorkit/src/fn.ts
+  s_1fee9365510c9b::t_80c85d7fd30b58 1
+examples/apps/backend-todo/src/db/index.ts
+  s_1fee9365510c9b::t_cb73da1265880f 1
+examples/apps/backend-todo/src/functions/import-todo.ts
+  s_1fee9365510c9b::t_cb73da1265880f 2,6
+apps/apps-worker/src/runtime/context.test.ts
+  s_1fee9365510c9b::t_81f858cdea2d6b 7,29,33,42,48,53
+examples/apps/todo/src/db/index.ts
+  s_1fee9365510c9b::t_cb73da1265880f 1
+examples/apps/backend-todo/src/db/schema.ts
+  s_1fee9365510c9b::t_cb73da1265880f 1
+apps/apps-worker/src/runtime/execution.test.ts
+  s_1fee9365510c9b::t_81f858cdea2d6b 17,117,124,180,183,355-356,359,375,427,438,441,448
+packages/cli/src/generator/templates/src/functions/greeting.ts.liquid
+  s_1fee9365510c9b::t_80c85d7fd30b58 1,5
+packages/app/src/instances.test-d.ts
+  s_1fee9365510c9b::t_cb73da1265880f 3,7,10-12
+packages/app/src/server.ts
+  s_1fee9365510c9b::t_80c85d7fd30b58 4
+packages/app/src/builder/server.test.ts
+  s_1fee9365510c9b::t_cb73da1265880f 35,43,131,166,168-170
+.changeset/fn-export.md
+  s_1fee9365510c9b::t_465482bed24336 1-6
+examples/apps/todo/src/functions/import-todo.ts
+  s_1fee9365510c9b::t_cb73da1265880f 2,7
+apps/apps-worker/src/runtime/functions.test.ts
+  s_1fee9365510c9b::t_81f858cdea2d6b 2,19-20,25,70
+examples/apps/backend-todo/src/functions/todos.ts
+  s_1fee9365510c9b::t_cb73da1265880f 1,5,8,22,33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f8dce5d9d4d87e3dcce258f63f235ee1ac95b9e1",
+  "prompts": {},
+  "sessions": {
+    "s_1fee9365510c9b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13296-4517-7261-ba14-9c2db3d09d57",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

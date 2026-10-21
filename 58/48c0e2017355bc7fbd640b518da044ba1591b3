@@ -1,0 +1,16 @@
+.agents/skills/writing-guidelines/SKILL.md
+  h_18044dd1b61a81 1-39
+skills-lock.json
+  h_18044dd1b61a81 83-88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5848c0e2017355bc7fbd640b518da044ba1591b3",
+  "prompts": {},
+  "humans": {
+    "h_18044dd1b61a81": {
+      "author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

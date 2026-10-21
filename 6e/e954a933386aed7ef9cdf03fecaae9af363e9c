@@ -1,0 +1,21 @@
+.agents/skills/patchsmith-db-changes/SKILL.md
+  s_9bacdc8f60fcc1::t_bcd5af3e73ab9c 2
+AGENTS.md
+  s_9bacdc8f60fcc1::t_90f497b6adeebe 31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6ee954a933386aed7ef9cdf03fecaae9af363e9c",
+  "prompts": {},
+  "sessions": {
+    "s_9bacdc8f60fcc1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a157c2-2de3-7e11-b7f4-9add1347097f",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

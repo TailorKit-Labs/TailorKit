@@ -1,0 +1,14 @@
+apps/apps-worker/wrangler.jsonc
+  h_18044dd1b61a81 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "10591e093b83cb3e2fe03b31818a46be9bc9b82d",
+  "prompts": {},
+  "humans": {
+    "h_18044dd1b61a81": {
+      "author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

@@ -1,0 +1,38 @@
+packages/cli/src/app-link.ts
+  s_2f164c0c74e0b6::t_4c31aca532ef1c 12
+  s_2f164c0c74e0b6::t_9831f93ddf2c29 3
+  s_2f164c0c74e0b6::t_85ac35dbd52948 4
+packages/vite/package.json
+  s_2f164c0c74e0b6::t_9831f93ddf2c29 41-44
+.changeset/persist-fx-deployment-app-id.md
+  s_2f164c0c74e0b6::t_85ac35dbd52948 1-4
+  s_2f164c0c74e0b6::t_9831f93ddf2c29 5
+packages/vite/vite.config.ts
+  s_2f164c0c74e0b6::t_9831f93ddf2c29 9
+packages/vite/src/config/app-link.ts
+  s_2f164c0c74e0b6::t_85ac35dbd52948 1-62
+packages/agent-fx/src/deploy.test.ts
+  s_2f164c0c74e0b6::t_4c31aca532ef1c 48-51,68-70,72-74,152-172,176-179,181-191
+  s_2f164c0c74e0b6::t_9dedb031dc3a23 98-106,180
+  s_2f164c0c74e0b6::t_1ce944c8e76f83 39-44,52,66-67,71,75,77-78,107,121,148-151,173-175
+  s_2f164c0c74e0b6::t_dfee2a3c9efcc1 192
+packages/agent-fx/src/deploy.ts
+  s_2f164c0c74e0b6::t_85ac35dbd52948 43,244-255
+  s_2f164c0c74e0b6::t_9831f93ddf2c29 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "354c1fc373ac6e322feb31dea52f274453bf76e9",
+  "prompts": {},
+  "sessions": {
+    "s_2f164c0c74e0b6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15277-2678-7210-ae6a-1ac0549e965d",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

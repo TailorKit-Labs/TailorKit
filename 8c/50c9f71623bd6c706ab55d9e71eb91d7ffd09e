@@ -1,0 +1,19 @@
+packages/vite/src/upload-manifest-boundary.test.ts
+  s_8500052a279e55::t_51b9b6d058c603 4-13,45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8c50c9f71623bd6c706ab55d9e71eb91d7ffd09e",
+  "prompts": {},
+  "sessions": {
+    "s_8500052a279e55": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1423c-1d3e-7d11-b378-b7624725126d",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

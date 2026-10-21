@@ -1,0 +1,21 @@
+examples/apps/todo/README.md
+  s_1fee9365510c9b::t_0f45a4e29ee571 5,21
+examples/apps/backend-todo/README.md
+  s_1fee9365510c9b::t_0f45a4e29ee571 5,37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ea5976aa6c30affc956a69a78d96509425d1aca4",
+  "prompts": {},
+  "sessions": {
+    "s_1fee9365510c9b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13296-4517-7261-ba14-9c2db3d09d57",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

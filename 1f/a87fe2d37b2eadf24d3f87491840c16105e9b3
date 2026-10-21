@@ -1,0 +1,71 @@
+.changeset/remove-legacy-session-auth.md
+  s_f329dbdc7cbf09::t_6b5d74e1b946d8 1-12
+packages/api-platform/openapi.json
+  s_555b68ee903b8c::t_b9da12243afdb8 2784
+packages/api-platform/src/routes/apps.test.ts
+  s_555b68ee903b8c::t_31025ae6eeb002 1124
+packages/app/src/client/connection.test.ts
+  s_f329dbdc7cbf09::t_99f976a1004efa 6-16,19
+packages/app/src/client/session.test.ts
+  s_f329dbdc7cbf09::t_0c1475469922bc 6-16,18,22,39-56,62,103,133,161,184,192,203,207,212
+packages/app/src/client/session.ts
+  s_f329dbdc7cbf09::t_685ba71f2ce034 4-7,83
+packages/app/src/protocol.ts
+  s_f329dbdc7cbf09::t_be8e2e8d30bc12 5-29
+packages/cli/src/auth.test.ts
+  s_f329dbdc7cbf09::t_6aa0329d90b106 110-120,122-123,125-127,136,153,349,413-418,459-464,502-507,516-521,544-549
+packages/cli/src/auth.ts
+  s_f329dbdc7cbf09::t_6fe8cf95c80631 30,70,195
+packages/client-core/src/client/config.test.ts
+  s_f329dbdc7cbf09::t_6178960d46297b 8-18,60
+packages/client-core/src/client/endpoints.test.ts
+  s_f329dbdc7cbf09::t_e9d5217e50445d 9-19,23,136
+packages/client-core/src/client/endpoints.ts
+  s_f329dbdc7cbf09::t_662313a95f24ec 162,166
+packages/client-core/src/client/fetch-client.test.ts
+  s_f329dbdc7cbf09::t_5335984d57ffc5 10-20,145
+packages/core/src/server/backend.test.ts
+  s_555b68ee903b8c::t_006acf4c9919fc 7-18,61
+packages/core/src/server/backend.ts
+  s_f329dbdc7cbf09::t_0b6beb7354d0b2 1-2,22,90
+packages/core/src/server/handler.test.ts
+  s_f329dbdc7cbf09::t_dad42c16851ef6 93-97,99-110,136
+packages/react/src/__tests__/render-slot.test.tsx
+  s_f329dbdc7cbf09::t_d6b2285aee10fe 23-33,364,440
+packages/react/src/__tests__/use-views.test.tsx
+  s_f329dbdc7cbf09::t_bab6b73d8cc5bd 17-27,115,833
+packages/sandbox/src/host/index.test.ts
+  s_f329dbdc7cbf09::t_e05fa111ad1acd 3-5,9-10,14-24,261-314,318,396
+packages/sandbox/src/iframe/backend.test.ts
+  s_f329dbdc7cbf09::t_8913192fb8d4a1 5-15,34
+packages/sandbox/src/iframe/tools.test.ts
+  s_f329dbdc7cbf09::t_2a929f3f8f0724 5-15,40
+packages/sandbox/src/protocol.test.ts
+  s_f329dbdc7cbf09::t_d0dfde47332438 7-17,53,69,247,297,341,366
+packages/sandbox/src/protocol.ts
+  s_f329dbdc7cbf09::t_d1df09ade718a6 1,127
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1fa87fe2d37b2eadf24d3f87491840c16105e9b3",
+  "prompts": {},
+  "sessions": {
+    "s_555b68ee903b8c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a153e3-6fd7-77b1-aba2-c8715cf11230",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_f329dbdc7cbf09": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a153b2-28de-7cf2-ab39-a061b398ea9a",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

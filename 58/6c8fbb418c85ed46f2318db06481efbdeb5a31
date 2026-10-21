@@ -1,0 +1,31 @@
+packages/agent/README.md
+  s_000cb31593473a::t_8e1c4b3d2b7502 7-9
+packages/agent/src/instructions.md
+  s_000cb31593473a::t_483812ec675971 3,7,9,11,13,15,19,24,26,28,30,32-34,36,38,40-42,48-52
+packages/agent/src/skills.ts
+  s_000cb31593473a::t_be79c0535cbc10 4,12-17
+packages/agent/src/skills/backend-functions.md
+  s_000cb31593473a::t_6ad34e78d7a95d 3,5,7,9-68
+packages/agent/src/skills/host-ui.md
+  s_000cb31593473a::t_9836725a5ec1b6 1-31
+packages/agent/src/skills/sqlite-database.md
+  s_000cb31593473a::t_b7fce23a1a86bf 5,7-34
+packages/agent/src/skills/views-and-routing.md
+  s_000cb31593473a::t_943e50019a635e 10-12,15-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "586c8fbb418c85ed46f2318db06481efbdeb5a31",
+  "prompts": {},
+  "sessions": {
+    "s_000cb31593473a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13cec-9cc0-7a23-a12d-67bd839b9c56",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

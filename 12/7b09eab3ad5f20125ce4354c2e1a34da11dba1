@@ -1,0 +1,31 @@
+.changeset/tidy-app-deployment-config.md
+  s_0c839b4c558cb7::t_2b0e2dbd15d793 1-5
+packages/agent-fx/src/agent.ts
+  s_0c839b4c558cb7::t_e4137975176278 36
+packages/agent-fx/src/deploy.test.ts
+  s_0c839b4c558cb7::t_e113e655227227 16,149-166,174-180,182-241,243-249,251-258,260-268
+packages/agent-fx/src/deploy.ts
+  s_0c839b4c558cb7::t_eff4a91604cd17 77-84,180
+packages/vite/src/builder/server.test.ts
+  s_0c839b4c558cb7::t_3077993720a0fd 93,164
+packages/vite/src/builder/upload-manifest.ts
+  s_0c839b4c558cb7::t_ceea241ed67818 4,42-43,54-59
+packages/vite/src/index.ts
+  s_0c839b4c558cb7::t_9312fec92de7d9 176
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "127b09eab3ad5f20125ce4354c2e1a34da11dba1",
+  "prompts": {},
+  "sessions": {
+    "s_0c839b4c558cb7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15288-560a-71c1-8579-41a33622efdb",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

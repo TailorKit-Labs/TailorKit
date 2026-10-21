@@ -1,0 +1,19 @@
+docs/getting-started/installation.mdx
+  s_078dc55f87289d::t_9e8a27423075dc 138,142-143,146-149,210,214-215,218-221,280,284-285,288-291
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ffe3627f3197df9cda113a3196b0197dfc251a5e",
+  "prompts": {},
+  "sessions": {
+    "s_078dc55f87289d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13d42-5ee2-7670-a8cf-a789aa93a61d",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+packages/agent/README.md
+  s_97476710d4ff65::t_63c6840f204e7b 96
+packages/agent/src/mcp-progress.ts
+  s_97476710d4ff65::t_d8efc8fc4d0787 16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "db16d83e92756d4264d330e6ff5b9377cd3b1ceb",
+  "prompts": {},
+  "sessions": {
+    "s_97476710d4ff65": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15640-7bab-7b63-b6fa-c054ef891d10",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

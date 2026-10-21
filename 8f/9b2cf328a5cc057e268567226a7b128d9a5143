@@ -1,0 +1,19 @@
+apps/web/src/components/project-key-env.tsx
+  s_6ff642da80c878::t_bfbfbd30a28d7b 52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8f9b2cf328a5cc057e268567226a7b128d9a5143",
+  "prompts": {},
+  "sessions": {
+    "s_6ff642da80c878": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12962-52b6-7633-bf8d-4179c33e27c1",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

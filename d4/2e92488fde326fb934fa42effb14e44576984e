@@ -1,0 +1,35 @@
+.changeset/focused-app-contracts.md
+  s_44975098974bf2::t_1799da88353b29 7
+packages/agent-fx/src/sandbox.ts
+  s_44975098974bf2::t_1ed06c4f3e3d78 28-29,33
+packages/agent-fx/src/skills/setup.md
+  s_44975098974bf2::t_447ac809432773 10,15
+packages/cli/src/generator/generate.test.ts
+  s_44975098974bf2::t_2397a4fd094f99 69-86
+packages/cli/src/generator/generate.ts
+  s_44975098974bf2::t_a5b883e17c03bd 195
+packages/cli/src/generator/package-versions.ts
+  s_44975098974bf2::t_fc50a682485b8b 100-104,128,139,143,146,148-150
+packages/cli/src/generator/templates/pnpm-workspace.yaml.liquid
+  s_44975098974bf2::t_85008f9e65f8fb 4-7
+packages/cli/src/init.test.ts
+  s_44975098974bf2::t_84461d65e36c31 1
+packages/cli/src/init.ts
+  s_44975098974bf2::t_0f7a2414fbbb82 192,201,212,216,269,286
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d42e92488fde326fb934fa42effb14e44576984e",
+  "prompts": {},
+  "sessions": {
+    "s_44975098974bf2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15182-bddb-71e2-8ef7-0ada4d2e5ba6",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

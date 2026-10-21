@@ -1,0 +1,648 @@
+packages/vite/src/builder/schema-check.ts
+  s_2f40b5dc18ecb8::t_5e4d1d5a6d3c39 28-29,44-51,56,59,63,81,99
+  s_2f40b5dc18ecb8::t_009b122c48599b 7-8,12-16
+apps/web/src/routes/(app)/account/profile/index.tsx
+  s_2f40b5dc18ecb8::t_42a8d0d2625db0 31
+  s_2f40b5dc18ecb8::t_59b3ae2d0aa52f 75-84
+  s_2f40b5dc18ecb8::t_f9b62bfe9b1037 74
+packages/core/src/primitives/zod.ts
+  s_2f40b5dc18ecb8::t_1bf13414dabbef 37
+  s_2f40b5dc18ecb8::t_4cdad88fd9406f 4,9,22,39,41,59-68,70-72
+apps/web/src/components/members/members-table.tsx
+  s_2f40b5dc18ecb8::t_d6704faaab48dd 72,200
+  s_2f40b5dc18ecb8::t_436a091569a1d6 206-207,209
+  s_2f40b5dc18ecb8::t_8b4bb309cbf5fb 208
+apps/web/src/components/sidebar/sidebar-brand.tsx
+  s_2f40b5dc18ecb8::t_d6704faaab48dd 6
+packages/api-platform/src/routes/deployments.ts
+  s_2f40b5dc18ecb8::t_1bf13414dabbef 118
+  s_2f40b5dc18ecb8::t_5e4d1d5a6d3c39 123-129,131-133,588-601,604,733-735
+  s_2f40b5dc18ecb8::t_c60b12d72b7c49 35-38,53,61,74,119
+packages/vite/src/builder/migrations.ts
+  s_2f40b5dc18ecb8::t_5e4d1d5a6d3c39 15
+  s_2f40b5dc18ecb8::t_9fdf6ff1af9969 7-8,16
+packages/vite/src/builder/server.ts
+  s_2f40b5dc18ecb8::t_5e4d1d5a6d3c39 159-160
+  s_2f40b5dc18ecb8::t_bd49bb382c64c1 10
+packages/observability/src/index.ts
+  s_2f40b5dc18ecb8::t_1bf13414dabbef 224-225,236-238,242,252-257,299-304,332
+  s_2f40b5dc18ecb8::t_60f82a6fa45805 20-32,53,71-72,78,89-90,93,185,214-216,223,333,335-336
+packages/client-platform/src/client/core/serverSentEvents.gen.ts
+  s_2f40b5dc18ecb8::t_5e4d1d5a6d3c39 25
+apps/web/src/routes/(app)/$orgSlug/$projectSlug/apps.index.tsx
+  s_2f40b5dc18ecb8::t_d6704faaab48dd 200,323-326,333
+  s_2f40b5dc18ecb8::t_436a091569a1d6 204-205
+  s_2f40b5dc18ecb8::t_c77210e5d677e4 14-18,306-316
+playground/tanstack-start/vite.config.ts
+  s_2f40b5dc18ecb8::t_411da8a46bf025 4,7
+apps/web/src/routes/(auth)/verify-email.tsx
+  s_2f40b5dc18ecb8::t_d6704faaab48dd 160-202,205
+  s_2f40b5dc18ecb8::t_59b3ae2d0aa52f 157-158
+  s_2f40b5dc18ecb8::t_4fa5f28eef28a2 35,38,159,233-235
+packages/vite/src/builder/generate-migrations.ts
+  s_2f40b5dc18ecb8::t_5e4d1d5a6d3c39 26
+packages/core/src/views.ts
+  s_2f40b5dc18ecb8::t_5e4d1d5a6d3c39 40-43
+  s_2f40b5dc18ecb8::t_04064a8823243a 1-7,44-45,47,55,74
+packages/react/src/__tests__/tailor-kit.types.tsx
+  s_2f40b5dc18ecb8::t_5e4d1d5a6d3c39 312,326
+  s_2f40b5dc18ecb8::t_b3c9bc69622716 8-9,63,72-74,580,586-588
+apps/web/src/components/apps/app-logo.tsx
+  s_2f40b5dc18ecb8::t_d6704faaab48dd 27,31
+  s_2f40b5dc18ecb8::t_c819dfb3f39837 23
+apps/web/src/components/create-org-dialog.tsx
+  s_2f40b5dc18ecb8::t_1bf13414dabbef 92
+  s_2f40b5dc18ecb8::t_59b3ae2d0aa52f 168-197,199-211
+  s_2f40b5dc18ecb8::t_3011416b4f6889 94-96,101
+packages/core/src/server/routes/deployments.ts
+  s_2f40b5dc18ecb8::t_1bf13414dabbef 59-61,63-64,66-68,72-73,75
+  s_2f40b5dc18ecb8::t_9bb47b588e7fcc 17-23,76,80
+packages/client-core/src/client/config.ts
+  s_2f40b5dc18ecb8::t_5e4d1d5a6d3c39 23-28,81,99,105-106,111,125
+  s_2f40b5dc18ecb8::t_186e557e004cce 12,19-22,128-129,132,149-152,155,160-161,164
+apps/web/src/components/org-slug-availability-indicator.tsx
+  s_2f40b5dc18ecb8::t_d6704faaab48dd 28
+  s_2f40b5dc18ecb8::t_edb127282568b8 31
+packages/cli/src/preview.ts
+  s_2f40b5dc18ecb8::t_1bf13414dabbef 38
+  s_2f40b5dc18ecb8::t_859db2444d310c 21-28,31-37,39-46,48,112,133,184,217-218,426-427
+apps/web/src/routes/(auth)/two-factor.tsx
+  s_2f40b5dc18ecb8::t_59b3ae2d0aa52f 197-198
+  s_2f40b5dc18ecb8::t_d6704faaab48dd 200-249,279,283
+  s_2f40b5dc18ecb8::t_404139986509c2 293
+  s_2f40b5dc18ecb8::t_6d383842b39855 199
+packages/api-platform/src/procedures.ts
+  s_2f40b5dc18ecb8::t_42a8d0d2625db0 15-18,81-89
+  s_2f40b5dc18ecb8::t_5bf383d482dd85 90-91,94,96-97,99
+apps/web/src/components/members/invitations-table.tsx
+  s_2f40b5dc18ecb8::t_436a091569a1d6 206-207,209
+  s_2f40b5dc18ecb8::t_d6704faaab48dd 71,200
+  s_2f40b5dc18ecb8::t_92d6e84934a5fd 208
+apps/web/src/routes/(app)/account/invites.tsx
+  s_2f40b5dc18ecb8::t_d6704faaab48dd 107
+  s_2f40b5dc18ecb8::t_59b3ae2d0aa52f 118-119
+  s_2f40b5dc18ecb8::t_1bf13414dabbef 47,49,52,64
+  s_2f40b5dc18ecb8::t_78ca2185aaf674 66,120-139
+apps/web/src/routes/(auth)/sign-up.tsx
+  s_2f40b5dc18ecb8::t_59b3ae2d0aa52f 192-239,241-246,249-269,280-289,291-294,297-316
+  s_2f40b5dc18ecb8::t_d6704faaab48dd 320
+apps/apps-worker/src/supervisor/subscriptions.ts
+  s_2f40b5dc18ecb8::t_42a8d0d2625db0 42
+  s_2f40b5dc18ecb8::t_49935918c4d8ea 22
+packages/app/src/errors.ts
+  s_2f40b5dc18ecb8::t_1bf13414dabbef 35
+  s_2f40b5dc18ecb8::t_1d0929b12b57af 32-34
+  s_2f40b5dc18ecb8::t_e138e66619436b 36-37
+  s_2f40b5dc18ecb8::t_c4520996dd9fd9 1-3,24-31,39,43-46,51-54,57-58
+packages/api-platform/src/routes/preview.ts
+  s_2f40b5dc18ecb8::t_5e4d1d5a6d3c39 211
+  s_2f40b5dc18ecb8::t_04eae949ab7b34 25-28,216,221
+apps/apps-worker/src/runtime/execution.test.ts
+  s_2f40b5dc18ecb8::t_9f6a16daeda241 67-76,78,120-121,155-158,305
+packages/cli/src/deploy.ts
+  s_2f40b5dc18ecb8::t_1bf13414dabbef 145-147,149-150,152-154,158
+  s_2f40b5dc18ecb8::t_5e4d1d5a6d3c39 298
+  s_2f40b5dc18ecb8::t_95e76e1a73a7ad 13,20-29,74-97,116,119-128,131,139-140,142,159,266-274,277,299-303,305,352,361,406-407,427-428,504-505
+packages/client-core/src/store/local/view-context.ts
+  s_2f40b5dc18ecb8::t_1bf13414dabbef 109
+  s_2f40b5dc18ecb8::t_d2cd3934502cf9 111,115
+packages/core/src/server/handler.ts
+  s_2f40b5dc18ecb8::t_3fe96372d10844 354-357
+  s_2f40b5dc18ecb8::t_b43d5963b38016 8-11,42-48,110,164,182,319-321,383
+apps/web/src/routes/(app)/$orgSlug/$projectSlug/settings/index.tsx
+  s_2f40b5dc18ecb8::t_404139986509c2 211
+  s_2f40b5dc18ecb8::t_d6704faaab48dd 204
+  s_2f40b5dc18ecb8::t_59b3ae2d0aa52f 168-176,178-190
+  s_2f40b5dc18ecb8::t_53554bef9d20d4 83,85,113,115,167
+apps/web/src/routes/auth/error.tsx
+  s_2f40b5dc18ecb8::t_59b3ae2d0aa52f 40-52
+  s_2f40b5dc18ecb8::t_c8d09904699534 14-18,22
+apps/web/src/components/sidebar/org-switcher.tsx
+  s_2f40b5dc18ecb8::t_d6704faaab48dd 64,70-71,96-97
+apps/web/src/routes/(app)/$orgSlug/$projectSlug/settings/api-keys.tsx
+  s_2f40b5dc18ecb8::t_d6704faaab48dd 158,165,231,301,337,355
+  s_2f40b5dc18ecb8::t_1bf13414dabbef 109
+  s_2f40b5dc18ecb8::t_694c559c2aadc9 52-54,111
+apps/web/src/routes/(app)/$orgSlug/~/(org)/settings/index.tsx
+  s_2f40b5dc18ecb8::t_59b3ae2d0aa52f 34-47
+packages/core/src/schema/components.ts
+  s_2f40b5dc18ecb8::t_f26da3174290b6 77
+  s_2f40b5dc18ecb8::t_f1a5d46e17ae08 4-7,71-72,78-79,84-85
+packages/sandbox/src/iframe/runtime.ts
+  s_2f40b5dc18ecb8::t_1bf13414dabbef 83
+  s_2f40b5dc18ecb8::t_51fb1e817a27a6 1,5,27-28,31-38,80,87,165-166,183-187
+packages/core/src/primitives/valibot.ts
+  s_2f40b5dc18ecb8::t_1bf13414dabbef 28
+  s_2f40b5dc18ecb8::t_3ed435a359558b 4,10,30,32,53-56,66-70
+packages/api-utils/src/app-auth/tokens.ts
+  s_2f40b5dc18ecb8::t_1bf13414dabbef 84
+  s_2f40b5dc18ecb8::t_5c0fc034fbea3e 81
+  s_2f40b5dc18ecb8::t_de8f923f851fe8 59,80,82,85
+apps/web/src/routes/(app)/$orgSlug/route.tsx
+  s_2f40b5dc18ecb8::t_5e4d1d5a6d3c39 28
+packages/app/src/routing.test.ts
+  s_2f40b5dc18ecb8::t_5e4d1d5a6d3c39 84,90
+  s_2f40b5dc18ecb8::t_28f2d9ba8369cd 82,85-89,91-95,170
+packages/cli/src/generator/types.ts
+  s_2f40b5dc18ecb8::t_5e4d1d5a6d3c39 703-708
+  s_2f40b5dc18ecb8::t_f840ace135473a 11-25,109-110,113,261,311,679
+packages/client-core/src/client/primitive-css.ts
+  s_2f40b5dc18ecb8::t_5e4d1d5a6d3c39 50
+  s_2f40b5dc18ecb8::t_e45e39a4bbe3bd 3,5-14,18,30-31,41,51-60,63-66,97,100-106,179
+packages/api-platform/src/app-agent-mcp.ts
+  s_2f40b5dc18ecb8::t_42a8d0d2625db0 133
+  s_2f40b5dc18ecb8::t_8413bbac772221 28-32,134-138,151
+apps/web/src/routes/(app)/$orgSlug/~/(org)/projects.tsx
+  s_2f40b5dc18ecb8::t_d6704faaab48dd 276
+  s_2f40b5dc18ecb8::t_59b3ae2d0aa52f 190-207,209-231
+  s_2f40b5dc18ecb8::t_305841066bec0e 109,111
+.vscode/settings.json
+  s_2f40b5dc18ecb8::t_58bf894641ee35 58-61
+packages/core/src/primitives/arktype.ts
+  s_2f40b5dc18ecb8::t_1bf13414dabbef 27
+  s_2f40b5dc18ecb8::t_fd03b9f8980571 4,9-12,29,31,33,42,58-61,71-77
+apps/web/src/routes/(app)/$orgSlug/$projectSlug/apps.$appId.tsx
+  s_2f40b5dc18ecb8::t_d6704faaab48dd 130,286
+  s_2f40b5dc18ecb8::t_436a091569a1d6 134-135
+  s_2f40b5dc18ecb8::t_ce01c3197ab7cc 169,172-173
+packages/react/src/tailorkit.tsx
+  s_2f40b5dc18ecb8::t_5e4d1d5a6d3c39 120
+  s_2f40b5dc18ecb8::t_3ba848502688d8 85,94-98,121-125,140,174,177,196
+scripts/sync-licenses.mjs
+  s_2f40b5dc18ecb8::t_42a8d0d2625db0 57
+packages/sandbox/src/iframe/resolve-view.ts
+  s_2f40b5dc18ecb8::t_42a8d0d2625db0 135-145
+  s_2f40b5dc18ecb8::t_78f576a56c0670 8-18,39,41,44-45,48,50-51,63,83,105-106,109
+packages/cli/src/agent-tui.test.ts
+  s_2f40b5dc18ecb8::t_1bf13414dabbef 146
+  s_2f40b5dc18ecb8::t_0491747b78e06c 116
+packages/app-agent/src/source-export.ts
+  s_2f40b5dc18ecb8::t_5e4d1d5a6d3c39 89
+package.json
+  s_2f40b5dc18ecb8::t_5ab405fa463c1d 44
+packages/ui/src/components/otp-field.tsx
+  s_2f40b5dc18ecb8::t_edb127282568b8 20,37
+  s_2f40b5dc18ecb8::t_089d73286fbe67 16
+packages/api-platform/src/scope.ts
+  s_2f40b5dc18ecb8::t_42a8d0d2625db0 198,205,215,236,239-243,254-255,261,263-266
+  s_2f40b5dc18ecb8::t_eacfdb5869db97 6-18,44,57-58,62,76,86,89,95,104,160,182,185,276-278,294-297
+apps/web/src/components/sidebar/sidebar-user-menu.tsx
+  s_2f40b5dc18ecb8::t_d6704faaab48dd 53,55,65,67,69
+  s_2f40b5dc18ecb8::t_fa5c6125407a3b 114,133
+apps/apps-worker/src/runtime/actions.ts
+  s_2f40b5dc18ecb8::t_5e4d1d5a6d3c39 26-28,30-31,38-41,85-89,94-95,97-99,136-137,139-144
+  s_2f40b5dc18ecb8::t_4a09a69779708f 1,15-17,21,145,158,167,175,197
+packages/core/src/server/scope.ts
+  s_2f40b5dc18ecb8::t_42a8d0d2625db0 275
+  s_2f40b5dc18ecb8::t_d429e61014ac24 4,10-22,41,50,59-60,64,68,97-109,111,133,138,156,162,164-165,173,188,216,222,241-242,271-272,302,308,363,386
+packages/cli/src/utils/open-browser.test.ts
+  s_2f40b5dc18ecb8::t_42a8d0d2625db0 44,66-67,69
+  s_2f40b5dc18ecb8::t_93dbb5fbe4e361 41-42
+packages/react/src/__tests__/use-view-context.test.tsx
+  s_2f40b5dc18ecb8::t_5e4d1d5a6d3c39 19,23
+  s_2f40b5dc18ecb8::t_365c647801517a 7,17-18
+apps/web/src/components/project-key-env.tsx
+  s_2f40b5dc18ecb8::t_d6704faaab48dd 40,54-55,58,64,66
+packages/api-platform/src/routes/preview.test.ts
+  s_2f40b5dc18ecb8::t_42a8d0d2625db0 504
+  s_2f40b5dc18ecb8::t_30725b0c7a56d6 29,248-250,330-332,340-342,370-372,392-394,438-440,501-503,505-507,673
+vite.config.ts
+  s_2f40b5dc18ecb8::t_bb6e9fa4192d79 2,5,31,37-44
+  s_2f40b5dc18ecb8::t_58bf894641ee35 1,3-4,6,9-23,26-30,32,34-36,45-85,91-92
+  s_2f40b5dc18ecb8::t_404139986509c2 86-90
+  s_2f40b5dc18ecb8::t_595948315aab62 33
+apps/web/vite.config.ts
+  s_2f40b5dc18ecb8::t_411da8a46bf025 8,43,97
+apps/web/src/routes/(app)/account/security/-two-factor-settings.tsx
+  s_2f40b5dc18ecb8::t_59b3ae2d0aa52f 254,259,316-324,721-749,760-781,783,787,789-790
+  s_2f40b5dc18ecb8::t_d6704faaab48dd 156,197,261,282,290
+  s_2f40b5dc18ecb8::t_96a66428005947 48-49,255-258,720
+apps/apps-worker/src/transport.ts
+  s_2f40b5dc18ecb8::t_5e4d1d5a6d3c39 253
+  s_2f40b5dc18ecb8::t_1bf13414dabbef 27
+  s_2f40b5dc18ecb8::t_4530a7cbb923e8 20,24-26,28-29,31-34,48-51,55,214,217,228,257
+apps/web/src/routes/(app)/account/request-organization.tsx
+  s_2f40b5dc18ecb8::t_59b3ae2d0aa52f 33-34
+  s_2f40b5dc18ecb8::t_01161509e9b817 35-59,61,63,65,67
+.zed/settings.json
+  s_2f40b5dc18ecb8::t_58bf894641ee35 19,23-24,31
+packages/core/src/server/contract.ts
+  s_2f40b5dc18ecb8::t_5e4d1d5a6d3c39 34-42
+  s_2f40b5dc18ecb8::t_c2b820e3a98236 6-10,23-29,43,45,48,52-56,60,78,93,147-148,181,221-226,229,239
+packages/db/src/schema/scope.ts
+  s_2f40b5dc18ecb8::t_42a8d0d2625db0 79
+  s_2f40b5dc18ecb8::t_6909ad515addee 3-15,50,54,89,92,99,109,157,191
+packages/kv/src/contract.test.ts
+  s_2f40b5dc18ecb8::t_42a8d0d2625db0 1
+  s_2f40b5dc18ecb8::t_a64306f415a06c 4,175
+apps/web/src/routes/(app)/$orgSlug/~/(org)/settings/members.tsx
+  s_2f40b5dc18ecb8::t_1bf13414dabbef 50,70,72,83
+  s_2f40b5dc18ecb8::t_9f6a16daeda241 68
+  s_2f40b5dc18ecb8::t_b72a6dfb1903da 1-5,17,52,85,169-179
+AGENTS.md
+  s_2f40b5dc18ecb8::t_58bf894641ee35 19-20
+  s_2f40b5dc18ecb8::t_c02f4604543ff1 15
+apps/apps-worker/src/runtime/bundle.ts
+  s_2f40b5dc18ecb8::t_5e4d1d5a6d3c39 43
+  s_2f40b5dc18ecb8::t_aa5383556e1870 8-11,15,18
+apps/web/src/components/members/invite-members-dialog.tsx
+  s_2f40b5dc18ecb8::t_1bf13414dabbef 74
+  s_2f40b5dc18ecb8::t_59b3ae2d0aa52f 127-139,141-148,150-179,182-204
+  s_2f40b5dc18ecb8::t_2305e9996c17cb 30,33,55,69,76
+packages/vite/src/index.ts
+  s_2f40b5dc18ecb8::t_42a8d0d2625db0 56
+  s_2f40b5dc18ecb8::t_8b2e830a568ed9 20-22,58,132-136,143-147
+apps/apps-worker/src/runtime/database/migrations.test.ts
+  s_2f40b5dc18ecb8::t_9f6a16daeda241 48-57
+apps/web/src/routes/(auth)/forgot-password.tsx
+  s_2f40b5dc18ecb8::t_59b3ae2d0aa52f 217-229,246-247,325-335,337-345
+  s_2f40b5dc18ecb8::t_d6704faaab48dd 233,249-300,303,349
+  s_2f40b5dc18ecb8::t_a483b37760d23a 34,248,409-411
+apps/web/src/routes/(app)/account/security/index.tsx
+  s_2f40b5dc18ecb8::t_59b3ae2d0aa52f 327-344,626-653
+  s_2f40b5dc18ecb8::t_d6704faaab48dd 131,801
+  s_2f40b5dc18ecb8::t_404139986509c2 351
+  s_2f40b5dc18ecb8::t_9a74794f9645d8 625
+packages/core/src/server/tools.test.ts
+  s_2f40b5dc18ecb8::t_5e4d1d5a6d3c39 11
+  s_2f40b5dc18ecb8::t_f9c013cc6f0660 9-10,12,49,75,90,126,220
+apps/web/src/routes/(auth)/login.tsx
+  s_2f40b5dc18ecb8::t_59b3ae2d0aa52f 256-295,300-302,304-308,310,312-316,318-327,329-337,348-357,359-362,364-383
+  s_2f40b5dc18ecb8::t_d6704faaab48dd 387
+packages/core/src/server/preview-consent.ts
+  s_2f40b5dc18ecb8::t_1bf13414dabbef 85
+  s_2f40b5dc18ecb8::t_b4a148a71ec855 16-22,42,86,89-90,94,97-98,146-148
+packages/api-platform/src/assets.ts
+  s_2f40b5dc18ecb8::t_1bf13414dabbef 19
+  s_2f40b5dc18ecb8::t_d96dfcbdb26a71 13,15-18,20-29,31-33
+apps/web/src/routes/(app)/account/organizations.tsx
+  s_2f40b5dc18ecb8::t_d6704faaab48dd 130,139,165-166,175,178
+apps/apps-worker/src/assets.test.ts
+  s_2f40b5dc18ecb8::t_5f39f479412eb8 31,39-40,45-46,49
+apps/apps-worker/src/assets.ts
+  s_2f40b5dc18ecb8::t_057664c69518c0 45
+apps/apps-worker/src/dynamic-workers/facet.ts
+  s_2f40b5dc18ecb8::t_4bc05f4f005f9c 18
+apps/apps-worker/src/installation.ts
+  s_2f40b5dc18ecb8::t_a4a6651191284e 227,245
+apps/apps-worker/src/routing.test.ts
+  s_2f40b5dc18ecb8::t_48b440d7fb6f90 55-56,65,70-74
+apps/apps-worker/src/runtime/actions.test.ts
+  s_2f40b5dc18ecb8::t_b0f64a899bad36 77,82,301,313,315,507,515,518-521
+apps/apps-worker/src/runtime/database/driver.ts
+  s_2f40b5dc18ecb8::t_840fae4ce4d82a 22-32,58,60,66,68,77,103,106,109,124,140,142-151,160,170
+apps/apps-worker/src/runtime/errors.ts
+  s_2f40b5dc18ecb8::t_9177832fe23500 7-9,22-23
+apps/apps-worker/src/runtime/execution.ts
+  s_2f40b5dc18ecb8::t_635dbc93392704 19-22,57,61,190
+apps/apps-worker/src/runtime/functions.ts
+  s_2f40b5dc18ecb8::t_f6608e985b01c1 7,11-14,40-41,72-74,76-79,89
+apps/apps-worker/src/supervisor/actions.ts
+  s_2f40b5dc18ecb8::t_82ca415f05a079 1,4,90-93,125-127
+apps/apps-worker/src/supervisor/auth.ts
+  s_2f40b5dc18ecb8::t_4e67d147e17f96 11-13,28
+apps/apps-worker/src/supervisor/runtime.test.ts
+  s_2f40b5dc18ecb8::t_570102ee4d44a6 42-43,66-67
+apps/apps-worker/src/supervisor/source.test.ts
+  s_2f40b5dc18ecb8::t_2dee23e6f1a9b2 53-54,128-129,202-214
+apps/apps-worker/src/supervisor/subscriptions.test.ts
+  s_2f40b5dc18ecb8::t_5e0fdf52016e22 15-17,39,58,68-69,86,116,180
+apps/apps-worker/src/supervisor/websockets.test.ts
+  s_2f40b5dc18ecb8::t_bc1371620645e2 22-23,47-48,55,119
+apps/apps-worker/src/tests/integration.test.mjs
+  s_2f40b5dc18ecb8::t_d11c04c754dc90 169-187
+apps/apps-worker/src/worker.test.ts
+  s_2f40b5dc18ecb8::t_616629d52e4ebe 6,12-13,15,126-129,141-149,151-152,161-169,178-179,249,258,475-478,504
+apps/apps-worker/src/worker.ts
+  s_2f40b5dc18ecb8::t_58b55d940d5186 32,78
+apps/web/src/components/google-icon.tsx
+  s_2f40b5dc18ecb8::t_35b9be8c35ae1d 15,19,23,27
+apps/web/src/components/members/member-table-utils.tsx
+  s_2f40b5dc18ecb8::t_e8fd86211dc513 18-35,43
+apps/web/src/components/nav-breadcrumb.tsx
+  s_2f40b5dc18ecb8::t_3880ce3b92cf92 11-13,20-25,27-32,80,102,124,129,141,149-155
+apps/web/src/components/not-found.tsx
+  s_2f40b5dc18ecb8::t_812fa28ad95dd8 17
+apps/web/src/index.css
+  s_2f40b5dc18ecb8::t_de01accf8ac8e2 3-10
+apps/web/src/lib/auth-client.test.ts
+  s_2f40b5dc18ecb8::t_0683fc79c5ec70 95
+apps/web/src/lib/theme.ts
+  s_2f40b5dc18ecb8::t_be995f12b9a8ac 20-21,26,30
+apps/web/src/routes/(auth)/route.tsx
+  s_2f40b5dc18ecb8::t_c78fcfebb0d29c 3-4,15-17,21
+apps/web/src/routes/api/platform.preview.ws.ts
+  s_2f40b5dc18ecb8::t_8bbb3d3c69fffd 9-11,37
+packages/api-platform/src/app-agent-mcp-isolation.test.ts
+  s_2f40b5dc18ecb8::t_2bae475e5ae94e 27,41-42,48,59-62
+packages/api-platform/src/app-agent-mcp.test.ts
+  s_2f40b5dc18ecb8::t_015689f0d457f1 29,37-39,53-54,60,66,76,233-234
+packages/api-platform/src/asset-url.test.ts
+  s_2f40b5dc18ecb8::t_8f6715c14fb4e0 5
+packages/api-platform/src/assets.test.ts
+  s_2f40b5dc18ecb8::t_b7e0ddd92cf3a9 10-12,170
+packages/api-platform/src/cli-token.test.ts
+  s_2f40b5dc18ecb8::t_f850db2186a51e 20
+packages/api-platform/src/context.ts
+  s_2f40b5dc18ecb8::t_2d2e0760133d38 157,159,162
+packages/api-platform/src/mcp.integration.test.ts
+  s_2f40b5dc18ecb8::t_12ed59ce3726be 28-29,35,69
+packages/api-platform/src/preview-build-store.ts
+  s_2f40b5dc18ecb8::t_95fbf05078055a 99,468
+packages/api-platform/src/routes/app-agent.test.ts
+  s_2f40b5dc18ecb8::t_d533ecbadd6282 36-37,43,50,390-391
+packages/api-platform/src/routes/apps.test.ts
+  s_2f40b5dc18ecb8::t_e4965e62e48a02 26,164,181
+packages/api-platform/src/routes/cli-auth.test.ts
+  s_2f40b5dc18ecb8::t_bd4068c4200845 20
+packages/api-platform/src/routes/deployments.test.ts
+  s_2f40b5dc18ecb8::t_6ae6c5c0b07dbe 35,345-364
+packages/api-platform/src/routes/preview-grants.ts
+  s_2f40b5dc18ecb8::t_294d160614b4fb 175,216-224,226
+packages/api-platform/src/routes/runtime.test.ts
+  s_2f40b5dc18ecb8::t_889d0836eceae5 135
+packages/api-platform/src/runtime/auth.test.ts
+  s_2f40b5dc18ecb8::t_30971269d41238 6
+packages/api-platform/src/runtime/auth.ts
+  s_2f40b5dc18ecb8::t_10abe76aa64fb2 3,10,20-31,34
+packages/api-platform/src/team-auth.test.ts
+  s_2f40b5dc18ecb8::t_560012cc7e4a25 8
+packages/api-utils/src/app-asset-url.ts
+  s_2f40b5dc18ecb8::t_5d828656cf2f6c 41-47
+packages/api-utils/src/app-auth/tokens.test.ts
+  s_2f40b5dc18ecb8::t_ede4a6e68d5f7f 85
+packages/api-utils/src/rate-limiting.ts
+  s_2f40b5dc18ecb8::t_6172a99cf4ec76 44
+packages/api/src/routers/project.test.ts
+  s_2f40b5dc18ecb8::t_891d89fb5d7413 18
+packages/api/src/routers/project.ts
+  s_2f40b5dc18ecb8::t_48ccdf248250da 13-15,54,56-64
+packages/api/src/routers/user.test.ts
+  s_2f40b5dc18ecb8::t_c1886e6ad1bd1a 21
+packages/api/src/routers/user.ts
+  s_2f40b5dc18ecb8::t_145a7f3b7a8c69 13-19,59,64
+packages/app-agent/src/agent.test.ts
+  s_2f40b5dc18ecb8::t_19f59a42df307f 1,34
+packages/app/src/client/connection.test.ts
+  s_2f40b5dc18ecb8::t_aa310ceee37bf2 395-396
+packages/app/src/client/connection.ts
+  s_2f40b5dc18ecb8::t_e1164c02ab04e4 122,228,233,275,289,296,322,364
+packages/app/src/client/query-store.ts
+  s_2f40b5dc18ecb8::t_245d4d28641e30 8-11,24,27-28,30,84
+packages/app/src/client/reference.ts
+  s_2f40b5dc18ecb8::t_aff80e2062bc0f 5-7,20,30,34
+packages/app/src/preact.test.ts
+  s_2f40b5dc18ecb8::t_26fda5250b5221 24,38,366,384
+packages/app/src/preact.ts
+  s_2f40b5dc18ecb8::t_41a94eafc04eb4 86,95,179
+packages/app/src/routing.ts
+  s_2f40b5dc18ecb8::t_ba1f4be61d9a6c 7-17,30,86-87,92,94,96,128,132-133,146,214
+packages/app/src/server/builder.ts
+  s_2f40b5dc18ecb8::t_d33f2d66a32ccb 54-59,138-148,150,158-159,164-165
+packages/app/src/server/functions.ts
+  s_2f40b5dc18ecb8::t_1be095315a1054 10-13,37,144,148
+packages/app/src/server/instances.ts
+  s_2f40b5dc18ecb8::t_d65fb757b59518 4,8,13,17
+packages/app/src/view-instance.test.ts
+  s_2f40b5dc18ecb8::t_acce2dbf46b5de 24,43,90
+packages/app/src/views.ts
+  s_2f40b5dc18ecb8::t_e1b659f146209c 13-16,26-38,41,222-223,240,255-259,261,265,284,319-320,329,336-341,346
+packages/app/tsup.config.ts
+  s_2f40b5dc18ecb8::t_9e19642a422ec0 6
+packages/asset-delivery/src/logo-validation.ts
+  s_2f40b5dc18ecb8::t_32c126dc18464b 99-103,107
+packages/auth/src/index.ts
+  s_2f40b5dc18ecb8::t_0b6206ba20ee4f 19,55-62,114-127
+packages/cli/src/agent.test.ts
+  s_2f40b5dc18ecb8::t_e13b3a7b526851 16-18,42
+packages/cli/src/agent.ts
+  s_2f40b5dc18ecb8::t_5127ba56aa60b2 24
+packages/cli/src/app-link.ts
+  s_2f40b5dc18ecb8::t_be516c9fb6599f 4-5,8-14
+packages/cli/src/auth.test.ts
+  s_2f40b5dc18ecb8::t_f14614707c4cac 56-59,261-262,312-313,375-376,399-400,434-435,483
+packages/cli/src/auth.ts
+  s_2f40b5dc18ecb8::t_bc994a0347b95d 13-16,27,47-62,68,116,119,135,278,323,325,340,342
+packages/cli/src/build.ts
+  s_2f40b5dc18ecb8::t_93e62f29645edc 6,26,43-46,48
+packages/cli/src/client.ts
+  s_2f40b5dc18ecb8::t_11a329fbae9b52 24-30,36,50,52,77,79-84,102-103
+packages/cli/src/deploy.test.ts
+  s_2f40b5dc18ecb8::t_3d7890e8e8f5e6 22-24,115,129,340-342,346,482,550
+packages/cli/src/deployment-client.test.ts
+  s_2f40b5dc18ecb8::t_4ed850a47befd2 62,75,155,191,220
+packages/cli/src/generator/children.test.ts
+  s_2f40b5dc18ecb8::t_d81046cfaa436d 6-9,66,69
+packages/cli/src/generator/generate.test.ts
+  s_2f40b5dc18ecb8::t_acb4c55ad9ac11 541
+packages/cli/src/generator/generate.ts
+  s_2f40b5dc18ecb8::t_516ea00e8223bd 81,83
+packages/cli/src/generator/package-versions.ts
+  s_2f40b5dc18ecb8::t_dd910b6acd5e74 1-2,105-110
+packages/cli/src/generator/types-schema.test.ts
+  s_2f40b5dc18ecb8::t_4438720feb0a53 391,414
+packages/cli/src/generator/types.test.ts
+  s_2f40b5dc18ecb8::t_1758782970e99d 33,36,53,95,134
+packages/cli/src/index.ts
+  s_2f40b5dc18ecb8::t_d8b6438bb23022 15,85,106,118,120,137,141,143,162,166,168,191,196-198,200,204,259-266,298,308,310,328,332,334-335,360-378,380,390,394-395,398,400
+packages/cli/src/init.test.ts
+  s_2f40b5dc18ecb8::t_21b203019a3988 59
+packages/cli/src/init.ts
+  s_2f40b5dc18ecb8::t_95a05d00c94532 37,46-52,56,97-98,103,116,171,186
+packages/cli/src/preview-startup.test.ts
+  s_2f40b5dc18ecb8::t_c75d761d2507a0 44,47-48
+packages/cli/src/preview.test.ts
+  s_2f40b5dc18ecb8::t_790820f271c9b2 62-63,156
+packages/client-core/package.json
+  s_2f40b5dc18ecb8::t_e831bd41e1583e 47-48,54
+packages/client-core/src/client/endpoints.ts
+  s_2f40b5dc18ecb8::t_5baa3e33d372ea 11,14-15,20-66,77,174-175,191,195,200,202,207-208,215,244
+packages/client-core/src/client/scope-query.ts
+  s_2f40b5dc18ecb8::t_4d60fbdf5ff2b3 17,20-24
+packages/client-core/src/client/tools.test.ts
+  s_2f40b5dc18ecb8::t_51f55bb7175c0e 8,78-79
+packages/client-core/src/store/fetch/cache.ts
+  s_2f40b5dc18ecb8::t_80cd54777ab15a 7-10,62-71,127,173,282
+packages/client-core/src/store/fetch/preview-manager.test.ts
+  s_2f40b5dc18ecb8::t_d84d51e7821c6e 12
+packages/client-core/src/store/fetch/slot.ts
+  s_2f40b5dc18ecb8::t_352b46b56cb6ec 71-77
+packages/client-core/src/store/local/node-store.test.ts
+  s_2f40b5dc18ecb8::t_f958290d01114e 1,15
+packages/client-core/src/store/local/remote-view.test.ts
+  s_2f40b5dc18ecb8::t_09ea2f3b6a894a 37,134,146,165,207
+packages/client-core/src/store/local/remote-view.ts
+  s_2f40b5dc18ecb8::t_c518add170c18c 7,15-18,26-27,152,154,168-169
+packages/client-core/src/store/local/slot-runtime.test.ts
+  s_2f40b5dc18ecb8::t_f7d341a6578b93 36-38,181,183
+packages/client-core/src/store/local/slot-runtime.ts
+  s_2f40b5dc18ecb8::t_2e05baad8d759e 3,47,157-159
+packages/client-core/src/store/local/view-context-diagnostics.ts
+  s_2f40b5dc18ecb8::t_fe2c3619df39d9 5-8,31
+packages/client-core/src/store/query.test.ts
+  s_2f40b5dc18ecb8::t_6e2015fa00c0e8 29-31
+packages/client-core/src/types.ts
+  s_2f40b5dc18ecb8::t_176f5030f45c61 5
+packages/client-platform/src/client/client/index.ts
+  s_2f40b5dc18ecb8::t_f2b529644f06d4 25
+packages/client-platform/src/preview.ts
+  s_2f40b5dc18ecb8::t_cac69a907fa8ef 153-155
+packages/core/src/primitives/definition.ts
+  s_2f40b5dc18ecb8::t_a5fd4afc37ae47 4-12
+packages/core/src/primitives/primitives.test.ts
+  s_2f40b5dc18ecb8::t_2c39b76f2ac51c 1,9-14,16-20,22
+packages/core/src/primitives/theme.ts
+  s_2f40b5dc18ecb8::t_635e91cb9142bd 225
+packages/core/src/schema/callbacks.ts
+  s_2f40b5dc18ecb8::t_d6df7a3d44d98d 37
+packages/core/src/schema/components.test-d.ts
+  s_2f40b5dc18ecb8::t_834a3c2c1e321e 27
+packages/core/src/schema/contract.ts
+  s_2f40b5dc18ecb8::t_51c7478155af9e 16-18,58,67
+packages/core/src/schema/schema.ts
+  s_2f40b5dc18ecb8::t_4a01880e6bd8aa 19-21,74,88,97,103,113,123,160-162,165,169-178,184-185,187-195,198
+packages/core/src/schema/shared.ts
+  s_2f40b5dc18ecb8::t_287ab2a3d126ef 7-8,20-21,37-54,56,61,70,74,78
+packages/core/src/schema/tools.ts
+  s_2f40b5dc18ecb8::t_ee6caf65b14b86 3,60,68,74,76,113-117,141-144,158-159,165,181-182,189,194-200,202,207-208,214-215
+packages/core/src/schema/views.ts
+  s_2f40b5dc18ecb8::t_5a125607e6c12b 33-36
+packages/core/src/server/backend.test.ts
+  s_2f40b5dc18ecb8::t_d74a50c13dce84 16
+packages/core/src/server/backend.ts
+  s_2f40b5dc18ecb8::t_bf8f2cad3dbbcf 3-9,70,72
+packages/core/src/server/cli-auth-page.ts
+  s_2f40b5dc18ecb8::t_84ea477d7599eb 7-9,671-673
+packages/core/src/server/client.ts
+  s_2f40b5dc18ecb8::t_ca2e243cc82cae 6-9,22,25
+packages/core/src/server/context.ts
+  s_2f40b5dc18ecb8::t_ae11d0d475305e 7-10,48
+packages/core/src/server/handler.test.ts
+  s_2f40b5dc18ecb8::t_558433413c5126 231
+packages/core/src/server/mcp.test.ts
+  s_2f40b5dc18ecb8::t_ecc2c06e09a7dd 99-100
+packages/core/src/server/mcp.ts
+  s_2f40b5dc18ecb8::t_81ea7f9cd83fcd 5-11,27,53
+packages/core/src/server/preview-transport.test.ts
+  s_2f40b5dc18ecb8::t_fa25a6763b611e 10-12,40,46,53-54
+packages/core/src/server/preview.test.ts
+  s_2f40b5dc18ecb8::t_691efb30d9e2eb 8-11,20,30,35,55-59,369
+packages/core/src/server/routes/cli-auth.ts
+  s_2f40b5dc18ecb8::t_5e4dc9de8a83d4 17-19,26
+packages/core/src/server/routes/preview.ts
+  s_2f40b5dc18ecb8::t_088ed9667aaca4 8-16,21-25,32,40-41
+packages/core/src/server/scope.test.ts
+  s_2f40b5dc18ecb8::t_cd273a4dc5314a 13-24,63,74,162,206
+packages/core/src/server/tool-auth.ts
+  s_2f40b5dc18ecb8::t_e0faf268ee4731 1-2,5-11,39-58,61,79,89,154,164,168,171
+packages/core/src/spec/json-schema.ts
+  s_2f40b5dc18ecb8::t_05a48f1cc339ee 1,21-23
+packages/db/src/index.ts
+  s_2f40b5dc18ecb8::t_96f150d3c8740c 8-11,27,31-36
+packages/email/src/templates/better-auth.ts
+  s_2f40b5dc18ecb8::t_17ef6eca9d849e 44
+packages/kv/src/preview-presence.test.ts
+  s_2f40b5dc18ecb8::t_22a60e8b747b2d 9
+packages/kv/src/preview-presence.ts
+  s_2f40b5dc18ecb8::t_78e09efbbe0c88 41
+packages/kv/src/upstash.ts
+  s_2f40b5dc18ecb8::t_ffce7b1b59cff9 136-142,147,149
+packages/observability/src/index.test.ts
+  s_2f40b5dc18ecb8::t_48e9c21402f870 11
+packages/react/src/__tests__/render-slot.test.tsx
+  s_2f40b5dc18ecb8::t_efdc6410f25728 6,21,24,30,475-477
+packages/react/src/__tests__/tailor-kit.test.tsx
+  s_2f40b5dc18ecb8::t_cb164ee2639091 9,39,46,72,81,90,94,102-104,283,577
+packages/react/src/__tests__/use-views.test.tsx
+  s_2f40b5dc18ecb8::t_d80b03ee9ecc6c 1,18,22-24,367-381
+packages/react/src/remote-view.tsx
+  s_2f40b5dc18ecb8::t_c1413c011ff6ae 9-12,24,69,71,157-162,181
+packages/sandbox/src/host/index.ts
+  s_2f40b5dc18ecb8::t_10d349bc33b3e7 8-11,30,38,131-134
+packages/sandbox/src/host/serialize.ts
+  s_2f40b5dc18ecb8::t_739a9cb4dd085d 1-13,19-21,28,34
+packages/sandbox/src/iframe/resolve-view.test.ts
+  s_2f40b5dc18ecb8::t_858dfd7ccfd84c 22-25,292-293,353-354,380,385
+packages/sandbox/src/iframe/runtime.test.ts
+  s_2f40b5dc18ecb8::t_3fc4381af785c3 22,26-27,55,131,177,220-221
+packages/sandbox/src/protocol.ts
+  s_2f40b5dc18ecb8::t_03eb3a79ac21c2 3-6,8-9,12-15,55,141,187
+packages/storage/src/s3.ts
+  s_2f40b5dc18ecb8::t_8fa7eb49e1a91e 93-102,104
+packages/storage/src/upload-url.ts
+  s_2f40b5dc18ecb8::t_468b96b30a56f2 26
+packages/tailorkit/src/client.ts
+  s_2f40b5dc18ecb8::t_7193c9757ae347 1
+packages/ui/src/components/autocomplete.tsx
+  s_2f40b5dc18ecb8::t_ebe0eb47967eca 64
+packages/ui/src/components/calendar.tsx
+  s_2f40b5dc18ecb8::t_0825c7b7e950ad 49,95,108,126
+packages/ui/src/components/combobox.tsx
+  s_2f40b5dc18ecb8::t_fa5235d6e1b116 12-17,58,67,69,118,372
+packages/ui/src/components/input-group.tsx
+  s_2f40b5dc18ecb8::t_928a240c40277c 64-67
+packages/ui/src/components/input.tsx
+  s_2f40b5dc18ecb8::t_10d1f32b9f5cf0 8-14,61-62,69
+packages/ui/src/components/sidebar.tsx
+  s_2f40b5dc18ecb8::t_cb3c139ccd7f69 21-29,119,143,409
+packages/ui/src/components/table.tsx
+  s_2f40b5dc18ecb8::t_ff5ba370687e8b 90
+packages/ui/src/components/theme-toggle.tsx
+  s_2f40b5dc18ecb8::t_d80979079836f0 2,6-11,46
+packages/ui/src/components/toast.tsx
+  s_2f40b5dc18ecb8::t_b898262f9e1a13 11,19-25,75,95-96,193,202-203
+packages/ui/src/forms/field-errors.ts
+  s_2f40b5dc18ecb8::t_4b271358161dac 1-6,10,15,18,24,33
+packages/ui/src/forms/form.tsx
+  s_2f40b5dc18ecb8::t_df8ffbd5de70d1 32-34,91
+packages/ui/src/forms/select-field.tsx
+  s_2f40b5dc18ecb8::t_c2cd0030ce062a 21-23,26-31,78,103-105
+packages/ui/src/hooks/use-media-query.ts
+  s_2f40b5dc18ecb8::t_0fab5ba46dba30 5-10,23-25,32,37,44,72-73,75-76
+packages/vite/src/builder/client-views.ts
+  s_2f40b5dc18ecb8::t_34517d7b06fb7e 4-5,37-49
+packages/vite/src/builder/file-routes.test.ts
+  s_2f40b5dc18ecb8::t_0e55fe37505bfc 265
+packages/vite/src/builder/file-routes.ts
+  s_2f40b5dc18ecb8::t_62cd166e1c3e99 10-13,98-99
+packages/vite/src/builder/instances.ts
+  s_2f40b5dc18ecb8::t_0b098a93fb2099 11-13,449,455,478,490
+packages/vite/src/builder/server.test.ts
+  s_2f40b5dc18ecb8::t_0e8c7bdeb1804a 18-21,26,343,348-353,371,373,394,418,420,429,438-439,442,451,457-458,462-463,483
+packages/vite/src/builder/upload-manifest.ts
+  s_2f40b5dc18ecb8::t_cc8a57150da4ce 42-53
+playground/apps/todo/src/slots/panel/home.view.tsx
+  s_2f40b5dc18ecb8::t_ba9c405bc932a8 12-13
+playground/shared/src/contracts/valibot.ts
+  s_2f40b5dc18ecb8::t_163c797d71e6c9 23
+playground/tanstack-start/src/lib/auth-client.ts
+  s_2f40b5dc18ecb8::t_875f411a483b6a 3,20-44,50,93
+playground/tanstack-start/src/lib/issues.functions.ts
+  s_2f40b5dc18ecb8::t_0706332dc5a9e6 58
+playground/tanstack-start/src/lib/tailorkit-client.tsx
+  s_2f40b5dc18ecb8::t_ede7f6f52d2832 6,8-12,14-16,23,26,31,34-38,59-63
+playground/tanstack-start/src/routes/api/auth.ts
+  s_2f40b5dc18ecb8::t_6a60953f89f040 8,10,27-40,42
+playground/tanstack-start/src/routes/api/playground/todos.ts
+  s_2f40b5dc18ecb8::t_9484a99e3564d4 9,11,32-42,44,53,60
+pnpm-lock.yaml
+  s_2f40b5dc18ecb8::t_51308e4ec98bf1 296-298,978-980,3021-3024,4228-4233,4240-4245,4252-4257,4264-4269,4276-4281,4288-4293,4300-4305,4313-4319,4327-4333,4341-4347,4355-4361,4369-4375,4383-4389,4397-4403,4411-4417,4424-4429,4441-4446,4453-4458,4465-4470,4478-4480,5457-5468,7777-7781,10512-10515,14039-14042,15510-15512,15516-15518,15522-15524,15528-15530,15534-15536,15540-15542,15546-15548,15552-15554,15558-15560,15564-15566,15570-15572,15576-15578,15582-15584,15588-15590,15594-15596,15600-15602,15614-15616,15620-15622,15626-15628,15633-15635,16221-16227,19391-19392,22668-22692
+packages/app/src/client/tools.ts
+  s_2f40b5dc18ecb8::t_364779bb46f64d 1-2,6-7,11-18,22,25,54-56,63-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "28fcd1088390d5efe739c126cdd551cb2b285bec",
+  "prompts": {},
+  "sessions": {
+    "s_2f40b5dc18ecb8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1335c-f897-7d11-a78a-d7756d0c881a",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

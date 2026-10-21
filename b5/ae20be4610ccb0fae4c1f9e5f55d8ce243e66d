@@ -1,0 +1,61 @@
+apps/apps-worker/package.json
+  s_2f40b5dc18ecb8::t_77ee3eb3673472 19,32-33
+apps/web/package.json
+  s_2f40b5dc18ecb8::t_c0df2ff428c419 24-25,49,53-54,57,65,70,76
+examples/apps/backend-todo/package.json
+  s_2f40b5dc18ecb8::t_76606969229d3d 1-26
+examples/apps/email/package.json
+  s_2f40b5dc18ecb8::t_941ebad3385ec7 1-36
+examples/apps/notes/package.json
+  s_2f40b5dc18ecb8::t_22740c5c37120c 1-38
+examples/apps/todo/package.json
+  s_2f40b5dc18ecb8::t_62725890a4e06c 1-39
+examples/nextjs/package.json
+  s_2f40b5dc18ecb8::t_b753eb67995810 1-49
+package.json
+  s_2f40b5dc18ecb8::t_8f06b736dfdb84 31,33,37-39,41-42
+packages/api-platform/package.json
+  s_2f40b5dc18ecb8::t_3ef13ba293341e 49,66
+packages/api-utils/package.json
+  s_2f40b5dc18ecb8::t_b294be52c04420 62
+packages/api/package.json
+  s_2f40b5dc18ecb8::t_38e80343d495f2 43,45
+packages/app-agent/package.json
+  s_2f40b5dc18ecb8::t_8735c88db81930 22,27,29,31
+packages/auth/package.json
+  s_2f40b5dc18ecb8::t_4a967122fd2d03 39,47,51-52
+packages/cli/package.json
+  s_2f40b5dc18ecb8::t_f90b10ad049786 31,34,38
+packages/client-core/package.json
+  s_2f40b5dc18ecb8::t_ac32ceca29031b 47
+packages/email/package.json
+  s_2f40b5dc18ecb8::t_dc2140db18cb54 30,34,37,41
+packages/storage/package.json
+  s_2f40b5dc18ecb8::t_cbeff6004fed64 40-41
+packages/ui/package.json
+  s_2f40b5dc18ecb8::t_2083d10462acf5 72,85,94
+packages/app/package.json
+  s_2f40b5dc18ecb8::t_430edd57a2e89b 19-30,57,60,62-63,67,70-71
+packages/core/package.json
+  s_2f40b5dc18ecb8::t_f71fb442d12f34 76
+packages/react/package.json
+  s_2f40b5dc18ecb8::t_39d308b54c6d9a 37,44
+packages/sandbox/package.json
+  s_2f40b5dc18ecb8::t_85d5154bed4ce3 40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b5ae20be4610ccb0fae4c1f9e5f55d8ce243e66d",
+  "prompts": {},
+  "sessions": {
+    "s_2f40b5dc18ecb8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1335c-f897-7d11-a78a-d7756d0c881a",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

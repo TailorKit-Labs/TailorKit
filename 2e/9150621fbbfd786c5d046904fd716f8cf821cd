@@ -1,0 +1,23 @@
+playground/apps/todo/doomgeneric/README.md
+  s_a0bf9224ecab6e::t_8291e07697ab77 3,21,23
+playground/apps/todo/src/slots/doom/doom-game.ts
+  s_a0bf9224ecab6e::t_c8da29ec3d22c0 1,77,89,92-100,112-113,118
+playground/apps/todo/src/slots/doom/doom.tsx
+  s_a0bf9224ecab6e::t_a5e0f894dbb760 20,23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2e9150621fbbfd786c5d046904fd716f8cf821cd",
+  "prompts": {},
+  "sessions": {
+    "s_a0bf9224ecab6e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a156f7-f6c7-7d12-81e0-7055869efe72",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

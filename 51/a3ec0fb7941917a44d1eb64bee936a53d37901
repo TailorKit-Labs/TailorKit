@@ -1,0 +1,23 @@
+apps/web/scripts/benchmark-mcp.ts
+  s_7d1277528c5eb4::t_c7a3fbcf63bf02 3,63-64
+apps/web/vite.config.ts
+  s_7d1277528c5eb4::t_fff26cec829435 66
+packages/agent/README.md
+  s_7d1277528c5eb4::t_d48f889e909c81 92,96
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "51a3ec0fb7941917a44d1eb64bee936a53d37901",
+  "prompts": {},
+  "sessions": {
+    "s_7d1277528c5eb4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1497e-9fb2-72a0-980b-c455db548beb",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

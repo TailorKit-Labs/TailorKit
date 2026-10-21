@@ -1,0 +1,23 @@
+packages/api-platform/src/app-agent-mcp.ts
+  s_7d1277528c5eb4::t_46f3bf426d229e 100-108,284,305
+packages/auth/src/index.ts
+  s_7d1277528c5eb4::t_a5c0fcf55ec084 30,238,267
+packages/auth/src/lib/email.ts
+  s_7d1277528c5eb4::t_d9ee6dfa917e19 1-5,7-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7d3bd553a1ef953d252752e80687a7feb8bf7625",
+  "prompts": {},
+  "sessions": {
+    "s_7d1277528c5eb4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1497e-9fb2-72a0-980b-c455db548beb",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

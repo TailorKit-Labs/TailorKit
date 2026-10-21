@@ -1,0 +1,20 @@
+docs/concepts/tools.mdx
+  s_35012a91b914e4::t_a0ab41c185d4a3 8
+  s_35012a91b914e4::t_0965c284a47a2f 6-7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9c128278c1a5ce9f34c50fa9f6ae81551063ef10",
+  "prompts": {},
+  "sessions": {
+    "s_35012a91b914e4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a123fb-4e04-7eb2-af76-566a5e408879",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

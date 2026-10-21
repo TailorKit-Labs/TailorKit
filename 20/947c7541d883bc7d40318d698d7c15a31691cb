@@ -1,0 +1,117 @@
+packages/tailorkit/package.json
+  s_a44ff6866d8eae::t_fdca3bb2c0aa5e 84-87,94
+  s_a44ff6866d8eae::t_1f0989cd71187c 101
+packages/tailorkit/src/db.ts
+  s_a44ff6866d8eae::t_fdca3bb2c0aa5e 1-2
+scripts/check-prerelease.test.mjs
+  s_a44ff6866d8eae::t_fdca3bb2c0aa5e 15
+packages/app-db/package.json
+  s_a44ff6866d8eae::t_fdca3bb2c0aa5e 1-13,15-64
+  s_a44ff6866d8eae::t_1f0989cd71187c 14
+packages/cli/src/generator/generate.test.ts
+  s_a44ff6866d8eae::t_68e0bb3a8c9a13 108,111-117
+packages/agent-fx/src/skills/setup.md
+  s_a44ff6866d8eae::t_1ff3e4577b5c1b 41-49
+packages/app-db/src/relations.test.ts
+  s_a44ff6866d8eae::t_b7d4ce51ac90ca 19
+  s_a44ff6866d8eae::t_1f0989cd71187c 44
+  s_a44ff6866d8eae::t_68e0bb3a8c9a13 1-11,13-18,20-43,45-65
+  s_a44ff6866d8eae::t_472c7f831adcca 12
+packages/app-db/LICENSE.md
+  s_a44ff6866d8eae::t_fdca3bb2c0aa5e 1-74
+packages/app-db/src/index.ts
+  s_a44ff6866d8eae::t_11af76a97375e9 1-3,9-35
+  s_a44ff6866d8eae::t_1f0989cd71187c 4-8
+packages/vite/src/builder/server.test.ts
+  s_a44ff6866d8eae::t_80c38cd6e25d4d 311-329
+packages/agent-fx/src/instructions.md
+  s_a44ff6866d8eae::t_1ff3e4577b5c1b 35
+packages/app/src/server/builder.ts
+  s_a44ff6866d8eae::t_fdca3bb2c0aa5e 2-8,23,51,64,76,131
+packages/cli/src/generator/templates/src/db/schema.ts.liquid
+  s_a44ff6866d8eae::t_597d31f6dc9945 1
+packages/app-db/src/definition.ts
+  s_a44ff6866d8eae::t_11af76a97375e9 1-10
+.changeset/config.json
+  s_a44ff6866d8eae::t_fdca3bb2c0aa5e 9
+packages/vite/src/test-utils.ts
+  s_a44ff6866d8eae::t_fdca3bb2c0aa5e 9,63-64
+packages/app-db/src/types.ts
+  s_a44ff6866d8eae::t_11af76a97375e9 1-18
+.changeset/app-database-entry-point.md
+  s_a44ff6866d8eae::t_11af76a97375e9 1-11
+package.json
+  s_a44ff6866d8eae::t_fdca3bb2c0aa5e 33,41
+packages/app-db/tsconfig.json
+  s_a44ff6866d8eae::t_fdca3bb2c0aa5e 1-18
+packages/agent-fx/src/skills/database.md
+  s_a44ff6866d8eae::t_1ff3e4577b5c1b 7,11-12,45-62,64
+  s_a44ff6866d8eae::t_8482d625c5a07d 17,28,37,44,80
+apps/apps-worker/src/tests/integration.test.mjs
+  s_a44ff6866d8eae::t_597d31f6dc9945 325-326
+packages/agent-fx/src/agent.ts
+  s_a44ff6866d8eae::t_1ff3e4577b5c1b 62
+vite.config.ts
+  s_a44ff6866d8eae::t_fdca3bb2c0aa5e 28
+packages/app-db/src/relations.ts
+  s_a44ff6866d8eae::t_1f0989cd71187c 14-15
+  s_a44ff6866d8eae::t_11af76a97375e9 1-6,8-9,11-13,16-39
+  s_a44ff6866d8eae::t_63e909e3ead63f 7,10
+packages/app/src/server/functions.ts
+  s_a44ff6866d8eae::t_fdca3bb2c0aa5e 2-8,86,105,122
+apps/apps-worker/package.json
+  s_a44ff6866d8eae::t_80c38cd6e25d4d 24
+scripts/check-prerelease.mjs
+  s_a44ff6866d8eae::t_fdca3bb2c0aa5e 13
+apps/apps-worker/src/runtime/execution.test.ts
+  s_a44ff6866d8eae::t_80c38cd6e25d4d 10-11
+  s_a44ff6866d8eae::t_d209d29a8db3e0 12-13,19
+packages/app-db/README.md
+  s_a44ff6866d8eae::t_68e0bb3a8c9a13 1-26
+packages/app/README.md
+  s_a44ff6866d8eae::t_597d31f6dc9945 5-6
+packages/tailorkit/src/db.test-d.ts
+  s_a44ff6866d8eae::t_b7d4ce51ac90ca 1-2,4-9,17-18
+  s_a44ff6866d8eae::t_597d31f6dc9945 12-16
+  s_a44ff6866d8eae::t_9c36ace79198ad 3
+  s_a44ff6866d8eae::t_e4807e4522d3a1 10-11
+packages/app/package.json
+  s_a44ff6866d8eae::t_1f0989cd71187c 75
+packages/app/src/server/database.test-d.ts
+  s_a44ff6866d8eae::t_fdca3bb2c0aa5e 8-11,13-76
+  s_a44ff6866d8eae::t_1f0989cd71187c 1-7,12
+packages/cli/src/generator/templates/src/db/relations.ts.liquid
+  s_a44ff6866d8eae::t_fdca3bb2c0aa5e 1
+packages/agent/src/skills/sqlite-database.md
+  s_a44ff6866d8eae::t_8482d625c5a07d 9,18,25,32,34,38
+packages/app-db/tsconfig.build.json
+  s_a44ff6866d8eae::t_fdca3bb2c0aa5e 1-8
+packages/cli/src/generator/templates/src/db/index.ts.liquid
+  s_a44ff6866d8eae::t_fdca3bb2c0aa5e 1
+packages/agent-fx/src/skills/functions.md
+  s_a44ff6866d8eae::t_1ff3e4577b5c1b 19
+apps/apps-worker/src/runtime/database/driver.ts
+  s_a44ff6866d8eae::t_84cb90b8ba1b22 2
+apps/apps-worker/src/tests/backend.ts
+  s_a44ff6866d8eae::t_44f56b4c61fa5c 15,25-26
+packages/vite/src/index.ts
+  s_a44ff6866d8eae::t_c7a4f2570feb47 281
+pnpm-lock.yaml
+  s_a44ff6866d8eae::t_37189b747d04d3 364-366,899-901,937-955,1546-1548
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "20947c7541d883bc7d40318d698d7c15a31691cb",
+  "prompts": {},
+  "sessions": {
+    "s_a44ff6866d8eae": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14d78-6e1d-7671-9539-13a28704b40d",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

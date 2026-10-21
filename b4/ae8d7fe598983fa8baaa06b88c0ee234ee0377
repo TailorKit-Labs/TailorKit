@@ -1,0 +1,58 @@
+.changeset/ai-created-agent-apps.md
+  h_18044dd1b61a81 1-7
+.coderabbit.yaml
+  h_18044dd1b61a81 1-8
+apps/web/src/routes/(app)/$orgSlug/$projectSlug/settings/api-keys.tsx
+  h_18044dd1b61a81 353,358
+cubic.yaml
+  h_18044dd1b61a81 1-7
+packages/api-platform/openapi.json
+  h_18044dd1b61a81 491-493,704,856-858,1069,1132-1133,1197-1199,1410,1616-1618,1829,1954-1956,2167,4301-4303,4514,4566-4888
+packages/api-platform/src/routes/app-agent.test.ts
+  h_18044dd1b61a81 114,462-501,670
+packages/api-platform/src/routes/app-agent.ts
+  h_18044dd1b61a81 34-35,85-109,126-131,239
+packages/api-platform/src/routes/apps.test.ts
+  h_18044dd1b61a81 5-9,17,32,38-41,217-369,387
+packages/api-platform/src/routes/apps.ts
+  h_18044dd1b61a81 180
+packages/cli/src/agent-tui.ts
+  h_18044dd1b61a81 20
+packages/cli/src/agent.test.ts
+  h_18044dd1b61a81 31,90-91,94,128,164,167-180,184-191,235-240,248-282
+packages/cli/src/agent.ts
+  h_18044dd1b61a81 29,42,46-48,60,94,133-140
+packages/cli/src/client.test.ts
+  h_18044dd1b61a81 8,51,82-88,90-94,129-132,158
+packages/cli/src/client.ts
+  h_18044dd1b61a81 20,147-153
+packages/cli/src/deploy.ts
+  h_18044dd1b61a81 15,19,411-414
+packages/client-platform/src/agent.ts
+  h_18044dd1b61a81 5-9
+packages/client-platform/src/client/index.ts
+  h_18044dd1b61a81 5,34-36
+packages/client-platform/src/client/sdk.gen.ts
+  h_18044dd1b61a81 16-17,353-368
+packages/client-platform/src/client/types.gen.ts
+  h_18044dd1b61a81 161,238,309,409,481,1104,1150-1216
+packages/core/src/server/agent.test.ts
+  h_18044dd1b61a81 73-75,125-144,291-293
+packages/core/src/server/handler.test.ts
+  h_18044dd1b61a81 815-818,822-832,841-888
+packages/core/src/server/routes/app-agent.ts
+  h_18044dd1b61a81 4,8-11,75-87
+packages/core/src/server/routes/apps.ts
+  h_18044dd1b61a81 31,74-84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b4ae8d7fe598983fa8baaa06b88c0ee234ee0377",
+  "prompts": {},
+  "humans": {
+    "h_18044dd1b61a81": {
+      "author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

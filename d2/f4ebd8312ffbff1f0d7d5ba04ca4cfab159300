@@ -1,0 +1,29 @@
+.changeset/required-app-name-slug.md
+  s_5c67ad6f64d419::t_272e636d93bd7d 7
+packages/cli/README.md
+  s_5c67ad6f64d419::t_d40e97e5e715f0 59
+packages/cli/src/generator/generate.test.ts
+  s_5c67ad6f64d419::t_9c74c1e3ad9ce3 294-297
+packages/cli/src/generator/generate.ts
+  s_5c67ad6f64d419::t_0195743d12e6a4 168,174
+packages/vite/src/config/config.ts
+  s_5c67ad6f64d419::t_9649ec0534aa25 24,100
+packages/vite/src/config/loader.test.ts
+  s_5c67ad6f64d419::t_8854ae2d06b80e 117-118,129-134
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d2f4ebd8312ffbff1f0d7d5ba04ca4cfab159300",
+  "prompts": {},
+  "sessions": {
+    "s_5c67ad6f64d419": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14872-b50e-7311-b78e-e07a79b29a0f",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

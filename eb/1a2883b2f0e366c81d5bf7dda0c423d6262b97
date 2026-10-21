@@ -1,0 +1,51 @@
+packages/agent/src/mcp-progress.test.ts
+  s_97476710d4ff65::t_47b2ee1d524a4a 4,9,12
+packages/agent/src/mcp.test.ts
+  s_97476710d4ff65::t_c50acb94d6d654 22-29,43,47,175,222,229,322,324,399-400,440,496,713
+  s_97476710d4ff65::t_47b2ee1d524a4a 147
+  s_97476710d4ff65::t_6dd6b9025fd984 9-13,321,482
+  s_97476710d4ff65::t_5e09374bca7d96 131-133,499
+  s_97476710d4ff65::t_d3608f3bf7f854 492
+packages/agent/README.md
+  s_97476710d4ff65::t_44e4128fd1ab68 109
+  s_97476710d4ff65::t_7fd4fafa9abd1a 111
+packages/api-platform/src/app-agent-mcp.ts
+  s_97476710d4ff65::t_a31054b4972cb2 18,101,204,211-226,231,233
+  s_97476710d4ff65::t_6dd6b9025fd984 5-8,105-108,206-210
+packages/agent/src/mcp-progress.ts
+  s_97476710d4ff65::t_47b2ee1d524a4a 13,164,322
+  s_97476710d4ff65::t_44670a05d1db70 270-273,275-276,296-299
+packages/api-platform/src/app-agent-mcp.test.ts
+  s_97476710d4ff65::t_479134938bcf2f 316-327,329-332,334-336,338-341,343-346,348-358,364-387,389,391-409,411-444
+  s_97476710d4ff65::t_1f7004f406e6ac 328
+  s_97476710d4ff65::t_84cbbf6dc95d64 333
+  s_97476710d4ff65::t_fbf5691477f21c 337
+  s_97476710d4ff65::t_c4ee365cbc92fd 342
+  s_97476710d4ff65::t_ac7b09c9c7b8ac 347
+  s_97476710d4ff65::t_6b8ced77a3d32b 359-363
+  s_97476710d4ff65::t_ebf83fa11f3bfe 388
+  s_97476710d4ff65::t_9424227391c3db 390
+  s_97476710d4ff65::t_aaaf2273b328b1 410
+packages/agent/src/mcp.ts
+  s_97476710d4ff65::t_47b2ee1d524a4a 93,95-97,113-121,128-129,131,183,204
+  s_97476710d4ff65::t_6dd6b9025fd984 98-111,122-123,125-127
+  s_97476710d4ff65::t_7ce41977ce7fd4 9
+  s_97476710d4ff65::t_56d4322ac8c8fc 11,55,58-67,78,82
+  s_97476710d4ff65::t_73280c7b4cbfe9 124
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "eb1a2883b2f0e366c81d5bf7dda0c423d6262b97",
+  "prompts": {},
+  "sessions": {
+    "s_97476710d4ff65": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15640-7bab-7b63-b6fa-c054ef891d10",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

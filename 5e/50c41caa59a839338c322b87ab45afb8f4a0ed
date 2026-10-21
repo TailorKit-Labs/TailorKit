@@ -1,0 +1,25 @@
+packages/agent-fx/src/deploy.test.ts
+  s_e194f2f6f81aae::t_73f526ee0a6db1 8-12,32,34-38,53-58,64-65,75-106
+packages/agent-fx/src/deploy.ts
+  s_e194f2f6f81aae::t_13a039b80a176e 16,22-54
+packages/agent-fx/src/instructions.md
+  s_e194f2f6f81aae::t_5a7a3dedf1d1fe 34
+packages/agent-fx/src/skills/setup.md
+  s_e194f2f6f81aae::t_2d84f94060f06d 25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5e50c41caa59a839338c322b87ab45afb8f4a0ed",
+  "prompts": {},
+  "sessions": {
+    "s_e194f2f6f81aae": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a152d6-33bc-70c3-89fd-1d498d5bba59",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

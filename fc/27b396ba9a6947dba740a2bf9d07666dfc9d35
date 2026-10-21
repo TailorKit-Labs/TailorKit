@@ -1,0 +1,23 @@
+apps/web/src/routeTree.gen.ts
+  s_0ddee2e2eb8f91::t_edb66c3af6ff3f 40,194-198,278,311,351,391,424,463,488,689-695,934
+apps/web/src/routes/api/platform.$.ts
+  s_0ddee2e2eb8f91::t_77ed00d2121617 13-36,45-49,60
+apps/web/src/routes/api/platform.app-agent.mcp.ts
+  s_0ddee2e2eb8f91::t_0cf147b51a7664 1-44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fc27b396ba9a6947dba740a2bf9d07666dfc9d35",
+  "prompts": {},
+  "sessions": {
+    "s_0ddee2e2eb8f91": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14bd7-d404-71c0-bd0a-d7afa6931155",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

@@ -1,0 +1,45 @@
+packages/app/test/fixtures/backend-todo/package.json
+  s_cf0fb7db315121::t_dc0f0ace1b415b 1-20
+packages/app/src/builder/server.test.ts
+  s_cf0fb7db315121::t_dc0f0ace1b415b 18,78,152
+packages/app/src/builder/file-routes.test.ts
+  s_cf0fb7db315121::t_dc0f0ace1b415b 122,203
+apps/apps-worker/src/tests/integration.test.mjs
+  s_cf0fb7db315121::t_dc0f0ace1b415b 196,203
+apps/apps-worker/src/runtime/database/migrations.test.ts
+  s_cf0fb7db315121::t_dc0f0ace1b415b 22
+packages/app/src/builder/migrations.test.ts
+  s_cf0fb7db315121::t_dc0f0ace1b415b 10
+packages/app/src/builder/schema-check.test.ts
+  s_cf0fb7db315121::t_dc0f0ace1b415b 9
+docs/installation.mdx
+  s_cf0fb7db315121::t_dc0f0ace1b415b 844-845
+packages/app/src/builder/generate-migrations.test.ts
+  s_cf0fb7db315121::t_dc0f0ace1b415b 12
+apps/apps-worker/turbo.json
+  s_cf0fb7db315121::t_dc0f0ace1b415b 6
+packages/app/turbo.json
+  s_cf0fb7db315121::t_dc0f0ace1b415b 6
+pnpm-workspace.yaml
+  s_cf0fb7db315121::t_dc0f0ace1b415b 14
+packages/cli/src/deploy.test.ts
+  s_cf0fb7db315121::t_dc0f0ace1b415b 189,208
+pnpm-lock.yaml
+  s_cf0fb7db315121::t_d084900e8d0d65 805-832,14859-14860,22108
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ca6d49252f348fce2c626d79a4e2550858e4363a",
+  "prompts": {},
+  "sessions": {
+    "s_cf0fb7db315121": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13299-2aad-7903-a0fd-d5c80194fa73",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

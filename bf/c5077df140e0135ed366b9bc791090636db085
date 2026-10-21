@@ -1,0 +1,48 @@
+packages/app/src/client/canvas-controller.ts
+  s_a0bf9224ecab6e::t_fd3e4a4abf561a 5-12,15-18,43-46,53-54,66-67,87-93,103-107,118-119,161-192,220-221,288,310,312,316,318,332,405,417
+  s_a0bf9224ecab6e::t_e9920c5228b566 94-98,203-207,404,406,421
+packages/app/src/client/canvas-scheduler.ts
+  s_a0bf9224ecab6e::t_fd3e4a4abf561a 1-9,12-14,16,18
+  s_a0bf9224ecab6e::t_649afc40b210d8 10-11,15,17
+packages/app/src/client/canvas-controller.test.ts
+  s_a0bf9224ecab6e::t_50b1d4d4ce2eab 483-645
+playground/README.md
+  s_a0bf9224ecab6e::t_50b1d4d4ce2eab 95,101
+packages/sandbox/src/host/index.test.ts
+  s_a0bf9224ecab6e::t_fd3e4a4abf561a 126-128
+packages/app/src/client/canvas-hook.ts
+  s_a0bf9224ecab6e::t_fd3e4a4abf561a 14
+.changeset/tidy-canvas-surfaces.md
+  s_a0bf9224ecab6e::t_50b1d4d4ce2eab 15-18
+playground/apps/todo/src/slots/panel/canvas-prototype.tsx
+  s_a0bf9224ecab6e::t_fd3e4a4abf561a 112,132
+  s_a0bf9224ecab6e::t_b6bc0e2a972f15 110
+packages/sandbox/src/host/index.ts
+  s_a0bf9224ecab6e::t_fd3e4a4abf561a 73
+packages/app/src/client.ts
+  s_a0bf9224ecab6e::t_fd3e4a4abf561a 27
+packages/sandbox/README.md
+  s_a0bf9224ecab6e::t_50b1d4d4ce2eab 73-93,179,187
+packages/sandbox/benchmarks/client.ts
+  s_a0bf9224ecab6e::t_d5d504ad402360 46-65,67-69
+packages/sandbox/benchmarks/main.ts
+  s_a0bf9224ecab6e::t_08370e5373a17c 136
+packages/sandbox/benchmarks/shared.ts
+  s_a0bf9224ecab6e::t_98527360993400 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bfc5077df140e0135ed366b9bc791090636db085",
+  "prompts": {},
+  "sessions": {
+    "s_a0bf9224ecab6e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a156f7-f6c7-7d12-81e0-7055869efe72",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

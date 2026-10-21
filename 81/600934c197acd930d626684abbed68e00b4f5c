@@ -1,0 +1,67 @@
+.changeset/focused-app-contracts.md
+  s_44975098974bf2::t_5212d236f885ae 10-11
+packages/agent-fx/src/instructions.md
+  s_44975098974bf2::t_60f2a3a5743813 11-12
+packages/agent-fx/src/skills/functions.md
+  s_44975098974bf2::t_1be5e2adc228f1 19
+packages/agent-fx/src/skills/references/functions.md
+  s_44975098974bf2::t_9ca069118a19d6 53,78-82,98-103,119,143,147,161
+packages/agent-fx/src/skills/references/views.md
+  s_44975098974bf2::t_964db568079beb 54,68
+packages/agent/src/instructions.md
+  s_44975098974bf2::t_75b2b2d6ca471a 28-30
+packages/agent/src/skills/backend-functions.md
+  s_44975098974bf2::t_80a0198d889dac 19,26,39-43,68
+packages/agent/src/skills/views-and-routing.md
+  s_44975098974bf2::t_7e668966853f26 22,32
+packages/cli/README.md
+  s_44975098974bf2::t_bf3a074dfb0480 5-6
+packages/cli/src/generator/agent-examples.test.ts
+  s_037b1ed6cffbe5::t_0f079c7913ffce 104-107,211
+packages/cli/src/generator/generate.test.ts
+  s_44975098974bf2::t_35dd03268d549f 69-90,527-528
+packages/cli/src/generator/generate.ts
+  s_44975098974bf2::t_42fd3b2342a19a 54,204
+packages/cli/src/generator/package-versions.test.ts
+  s_44975098974bf2::t_501a9eab73dfe4 36,62-88
+packages/cli/src/generator/package-versions.ts
+  s_44975098974bf2::t_ad7975ed0d9418 13,39,141,150,158
+packages/cli/src/generator/reference-examples.ts
+  s_44975098974bf2::t_2361f07948319b 133,153
+packages/cli/src/generator/references.ts
+  s_44975098974bf2::t_c0fead0d403d6f 282
+packages/cli/src/generator/templates/package.json.liquid
+  s_44975098974bf2::t_e43facc110da6a 23
+packages/cli/src/generator/templates/src/functions/greeting.ts.liquid
+  s_44975098974bf2::t_f4806ccc54fa06 3,7
+packages/cli/src/generator/templates/src/slots/view.tsx.liquid
+  s_44975098974bf2::t_b11b8f4ed1be3a 3,9
+packages/cli/src/init.test.ts
+  s_44975098974bf2::t_fb253a9ce4c8e7 19
+playground/apps/todo/.agents/skills/tailorkit-capabilities/references/views.md
+  s_44975098974bf2::t_64ef77283544f9 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "81600934c197acd930d626684abbed68e00b4f5c",
+  "prompts": {},
+  "sessions": {
+    "s_037b1ed6cffbe5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a151c9-2b6f-77e1-aaaf-03012636c18c",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_44975098974bf2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15182-bddb-71e2-8ef7-0ada4d2e5ba6",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

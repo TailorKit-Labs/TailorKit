@@ -1,0 +1,23 @@
+packages/client-core/src/client/primitive-css.test.ts
+  s_1e5115b8dc5a03::t_19c8d1587ab8bf 114
+packages/client-core/src/client/primitive-css.ts
+  s_1e5115b8dc5a03::t_73f2a11a8f0a79 236
+packages/react/README.md
+  s_1e5115b8dc5a03::t_d1f26f2f6c25c2 33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fa30030ceee8582b3428a99931b43176d7fbd676",
+  "prompts": {},
+  "sessions": {
+    "s_1e5115b8dc5a03": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1445c-c087-7d13-bcd7-8eb7d6a35e84",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

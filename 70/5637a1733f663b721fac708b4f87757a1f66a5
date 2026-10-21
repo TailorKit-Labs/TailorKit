@@ -1,0 +1,67 @@
+packages/agent/README.md
+  s_c99e12388a36c5::t_8864b24b2c36a1 34,44,74-76
+packages/agent/src/agent-step.test.ts
+  s_f113f3d0af95a0::t_56c5cf00a1f7b5 14,30
+packages/agent/src/tools/deploy.test.ts
+  s_c99e12388a36c5::t_61fd4bbc325736 1,3-4,11-18,22-26,29-38,40-65,68-104,106-116,119
+packages/agent/src/tools/deploy.ts
+  s_c99e12388a36c5::t_7dd46057157071 6,13-90
+packages/cli/README.md
+  s_c99e12388a36c5::t_af521f8f621cd2 49
+packages/agent/package.json
+  s_f3bff407025201::t_b4c51065524923 56
+packages/agent/src/agent-step.ts
+  s_f3bff407025201::t_12d7f9a241de68 18,25-26
+packages/agent/src/agent.ts
+  s_f3bff407025201::t_c214b511fb9fa0 9
+packages/agent/src/sandbox.test.ts
+  s_0e0b64360a5a0c::t_11d59fbac20196 72,82-83,85-86,94,175
+packages/agent/src/sandbox.ts
+  s_f3bff407025201::t_e842215e183fe0 9-10,65-76,123,135,139
+packages/agent/src/tools/publish.test.ts
+  s_f3bff407025201::t_d75ea024381633 1-191
+packages/agent/src/tools/publish.ts
+  s_0e0b64360a5a0c::t_3fc0f42e792926 1-218
+pnpm-lock.yaml
+  s_f3bff407025201::t_baa363299af87b 575-577
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "705637a1733f663b721fac708b4f87757a1f66a5",
+  "prompts": {},
+  "sessions": {
+    "s_0e0b64360a5a0c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13e31-ec9d-7753-b5f4-65b435bafd61",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_c99e12388a36c5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13e35-7874-7a90-9c95-8d8fd269609f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_f113f3d0af95a0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13e33-1808-7451-834b-0d4ace3a1062",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_f3bff407025201": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13e31-b198-7db3-a247-57a12f64c66c",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

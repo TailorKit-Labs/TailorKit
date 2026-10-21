@@ -1,0 +1,39 @@
+packages/agent-fx/src/deploy.test.ts
+  s_e194f2f6f81aae::t_85bbe3f36f91f2 3,6-7,10,12-14,17-34,36-58,60,64-71,73-76,78-79,81-87,90-92
+packages/agent-fx/src/deploy.ts
+  s_e194f2f6f81aae::t_f77987be4fc58e 8,16,18-19,22-37,39-41,46-48
+packages/agent-fx/src/instructions.md
+  s_e194f2f6f81aae::t_1687c542115530 34
+packages/agent-fx/src/sandbox-session.ts
+  s_e194f2f6f81aae::t_60b7b19e9cf67d 5
+packages/agent-fx/src/skills/setup.md
+  s_e194f2f6f81aae::t_7be875ae79f999 25
+packages/cli/src/deploy-name.test.ts
+  s_f249b450328437::t_1f050e052f005a 1,8,11-18,24-33,189-213
+packages/vite/src/config/app-link.ts
+  s_e194f2f6f81aae::t_022133d34027e8 7-8,36,38,46,49,51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a3fe167c73e8a0a1ccbca6160a524d6d438a6360",
+  "prompts": {},
+  "sessions": {
+    "s_e194f2f6f81aae": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a152d6-33bc-70c3-89fd-1d498d5bba59",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_f249b450328437": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a152d6-b5a9-76d1-80c7-1c522bc5e0cb",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
