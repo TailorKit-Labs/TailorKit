@@ -1,0 +1,28 @@
+.changeset/quiet-page-discovery.md
+  h_18044dd1b61a81 1-8
+packages/client-core/src/client/slot-active-view.test.ts
+  h_18044dd1b61a81 1-64
+packages/client-core/src/client/slot-active-view.ts
+  h_18044dd1b61a81 1-29
+packages/client-core/src/client/views.ts
+  h_18044dd1b61a81 4-5,22-26
+packages/client-core/src/store/query.test.ts
+  h_18044dd1b61a81 1-2,5,193-271
+packages/client-core/src/store/query.ts
+  h_18044dd1b61a81 5-6,110-111,113
+packages/core/src/server/views.test.ts
+  h_18044dd1b61a81 159-161
+packages/core/src/server/views.ts
+  h_18044dd1b61a81 67-74,80,82,122-123,134-135,210-211,254-255
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bb541bb35806e5cf4dc01a254c4e740c471412a6",
+  "prompts": {},
+  "humans": {
+    "h_18044dd1b61a81": {
+      "author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
