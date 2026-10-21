@@ -6,12 +6,12 @@ import {
 } from "@patchsmith/agent/source-export";
 import { withAppAssetUrl } from "@patchsmith/api-utils/app-asset-url";
 import { db } from "@patchsmith/db";
-import { app, appDeployment } from "@patchsmith/db/schema/apps";
 import { evaluateBooleanFlag } from "@patchsmith/flags";
-import { and, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { protectedProcedure, requireProject } from "#procedures";
+
+import { getInstallationCounts, listAppRecords } from "./app-list";
 
 const projectInput = z.object({
   orgSlug: z.string(),
@@ -147,7 +147,9 @@ export const appsRouter = {
           projectId: context.project.id,
         },
         with: {
-          currentDeployment: { with: { app: { columns: { shortId: true } } } },
+          currentDeployment: {
+            with: { app: { columns: { name: true, shortId: true } } },
+          },
           deployments: {
             orderBy: { createdAt: "desc" },
           },
@@ -161,11 +163,23 @@ export const appsRouter = {
       const { scopeKey, ...publicApp } = appWithDeployments;
       void scopeKey;
 
+      const [installationCount] = await getInstallationCounts(
+        db,
+        context.project.id,
+        [selectedApp.id]
+      );
+
       return withAppAssetUrl(
         {
           ...publicApp,
           currentDeployment: appWithDeployments.currentDeployment,
           deployments: appWithDeployments.deployments,
+          installationCount: installationCount?.value ?? 0,
+          sourceApp:
+            appWithDeployments.currentDeployment &&
+            appWithDeployments.currentDeployment.appId !== selectedApp.id
+              ? appWithDeployments.currentDeployment.app
+              : null,
         },
         context.project.shortId
       );
@@ -174,126 +188,31 @@ export const appsRouter = {
   list: protectedProcedure
     .input(projectInput.extend(paginationInput.shape))
     .use(requireProject())
+    .handler(
+      async ({ context, input }) =>
+        await listAppRecords(db, {
+          ...input,
+          projectId: context.project.id,
+          projectShortId: context.project.shortId,
+        })
+    ),
+
+  listInstallations: protectedProcedure
+    .input(appInput.extend(paginationInput.shape))
+    .use(requireProject())
     .handler(async ({ context, input }) => {
-      const page = input.page ?? 1;
-      const pageSize = input.pageSize ?? 25;
-      const search = input.search?.trim().toLowerCase();
-      const offset = (page - 1) * pageSize;
+      const selectedApp = await getProjectApp(context.project.id, input.appId);
 
-      const searchPattern =
-        search !== undefined && search !== null && search !== ""
-          ? `%${search}%`
-          : undefined;
-
-      const where =
-        searchPattern !== undefined &&
-        searchPattern !== null &&
-        searchPattern !== ""
-          ? and(
-              eq(app.projectId, context.project.id),
-              or(
-                ilike(app.name, searchPattern),
-                ilike(app.shortId, searchPattern),
-                sql`${app.scope}::text ILIKE ${searchPattern}`,
-                ilike(app.description, searchPattern),
-                sql`${app.id}::text ILIKE ${searchPattern}`
-              )
-            )
-          : eq(app.projectId, context.project.id);
-
-      const pageItems = await db
-        .select()
-        .from(app)
-        .where(where)
-        .orderBy(desc(app.createdAt))
-        .limit(pageSize + 1)
-        .offset(offset);
-
-      const items = pageItems.slice(0, pageSize);
-
-      if (items.length === 0) {
-        return {
-          items: [],
-          pagination: {
-            hasMore: false,
-            page,
-            pageSize,
-          },
-        };
+      if (!selectedApp) {
+        throw new ORPCError("NOT_FOUND", { message: "App not found." });
       }
 
-      const appIds = items.map((item) => item.id);
-
-      const currentDeploymentIds = items
-        .map((item) => item.currentDeploymentId)
-        .filter((id): id is string => id !== null);
-
-      const [deploymentCounts, latestDeployments, currentDeployments] =
-        await Promise.all([
-          db
-            .select({ appId: appDeployment.appId, value: count() })
-            .from(appDeployment)
-            .where(inArray(appDeployment.appId, appIds))
-            .groupBy(appDeployment.appId),
-          db
-            .select()
-            .from(appDeployment)
-            .where(inArray(appDeployment.appId, appIds))
-            .orderBy(desc(appDeployment.createdAt)),
-          currentDeploymentIds.length > 0
-            ? db.query.appDeployment.findMany({
-                where: { id: { in: currentDeploymentIds } },
-                with: { app: { columns: { shortId: true } } },
-              })
-            : Promise.resolve([]),
-        ]);
-
-      const deploymentCountByAppId = new Map(
-        deploymentCounts.map((item) => [item.appId, item.value])
-      );
-
-      const latestDeploymentByAppId = new Map<
-        string,
-        (typeof latestDeployments)[number]
-      >();
-
-      for (const deployment of latestDeployments) {
-        if (!latestDeploymentByAppId.has(deployment.appId)) {
-          latestDeploymentByAppId.set(deployment.appId, deployment);
-        }
-      }
-
-      const currentDeploymentById = new Map(
-        currentDeployments.map((deployment) => [deployment.id, deployment])
-      );
-
-      return {
-        items: items.map((item) => {
-          const { scopeKey, ...publicApp } = item;
-          void scopeKey;
-
-          return withAppAssetUrl(
-            {
-              ...publicApp,
-              currentDeployment:
-                item.currentDeploymentId !== undefined &&
-                item.currentDeploymentId !== null &&
-                item.currentDeploymentId !== ""
-                  ? (currentDeploymentById.get(item.currentDeploymentId) ??
-                    null)
-                  : null,
-              deploymentCount: deploymentCountByAppId.get(item.id) ?? 0,
-              latestDeployment: latestDeploymentByAppId.get(item.id) ?? null,
-            },
-            context.project.shortId
-          );
-        }),
-        pagination: {
-          hasMore: pageItems.length > pageSize,
-          page,
-          pageSize,
-        },
-      };
+      return await listAppRecords(db, {
+        ...input,
+        projectId: context.project.id,
+        projectShortId: context.project.shortId,
+        sourceAppId: selectedApp.id,
+      });
     }),
 
   sourceExportStatus: protectedProcedure
