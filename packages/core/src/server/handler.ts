@@ -1,10 +1,6 @@
 import { RPCHandler } from "@orpc/server/fetch";
-import {
-  appsList,
-  appsRuntimeSession,
-} from "@patchsmith/client-platform/client";
+import { appsRuntimeSession } from "@patchsmith/client-platform/client";
 import { createClient } from "@patchsmith/client-platform/client/client/index";
-import type { AppsListResponses } from "@patchsmith/client-platform/client/types.gen";
 import * as v from "valibot";
 
 import type {
@@ -21,6 +17,7 @@ import { normalizeBaseUrl } from "./base-url";
 import { handleCliAuthApprovalPage } from "./cli-auth-page";
 import { createContext } from "./context";
 import { createExperimental } from "./experimental";
+import { listApps } from "./list-apps";
 import { createMcpTransport } from "./mcp";
 import { patchsmithRouter } from "./router";
 import {
@@ -38,6 +35,7 @@ import type {
   PatchsmithServer,
   PatchsmithServerInputOptions,
 } from "./types";
+import { handleViews } from "./views";
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
@@ -225,6 +223,22 @@ export const createPatchsmithServer = <
       );
     }
 
+    if (url.pathname === `${basePath}/views`) {
+      return await handleViews(
+        await createContext({
+          agentInstructions,
+          authenticate,
+          platform,
+          platformHeaders,
+          request,
+          schema,
+          scopeSchemas,
+        }),
+        publicOrigin,
+        `${publicOrigin + basePath}/tools/execute`
+      );
+    }
+
     if (url.pathname === `${basePath}/schema`) {
       return Response.json(schema.serialize(options.schemaSerializer));
     }
@@ -262,27 +276,7 @@ export const createPatchsmithServer = <
         return Response.json([], { headers: { "cache-control": "no-store" } });
       }
 
-      const items: AppsListResponses[200]["items"] = [];
-      let page = 1;
-
-      for (;;) {
-        // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
-        const result = await appsList({
-          body: { page, pageSize: 100, scopes },
-          client: context.platform,
-          headers: context.platformHeaders,
-          throwOnError: true,
-        });
-
-        const data = "data" in result ? result.data : result;
-        items.push(...data.items);
-
-        if (!data.pagination.hasMore) {
-          break;
-        }
-
-        page += 1;
-      }
+      const items = await listApps(context, scopes, request.signal);
 
       return Response.json(items, { headers: { "cache-control": "no-store" } });
     }

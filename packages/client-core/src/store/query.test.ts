@@ -113,209 +113,77 @@ it("starts discovery only when observed and supplies filtered results and shared
   stop();
 });
 
-it("updates single-slot results from provided apps without observing context or resolving instances", async () => {
-  const { client, fetch, store, app } = setup(false, []);
-  const instances = vi.spyOn(client.endpoints, "slotInstances");
+it("fetches views without a client discovery request or provided app data", async () => {
+  const { fetch, store, app } = setup(false, []);
+  fetch.mockResolvedValue(Response.json({ data: [{ app }], status: "ready" }));
   const query = createViewsQuery(store, { slot: "page" });
-
-  const stop = query.state.listen(
-    vi.fn<NonNullable<Parameters<typeof query.state.listen>[0]>>()
-  );
-
-  await allTasks();
-  expect(query.state.get().data).toEqual([]);
-  store.setProvidedApps([app]);
-  await allTasks();
-  const ready = query.state.get();
-  expect(ready.data).toEqual([{ app }]);
-  const id = Symbol("view");
-  store.views.register({ context: undefined, id, loading: true, view: "/" });
-  await Promise.resolve();
-  expect(query.state.get()).toBe(ready);
   expect(fetch).not.toHaveBeenCalled();
-  expect(instances).not.toHaveBeenCalled();
+  const stop = query.state.listen(() => {});
+  await allTasks();
+  expect(query.state.get()).toMatchObject({ data: [{ app }], isSuccess: true });
+  expect(fetch).toHaveBeenCalledOnce();
+  expect(fetch.mock.calls[0]?.[0]).toEqual(
+    new URL("https://host.test/api/views")
+  );
   stop();
-  store.views.unregister(id);
 });
 
-it("switches instance queries on context changes and immediately cancels unobserved requests", async () => {
-  const { client, store, app } = setup(true, []);
-  store.setProvidedApps([app]);
+it("cancels obsolete context requests and ignores their late responses", async () => {
+  const { fetch, store, app } = setup();
 
   const requests: {
-    signal: AbortSignal;
-    resolve: (
-      value: {
-        key: string;
-        metadata: Record<string, never>;
-        data: Record<string, never>;
-      }[]
-    ) => void;
+    signal: AbortSignal | null | undefined;
+    resolve: (response: Response) => void;
   }[] = [];
 
-  vi.spyOn(client.endpoints, "slotInstances").mockImplementation(
-    async (_app, _input, signal) =>
-      await (async () => {
-        const {
-          promise: pendingPromise,
-          resolve,
-          reject: rejectPending,
-        } = Promise.withResolvers<
-          {
-            key: string;
-            metadata: Record<string, never>;
-            data: Record<string, never>;
-          }[]
-        >();
+  fetch.mockImplementation(async (_input, init) => {
+    const { promise, resolve } = Promise.withResolvers<Response>();
+    requests.push({ resolve, signal: init?.signal });
 
-        try {
-          requests.push({ resolve, signal });
-        } catch (error) {
-          rejectPending(error);
-        }
-
-        return await pendingPromise;
-      })()
-  );
+    return await promise;
+  });
   const id = Symbol("view");
   store.views.register({ context: { customer: "first" }, id, view: "/" });
   await Promise.resolve();
   const query = createViewsQuery(store, { slot: "page" });
-
-  const stop = query.state.listen(
-    vi.fn<NonNullable<Parameters<typeof query.state.listen>[0]>>()
-  );
-
+  const stop = query.state.listen(() => {});
   await vi.waitFor(() => {
     expect(requests).toHaveLength(1);
   });
   store.views.register({ context: { customer: "second" }, id, view: "/" });
-  await Promise.resolve();
-  expect(requests[0]?.signal.aborted).toBe(true);
   await vi.waitFor(() => {
     expect(requests).toHaveLength(2);
   });
-  expect(query.state.get().data).toBeUndefined();
-  requests[1]?.resolve([
-    {
-      data: {},
-      key: "second",
-      metadata: {},
-    },
-  ]);
+  expect(requests[0]?.signal?.aborted).toBe(true);
+  requests[1]?.resolve(
+    Response.json({
+      data: [{ app, data: {}, key: "second", metadata: {} }],
+      status: "ready",
+    })
+  );
   await vi.waitFor(() => {
-    expect(query.state.get().data?.[0]).toMatchObject({ app, key: "second" });
+    expect(query.state.get().data?.[0]).toMatchObject({ key: "second" });
   });
-  requests[0]?.resolve([
-    {
-      data: {},
-      key: "late",
-      metadata: {},
-    },
-  ]);
+  requests[0]?.resolve(Response.json({ data: [], status: "ready" }));
   await allTasks();
   expect(query.state.get().data?.[0]).toMatchObject({ key: "second" });
-  const pending = query.refetch();
-  await vi.waitFor(() => {
-    expect(requests).toHaveLength(3);
-  });
   stop();
-  expect(requests[2]?.signal.aborted).toBe(true);
-  requests[2]?.resolve([
-    {
-      data: {},
-      key: "stopped",
-      metadata: {},
-    },
-  ]);
-  await pending;
   store.views.unregister(id);
 });
 
-it("refetches an unobserved explicit app with the latest registered context without discovery", async () => {
-  const { client, fetch, store, app } = setup();
-
-  const instances = vi
-    .spyOn(client.endpoints, "slotInstances")
-    .mockResolvedValue([]);
-
+it("refetches an explicit installation through the host with current context", async () => {
+  const { fetch, store, app } = setup();
+  fetch.mockResolvedValue(Response.json({ data: [], status: "ready" }));
   const query = createAppViewsQuery(store, app, "page");
   const id = Symbol("view");
   store.views.register({ context: { customer: "latest" }, id, view: "/" });
   await Promise.resolve();
   await query.refetch();
-  expect(instances).toHaveBeenCalledWith(
-    app,
-    expect.objectContaining({ context: { customer: "latest" } }),
-    expect.any(AbortSignal)
-  );
-  expect(fetch).not.toHaveBeenCalled();
-  store.views.unregister(id);
-});
-
-it("sends parsed native contract context to instance requests without calling metadata", async () => {
-  const { defineContract } = await import("@patchsmith/core/schema");
-  const { z } = await import("zod");
-
-  const fetch = vi
-    .fn<typeof globalThis.fetch>()
-    .mockRejectedValue(new Error("Unexpected HTTP request"));
-
-  const client = createPatchsmithFetchClient({
-    baseUrl: "https://host.test",
-    fetch,
+  expect(
+    await new Response(fetch.mock.calls[0]?.[1]?.body).json()
+  ).toMatchObject({
+    activeView: { layers: [{ context: { customer: "latest" } }] },
+    appIds: [app.id],
   });
-
-  const contract = defineContract({
-    slots: { page: { multiple: true, views: ["/"] } },
-    views: { "/": z.object({ user: z.object({ id: z.string() }) }) },
-  });
-
-  const app: PatchsmithApp = {
-    id: "app",
-    views: [{ instances: true, path: "/", slot: "page" }],
-  };
-
-  const store = createPatchsmithStore({
-    apps: [app],
-    baseUrl: client.baseUrl,
-    client,
-    contract,
-  });
-
-  const instances = vi
-    .spyOn(client.endpoints, "slotInstances")
-    .mockResolvedValue([]);
-
-  const id = Symbol("identity");
-
-  const original = {
-    extra: true,
-    user: { email: "private@example.com", id: "u1" },
-  };
-
-  store.views.register({ context: original, id, view: "/" });
-  await Promise.resolve();
-  const query = createViewsQuery(store, { slot: "page" });
-
-  const stop = query.state.listen(
-    vi.fn<NonNullable<Parameters<typeof query.state.listen>[0]>>()
-  );
-
-  await vi.waitFor(() => {
-    expect(query.state.get().isSuccess).toBe(true);
-  });
-  expect(instances).toHaveBeenCalledExactlyOnceWith(
-    app,
-    {
-      context: { user: { id: "u1" } },
-      path: "/",
-      slot: "page",
-    },
-    expect.any(AbortSignal)
-  );
-  expect(fetch).not.toHaveBeenCalled();
-  expect(original.user.email).toBe("private@example.com");
-  stop();
   store.views.unregister(id);
 });

@@ -1,6 +1,6 @@
 export { createEndpointClient } from "./endpoints";
 
-export type { EndpointClient, SlotInstancesInput } from "./endpoints";
+export type { EndpointClient } from "./endpoints";
 
 export { createPatchsmithFetchClient } from "./fetch-client";
 
@@ -16,7 +16,7 @@ export { matchesApp } from "./apps";
 
 export { normalizeScopeSelection, appendScopeSelection } from "./scope-query";
 
-export { resolveSlotView, selectSlotView } from "./slot-view";
+export { resolveSlotView, selectSlotView } from "@patchsmith/core/views";
 
 export { refetchViews } from "./views";
 

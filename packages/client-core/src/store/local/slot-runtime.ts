@@ -1,10 +1,10 @@
 import type { ToolBridge, Session, ViewInstance } from "@patchsmith/app/client";
 import type { ViewStatus } from "@patchsmith/core/views";
+import { resolveSlotView, selectSlotView } from "@patchsmith/core/views";
 import type { RemoteProps } from "@patchsmith/sandbox/protocol";
 import { atom } from "nanostores";
 
 import type { RuntimeRenderSlotProps, SlotState } from "#client/slot-types";
-import { resolveSlotView, selectSlotView } from "#client/slot-view";
 import { toBaseUrl } from "#client/url";
 import { createValueMemo } from "#client/value-memo";
 import { serializeCacheKey } from "#store/fetch/cache";
@@ -76,6 +76,7 @@ export const createSlotRuntime = (
     if (
       options.mode !== "managed" ||
       options.instanceKey === undefined ||
+      store.contract.slots[options.slot]?.multiple !== true ||
       store.views.state.get() === null
     ) {
       return null;
@@ -106,6 +107,12 @@ export const createSlotRuntime = (
       viewState = active;
 
       if (options.instanceKey !== undefined) {
+        const schema = store.contract;
+
+        if (schema.slots[slot]?.multiple !== true) {
+          return failure(`Slot "${slot}" does not support instances.`);
+        }
+
         const instances = requireValue(getQuery()).state.get();
 
         if (instances.isPending) {
@@ -114,12 +121,6 @@ export const createSlotRuntime = (
 
         if (instances.error) {
           return { error: instances.error, status: "error" };
-        }
-
-        const schema = store.contract;
-
-        if (schema.slots[slot]?.multiple !== true) {
-          return failure(`Slot "${slot}" does not support instances.`);
         }
 
         const instance = instances.data?.find(

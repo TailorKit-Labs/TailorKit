@@ -14,4 +14,4 @@ export type { PatchsmithAppsSnapshot } from "./apps";
 
 export { createSlotStore } from "./slot";
 
-export type { SlotItem, SlotSnapshot, SlotStoreOptions } from "./slot";
+export type { SlotItem, SlotSnapshot } from "./slot";

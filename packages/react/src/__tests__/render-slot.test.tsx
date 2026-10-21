@@ -375,7 +375,7 @@ it("resolves the key and sends a complete controlled instance through the render
         });
       }
 
-      if (url.endsWith("/actions")) {
+      if (url.endsWith("/views")) {
         return await (async () => {
           const {
             promise: pendingPromise,
@@ -406,7 +406,15 @@ it("resolves the key and sends a complete controlled instance through the render
   });
   expect(requests).toHaveLength(0);
   act(() => {
-    finish(Response.json({ json: [overview, summary] }));
+    finish(
+      Response.json({
+        data: [overview, summary].map((instance) => ({
+          ...instance,
+          app: instanceApp,
+        })),
+        status: "ready",
+      })
+    );
   });
   await waitFor(() => {
     expect(requests.at(-1)?.props).toMatchObject({
@@ -428,9 +436,7 @@ it("resolves the key and sends a complete controlled instance through the render
   });
   expect(
     fetch.mock.calls.filter(([input]) =>
-      (input instanceof Request ? input.url : String(input)).endsWith(
-        "/actions"
-      )
+      (input instanceof Request ? input.url : String(input)).endsWith("/views")
     )
   ).toHaveLength(1);
   view.rerender(content("missing"));
@@ -457,17 +463,8 @@ it("reports resolver failures and missing keys without mounting stale instances"
         });
       }
 
-      if (url.endsWith("/actions")) {
-        return Response.json(
-          {
-            json: {
-              code: "FORBIDDEN",
-              defined: false,
-              message: "No reports available",
-            },
-          },
-          { status: 403 }
-        );
+      if (url.endsWith("/views")) {
+        return new Response("Unable to resolve views", { status: 502 });
       }
 
       return Response.json({ schema: {} });
@@ -480,7 +477,9 @@ it("reports resolver failures and missing keys without mounting stale instances"
     </client.Provider>
   );
   await waitFor(() => {
-    expect(screen.getByRole("alert").textContent).toBe("No reports available");
+    expect(screen.getByRole("alert").textContent).toBe(
+      "Unable to resolve views"
+    );
   });
   expect(requests).toHaveLength(0);
 });

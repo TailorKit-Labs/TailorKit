@@ -89,8 +89,8 @@ it("selects instances and validates keys without a framework", async () => {
   };
 
   const instances = vi
-    .spyOn(client.endpoints, "slotInstances")
-    .mockResolvedValue([instance]);
+    .spyOn(client.endpoints, "views")
+    .mockResolvedValue({ data: [{ ...instance, app }], status: "ready" });
 
   const id = Symbol("view");
   store.views.register({ context: { customer: "registered" }, id, view: "/" });
@@ -140,7 +140,7 @@ it("keeps controlled state independent and removes stale context and instances w
   };
 
   const runtime = createSlotRuntime(store, options);
-  const instances = vi.spyOn(client.endpoints, "slotInstances");
+  const instances = vi.spyOn(client.endpoints, "views");
 
   const stop = runtime.state.listen(
     vi.fn<NonNullable<Parameters<typeof runtime.state.listen>[0]>>()
@@ -203,8 +203,8 @@ it("cancels an instance request when switching to a controlled slot", async () =
   const { client, store, app } = setup(true);
   let signal: AbortSignal | undefined;
   let respond!: (instances: []) => void;
-  vi.spyOn(client.endpoints, "slotInstances").mockImplementation(
-    async (_app, _input, abort) => {
+  vi.spyOn(client.endpoints, "views").mockImplementation(
+    async (_input, abort) => {
       signal = abort;
 
       return await (async () => {
@@ -213,11 +213,13 @@ it("cancels an instance request when switching to a controlled slot", async () =
           resolve,
           reject: rejectPending,
         } = Promise.withResolvers<
-          Awaited<ReturnType<typeof client.endpoints.slotInstances>>
+          Awaited<ReturnType<typeof client.endpoints.views>>
         >();
 
         try {
-          respond = resolve;
+          respond = () => {
+            resolve({ data: [], status: "ready" });
+          };
         } catch (error) {
           rejectPending(error);
         }
