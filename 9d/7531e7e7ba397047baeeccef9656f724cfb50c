@@ -1,0 +1,37 @@
+packages/react/src/__tests__/client-api.test.tsx
+  s_3da091d6d4bdc7::t_ad0d7bf213529c 30,163,166
+packages/client-core/src/client/endpoints.ts
+  s_3da091d6d4bdc7::t_15cb6ccbc536cf 26-31,253
+  s_3da091d6d4bdc7::t_ad0d7bf213529c 233-235
+packages/client-core/src/client/fetch-client.ts
+  s_3da091d6d4bdc7::t_ad0d7bf213529c 36-43
+  s_3da091d6d4bdc7::t_15cb6ccbc536cf 56
+packages/client-core/src/store/local/slot-runtime.test.ts
+  s_3da091d6d4bdc7::t_90fda6b9d6e45a 207
+.changeset/query-client-api.md
+  s_3da091d6d4bdc7::t_20a90d75a56a26 2
+  s_3da091d6d4bdc7::t_ad0d7bf213529c 6
+packages/client-core/src/client/index.ts
+  s_3da091d6d4bdc7::t_15cb6ccbc536cf 3-8
+packages/react/README.md
+  s_3da091d6d4bdc7::t_20a90d75a56a26 7
+  s_3da091d6d4bdc7::t_ad0d7bf213529c 30,43
+packages/client-core/README.md
+  s_3da091d6d4bdc7::t_20a90d75a56a26 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9d7531e7e7ba397047baeeccef9656f724cfb50c",
+  "prompts": {},
+  "sessions": {
+    "s_3da091d6d4bdc7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16083-3a44-7333-83eb-bd4d50938b9a",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
