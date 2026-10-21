@@ -11,6 +11,7 @@ import type {
 
 import type { RemoteComponentRegistry } from "#store/local/remote-view";
 
+import type { PatchsmithClientApi } from "./endpoints";
 import { createPatchsmithFetchClient } from "./fetch-client";
 import type {
   PatchsmithFetchClient,
@@ -75,6 +76,8 @@ export const toComponentTagName = (name: string): string =>
     .toLowerCase()}`;
 
 export interface PatchsmithClientConfig {
+  /** Uncached host requests for use with TanStack Query or another cache. */
+  readonly api: PatchsmithClientApi;
   readonly tools?: ToolImplementations<PatchsmithContract["tools"], "client">;
   readonly baseUrl: string | URL;
   readonly contract: PatchsmithContract;
@@ -149,6 +152,10 @@ export const createPatchsmithClientConfig = (options: {
   const fetchClient = createPatchsmithFetchClient(options);
 
   return {
+    api: {
+      apps: fetchClient.endpoints.apps,
+      views: fetchClient.endpoints.views,
+    },
     assetsBaseUrl: options.assetsBaseUrl,
     baseUrl: options.baseUrl,
     clearCache: () => {

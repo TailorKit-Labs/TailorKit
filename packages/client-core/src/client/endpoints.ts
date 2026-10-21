@@ -224,7 +224,7 @@ export const createEndpointClient = (options: {
   };
 
   return {
-    apps: async (signal: AbortSignal): Promise<PatchsmithApp[]> => {
+    apps: async (signal?: AbortSignal): Promise<PatchsmithApp[]> => {
       const response = await request(new URL("apps", baseUrl), {
         credentials: "same-origin",
         signal,
@@ -242,7 +242,7 @@ export const createEndpointClient = (options: {
     clearSessions,
     getSessionProvider,
     getToolBridge,
-    views: async (input: ViewsInput, signal: AbortSignal) => {
+    views: async (input: ViewsInput, signal?: AbortSignal) => {
       const response = await request(new URL("views", baseUrl), {
         body: JSON.stringify(input),
         credentials: "same-origin",
@@ -261,3 +261,6 @@ export const createEndpointClient = (options: {
 };
 
 export type EndpointClient = ReturnType<typeof createEndpointClient>;
+
+/** Validated host requests without response caching or UI lifecycle state. */
+export type PatchsmithClientApi = Pick<EndpointClient, "apps" | "views">;
