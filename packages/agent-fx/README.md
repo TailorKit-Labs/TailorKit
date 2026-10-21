@@ -8,6 +8,8 @@ Each model step runs in a durable Workflow step. Finished turns save fx's resume
 
 GPT-6.1 Sol uses low reasoning effort to reduce generation latency. Other models use their default effort.
 
+The web host declares `libfx` directly so Nitro traces its native addons into the deployment. Keep that exact version aligned with the dependency pinned by `@ai-sdk/harness-fx`; Workflow externalizes `libfx`, so a different host version can replace the adapter's runtime in production. The web runtime resolution test guards this alignment.
+
 No runtime code is imported from `@patchsmith/agent`. Configure `AI_GATEWAY_API_KEY` or Vercel OIDC on the host, with optional `AI_GATEWAY_BASE_URL`.
 
 ## Instructions, skills, and examples
