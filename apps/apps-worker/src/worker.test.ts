@@ -367,7 +367,8 @@ it("authenticates and forwards an RPC body with CORS and stable installation rou
   expect(response.headers.get("access-control-allow-credentials")).toBeNull();
   expect(response.headers.get("cache-control")).toBe("no-store");
   expect(getByName).toHaveBeenCalledWith(
-    JSON.stringify([signing.issuer, identity.projectId, "app", "one"])
+    JSON.stringify([signing.issuer, identity.projectId, "app", "one"]),
+    { locationHint: "enam" }
   );
   expect(await routeFetch.mock.calls[0][0].text()).toBe(
     '{"json":{"name":"list"}}'

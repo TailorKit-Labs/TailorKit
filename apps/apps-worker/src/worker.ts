@@ -129,7 +129,9 @@ export default {
         return yield* routeInstallation(routedRequest, {
           installation: (identity: Identity) =>
             env.STORES.getByName(
-              installationName(identity, appRuntimeIssuer(env.PLATFORM_URL))
+              installationName(identity, appRuntimeIssuer(env.PLATFORM_URL)),
+              // New installations stay near the platform in us-east-1; existing objects retain their placement.
+              { locationHint: "enam" }
             ),
           verify: (token) =>
             Effect.gen(function* verify() {

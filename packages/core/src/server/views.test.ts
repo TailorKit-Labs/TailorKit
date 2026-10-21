@@ -91,12 +91,18 @@ const setup = (apps = [app]) => {
       return Response.json({ items: apps, pagination: { hasMore: false } });
     }
 
-    if (path.endsWith("/apps/runtime/session")) {
+    if (path.endsWith("/apps/runtime/discover")) {
       return Response.json({
-        expiresAt: identity.expiresAt,
-        identity,
-        token: "app-token",
-        url: "https://runtime.test/rpc",
+        items: apps.map((installation) => ({
+          app: installation,
+          session: {
+            expiresAt: identity.expiresAt,
+            identity: { ...identity, installationId: installation.id },
+            token: `app-token-${installation.id}`,
+            url: `https://runtime.test/${installation.id}/rpc`,
+          },
+        })),
+        pagination: { hasMore: false },
       });
     }
 
@@ -157,23 +163,22 @@ it("discovers authorized apps on the host and calls the compiled action with val
   expect(platformBodies).toEqual([
     {
       authorization: "Bearer project-key",
-      body: { page: 1, pageSize: 100, scopes: [app.scope] },
-      path: "/api/platform/apps/list",
-    },
-    {
-      authorization: "Bearer project-key",
       body: {
-        app: { shortId: app.id },
+        page: 1,
+        pageSize: 100,
         scopes: [app.scope],
+        slot: "page",
         subjectId: "principal",
         toolUrl: identity.toolUrl,
+        viewPaths: ["/customers", "/"],
       },
-      path: "/api/platform/apps/runtime/session",
+      path: "/api/platform/apps/runtime/discover",
     },
   ]);
+
   expect(actions).toMatchObject([
     {
-      authorization: "Bearer app-token",
+      authorization: "Bearer app-token-installation",
       body: {
         json: {
           args: {
@@ -346,4 +351,69 @@ it("resolves installations concurrently and aborts their actions when the reques
   const response = await pending;
   expect(response.status).toBe(502);
   expect(actions.every(({ signal }) => signal.aborted)).toBe(true);
+  expect(
+    actions
+      .map(({ authorization }) => authorization)
+      .toSorted((a, b) => (a ?? "").localeCompare(b ?? ""))
+  ).toEqual(["Bearer app-token-installation", "Bearer app-token-second"]);
+});
+
+it("flattens all app instances with one platform discovery call and keeps sessions private", async () => {
+  const { run, platformBodies, actions } = setup([
+    app,
+    { ...app, id: "second" },
+  ]);
+
+  const response = await run();
+  expect(await response.json()).toEqual({
+    data: [
+      { ...instance, app },
+      { ...instance, app: { ...app, id: "second" } },
+    ],
+    status: "ready",
+  });
+  expect(platformBodies.map(({ path }) => path)).toEqual([
+    "/api/platform/apps/runtime/discover",
+  ]);
+  expect(actions.map(({ authorization }) => authorization)).toEqual([
+    "Bearer app-token-installation",
+    "Bearer app-token-second",
+  ]);
+});
+
+it("continues paginated runtime discovery after an empty filtered page", async () => {
+  const { run, platformFetch, platformBodies } = setup();
+  platformFetch.mockResolvedValueOnce(
+    Response.json({ items: [], pagination: { hasMore: true } })
+  );
+  const response = await run();
+  expect(response.status).toBe(200);
+  expect(platformBodies).toMatchObject([{ body: { page: 2 } }]);
+  expect(await response.json()).toEqual({
+    data: [{ ...instance, app }],
+    status: "ready",
+  });
+  expect(platformFetch).toHaveBeenCalledTimes(2);
+});
+
+it("does not retry failed resolver actions or issue another runtime session", async () => {
+  const { run, runtimeFetch, platformBodies } = setup();
+  runtimeFetch.mockResolvedValueOnce(
+    Response.json(
+      {
+        json: {
+          code: "UNAUTHORIZED",
+          defined: false,
+          message: "Expired session",
+        },
+      },
+      { status: 401 }
+    )
+  );
+  const response = await run();
+  expect(response.status).toBe(502);
+  expect(platformBodies.map(({ path }) => path)).toEqual([
+    "/api/platform/apps/runtime/discover",
+  ]);
+  expect(runtimeFetch).toHaveBeenCalledTimes(1);
 });

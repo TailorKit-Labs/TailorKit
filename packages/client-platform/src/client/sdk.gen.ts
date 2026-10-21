@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import type { Client, ClientMeta, Options as Options2, RequestResult, ServerSentEventsResult, TDataShape } from './client/index.js';
-import type { AppAgentChatData, AppAgentChatResponse, AppAgentChatResponses, AppAgentCreateData, AppAgentCreateResponses, AppsCreateData, AppsCreateResponses, AppsDeleteData, AppsDeleteResponses, AppsDeployData, AppsDeployResponses, AppsGetData, AppsGetResponses, AppsInstallData, AppsInstallResponses, AppsListData, AppsListResponses, AppsRuntimeSessionData, AppsRuntimeSessionResponses, AppsUpdateData, AppsUpdateResponses, CliAuthApproveData, CliAuthApproveResponses, CliAuthDenyData, CliAuthDenyResponses, CliAuthPollData, CliAuthPollResponses, CliAuthStartData, CliAuthStartResponses, CliAuthVerifyTokenData, CliAuthVerifyTokenResponses, DeploymentsCreateData, DeploymentsCreateResponses, DeploymentsGetData, DeploymentsGetResponses, DeploymentsListData, DeploymentsListResponses, DeploymentsPublishData, DeploymentsPublishResponses, DeploymentsRuntimeData, DeploymentsRuntimeResponses } from './types.gen.js';
+import type { AppAgentChatData, AppAgentChatResponse, AppAgentChatResponses, AppAgentCreateData, AppAgentCreateResponses, AppsCreateData, AppsCreateResponses, AppsDeleteData, AppsDeleteResponses, AppsDeployData, AppsDeployResponses, AppsGetData, AppsGetResponses, AppsInstallData, AppsInstallResponses, AppsListData, AppsListResponses, AppsRuntimeDiscoverData, AppsRuntimeDiscoverResponses, AppsRuntimeSessionData, AppsRuntimeSessionResponses, AppsUpdateData, AppsUpdateResponses, CliAuthApproveData, CliAuthApproveResponses, CliAuthDenyData, CliAuthDenyResponses, CliAuthPollData, CliAuthPollResponses, CliAuthStartData, CliAuthStartResponses, CliAuthVerifyTokenData, CliAuthVerifyTokenResponses, DeploymentsCreateData, DeploymentsCreateResponses, DeploymentsGetData, DeploymentsGetResponses, DeploymentsListData, DeploymentsListResponses, DeploymentsPublishData, DeploymentsPublishResponses, DeploymentsRuntimeData, DeploymentsRuntimeResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
   /**
@@ -83,6 +83,15 @@ export const appsInstall = <ThrowOnError extends boolean = false>(options: Optio
 
 export const appsList = <ThrowOnError extends boolean = false>(options: Options<AppsListData, ThrowOnError>): RequestResult<AppsListResponses, unknown, ThrowOnError> => (options.client ?? client).post<AppsListResponses, unknown, ThrowOnError>({
   url: '/apps/list',
+  ...options,
+  headers: {
+    'Content-Type': 'application/json',
+    ...options.headers
+  }
+});
+
+export const appsRuntimeDiscover = <ThrowOnError extends boolean = false>(options: Options<AppsRuntimeDiscoverData, ThrowOnError>): RequestResult<AppsRuntimeDiscoverResponses, unknown, ThrowOnError> => (options.client ?? client).post<AppsRuntimeDiscoverResponses, unknown, ThrowOnError>({
+  url: '/apps/runtime/discover',
   ...options,
   headers: {
     'Content-Type': 'application/json',
