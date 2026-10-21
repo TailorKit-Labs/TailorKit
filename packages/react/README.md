@@ -4,7 +4,7 @@ Use the React components and hooks in `@patchsmith/react` to integrate Patchsmit
 
 ## TanStack Query
 
-The client returned by `createClient` exposes `api.apps(signal?)` and `api.views(input, signal?)`. These return validated promises and throw on HTTP or response-validation errors. They make a fresh host request on every call, so TanStack Query owns caching, deduplication, retries, and invalidation. Patchsmith adds no TanStack runtime dependency or adapter.
+The client returned by `createClient` exposes `api.apps({ signal })` and `api.views({ ...input, signal })`. Each method takes a single options object; `signal` is optional, and `apps()` also works without options. These return validated promises and throw on HTTP or response-validation errors. They make a fresh host request on every call, so TanStack Query owns caching, deduplication, retries, and invalidation. Patchsmith adds no TanStack runtime dependency or adapter.
 
 Use TanStack Query's [object syntax](https://tanstack.com/query/latest/docs/framework/react/guides/queries) inside your existing `QueryClientProvider`:
 
@@ -27,7 +27,7 @@ export const PanelApps = () => {
       "views",
       input,
     ],
-    queryFn: ({ signal }) => patchsmithClient.api.views(input, signal),
+    queryFn: ({ signal }) => patchsmithClient.api.views({ ...input, signal }),
   });
 
   if (isPending) return <p>Loading apps…</p>;
@@ -40,7 +40,7 @@ export const PanelApps = () => {
 };
 ```
 
-`api` requests work outside a Patchsmith provider, including in loaders and with `queryClient.fetchQuery`. Rendering `RenderSlot` still needs `patchsmithClient.Provider`. To fetch installed apps, use `queryFn: ({ signal }) => patchsmithClient.api.apps(signal)` with an apps query key.
+`api` requests work outside a Patchsmith provider, including in loaders and with `queryClient.fetchQuery`. Rendering `RenderSlot` still needs `patchsmithClient.Provider`. To fetch installed apps, use `queryFn: ({ signal }) => patchsmithClient.api.apps({ signal })` with an apps query key.
 
 For single-instance slots such as `panel` and `navbar`, pass `activeView: null` to discover apps. For a `page` slot with `multiple: true`, pass the active view and its ancestor context layers explicitly, and include that entire input in the query key:
 

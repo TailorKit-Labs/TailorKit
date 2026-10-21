@@ -27,7 +27,7 @@ const PanelApps = ({
   client: ReturnType<typeof createClient<typeof contract>>;
 }) => {
   const { data } = useQuery({
-    queryFn: async ({ signal }) => await client.api.views(input, signal),
+    queryFn: async ({ signal }) => await client.api.views({ ...input, signal }),
     queryKey: ["patchsmith", "views", input],
   });
 
@@ -160,10 +160,10 @@ it.each(["apps", "views"] as const)(
       const pending = queryClient.query({
         queryFn: async ({ signal }) => {
           if (endpoint === "apps") {
-            return await client.api.apps(signal);
+            return await client.api.apps({ signal });
           }
 
-          return await client.api.views(input, signal);
+          return await client.api.views({ ...input, signal });
         },
         queryKey,
       });

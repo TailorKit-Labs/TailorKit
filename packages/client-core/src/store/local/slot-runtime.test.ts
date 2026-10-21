@@ -204,7 +204,7 @@ it("cancels an instance request when switching to a controlled slot", async () =
   let signal: AbortSignal | undefined;
   let respond!: (instances: []) => void;
   vi.spyOn(client.endpoints, "views").mockImplementation(
-    async (_input, abort) => {
+    async ({ signal: abort }) => {
       signal = abort;
 
       return await (async () => {
