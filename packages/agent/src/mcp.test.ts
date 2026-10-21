@@ -716,12 +716,6 @@ describe("app agent MCP", () => {
 
     const { client } = await connect({
       async editApp(_input, execution) {
-        await execution.onProgress({
-          appId: "app",
-          runId: "run",
-          status: "started",
-          threadId: "thread",
-        });
         await (async () => {
           const {
             promise: pendingPromise,
@@ -742,6 +736,13 @@ describe("app agent MCP", () => {
             rejectPending(error);
           }
 
+          // Register cancellation before progress can cause the client to abort.
+          await execution.onProgress({
+            appId: "app",
+            runId: "run",
+            status: "started",
+            threadId: "thread",
+          });
           await pendingPromise;
         })();
 
