@@ -1,0 +1,78 @@
+apps/apps-worker/src/runtime/execution.test.ts
+  s_dc8bce25077cef::t_07bd79dff19946 116,268-269,391-392
+  s_dc8bce25077cef::t_d74322dde78451 115,117-120,122-167,169-175,177-179,181-183,185-186,188-191,270-277,393-413,415-416,590-613,702
+packages/app/src/server/instances.ts
+  s_dc8bce25077cef::t_64711f568d3df7 7,144
+apps/apps-worker/src/tests/backend.ts
+  s_dc8bce25077cef::t_645c18a6139189 24-25,55
+apps/apps-worker/src/runtime/bundle.test.ts
+  s_dc8bce25077cef::t_07bd79dff19946 1
+  s_dc8bce25077cef::t_af6caa9d6cb480 7-9
+apps/apps-worker/src/runtime/database/migrations.test.ts
+  s_dc8bce25077cef::t_07bd79dff19946 5,191
+  s_dc8bce25077cef::t_784fce14426da7 190,192-194
+apps/apps-worker/src/runtime/actions.test.ts
+  s_dc8bce25077cef::t_07bd79dff19946 2,55,94,136,173,215,251,276,467,478,569
+  s_dc8bce25077cef::t_b334a5feb20515 54,56-74,76,93,95-102,104,135,137-149,151,172,174-179,181-183,185,214,216-226,228,250,252-258,260,275,277-289,291,334-369,371-372,433,465-466,468,473,476-477,493,568,570-582,585-587,589-591,593
+packages/app/src/server/functions.test-d.ts
+  s_dc8bce25077cef::t_645c18a6139189 50,79
+  s_dc8bce25077cef::t_07bd79dff19946 6
+  s_dc8bce25077cef::t_2f12fc683b972e 19,55
+packages/app/src/server/functions.ts
+  s_dc8bce25077cef::t_64711f568d3df7 180-183
+apps/apps-worker/src/runtime/functions.test.ts
+  s_dc8bce25077cef::t_07bd79dff19946 3,27,90-91,94,119
+  s_dc8bce25077cef::t_e4dc39c4e301b5 26,28-36,38,92-93
+packages/app/src/instances.test-d.ts
+  s_dc8bce25077cef::t_07bd79dff19946 5
+  s_dc8bce25077cef::t_645c18a6139189 21
+  s_dc8bce25077cef::t_3fa732b69c96c4 8
+apps/apps-worker/src/tests/integration.test.mjs
+  s_dc8bce25077cef::t_645c18a6139189 344-345,351-353,355-358,362-363,368
+packages/app/src/server/database.test-d.ts
+  s_dc8bce25077cef::t_07bd79dff19946 12
+  s_dc8bce25077cef::t_645c18a6139189 101,116
+  s_dc8bce25077cef::t_5f5b7fcf12607f 99-100
+.changeset/quiet-functions-register.md
+  s_dc8bce25077cef::t_645c18a6139189 10
+apps/apps-worker/src/runtime/builder.test.ts
+  s_dc8bce25077cef::t_07bd79dff19946 2,39,119,190
+  s_dc8bce25077cef::t_36a20f990ba067 38,40-41,43,45-57,117-118,120-123,151,189,191-200
+packages/app/src/client-boundary.test.ts
+  s_dc8bce25077cef::t_645c18a6139189 18,66
+packages/cli/src/generator/types.test.ts
+  s_dc8bce25077cef::t_645c18a6139189 107
+packages/vite/README.md
+  s_dc8bce25077cef::t_645c18a6139189 26
+packages/patchsmith/src/server.test-d.ts
+  s_dc8bce25077cef::t_645c18a6139189 31
+  s_dc8bce25077cef::t_07bd79dff19946 4
+apps/apps-worker/src/runtime/context.test.ts
+  s_dc8bce25077cef::t_07bd79dff19946 1,56
+  s_dc8bce25077cef::t_f8f98806160fc7 55,57-91,96,98
+packages/app/src/server/builder.test-d.ts
+  s_dc8bce25077cef::t_645c18a6139189 74
+  s_dc8bce25077cef::t_07bd79dff19946 11
+  s_dc8bce25077cef::t_ad40aecc9aa830 72
+packages/app/src/server/file-functions.ts
+  s_dc8bce25077cef::t_64711f568d3df7 1,89
+packages/app/src/server/file-functions.test.ts
+  s_dc8bce25077cef::t_645c18a6139189 97
+  s_dc8bce25077cef::t_07bd79dff19946 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e39bfe059f6aea4f3065dadc8a5e46a3dacd520b",
+  "prompts": {},
+  "sessions": {
+    "s_dc8bce25077cef": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1609d-c2e3-7f21-8d84-489fe802c40b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
