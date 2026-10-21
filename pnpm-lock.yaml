@@ -520,8 +520,8 @@ importers:
         specifier: 'catalog:'
         version: 1.0.0-rc.4-5d5b77c(@electric-sql/pglite@0.5.10)(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(@upstash/redis@1.39.0)(arktype@2.2.7)(effect@4.0.5)(pg@8.23.1)(typebox@1.3.36)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.7)
       libfx:
-        specifier: 0.0.14
-        version: 0.0.14
+        specifier: 0.0.13
+        version: 0.0.13
       lucide-react:
         specifier: 'catalog:'
         version: 1.59.0(@types/react@19.3.0)(react@19.3.1)
@@ -9654,10 +9654,6 @@ packages:
 
   libfx@0.0.13:
     resolution: {integrity: sha512-Tyc+3soT61Ij9LeTnSTyX3efEx+XNwQ58k1V5X52jmixii+ITqCPi9X4uQHOqfk05tGqr0x1y1hAVGAbjG8v6Q==}
-    engines: {node: '>=20'}
-
-  libfx@0.0.14:
-    resolution: {integrity: sha512-8wIEkRlKuQnbueyt6NBwi4xEiEnoRpwvAocKolzzmyz/r14s4gXiE3XivGk4QJpNnMMGHAJRKlH0WhW//q7B5Q==}
     engines: {node: '>=20'}
 
   libphonenumber-js@1.13.15:
@@ -21969,8 +21965,6 @@ snapshots:
   leven@4.1.0: {}
 
   libfx@0.0.13: {}
-
-  libfx@0.0.14: {}
 
   libphonenumber-js@1.13.15: {}
 
