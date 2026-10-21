@@ -1,5 +1,14 @@
 # @patchsmith/core
 
+## 0.1.0-beta.57
+
+### Patch Changes
+
+- a963f46: Reduce `/views` latency by fetching authorized apps and their runtime sessions in one platform request, then resolving instances concurrently without per-app authorization round trips. Runtime credentials remain on the host. Deploy the platform's runtime discovery endpoint before upgrading the SDK.
+- Updated dependencies [a963f46]
+  - @patchsmith/client-platform@0.1.0-beta.57
+  - @patchsmith/app@0.1.0-beta.57
+
 ## 0.1.0-beta.56
 
 ### Minor Changes

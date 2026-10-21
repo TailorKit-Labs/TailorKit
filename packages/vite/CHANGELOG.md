@@ -1,5 +1,11 @@
 # @patchsmith/vite
 
+## 0.1.0-beta.57
+
+### Patch Changes
+
+- @patchsmith/app@0.1.0-beta.57
+
 ## 0.1.0-beta.56
 
 ### Patch Changes
