@@ -1,10 +1,15 @@
 import { expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
+import type { Context } from "./context";
 import { createPatchsmithServer } from "./handler";
 
 const setup = () => {
   const platformFetch = vi.fn<typeof fetch>();
+
+  const toolExecutor = vi
+    .fn<NonNullable<Context["toolExecutor"]>>()
+    .mockResolvedValue(Response.json({ output: true }));
 
   const authenticate = vi.fn(() => ({
     scopes: { workspace: { id: "verified" } },
@@ -12,7 +17,7 @@ const setup = () => {
   }));
 
   const server = createPatchsmithServer({
-    $internal: { platformFetch },
+    $internal: { platformFetch, toolExecutor },
     baseUrl: "https://host.test/api/patchsmith",
     components: {},
     scopes: { workspace: z.object({ id: z.string() }) },
@@ -20,7 +25,7 @@ const setup = () => {
     views: { "/": z.object({}) },
   });
 
-  return { authenticate, platformFetch, server };
+  return { authenticate, platformFetch, server, toolExecutor };
 };
 
 const streamedRequest = (path: string, origin: string, chunk: Uint8Array) => {
@@ -81,6 +86,61 @@ it("bounds streamed backend input before JSON decoding and platform access", asy
   expect(response.headers.get("cache-control")).toBe("no-store");
   expect(authenticate).toHaveBeenCalledOnce();
   expect(platformFetch).not.toHaveBeenCalled();
+});
+
+it.each([false, true])(
+  "rejects oversized tool bodies before execution (content length: %s)",
+  async (declaredLength) => {
+    const { authenticate, platformFetch, server, toolExecutor } = setup();
+
+    const input = streamedRequest(
+      "tools/execute",
+      "https://app.test",
+      new Uint8Array(1024 * 1024 + 1)
+    );
+
+    if (declaredLength) {
+      input.request.headers.set("content-length", String(1024 * 1024 + 1));
+    }
+
+    const response = await server.handler(input.request, { authenticate });
+    expect(response.status).toBe(413);
+    expect(response.headers.get("access-control-allow-origin")).toBe("*");
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(authenticate).not.toHaveBeenCalled();
+    expect(platformFetch).not.toHaveBeenCalled();
+    expect(toolExecutor).not.toHaveBeenCalled();
+
+    if (declaredLength) {
+      expect(input.pull).not.toHaveBeenCalled();
+    }
+  }
+);
+
+it("accepts a streamed tool request at the serialized byte limit", async () => {
+  const { authenticate, server, toolExecutor } = setup();
+
+  const body = JSON.stringify({
+    input: "é",
+    path: "tool",
+    requestId: "1a5febf3-e3af-4a01-89a7-35a4f1846114",
+  });
+
+  const padding = " ".repeat(
+    1024 * 1024 - new TextEncoder().encode(body).byteLength
+  );
+
+  const input = streamedRequest(
+    "tools/execute",
+    "https://app.test",
+    new TextEncoder().encode(body + padding)
+  );
+
+  const response = await server.handler(input.request, { authenticate });
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({ output: true });
+  expect(toolExecutor).toHaveBeenCalledOnce();
+  expect(authenticate).not.toHaveBeenCalled();
 });
 
 it("shares authentication between the transport guard and procedure middleware", async () => {

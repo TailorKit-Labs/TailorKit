@@ -17,6 +17,8 @@ import type {
   ToolExecutionInput,
 } from "#server/types";
 
+const maximumToolRequestBytes = 1024 * 1024;
+
 const isFunctionValue = <TValue>(
   value: TValue
 ): value is Extract<TValue, CallableFunction> => typeof value === "function";
@@ -210,7 +212,11 @@ export const toolsRouter = {
         outputStructure: "detailed",
         path: "/tools/execute",
       }),
-      httpPolicy({ cors: true, invalidInputMessage: "Invalid tool request" })
+      httpPolicy({
+        cors: true,
+        invalidInputMessage: "Invalid tool request",
+        maxBodyBytes: maximumToolRequestBytes,
+      })
     )
     .input(
       v.strictObject({

@@ -118,7 +118,6 @@ export const views = o
       if (definition.multiple !== true) {
         return {
           data: apps
-            .values()
             .filter((app) =>
               app.views?.some(
                 (view) =>
@@ -128,8 +127,7 @@ export const views = o
                   definition.views.includes(view.path)
               )
             )
-            .map((app) => ({ app }))
-            .toArray(),
+            .map((app) => ({ app })),
           status: "ready",
         };
       }
