@@ -1,5 +1,9 @@
 # @patchsmith/app-db
 
+## 0.1.0-beta.57
+
+No changes in this release.
+
 ## 0.1.0-beta.56
 
 No changes in this release.
