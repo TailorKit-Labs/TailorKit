@@ -70,7 +70,7 @@ export const AppInstallations = ({
           Unable to load installations. {error.message}
         </p>
       ) : null}
-      {isPending || installations.length === 0 ? (
+      {!error && (isPending || installations.length === 0) ? (
         <CardFrame>
           <div className="px-4 py-6 text-center text-sm text-muted-foreground">
             {isPending ? (
@@ -84,7 +84,8 @@ export const AppInstallations = ({
             )}
           </div>
         </CardFrame>
-      ) : (
+      ) : null}
+      {installations.length > 0 ? (
         <AppsTable
           apps={installations}
           kind="installations"
@@ -110,7 +111,7 @@ export const AppInstallations = ({
             ) : null
           }
         />
-      )}
+      ) : null}
     </div>
   );
 };
