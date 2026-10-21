@@ -24,6 +24,9 @@
   "compatibility_flags": ["enable_request_signal"],
   "workers_dev": false,
   "preview_urls": false,
+  "placement": {
+    "region": "aws:us-east-1",
+  },
   "routes": [
     { "pattern": "*.tailorkit.app/*", "zone_name": "tailorkit.app" },
     { "pattern": "internal.tailorkit.app", "custom_domain": true },
