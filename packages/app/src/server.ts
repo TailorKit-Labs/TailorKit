@@ -1,6 +1,5 @@
 export {
   defineRouter,
-  defineServer,
   query,
   mutation,
   action,

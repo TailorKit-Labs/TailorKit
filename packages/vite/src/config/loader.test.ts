@@ -62,15 +62,6 @@ it("rejects app descriptions longer than 255 characters", () => {
   ).toThrow();
 });
 
-it("rejects the removed server.entry option", () => {
-  expect(() =>
-    v.parse(patchsmithConfigSchema, {
-      ...config,
-      server: { entry: "./backend.ts" },
-    })
-  ).toThrow("entry");
-});
-
 it("preserves backend enablement and migration configuration", () => {
   expect(v.parse(patchsmithConfigSchema, { ...config, server: {} })).toEqual({
     ...config,

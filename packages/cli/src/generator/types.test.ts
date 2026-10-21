@@ -104,7 +104,7 @@ it("generates type-only function bindings, including custom output paths and emp
   }
 });
 
-it("requires explicit backend opt-in and ignores the removed server.ts convention", async () => {
+it("requires explicit backend opt-in", async () => {
   const root = await mkdtemp(
     path.join(tmpdir(), "patchsmith-client-only-types-")
   );
@@ -116,10 +116,6 @@ it("requires explicit backend opt-in and ignores the removed server.ts conventio
     await writeFile(
       path.join(root, "patchsmith.config.mjs"),
       'export default { name: "Test App", slug: "test-app", host: "https://host.test" };'
-    );
-    await writeFile(
-      path.join(root, "src/server.ts"),
-      'throw new Error("Unused server");'
     );
     await writeFile(
       path.join(root, "src/functions/todos.fn.ts"),

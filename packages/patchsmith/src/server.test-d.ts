@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { defineContract } from "./index";
-import { createServer, defineServer, query } from "./server";
+import { createServer, defineRouter, query } from "./server";
 
 const scopes = { workspace: { workspaceId: "workspace" } };
 
@@ -28,7 +28,7 @@ void host.handler(request, {
   authenticate: async () => await Promise.resolve({ scopes }),
 });
 
-defineServer({
+defineRouter({
   subject: query({
     args: z.undefined(),
     handler: ({ identity }) => identity.subjectId satisfies string,

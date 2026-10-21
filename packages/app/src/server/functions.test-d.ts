@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { Client } from "#client/connection";
 import type { References } from "#client/reference";
 
-import { action, defineServer, mutation, query } from "./functions";
+import { action, defineRouter, mutation, query } from "./functions";
 
 const functions = {
   read: query({
@@ -16,7 +16,7 @@ const functions = {
   }),
 };
 
-const app = defineServer({
+const app = defineRouter({
   ...functions,
   save: action({
     args: z.object({ value: z.number() }),
@@ -47,12 +47,12 @@ const app = defineServer({
 });
 
 declare const client: Client;
-declare const references: References<typeof app.functions>;
+declare const references: References<typeof app>;
 const result: Promise<number> = client.action(references.save, { value: 1 });
 
 void result;
 
-const nestedApp = defineServer({
+const nestedApp = defineRouter({
   tasks: {
     save: action({
       args: z.undefined(),
@@ -76,7 +76,7 @@ const nestedApp = defineServer({
   todos: functions,
 });
 
-declare const nestedReferences: References<typeof nestedApp.functions>;
+declare const nestedReferences: References<typeof nestedApp>;
 
 const nestedQuery: Promise<number> = client.query(nestedReferences.todos.read, {
   raw: "4",

@@ -21,8 +21,8 @@ export const todos = table("todos", {
 `
   );
   await writeFile(
-    path.join(root, "server.ts"),
-    `import { AppError, createFunctions, defineRouter, defineServer } from "@patchsmith/app/server";
+    path.join(root, "functions.ts"),
+    `import { AppError, createFunctions, defineRouter } from "@patchsmith/app/server";
 import { defineDatabase, defineRelations } from "@patchsmith/app-db";
 import { z } from "zod";
 import * as schema from "./db/schema";
@@ -52,7 +52,6 @@ const importTodo = fn.action.functions({ list, add })
     const text = await tools.echo(data.title);
     return mutations.add({ text });
   });
-const router = defineRouter({ list, add, importTodo });
-export default defineServer(router);`
+export default defineRouter({ list, add, importTodo });`
   );
 };

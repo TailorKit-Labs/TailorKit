@@ -1,5 +1,5 @@
 import type { Invocation } from "@patchsmith/app/protocol";
-import { fn, defineServer } from "@patchsmith/app/server";
+import { fn, defineRouter } from "@patchsmith/app/server";
 import type { AppDefinition, Identity } from "@patchsmith/app/server";
 import { asyncFixture } from "@patchsmith/config/testing";
 import * as v from "valibot";
@@ -35,24 +35,26 @@ const persistence: Persistence = {
 };
 
 it("validates and transforms fluent inputs and outputs through the real execution path", () => {
-  const app = defineServer({
-    empty: fn.query.handler(({ input }) => {
-      expect(input).toBeUndefined();
+  const app = {
+    functions: defineRouter({
+      empty: fn.query.handler(({ input }) => {
+        expect(input).toBeUndefined();
 
-      return { inferred: "no schema needed" };
-    }),
-    invalid: fn.query.output(z.number().min(10)).handler(() => 1),
-    nullable: fn.query.input(z.null()).handler(({ input }) => input),
-    transformed: fn.query
-      .input(v.object({ value: v.pipe(v.string(), v.transform(Number)) }))
-      .output(v.pipe(v.string(), v.transform(Number)))
-      .handler(({ input, identity: viewer }) => {
-        expect(viewer.subjectId).toBe("u");
-        expect(input.value).toBe(4);
-
-        return String(input.value + 1);
+        return { inferred: "no schema needed" };
       }),
-  });
+      invalid: fn.query.output(z.number().min(10)).handler(() => 1),
+      nullable: fn.query.input(z.null()).handler(({ input }) => input),
+      transformed: fn.query
+        .input(v.object({ value: v.pipe(v.string(), v.transform(Number)) }))
+        .output(v.pipe(v.string(), v.transform(Number)))
+        .handler(({ input, identity: viewer }) => {
+          expect(viewer.subjectId).toBe("u");
+          expect(input.value).toBe(4);
+
+          return String(input.value + 1);
+        }),
+    }),
+  };
 
   const execute = createExecution(app, persistence);
   expect(
@@ -112,10 +114,13 @@ it("keeps builders immutable and provides typed action calls using registered fu
 
   const query = vi.fn<() => Promise<number>>().mockResolvedValue(4);
 
-  const run = actionRunner(defineServer({ ...functions, save }), {
-    mutate: vi.fn(),
-    query,
-  });
+  const run = actionRunner(
+    { functions: defineRouter({ ...functions, save }) },
+    {
+      mutate: vi.fn(),
+      query,
+    }
+  );
 
   expect(await run({ args: 2, name: "save" }, identity)).toBe(6);
   expect(query).toHaveBeenCalledWith({ args: undefined, name: "read" });
@@ -143,7 +148,7 @@ it("uses undefined input and infers returns for mutations and async actions with
       return { rows: await queries.read(), saved: await mutations.save() };
     });
 
-  const app = defineServer({ ...functions, perform });
+  const app = { functions: defineRouter({ ...functions, perform }) };
   expect(functions.read).not.toHaveProperty("result");
   expect(functions.save).not.toHaveProperty("result");
   expect(perform).not.toHaveProperty("result");
@@ -181,16 +186,18 @@ it("uses undefined input and infers returns for mutations and async actions with
 });
 
 it("validates optional output schemas for synchronous and async actions", async () => {
-  const app = defineServer({
-    invalid: fn.action.output(z.number().min(10)).handler(() => 1),
-    invalidAsync: fn.action
-      .output(z.number().min(10))
-      .handler(vi.fn<() => Promise<number>>().mockResolvedValue(1)),
-    transformed: fn.action
-      .output(z.string().transform(Number))
-      .handler(vi.fn<() => Promise<string>>().mockResolvedValue("4")),
-    valid: fn.action.output(z.number().min(10)).handler(() => 10),
-  });
+  const app = {
+    functions: defineRouter({
+      invalid: fn.action.output(z.number().min(10)).handler(() => 1),
+      invalidAsync: fn.action
+        .output(z.number().min(10))
+        .handler(vi.fn<() => Promise<number>>().mockResolvedValue(1)),
+      transformed: fn.action
+        .output(z.string().transform(Number))
+        .handler(vi.fn<() => Promise<string>>().mockResolvedValue("4")),
+      valid: fn.action.output(z.number().min(10)).handler(() => 10),
+    }),
+  };
 
   const run = actionRunner(app, { mutate: vi.fn(), query: vi.fn() });
   expect(await run({ name: "valid" }, identity)).toBe(10);

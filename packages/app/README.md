@@ -162,7 +162,3 @@ Shared namespaces merge across files. Duplicate callable paths and function/name
 Run `patchsmith generate` after adding, moving, or deleting function files. Generated `src/patchsmith.functions.gen.ts` imports routers only as types; `src/patchsmith.gen.ts` uses those types for client `api` references. Builds refresh the function registry, and build watch mode tracks new, renamed, and removed modules. Private implementations stay out of the browser bundle.
 
 Actions can import a router from `#functions/tasks.fn`, declare `.functions({ tasks })`, and call `queries.tasks.listTasks()`; they receive no direct database handle. Discovery does not grant additional action capabilities.
-
-### Migrating from server.ts
-
-Rename registered router modules to `.fn.ts` under `src/functions`, preserving the namespaces previously assigned in `defineServer`. For example, `defineServer({ billing: { invoices } })` becomes `src/functions/billing/invoices.fn.ts`. Keep `server: {}` (and any migration settings), remove `server.entry` from configuration, delete the app's `src/server.ts`, and regenerate bindings. Rename reserved router keys before regenerating. Moving between dotted filenames and directories preserves API paths; changing namespace segments changes the public API.

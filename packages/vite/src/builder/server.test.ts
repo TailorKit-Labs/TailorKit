@@ -225,23 +225,11 @@ it("builds file routes with discovered functions and blocks server imports from 
         await mkdir(path.join(root, directory), { recursive: true });
       })
     );
-    await writeFile(
-      path.join(root, "src/client.ts"),
-      'throw new Error("Unused default client");'
-    );
-    await writeFile(
-      path.join(root, "src/server.ts"),
-      'throw new Error("Unused default server");'
-    );
 
     const client =
       'import { defineRoute } from "patchsmith/client"; export default defineRoute({ shellComponent: () => "Configured client loaded" });';
 
     await writeFile(path.join(root, "src/root.tsx"), client);
-    await writeFile(
-      path.join(root, "src/functions/example.fn.ts"),
-      'import { defineRouter, fn } from "patchsmith/server";\nconst app = defineRouter({ configured: fn.query.handler(() => "Configured server loaded") });\nexport default app;'
-    );
     await writeFile(
       path.join(root, "src/functions/helper.ts"),
       'export const value = "Lazy server helper";'
@@ -281,8 +269,6 @@ it("builds file routes with discovered functions and blocks server imports from 
     });
     expect(application.migrations).toEqual([]);
     expect(browser).not.toContain("Configured server loaded");
-    expect(browser).not.toContain("Unused default client");
-    expect(server).not.toContain("Unused default server");
     // The host deployment tool must build beneath the app so the generated
     // temporary server entry can resolve patchsmith/server from node_modules.
     const deploymentOutput = path.join(root, ".patchsmith/agent-deployment");

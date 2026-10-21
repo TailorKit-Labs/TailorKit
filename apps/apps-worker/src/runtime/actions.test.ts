@@ -1,5 +1,5 @@
 import type { Invocation } from "@patchsmith/app/protocol";
-import { action, defineServer, query, mutation } from "@patchsmith/app/server";
+import { action, defineRouter, query, mutation } from "@patchsmith/app/server";
 import type {
   ActionContext,
   AppDefinition,
@@ -51,27 +51,29 @@ it("awaits actions and exposes scoped calls instead of a database handle", async
   const queryCall = vi.fn().mockResolvedValue(4);
   const mutateCall = vi.fn().mockResolvedValue(6);
 
-  const app = defineServer({
-    ...functions,
-    plus: action({
-      args: z.object({ delta: z.number() }),
-      functions,
-      async handler(context) {
-        expect("db" in context).toBe(false);
-        expect("runQuery" in context).toBe(false);
-        expect(Object.keys(context.queries)).toEqual(["read"]);
-        expect(Object.keys(context.mutations)).toEqual(["write"]);
-        expect(Object.isFrozen(context.mutations)).toBe(true);
-        expect(context.identity).toEqual(identity);
-        const prior = await context.queries.read({});
+  const app = {
+    functions: defineRouter({
+      ...functions,
+      plus: action({
+        args: z.object({ delta: z.number() }),
+        functions,
+        async handler(context) {
+          expect("db" in context).toBe(false);
+          expect("runQuery" in context).toBe(false);
+          expect(Object.keys(context.queries)).toEqual(["read"]);
+          expect(Object.keys(context.mutations)).toEqual(["write"]);
+          expect(Object.isFrozen(context.mutations)).toBe(true);
+          expect(context.identity).toEqual(identity);
+          const prior = await context.queries.read({});
 
-        return await context.mutations.write({
-          value: prior + context.args.delta,
-        });
-      },
-      result: z.number(),
+          return await context.mutations.write({
+            value: prior + context.args.delta,
+          });
+        },
+        result: z.number(),
+      }),
     }),
-  });
+  };
 
   const run = actionRunner(app, { mutate: mutateCall, query: queryCall });
   expect(await run({ args: { delta: 2 }, name: "plus" }, identity)).toBe(6);
@@ -88,16 +90,18 @@ it("validates kind, arguments, expiry and output", async () => {
   const calls = { mutate: vi.fn(), query: vi.fn() };
 
   // SAFETY: This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input.
-  const app = defineServer({
-    ...functions,
-    invalid: action({
-      args: z.object({ value: z.string() }),
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-      handler: () => 1 as never,
-      result: z.string(),
+  const app = {
+    functions: defineRouter({
+      ...functions,
+      invalid: action({
+        args: z.object({ value: z.string() }),
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+        handler: () => 1 as never,
+        result: z.string(),
+      }),
+      read: query({ args: z.object({}), handler: () => 1 }),
     }),
-    read: query({ args: z.object({}), handler: () => 1 }),
-  });
+  };
 
   const run = actionRunner(app, calls);
   await expect(run({ args: {}, name: "read" }, identity)).rejects.toMatchObject(
@@ -128,21 +132,23 @@ it("does not retry actions or roll back earlier independent mutations after fail
   const mutate = vi.fn().mockResolvedValue(1);
   const sideEffect = vi.fn();
 
-  const app = defineServer({
-    ...functions,
-    fail: action({
-      args: z.object({}),
-      functions,
-      async handler(ctx) {
-        sideEffect();
-        await ctx.mutations.write(
-          { value: 1 },
-          { requestId: "00000000-0000-4000-8000-000000000001" }
-        );
-        throw new Error("external failure");
-      },
+  const app = {
+    functions: defineRouter({
+      ...functions,
+      fail: action({
+        args: z.object({}),
+        functions,
+        async handler(ctx) {
+          sideEffect();
+          await ctx.mutations.write(
+            { value: 1 },
+            { requestId: "00000000-0000-4000-8000-000000000001" }
+          );
+          throw new Error("external failure");
+        },
+      }),
     }),
-  });
+  };
 
   await expect(
     actionRunner(app, { mutate, query: vi.fn() })(
@@ -163,18 +169,20 @@ it("revokes callbacks after completion and cancellation", async () => {
   let context!: ActionContext<typeof functions>;
   const mutate = vi.fn();
 
-  const app = defineServer({
-    ...functions,
-    capture: action({
-      args: z.object({}),
-      functions,
-      handler: (ctx) => {
-        context = ctx;
+  const app = {
+    functions: defineRouter({
+      ...functions,
+      capture: action({
+        args: z.object({}),
+        functions,
+        handler: (ctx) => {
+          context = ctx;
 
-        return null;
-      },
+          return null;
+        },
+      }),
     }),
-  });
+  };
 
   await actionRunner(app, { mutate, query: vi.fn() })(
     { args: {}, name: "capture" },
@@ -203,19 +211,21 @@ it("revokes a running action's callbacks before its asynchronous work finishes",
 
   const mutate = vi.fn();
 
-  const app = defineServer({
-    ...functions,
-    wait: action({
-      args: z.object({}),
-      functions,
-      async handler(ctx) {
-        context = ctx;
-        await external;
+  const app = {
+    functions: defineRouter({
+      ...functions,
+      wait: action({
+        args: z.object({}),
+        functions,
+        async handler(ctx) {
+          context = ctx;
+          await external;
 
-        return null;
-      },
+          return null;
+        },
+      }),
     }),
-  });
+  };
 
   const controller = new AbortController();
 
@@ -237,15 +247,17 @@ it("revokes a running action's callbacks before its asynchronous work finishes",
 it("rejects action call collections that are not registered under the same names", () => {
   const calls = { mutate: vi.fn(), query: vi.fn() };
 
-  const app = defineServer({
-    bad: action({
-      args: z.object({}),
-      functions: { missing: functions.write },
-      // oxlint-disable-next-line typescript/promise-function-async -- These capability guards must throw synchronously before dispatching asynchronous work.
-      handler: (ctx) => ctx.mutations.missing({ value: 1 }),
+  const app = {
+    functions: defineRouter({
+      bad: action({
+        args: z.object({}),
+        functions: { missing: functions.write },
+        // oxlint-disable-next-line typescript/promise-function-async -- These capability guards must throw synchronously before dispatching asynchronous work.
+        handler: (ctx) => ctx.mutations.missing({ value: 1 }),
+      }),
+      write: functions.write,
     }),
-    write: functions.write,
-  });
+  };
 
   expect(() => createActionExecution(app)).toThrow(
     "Action function is not registered in this app"
@@ -260,21 +272,23 @@ it("reuses compiled nested bindings while isolating concurrent calls and retaine
   const { promise: waiting, resolve: release } =
     Promise.withResolvers<ReturnType<() => void>>();
 
-  const app = defineServer({
-    ...nested,
-    run: action({
-      args: z.object({}),
-      functions: nested,
-      async handler(context) {
-        contexts.push(context);
-        expect(Object.keys(context.queries.records)).toEqual(["read"]);
-        expect(Object.keys(context.mutations.records)).toEqual(["write"]);
-        await waiting;
+  const app = {
+    functions: defineRouter({
+      ...nested,
+      run: action({
+        args: z.object({}),
+        functions: nested,
+        async handler(context) {
+          contexts.push(context);
+          expect(Object.keys(context.queries.records)).toEqual(["read"]);
+          expect(Object.keys(context.mutations.records)).toEqual(["write"]);
+          await waiting;
 
-        return await context.queries.records.read({});
-      },
+          return await context.queries.records.read({});
+        },
+      }),
     }),
-  });
+  };
 
   const run = createActionExecution(app);
   const first = { mutate: vi.fn(), query: vi.fn().mockResolvedValue("first") };
@@ -317,42 +331,45 @@ it("runs generated instance resolvers with all registered queries and no write c
   const { withInstanceResolvers } = await import("@patchsmith/app/server");
   let retainedQuery!: () => Promise<number>;
 
-  const app = withInstanceResolvers(defineServer({ reports: functions }), [
-    {
-      dataSchema: z.object({ id: z.string() }),
-      path: "/reports/annual.summary",
-      resolve: async (context) => {
-        expect(Object.keys(context).toSorted()).toEqual([
-          "context",
-          "identity",
-          "queries",
-          "signal",
-        ]);
+  const app = withInstanceResolvers(
+    { functions: defineRouter({ reports: functions }) },
+    [
+      {
+        dataSchema: z.object({ id: z.string() }),
+        path: "/reports/annual.summary",
+        resolve: async (context) => {
+          expect(Object.keys(context).toSorted()).toEqual([
+            "context",
+            "identity",
+            "queries",
+            "signal",
+          ]);
 
-        // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-        const queries = context.queries as ActionContext<{
-          reports: typeof functions;
-        }>["queries"];
+          // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+          // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+          const queries = context.queries as ActionContext<{
+            reports: typeof functions;
+          }>["queries"];
 
-        expect(Object.keys(queries.reports)).toEqual(["read"]);
-        expect(context.context).toEqual({ subjectId: "user" });
-        expect(context.identity).toEqual(identity);
-        // oxlint-disable-next-line typescript/promise-function-async -- These capability guards must throw synchronously before dispatching asynchronous work.
-        retainedQuery = () => queries.reports.read({});
-        const count = await retainedQuery();
+          expect(Object.keys(queries.reports)).toEqual(["read"]);
+          expect(context.context).toEqual({ subjectId: "user" });
+          expect(context.identity).toEqual(identity);
+          // oxlint-disable-next-line typescript/promise-function-async -- These capability guards must throw synchronously before dispatching asynchronous work.
+          retainedQuery = () => queries.reports.read({});
+          const count = await retainedQuery();
 
-        return [
-          {
-            data: { id: "report" },
-            key: "overview",
-            metadata: { title: `Reports: ${count}` },
-          },
-        ];
+          return [
+            {
+              data: { id: "report" },
+              key: "overview",
+              metadata: { title: `Reports: ${count}` },
+            },
+          ];
+        },
+        slot: "page",
       },
-      slot: "page",
-    },
-  ]);
+    ]
+  );
 
   const queryCall = vi.fn().mockResolvedValue(4);
   const mutateCall = vi.fn();
@@ -413,7 +430,7 @@ it("validates instance payloads and stable keys before returning resolver result
         { data: { id: "two" }, key: "overview", metadata: {} },
       ],
     ].map(async (result) => {
-      const app = withInstanceResolvers(defineServer({}), [
+      const app = withInstanceResolvers({ functions: defineRouter({}) }, [
         {
           dataSchema: z.object({ id: z.string() }),
           path: "/",
@@ -445,15 +462,20 @@ it("reserves the internal namespace and rejects duplicate or invalid slot/path a
     slot: "page",
   };
 
-  const app = withInstanceResolvers(defineServer({}), [resolver]);
+  const app = withInstanceResolvers({ functions: defineRouter({}) }, [
+    resolver,
+  ]);
+
   expect(() => withInstanceResolvers(app, [])).toThrow(
     "The _patchsmith function namespace is reserved by Patchsmith."
   );
   expect(() =>
-    withInstanceResolvers(defineServer({}), [resolver, resolver])
+    withInstanceResolvers({ functions: defineRouter({}) }, [resolver, resolver])
   ).toThrow("Duplicate instance resolver");
   expect(() =>
-    withInstanceResolvers(defineServer({}), [{ ...resolver, path: "invalid" }])
+    withInstanceResolvers({ functions: defineRouter({}) }, [
+      { ...resolver, path: "invalid" },
+    ])
   ).toThrow();
 });
 
@@ -468,7 +490,7 @@ it("dispatches by exact slot/path pairs and validates against the selected data 
     { data: { count: 3 }, key: "two", metadata: {} },
   ]);
 
-  const app = withInstanceResolvers(defineServer({}), [
+  const app = withInstanceResolvers({ functions: defineRouter({}) }, [
     {
       dataSchema: v.objectAsync({
         id: v.pipeAsync(
@@ -543,30 +565,32 @@ it("dispatches by exact slot/path pairs and validates against the selected data 
 it("binds backend tool calls to the active verified execution and closes escaped callers", async () => {
   let escaped: (() => Promise<{ amount: number }>) | undefined;
 
-  const implementation = defineServer({
-    read: action({
-      args: z.undefined(),
+  const implementation = {
+    functions: defineRouter({
+      read: action({
+        args: z.undefined(),
 
-      handler: async (ctx) => {
-        expect(ctx.identity).toBe(identity);
-        expect(ctx.scope).toBe(identity.scope);
+        handler: async (ctx) => {
+          expect(ctx.identity).toBe(identity);
+          expect(ctx.scope).toBe(identity.scope);
 
-        /* oxlint-disable typescript/no-unsafe-type-assertion -- The dynamic tool registry erases this fixture-owned method signature. */
-        // SAFETY: This fixture installs billing.read in the tool registry before capturing this capability.
-        const billingTools = ctx.tools as {
-          billing: {
-            read: (input: { id: string }) => Promise<{ amount: number }>;
+          /* oxlint-disable typescript/no-unsafe-type-assertion -- The dynamic tool registry erases this fixture-owned method signature. */
+          // SAFETY: This fixture installs billing.read in the tool registry before capturing this capability.
+          const billingTools = ctx.tools as {
+            billing: {
+              read: (input: { id: string }) => Promise<{ amount: number }>;
+            };
           };
-        };
 
-        /* oxlint-enable typescript/no-unsafe-type-assertion */
-        // oxlint-disable-next-line typescript/promise-function-async -- The captured capability must reject escaped access synchronously.
-        escaped = () => billingTools.billing.read({ id: "invoice" });
+          /* oxlint-enable typescript/no-unsafe-type-assertion */
+          // oxlint-disable-next-line typescript/promise-function-async -- The captured capability must reject escaped access synchronously.
+          escaped = () => billingTools.billing.read({ id: "invoice" });
 
-        return await escaped();
-      },
+          return await escaped();
+        },
+      }),
     }),
-  });
+  };
 
   const calls = {
     mutate: async () => {},

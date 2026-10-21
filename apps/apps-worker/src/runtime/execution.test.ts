@@ -12,7 +12,6 @@ import {
 import {
   createFunctions,
   defineRouter,
-  defineServer,
   query,
   mutation,
   fn,
@@ -113,81 +112,83 @@ const fixture = () => {
     },
   };
 
-  const app = defineServer({
-    add: mutation({
-      args: z.object({ id: z.string(), title: z.string() }),
-      handler: ({ db, args }) =>
-        db.insert(todos).values(args).returning().all(),
-    }),
-    fail: mutation({
-      args: z.object({}),
-      handler: ({ db }) => {
-        db.insert(todos).values({ id: "fail", title: "rollback" }).run();
-        throw new Error("failed");
-      },
-    }),
-    failedRead: query({
-      args: z.object({}),
-      handler: ({ db }) => {
-        db.select().from(todos).all();
-        throw new AppError("FORBIDDEN", "Read denied");
-      },
-    }),
-    invalidResult: fn.mutation
-      .output(z.object({ ok: z.literal(true) }))
-      .handler(({ input, db }) => {
-        expect(input).toBeUndefined();
-        db.insert(todos).values({ id: "invalid", title: "rollback" }).run();
-
-        // SAFETY: This negative test deliberately returns data outside its declared result schema to verify rejection.
-        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-        return { ok: false } as never;
+  const app = {
+    functions: defineRouter({
+      add: mutation({
+        args: z.object({ id: z.string(), title: z.string() }),
+        handler: ({ db, args }) =>
+          db.insert(todos).values(args).returning().all(),
       }),
-    joined: query({
-      args: z.object({}),
-      handler: ({ db }) =>
-        db.select().from(todos).leftJoin(users, eq(users.id, todos.id)).all(),
-    }),
-    list: query({
-      args: z.object({}),
-      handler: ({ db }) => db.select().from(todos).all(),
-    }),
-    noop: mutation({
-      args: z.object({}),
-      handler: ({ db }) =>
-        db.delete(todos).where(eq(todos.id, "missing")).run(),
-    }),
-    optionalArgs: mutation({
-      args: z.unknown().optional(),
-      handler: ({ args }) => args ?? null,
-    }),
-    oversized: mutation({
-      args: z.object({}),
-      handler: ({ db }) => {
-        db.insert(todos).values({ id: "large", title: "rollback" }).run();
-
-        return "🧵".repeat(300_000);
-      },
-    }),
-    unserializable: fn.mutation
-      .input(z.enum(["bigint", "cycle"]))
-      .handler(({ input, db }) => {
-        db.insert(todos).values({ id: input, title: "rollback" }).run();
-
-        if (input === "bigint") {
-          return 1n;
-        }
-
-        interface CyclicResult {
-          self?: CyclicResult;
-        }
-
-        const value: CyclicResult = {};
-        value.self = value;
-
-        return value;
+      fail: mutation({
+        args: z.object({}),
+        handler: ({ db }) => {
+          db.insert(todos).values({ id: "fail", title: "rollback" }).run();
+          throw new Error("failed");
+        },
       }),
-  });
+      failedRead: query({
+        args: z.object({}),
+        handler: ({ db }) => {
+          db.select().from(todos).all();
+          throw new AppError("FORBIDDEN", "Read denied");
+        },
+      }),
+      invalidResult: fn.mutation
+        .output(z.object({ ok: z.literal(true) }))
+        .handler(({ input, db }) => {
+          expect(input).toBeUndefined();
+          db.insert(todos).values({ id: "invalid", title: "rollback" }).run();
+
+          // SAFETY: This negative test deliberately returns data outside its declared result schema to verify rejection.
+          // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+          return { ok: false } as never;
+        }),
+      joined: query({
+        args: z.object({}),
+        handler: ({ db }) =>
+          db.select().from(todos).leftJoin(users, eq(users.id, todos.id)).all(),
+      }),
+      list: query({
+        args: z.object({}),
+        handler: ({ db }) => db.select().from(todos).all(),
+      }),
+      noop: mutation({
+        args: z.object({}),
+        handler: ({ db }) =>
+          db.delete(todos).where(eq(todos.id, "missing")).run(),
+      }),
+      optionalArgs: mutation({
+        args: z.unknown().optional(),
+        handler: ({ args }) => args ?? null,
+      }),
+      oversized: mutation({
+        args: z.object({}),
+        handler: ({ db }) => {
+          db.insert(todos).values({ id: "large", title: "rollback" }).run();
+
+          return "🧵".repeat(300_000);
+        },
+      }),
+      unserializable: fn.mutation
+        .input(z.enum(["bigint", "cycle"]))
+        .handler(({ input, db }) => {
+          db.insert(todos).values({ id: input, title: "rollback" }).run();
+
+          if (input === "bigint") {
+            return 1n;
+          }
+
+          interface CyclicResult {
+            self?: CyclicResult;
+          }
+
+          const value: CyclicResult = {};
+          value.self = value;
+
+          return value;
+        }),
+    }),
+  };
 
   return { execution: createExecution(app, persistence), persistence, sqlite };
 };
@@ -264,14 +265,16 @@ it.each([
     const nestedFunctions = createFunctions({ database: nestedDatabase });
 
     const execution = createExecution(
-      defineServer({
-        direct: directFunctions.query.handler(({ db }) =>
-          db.query.view.findMany().sync()
-        ),
-        nested: nestedFunctions.query.handler(({ db }) =>
-          db.query.users.findMany({ with: { todos: true } }).sync()
-        ),
-      }),
+      {
+        functions: defineRouter({
+          direct: directFunctions.query.handler(({ db }) =>
+            db.query.view.findMany().sync()
+          ),
+          nested: nestedFunctions.query.handler(({ db }) =>
+            db.query.users.findMany({ with: { todos: true } }).sync()
+          ),
+        }),
+      },
       persistence
     );
 
@@ -385,24 +388,32 @@ it("rejects async handlers and revokes their database scope before continuations
   let lateError: unknown;
 
   const bad = createExecution(
-    defineServer({
-      bad: {
-        args: z.object({}),
-        handler: async (ctx: {
-          db: Parameters<Parameters<typeof mutation>[0]["handler"]>[0]["db"];
-        }) => {
-          ctx.db.insert(todos).values({ id: "early", title: "rollback" }).run();
-          await Promise.resolve();
+    {
+      functions: defineRouter({
+        bad: {
+          args: z.object({}),
+          handler: async (ctx: {
+            db: Parameters<Parameters<typeof mutation>[0]["handler"]>[0]["db"];
+          }) => {
+            ctx.db
+              .insert(todos)
+              .values({ id: "early", title: "rollback" })
+              .run();
+            await Promise.resolve();
 
-          try {
-            ctx.db.insert(todos).values({ id: "late", title: "outside" }).run();
-          } catch (error) {
-            lateError = error;
-          }
+            try {
+              ctx.db
+                .insert(todos)
+                .values({ id: "late", title: "outside" })
+                .run();
+            } catch (error) {
+              lateError = error;
+            }
+          },
+          kind: "mutation",
         },
-        kind: "mutation",
-      },
-    }),
+      }),
+    },
     persistence
   );
 
@@ -576,28 +587,30 @@ it("runs action database calls locally and notifies only committed writes before
 
   const requestId = crypto.randomUUID();
 
-  const app = defineServer({
-    records,
-    run: fn.action
-      .functions({ records })
-      .handler(async ({ queries, mutations }) => {
-        const input = { id: "committed", title: "local" };
-        await mutations.records.add(input, { requestId });
-        await mutations.records.add(input, { requestId });
-        await expect(mutations.records.fail()).rejects.toMatchObject({
-          code: "CONFLICT",
-        });
-        await Array.fromAsync(
-          Array.from({ length: 100 }, (_, i) => i),
-          async (_i) => {
-            await queries.records.list();
-          }
-        );
-        await external;
+  const app = {
+    functions: defineRouter({
+      records,
+      run: fn.action
+        .functions({ records })
+        .handler(async ({ queries, mutations }) => {
+          const input = { id: "committed", title: "local" };
+          await mutations.records.add(input, { requestId });
+          await mutations.records.add(input, { requestId });
+          await expect(mutations.records.fail()).rejects.toMatchObject({
+            code: "CONFLICT",
+          });
+          await Array.fromAsync(
+            Array.from({ length: 100 }, (_, i) => i),
+            async (_i) => {
+              await queries.records.list();
+            }
+          );
+          await external;
 
-        return await queries.records.list();
-      }),
-  });
+          return await queries.records.list();
+        }),
+    }),
+  };
 
   const execution = createExecution(app, persistence);
 
@@ -686,7 +699,7 @@ it("runs nested relational queries and preserves scope, permissions and invalida
     }),
   });
 
-  const app = defineServer(records);
+  const app = { functions: defineRouter(records) };
   const execution = createExecution(app, persistence);
   expect(execution.query({ name: "list" }, identity)).toEqual({
     tables: ["todos", "users"],

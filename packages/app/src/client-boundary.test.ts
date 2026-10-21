@@ -15,7 +15,7 @@ it("exports the client API and public contract without importing private runtime
   const entry = path.join(root, "entry.js");
   await writeFile(
     entry,
-    `export * from ${JSON.stringify(path.resolve(import.meta.dirname, "../../patchsmith/dist/client.js"))}; export { defineServer } from ${JSON.stringify(path.resolve(import.meta.dirname, "../dist/index.js"))}; export { appContract } from ${JSON.stringify(path.resolve(import.meta.dirname, "../dist/protocol.js"))};`
+    `export * from ${JSON.stringify(path.resolve(import.meta.dirname, "../../patchsmith/dist/client.js"))}; export { defineRouter } from ${JSON.stringify(path.resolve(import.meta.dirname, "../dist/index.js"))}; export { appContract } from ${JSON.stringify(path.resolve(import.meta.dirname, "../dist/protocol.js"))};`
   );
 
   try {
@@ -63,7 +63,7 @@ it("exports the client API and public contract without importing private runtime
       .join("\n");
 
     for (const name of [
-      "defineServer",
+      "defineRouter",
       "ClientProvider",
       "useQuery",
       "useMutation",

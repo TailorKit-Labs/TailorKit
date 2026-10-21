@@ -4,7 +4,7 @@ import * as v from "valibot";
 import { AppError } from "#errors";
 import type { ViewDataFields } from "#views";
 
-import { action, defineServer, isFunction } from "./functions";
+import { action, defineRouter, isFunction } from "./functions";
 import type { AppDefinition, Functions, Identity } from "./functions";
 
 interface InstanceResolver<TOutput = unknown> {
@@ -140,9 +140,7 @@ export const withInstanceResolvers = (
     }),
   };
 
-  const internal = defineServer({ instances });
-
   return Object.freeze({
-    functions: { ...app.functions, _patchsmith: internal.functions },
+    functions: { ...app.functions, _patchsmith: defineRouter({ instances }) },
   });
 };

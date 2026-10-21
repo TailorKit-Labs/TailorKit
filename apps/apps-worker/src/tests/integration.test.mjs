@@ -341,31 +341,31 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
 
     const publishRpc = async (history, deploymentId) => {
       // Use the same migration bootstrap bundled into production server artifacts.
-      const setup = `import app from ${JSON.stringify(path.join(backend, "server.ts"))};
-import { defineServer, action, query, AppError } from ${JSON.stringify(path.join(repo, "packages/app/dist/server.js"))};
+      const setup = `import functions from ${JSON.stringify(path.join(backend, "functions.ts"))};
+import { defineRouter, action, query, AppError } from ${JSON.stringify(path.join(repo, "packages/app/dist/server.js"))};
 import { table, text, integer } from ${JSON.stringify(path.join(repo, "packages/app-db/dist/index.js"))};
 import { env } from "cloudflare:workers";
 
 let globals = 0;
 const migratedTodos = table("todos", { id: text(), priority: integer() });
-const nested = { read: app.functions.list, add: app.functions.add };
-const actionApp = defineServer({ ...app.functions,
-  toolProbe: action({ args: app.functions.list.args, handler: ctx => ctx.tools.product.identity() }),
+const nested = { read: functions.list, add: functions.add };
+const actionFunctions = defineRouter({ ...functions,
+  toolProbe: action({ args: functions.list.args, handler: ctx => ctx.tools.product.identity() }),
   nested,
-  tasks: { read: action({ functions: { nested }, args: app.functions.list.args, handler: ctx => ctx.queries.nested.read() }) },
-  migrationProbe: query({ args: app.functions.list.args, handler: ({ db }) => db.select().from(migratedTodos).all() }),
-  isolation: action({ args: app.functions.list.args, handler: context => ({ bindings: Object.keys(env), db: "db" in context, globals: ++globals, subjectId: context.identity.subjectId }) }),
-  failAfterWrite: action({ functions: app.functions, args: app.functions.list.args, async handler(ctx) {
+  tasks: { read: action({ functions: { nested }, args: functions.list.args, handler: ctx => ctx.queries.nested.read() }) },
+  migrationProbe: query({ args: functions.list.args, handler: ({ db }) => db.select().from(migratedTodos).all() }),
+  isolation: action({ args: functions.list.args, handler: context => ({ bindings: Object.keys(env), db: "db" in context, globals: ++globals, subjectId: context.identity.subjectId }) }),
+  failAfterWrite: action({ functions: functions, args: functions.list.args, async handler(ctx) {
     await ctx.mutations.add({ text: "Committed before the action failed" });
     throw new AppError("CONFLICT", "Intentional action failure");
   } }),
-  readTodos: action({ functions: app.functions, args: app.functions.list.args, handler: ctx => ctx.queries.list() }),
-  manyDatabaseCalls: action({ functions: app.functions, args: app.functions.list.args, async handler(ctx) {
+  readTodos: action({ functions: functions, args: functions.list.args, handler: ctx => ctx.queries.list() }),
+  manyDatabaseCalls: action({ functions: functions, args: functions.list.args, async handler(ctx) {
     for (let call = 0; call < 100; call++) await ctx.queries.list();
     return "ok";
   } }),
 });
-export default actionApp;
+export default { functions: actionFunctions };
 export const runtimeManifest = { apiVersion: 1, requires: ["database", "actions"] };
 export const migrations = ${JSON.stringify(history)};`;
 

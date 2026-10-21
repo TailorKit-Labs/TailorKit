@@ -1,4 +1,4 @@
-import { defineServer, isFunction, validateFunctionName } from "./functions";
+import { defineRouter, isFunction, validateFunctionName } from "./functions";
 import type { Functions, RegisteredFunction } from "./functions";
 
 interface FunctionModule {
@@ -86,5 +86,5 @@ export const createFileServer = (modules: readonly FunctionModule[]) => {
     }
   }
 
-  return defineServer(functions);
+  return Object.freeze({ functions: defineRouter(functions) });
 };

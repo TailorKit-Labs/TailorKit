@@ -1,4 +1,4 @@
-import { defineServer, fn } from "@patchsmith/app/server";
+import { defineRouter, fn } from "@patchsmith/app/server";
 import { Effect } from "effect";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
@@ -52,48 +52,50 @@ const setup = () => {
   let detached: Promise<Response>;
   let release!: () => void;
 
-  const app = defineServer({
-    ended: fn.action.handler(() => {
-      detached = (async () => {
-        const {
-          promise: pendingPromise,
-          resolve,
-          reject: rejectPending,
-        } = Promise.withResolvers<ReturnType<() => void>>();
+  const app = {
+    functions: defineRouter({
+      ended: fn.action.handler(() => {
+        detached = (async () => {
+          const {
+            promise: pendingPromise,
+            resolve,
+            reject: rejectPending,
+          } = Promise.withResolvers<ReturnType<() => void>>();
 
-        try {
-          release = resolve;
-        } catch (error) {
-          rejectPending(error);
-        }
+          try {
+            release = resolve;
+          } catch (error) {
+            rejectPending(error);
+          }
 
-        await pendingPromise;
-      })().then(async () => await captured(endpoint));
-      detached.catch(() => {});
+          await pendingPromise;
+        })().then(async () => await captured(endpoint));
+        detached.catch(() => {});
 
-      return "done";
-    }),
-    nested: fn.action
-      .functions({ read, write })
-      .handler(async ({ queries, mutations }) => {
-        await expect(queries.read()).rejects.toThrow(
-          "only available inside actions"
-        );
-        await expect(mutations.write()).rejects.toThrow(
-          "only available inside actions"
-        );
+        return "done";
+      }),
+      nested: fn.action
+        .functions({ read, write })
+        .handler(async ({ queries, mutations }) => {
+          await expect(queries.read()).rejects.toThrow(
+            "only available inside actions"
+          );
+          await expect(mutations.write()).rejects.toThrow(
+            "only available inside actions"
+          );
+          const response = await captured(endpoint);
+
+          return await response.text();
+        }),
+      read,
+      run: fn.action.handler(async () => {
         const response = await captured(endpoint);
 
         return await response.text();
       }),
-    read,
-    run: fn.action.handler(async () => {
-      const response = await captured(endpoint);
-
-      return await response.text();
+      write,
     }),
-    write,
-  });
+  };
 
   const execution = createExecution(app, {
     execute: () => ({ changes: 0, columns: [], rows: [] }),

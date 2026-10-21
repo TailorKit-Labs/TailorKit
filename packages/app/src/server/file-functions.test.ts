@@ -4,7 +4,7 @@ import { createApi } from "#client/reference";
 
 import { fn } from "./builder";
 import { createFileServer } from "./file-functions";
-import { defineRouter, defineServer } from "./functions";
+import { defineRouter } from "./functions";
 
 const children = fn.query.handler(() => ["child"]);
 const parents = fn.query.handler(() => ["parent"]);
@@ -94,7 +94,7 @@ it.each(["name", "then"])(
     expect(() => defineRouter({ todos: { [name]: children } })).toThrow(
       "Reserved function name"
     );
-    expect(() => defineServer({ [name]: { list: children } })).toThrow(
+    expect(() => defineRouter({ [name]: { list: children } })).toThrow(
       "Reserved function name"
     );
     expect(() =>

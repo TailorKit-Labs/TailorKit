@@ -2,10 +2,10 @@ import * as v from "valibot";
 import { vi } from "vite-plus/test";
 import { z } from "zod";
 
-import { defineServer, fn } from "./server";
+import { defineRouter, fn } from "./server";
 import { defineView } from "./views";
 
-const server = defineServer({
+const server = defineRouter({
   reports: {
     count: fn.query.handler(() => 1),
     fetch: fn.action.handler(
@@ -18,7 +18,7 @@ const server = defineServer({
   },
 });
 
-type ServerFunctions = typeof server.functions;
+type ServerFunctions = typeof server;
 
 declare module "./views" {
   // oxlint-disable-next-line typescript/no-empty-object-type, typescript/no-empty-interface -- Generated bindings augment this public interface through declaration merging.

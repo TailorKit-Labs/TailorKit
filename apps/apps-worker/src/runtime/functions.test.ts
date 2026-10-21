@@ -1,6 +1,6 @@
 import { createApi } from "@patchsmith/app/client";
 import type { Invocation } from "@patchsmith/app/protocol";
-import { fn, defineRouter, defineServer } from "@patchsmith/app/server";
+import { fn, defineRouter } from "@patchsmith/app/server";
 import type { AppDefinition, Identity } from "@patchsmith/app/server";
 import * as v from "valibot";
 import { expect, it, vi } from "vite-plus/test";
@@ -23,17 +23,19 @@ it("dispatches nested functions and preserves their names, identity, execution a
     save: fn.mutation.handler(() => "saved"),
   });
 
-  const app = defineServer({
-    tasks: defineRouter({
-      run: fn.action
-        .functions({ todos })
-        .handler(async ({ queries, mutations }) => ({
-          rows: await queries.todos.read(),
-          saved: await mutations.todos.save(),
-        })),
+  const app = {
+    functions: defineRouter({
+      tasks: defineRouter({
+        run: fn.action
+          .functions({ todos })
+          .handler(async ({ queries, mutations }) => ({
+            rows: await queries.todos.read(),
+            saved: await mutations.todos.save(),
+          })),
+      }),
+      todos,
     }),
-    todos,
-  });
+  };
 
   expect(resolveFunction(app.functions, "todos.read")).toBe(todos.read);
   expect(resolveFunction(app.functions, "tasks.run")).toBe(
@@ -85,9 +87,11 @@ it("dispatches nested functions and preserves their names, identity, execution a
 });
 
 it("validates names inside nested groups", () => {
-  expect(() =>
-    defineServer({ todos: { "invalid.name": fn.query.handler(() => null) } })
-  ).toThrow("Invalid function name");
+  expect(() => ({
+    functions: defineRouter({
+      todos: { "invalid.name": fn.query.handler(() => null) },
+    }),
+  })).toThrow("Invalid function name");
 
   for (const name of [
     "todos..read",
@@ -112,7 +116,7 @@ it("allows the reserved internal invocation namespace without allowing apps to r
     expect(v.parse(invocationSchema, { name })).toEqual({ name });
   }
 
-  expect(() => defineServer({ _patchsmith: {} })).toThrow(
+  expect(() => ({ functions: defineRouter({ _patchsmith: {} }) })).toThrow(
     "Invalid function name"
   );
 });

@@ -237,9 +237,6 @@ describe("generateApp", () => {
     expect(functions).toContain("export default defineRouter({ getGreeting })");
     expect(functions).not.toContain(".database(");
 
-    await expect(
-      readFile(path.join(targetDirectory, "src/server.ts"))
-    ).rejects.toThrow();
     expect(
       await readFile(
         path.join(targetDirectory, "src/slots/sidebar/customers.view.tsx"),

@@ -177,7 +177,7 @@ export const defineRouter = <const F extends Functions>(functions: F): F => {
   return Object.freeze(functions);
 };
 
-export const defineServer = <const F extends Functions>(functions: F) =>
-  Object.freeze({ functions: defineRouter(functions) });
-
-export type AppDefinition = ReturnType<typeof defineServer>;
+/** Backend module shape consumed by the runtime and assembled by file discovery. */
+export interface AppDefinition {
+  readonly functions: Functions;
+}
