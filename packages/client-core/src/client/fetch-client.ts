@@ -2,6 +2,7 @@ import type {
   PatchsmithContract,
   ToolImplementations,
 } from "@patchsmith/core/schema";
+import type { ViewsInput } from "@patchsmith/core/views";
 
 import { createFetchCache } from "#store/fetch/cache";
 import type { FetchCacheOptions } from "#store/fetch/cache";
@@ -44,6 +45,17 @@ export const createPatchsmithFetchClient = (
       endpoints.clearSessions();
     },
     endpoints,
+    /** Can be fetched on the server with an authenticated fetch implementation. */
+    views: (input: ViewsInput, settings: FetchCacheOptions = {}) =>
+      cache.getStore(
+        [...prefix, "views", input],
+        async (signal) => await endpoints.views(input, signal),
+        {
+          ...options.cache?.slot,
+          ...settings,
+          abortOnUnsubscribe: true,
+        }
+      ),
   };
 };
 

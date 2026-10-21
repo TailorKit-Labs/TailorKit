@@ -1,16 +1,13 @@
-import type { ToolBridge, ViewInstance } from "@patchsmith/app/client";
-import {
-  createClient,
-  createSessionProvider,
-  reference,
-} from "@patchsmith/app/client/connection";
+import type { ToolBridge } from "@patchsmith/app/client";
+import { createSessionProvider } from "@patchsmith/app/client/connection";
 import type {
   PatchsmithContract,
   ToolImplementations,
   ContractTools,
 } from "@patchsmith/core/schema";
 import { flattenTools, validateToolValue } from "@patchsmith/core/schema";
-import type { ViewContextValues } from "@patchsmith/core/views";
+import { patchsmithAppSchema, viewsResultSchema } from "@patchsmith/core/views";
+import type { ViewsInput } from "@patchsmith/core/views";
 import * as v from "valibot";
 
 import type { PatchsmithApp } from "#types";
@@ -24,32 +21,7 @@ const isToolHandler = (
 ): value is Exclude<ClientToolTree[string], ClientToolTree> =>
   typeof value === "function";
 
-const appListSchema = v.array(
-  v.looseObject({
-    clientPath: v.optional(v.string()),
-    currentDeployment: v.optional(
-      v.nullable(v.looseObject({ id: v.string() }))
-    ),
-    description: v.optional(v.nullable(v.string())),
-    id: v.string(),
-    logoPaths: v.optional(
-      v.object({ dark: v.optional(v.string()), light: v.optional(v.string()) })
-    ),
-    name: v.optional(v.string()),
-    projectId: v.optional(v.string()),
-    scope: v.optional(v.looseObject({ name: v.string() })),
-    views: v.optional(
-      v.array(
-        v.looseObject({
-          disabled: v.optional(v.literal(true)),
-          instances: v.optional(v.literal(true)),
-          path: v.string(),
-          slot: v.string(),
-        })
-      )
-    ),
-  })
-);
+const appListSchema = v.array(patchsmithAppSchema);
 
 const isFunctionValue = <TValue>(
   value: TValue
@@ -62,18 +34,6 @@ const require = <T>(value: T | null | undefined): T => {
 
   return value;
 };
-
-export interface SlotInstancesInput {
-  slot: string;
-  path: string;
-  context: ViewContextValues;
-}
-
-const resolveInstances = reference<
-  "action",
-  SlotInstancesInput,
-  ViewInstance[]
->("_patchsmith.instances.resolve", "action");
 
 /** Endpoint transport owns no response stores. */
 export const createEndpointClient = (options: {
@@ -282,30 +242,20 @@ export const createEndpointClient = (options: {
     clearSessions,
     getSessionProvider,
     getToolBridge,
-    slotInstances: async (
-      app: PatchsmithApp,
-      input: SlotInstancesInput,
-      signal: AbortSignal
-    ) => {
-      signal.throwIfAborted();
-
-      const backend = createClient({
-        fetch: request,
-        getSession: getSessionProvider(app),
+    views: async (input: ViewsInput, signal: AbortSignal) => {
+      const response = await request(new URL("views", baseUrl), {
+        body: JSON.stringify(input),
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        method: "POST",
+        signal,
       });
 
-      const abort = () => {
-        backend.close();
-      };
-
-      signal.addEventListener("abort", abort, { once: true });
-
-      try {
-        return await backend.action(resolveInstances, input);
-      } finally {
-        signal.removeEventListener("abort", abort);
-        backend.close();
+      if (!response.ok) {
+        throw new Error(await response.text());
       }
+
+      return v.parse(viewsResultSchema, await response.json());
     },
   };
 };

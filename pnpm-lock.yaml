@@ -1220,6 +1220,9 @@ importers:
       '@orpc/server':
         specifier: 'catalog:'
         version: 2.0.0-beta.40(crossws@0.4.15(srvx@1.0.4))
+      '@patchsmith/app':
+        specifier: workspace:*
+        version: link:../app
       '@patchsmith/client-platform':
         specifier: workspace:*
         version: link:../client-platform

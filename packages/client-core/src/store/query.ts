@@ -1,5 +1,4 @@
 import { computed } from "nanostores";
-import type { ReadableAtom } from "nanostores";
 
 import { matchesApp } from "#client/apps";
 import { normalizeScopeSelection } from "#client/scope-query";
@@ -101,133 +100,56 @@ export const createAppsQuery = (
   return { fetch: store.fetchApps, refetch, state };
 };
 
-const viewsQuery = (
-  store: PatchsmithStore,
-  options: ViewsQueryOptions,
-  app?: PatchsmithApp
-) => {
-  let previousKey: string | undefined;
-  let previousError: Error | null | undefined;
-  let selected: ReadableAtom<ViewsQueryResult>;
-  let query: ReturnType<typeof createSlotStore>;
-
+const viewsQuery = (store: PatchsmithStore, options: ViewsQueryOptions) => {
   const refetch = async () => {
-    // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
-    selection.get();
-    await (app ? query.fetch({ force: true }) : refetchViews(store, options));
+    await refetchViews(store, options);
   };
 
-  const selection = computed(
-    [store.fetch.apps.state, store.views.state],
-    (discovery, active) => {
-      const apps = (() => {
-        if (app) {
-          return [app];
-        }
-
-        if (discovery.status === "ready") {
-          return discovery.apps.filter((candidate) =>
-            matchesApp(candidate, options.scopes, options.appIds)
-          );
-        }
-
-        return [];
-      })();
-
-      const appsStatus = app ? "ready" : discovery.status;
-      const appsError = app ? null : discovery.error;
-
-      const activeView =
-        store.contract.slots[options.slot]?.multiple === true ? active : null;
-
-      const key = serializeCacheKey([
-        apps,
-        options.slot,
-        activeView,
-        appsStatus,
-      ]);
-
-      if (key !== previousKey || appsError !== previousError) {
-        previousKey = key;
-        previousError = appsError;
-
-        const slot = createSlotStore(store.client, store.contract, {
-          activeView,
-          apps,
-          appsError,
-          appsStatus,
-          slot: options.slot,
-        });
-
-        query = slot;
-        let last: ReturnType<typeof slot.getSnapshot> | undefined;
-        let fetching: boolean | undefined;
-        let snapshot: ViewsQueryResult;
-        selected = createSnapshotStore(
-          () => {
-            const current = slot.state.get();
-
-            const appsFetching =
-              !app && store.fetch.apps.state.get().isFetching;
-
-            if (current !== last || fetching !== appsFetching) {
-              last = current;
-              fetching = appsFetching;
-              snapshot = result(
-                { ...current, isFetching: appsFetching || current.isFetching },
-                refetch
-              );
-            }
-
-            return snapshot;
-          },
-          (listener) => {
-            const stopSlot = slot.state.listen(listener);
-
-            const stopApps = app
-              ? () => {
-                  /* Intentionally no action is needed. */
-                }
-              : store.fetch.apps.state.listen(listener);
-
-            void slot.fetch();
-
-            return () => {
-              stopSlot();
-              stopApps();
-            };
-          }
-        );
-      }
-
-      return selected;
-    }
+  const activeView = computed(store.views.state, (active) =>
+    store.contract.slots[options.slot]?.multiple === true ? active : null
   );
 
-  const source = switchStore(selection);
+  const selection = computed(activeView, (active) => {
+    const slot = createSlotStore(store.client, {
+      ...options,
+      activeView: active,
+    });
 
-  const state = createSnapshotStore(source.get.bind(source), (listener) => {
-    const stop = source.listen(listener);
+    let previous: ReturnType<typeof slot.getSnapshot> | undefined;
+    let snapshot: ViewsQueryResult;
 
-    if (!app) {
-      void store.fetchApps();
-    }
+    return createSnapshotStore(
+      () => {
+        const current = slot.state.get();
 
-    return stop;
+        if (current !== previous) {
+          previous = current;
+          snapshot = result(current, refetch);
+        }
+
+        return snapshot;
+      },
+      (listener) => {
+        const stop = slot.state.listen(listener);
+        void slot.fetch();
+
+        return stop;
+      }
+    );
   });
 
-  return { refetch, state };
+  return { refetch, state: switchStore(selection) };
 };
 
-/** Resolve a slot reactively as discovery and registered context change. */
+/** Resolve a slot over HTTP as registered context changes. */
 export const createViewsQuery = (
   store: PatchsmithStore,
   options: ViewsQueryOptions
 ) => viewsQuery(store, options);
 
-/** Resolve an explicitly supplied app without initiating discovery. */
+/** The host still authorizes and discovers the explicitly selected installation. */
 export const createAppViewsQuery = (
   store: PatchsmithStore,
   app: PatchsmithApp,
   slot: string
-) => viewsQuery(store, { slot }, app);
+) => viewsQuery(store, { appIds: [app.id], slot });

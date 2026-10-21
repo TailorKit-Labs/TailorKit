@@ -1,3 +1,8 @@
+import type { ViewInstance } from "@patchsmith/app/client";
+import * as v from "valibot";
+
+import type { PatchsmithSchema } from "#schema/schema";
+
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
   typeof value === "object" && value !== null;
 
@@ -9,7 +14,7 @@ export type ViewStatus = "ready" | "loading" | "error";
 
 export interface ViewLayer {
   path: string;
-  context: unknown;
+  context?: unknown;
   status: ViewStatus;
 }
 
@@ -107,3 +112,157 @@ export const composeViewContext = (
 
   return props;
 };
+
+export interface PatchsmithApp {
+  scope?: { name: string };
+  views?: { slot: string; path: string; instances?: true; disabled?: true }[];
+  clientPath?: string;
+  description?: string | null;
+  id: string;
+  logoPaths?: {
+    dark?: string;
+    light?: string;
+  };
+  projectId?: string;
+  currentDeployment?: {
+    id: string;
+  } | null;
+  name?: string;
+}
+
+/** Select the supported view without reading or composing its context. */
+export const selectSlotView = (
+  views: NonNullable<PatchsmithApp["views"]>,
+  slot: string,
+  activePath: string,
+  schema: Pick<PatchsmithSchema, "slots" | "views">
+) => {
+  const supported = schema.slots[slot]?.views ?? [];
+
+  const path = getViewHierarchy(activePath).find(
+    (pathValue) =>
+      supported.includes(pathValue) &&
+      views.some(
+        (view) =>
+          view.slot === slot && view.path === pathValue && !view.disabled
+      )
+  );
+
+  return (
+    views.find(
+      (view) => view.slot === slot && view.path === path && !view.disabled
+    ) ?? null
+  );
+};
+
+/** Match the same path and compose the same ancestor context as the sandbox renderer. */
+export const resolveSlotView = (
+  views: NonNullable<PatchsmithApp["views"]>,
+  slot: string,
+  activeView: ActiveView,
+  schema: Pick<PatchsmithSchema, "slots" | "views">
+) => {
+  const view = selectSlotView(views, slot, activeView.view, schema);
+
+  if (!view) {
+    return null;
+  }
+
+  return {
+    ...composeViewContext(view.path, {
+      declaredViews: Object.keys(schema.views),
+      layers: activeView.layers,
+    }),
+    instances: Boolean(view.instances),
+  };
+};
+
+/** The host owns discovery and resolution; callers supply only filters and view context. */
+export interface ViewsInput {
+  slot: string;
+  scopes?: readonly string[];
+  appIds?: readonly string[];
+  activeView: ActiveView | null;
+}
+
+export const viewsInputSchema = v.strictObject({
+  activeView: v.nullable(
+    v.object({
+      layers: v.pipe(
+        v.array(
+          v.object({
+            context: v.optional(v.unknown()),
+            path: v.pipe(v.string(), v.startsWith("/")),
+            status: v.picklist(["ready", "loading", "error"]),
+          })
+        ),
+        v.check(
+          (layers) =>
+            new Set(layers.map((layer) => layer.path)).size === layers.length,
+          "View layers must have unique paths"
+        )
+      ),
+      view: v.pipe(v.string(), v.startsWith("/")),
+    })
+  ),
+  appIds: v.optional(v.array(v.string())),
+  scopes: v.optional(v.array(v.string())),
+  slot: v.pipe(v.string(), v.minLength(1), v.maxLength(255)),
+});
+
+export const patchsmithAppSchema: v.GenericSchema<PatchsmithApp> =
+  v.looseObject({
+    clientPath: v.optional(v.string()),
+    currentDeployment: v.optional(
+      v.nullable(v.looseObject({ id: v.string() }))
+    ),
+    description: v.optional(v.nullable(v.string())),
+    id: v.string(),
+    logoPaths: v.optional(
+      v.object({ dark: v.optional(v.string()), light: v.optional(v.string()) })
+    ),
+    name: v.optional(v.string()),
+    projectId: v.optional(v.string()),
+    scope: v.optional(v.looseObject({ name: v.string() })),
+    views: v.optional(
+      v.array(
+        v.object({
+          disabled: v.optional(v.literal(true)),
+          instances: v.optional(v.literal(true)),
+          path: v.string(),
+          slot: v.string(),
+        })
+      )
+    ),
+  });
+
+export const viewsResultSchema: v.GenericSchema<ViewsResult> = v.variant(
+  "status",
+  [
+    v.object({
+      data: v.array(
+        v.union([
+          v.object({
+            app: patchsmithAppSchema,
+            data: v.unknown(),
+            key: v.string(),
+            metadata: v.record(v.string(), v.unknown()),
+          }),
+          v.strictObject({ app: patchsmithAppSchema }),
+        ])
+      ),
+      status: v.literal("ready"),
+    }),
+    v.object({ status: v.picklist(["idle", "loading"]) }),
+  ]
+);
+
+export type ViewsResult =
+  | {
+      status: "ready";
+      data: (
+        | { app: PatchsmithApp }
+        | (ViewInstance & { app: PatchsmithApp })
+      )[];
+    }
+  | { status: "idle" | "loading" };

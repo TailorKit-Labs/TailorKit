@@ -7,17 +7,6 @@ import { testContract } from "#test-contract";
 
 import { createPatchsmithFetchClient } from "./fetch-client";
 
-const identity = {
-  appId: "app",
-  deploymentId: "deployment",
-  expiresAt: Date.now() + 300_000,
-  installationId: "app",
-  projectId: "project",
-  scope: { name: "workspace", value: { id: "workspace" } },
-  subjectId: "principal",
-  toolUrl: "https://host.test/api/patchsmith/tools/execute",
-};
-
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.useRealTimers();
@@ -143,33 +132,16 @@ it("isolates authenticated clients at the same endpoint and clears credentials w
   expect(second.apps().getSnapshot().data).toEqual([{ id: "second" }]);
 });
 
-it("deduplicates instance requests and sessions across framework-neutral consumers", async () => {
-  const fetchMock = vi.fn(
-    asyncFixture((input) => {
-      const path = new URL(String(input)).pathname;
+it("deduplicates host view requests across framework-neutral consumers", async () => {
+  const app = { id: "app" };
 
-      if (path.endsWith("/meta")) {
-        return Response.json({
-          schema: {
-            slots: { page: { multiple: true, views: ["/"] } },
-            views: { "/": {} },
-          },
-        });
-      }
-
-      if (path.endsWith("/backend/session")) {
-        return Response.json({
-          expiresAt: Date.now() + 300_000,
-          identity,
-          token: "token",
-          url: "https://runtime.test/rpc",
-        });
-      }
-
-      return Response.json({
-        json: [{ data: {}, key: "overview", metadata: {} }],
-      });
-    })
+  const fetchMock = vi.fn<typeof fetch>().mockImplementation(
+    asyncFixture(() =>
+      Response.json({
+        data: [{ app, data: {}, key: "overview", metadata: {} }],
+        status: "ready",
+      })
+    )
   );
 
   const client = createPatchsmithFetchClient({
@@ -177,41 +149,42 @@ it("deduplicates instance requests and sessions across framework-neutral consume
     fetch: fetchMock,
   });
 
-  const contract = testContract(true);
-
-  const options = {
-    activeView: {
-      layers: [
-        { context: { userId: "user" }, path: "/", status: "ready" as const },
-      ],
-      view: "/",
-    },
-    apps: [
-      {
-        id: "app",
-        views: [{ instances: true as const, path: "/", slot: "page" }],
-      },
-    ],
-    slot: "page",
-  };
-
-  const first = createSlotStore(client, contract, options);
-  const second = createSlotStore(client, contract, options);
-
-  const stopFirst = first.subscribe(
-    vi.fn<NonNullable<Parameters<typeof first.subscribe>[0]>>()
-  );
-
-  const stopSecond = second.subscribe(
-    vi.fn<NonNullable<Parameters<typeof second.subscribe>[0]>>()
-  );
-
+  const input = { activeView: null, slot: "page" };
+  const first = createSlotStore(client, input);
+  const second = createSlotStore(client, input);
   const pending = first.fetch();
   expect(second.fetch()).toBe(pending);
   await pending;
   expect(first.getSnapshot().data?.[0]).toMatchObject({ key: "overview" });
   expect(second.getSnapshot().data).toBe(first.getSnapshot().data);
-  expect(fetchMock).toHaveBeenCalledTimes(2);
-  stopFirst();
-  stopSecond();
+  expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
+    new URL("https://host.test/views"),
+    expect.objectContaining({ method: "POST" })
+  );
+});
+
+it("prefetches views without a contract, registered context store or UI runtime", async () => {
+  const app = { id: "prefetched" };
+
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockImplementation(
+      asyncFixture(() => Response.json({ data: [{ app }], status: "ready" }))
+    );
+
+  const client = createPatchsmithFetchClient({
+    baseUrl: "https://host.test/",
+    fetch,
+  });
+
+  const input = { activeView: null, slot: "single" };
+  const query = client.views(input);
+  await query.fetch();
+  expect(query.getSnapshot()).toMatchObject({
+    data: { data: [{ app }], status: "ready" },
+    status: "ready",
+  });
+  await client.views(input).fetch();
+  expect(fetch).toHaveBeenCalledOnce();
+  client.clear();
 });
