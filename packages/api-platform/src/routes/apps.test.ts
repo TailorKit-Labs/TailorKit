@@ -180,6 +180,236 @@ describe("platform appRouter", () => {
     vi.clearAllMocks();
   });
 
+  const seedRuntimeApp = async (
+    name: string,
+    views: NonNullable<typeof appDeployment.$inferInsert.views>,
+    scope = productionScope,
+    context = createContext()
+  ) => {
+    const { body: app } = await call(
+      appRouter.create,
+      {
+        body: { description: null, name, scope },
+      },
+      { context }
+    );
+
+    const [deployment] = await db
+      .insert(appDeployment)
+      .values({
+        appId: app.id,
+        shortId: name.padEnd(12, "0").slice(0, 12),
+        status: "published",
+        views,
+      })
+      .returning();
+
+    if (!deployment) {
+      throw new Error("Expected discovery deployment");
+    }
+
+    await db
+      .update(appTable)
+      .set({ currentDeploymentId: deployment.id })
+      .where(eq(appTable.id, app.id));
+
+    return { app, deployment };
+  };
+
+  it("discovers runtime sessions with one scoped query and no per-app lookups", async () => {
+    const views = [{ instances: true as const, path: "/", slot: "page" }];
+    const first = await seedRuntimeApp("first", views);
+    const second = await seedRuntimeApp("second", views);
+    await seedRuntimeApp("staging", views, stagingScope);
+    await seedRuntimeApp(
+      "foreign",
+      views,
+      productionScope,
+      createContext({
+        project: { ...createContext().project, id: otherProjectId },
+      })
+    );
+    await seedRuntimeApp("disabled", [
+      { ...views[0], disabled: true, instances: true, path: "/", slot: "page" },
+    ]);
+    await seedRuntimeApp("single", [{ path: "/", slot: "page" }]);
+    await seedRuntimeApp("otherpath", [
+      { instances: true, path: "/elsewhere", slot: "page" },
+    ]);
+    await call(
+      appRouter.create,
+      {
+        body: {
+          description: null,
+          name: "Unpublished",
+          scope: productionScope,
+        },
+      },
+      { context: createContext() }
+    );
+
+    const findMany = vi.spyOn(db.query.app, "findMany");
+    const findFirst = vi.spyOn(db.query.app, "findFirst");
+    testState.issueToken.mockClear();
+
+    const body = {
+      page: 1,
+      pageSize: 100,
+      scopes: [productionScope],
+      slot: "page",
+      subjectId: "principal",
+      toolUrl: "https://host.test/api/patchsmith/tools/execute",
+      viewPaths: ["/"],
+    };
+
+    const handler = new OpenAPIHandler({ apps: appRouter });
+
+    const response = await handler.handle(
+      new Request("https://platform.test/api/platform/apps/runtime/discover", {
+        body: JSON.stringify(body),
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      }),
+      { context: createContext(), prefix: "/api/platform" }
+    );
+
+    expect(response.response?.status).toBe(200);
+    expect(response.response?.headers.get("cache-control")).toBe("no-store");
+
+    const result = z
+      .object({
+        items: z.array(
+          z.object({
+            app: z.object({ id: z.string() }),
+            session: z.object({
+              identity: z.object({
+                appId: z.string(),
+                deploymentId: z.string(),
+                scope: z.unknown(),
+                subjectId: z.string(),
+                toolUrl: z.string(),
+              }),
+              token: z.string(),
+            }),
+          })
+        ),
+      })
+      .parse(await response.response?.json());
+
+    expect(
+      result.items
+        .map(({ app }) => app.id)
+        .toSorted((a, b) => a.localeCompare(b))
+    ).toEqual(
+      [first.app.id, second.app.id].toSorted((a, b) => a.localeCompare(b))
+    );
+
+    for (const item of result.items) {
+      expect(item.session).toMatchObject({
+        identity: {
+          appId: item.app.id,
+          scope: productionScope,
+          subjectId: body.subjectId,
+          toolUrl: body.toolUrl,
+        },
+        token: "platform-token",
+      });
+    }
+
+    expect(findMany).toHaveBeenCalledTimes(1);
+    expect(findFirst).not.toHaveBeenCalled();
+    expect(testState.issueToken).toHaveBeenCalledTimes(2);
+    findMany.mockRestore();
+    findFirst.mockRestore();
+
+    const selected = await call(
+      appRouter.runtimeDiscover,
+      { body: { ...body, appIds: [first.app.id, "not-an-installation"] } },
+      { context: createContext() }
+    );
+
+    expect(selected.body.items.map(({ app }) => app.id)).toEqual([
+      first.app.id,
+    ]);
+
+    const empty = await call(
+      appRouter.runtimeDiscover,
+      { body: { ...body, appIds: [] } },
+      { context: createContext() }
+    );
+
+    expect(empty.body.items).toEqual([]);
+
+    const missing = await call(
+      appRouter.runtimeDiscover,
+      { body: { ...body, appIds: ["not-an-installation"] } },
+      { context: createContext() }
+    );
+
+    expect(missing.body.items).toEqual([]);
+
+    const claims = {
+      appId: first.app.id,
+      cliTokenId: "cli-token",
+      exp: Math.floor(Date.now() / 1000) + 60,
+      iat: Math.floor(Date.now() / 1000),
+      jti: "test-agent",
+      platformUrl: "https://platform.test/api/platform",
+      projectId,
+      scope: productionScope,
+      sub: userId,
+    };
+
+    await expect(
+      call(
+        appRouter.runtimeDiscover,
+        { body },
+        {
+          context: createContext({
+            agentToken: { ...claims, token: "agent-token" },
+          }),
+        }
+      )
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("preserves discovery pagination when a page has no matching views", async () => {
+    await seedRuntimeApp("oldmatch", [
+      { instances: true, path: "/", slot: "page" },
+    ]);
+    await seedRuntimeApp("newnomatch", [
+      { instances: true, path: "/", slot: "other" },
+    ]);
+
+    const body = {
+      page: 1,
+      pageSize: 1,
+      scopes: [productionScope],
+      slot: "page",
+      subjectId: "principal",
+      toolUrl: "https://host.test/tools",
+      viewPaths: ["/"],
+    };
+
+    const first = await call(
+      appRouter.runtimeDiscover,
+      { body },
+      { context: createContext() }
+    );
+
+    expect(first.body.items).toEqual([]);
+    expect(first.body.pagination.hasMore).toBe(true);
+
+    const second = await call(
+      appRouter.runtimeDiscover,
+      { body: { ...body, page: 2 } },
+      { context: createContext() }
+    );
+
+    expect(second.body.items).toHaveLength(1);
+    expect(second.body.pagination.hasMore).toBe(false);
+  });
+
   it("serves OpenAPI create and explicit lookup selectors with detailed inputs", async () => {
     const handler = new OpenAPIHandler(
       { apps: appRouter },

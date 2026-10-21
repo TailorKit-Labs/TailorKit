@@ -24,7 +24,13 @@ import {
   scopesSchema,
 } from "#scope";
 
-import { publishRuntimeMetadata, runtimeSession } from "./runtime";
+import {
+  createRuntimeSession,
+  publishRuntimeMetadata,
+  runtimeSession,
+  runtimeSessionSchema,
+  runtimeViewerSchema,
+} from "./runtime";
 
 export const AppWithCurrentDeployment = App.omit({ scopeKey: true }).extend({
   clientPath: z.url().optional(),
@@ -55,6 +61,53 @@ const createUniqueAppShortId = async (projectId: string) => {
   throw new ORPCError("BAD_REQUEST", { message: "Failed to create app id." });
 };
 
+const discoverApps = async (
+  projectId: string,
+  input: z.infer<typeof paginationQuery> & {
+    scopes: z.infer<typeof scopesSchema>;
+    appIds?: string[];
+  }
+) => {
+  const { page, pageSize } = input;
+  const scopes = canonicalizeScopes(input.scopes);
+
+  // Browser app filters may include missing or malformed IDs; never send those to a UUID column.
+  const appIds = input.appIds?.filter(
+    (id) => App.shape.id.safeParse(id).success
+  );
+
+  return await db.query.app.findMany({
+    limit: pageSize + 1,
+    offset: (page - 1) * pageSize,
+    orderBy: {
+      createdAt: "desc",
+    },
+    where: {
+      RAW: (fields, { and, eq: eqValue, or }) =>
+        and(
+          eqValue(fields.projectId, projectId),
+          or(
+            ...scopes.map(({ scope, scopeKey }) =>
+              and(
+                eqValue(fields.scopeKey, scopeKey),
+                eqValue(fields.scope, scope)
+              )
+            )
+          )
+        ) ?? eqValue(fields.projectId, projectId),
+      id: appIds === undefined ? undefined : { in: appIds },
+    },
+    with: {
+      currentDeployment: {
+        where: {
+          status: "published",
+        },
+        with: { app: { columns: { shortId: true } } },
+      },
+    },
+  });
+};
+
 const listApps = cliRouter
   .meta(
     openapi({
@@ -66,37 +119,7 @@ const listApps = cliRouter
   .output(paginatedOutput(AppWithCurrentDeployment))
   .handler(async ({ context, input }) => {
     const { page, pageSize } = input.body;
-    const scopes = canonicalizeScopes(input.body.scopes);
-
-    const apps = await db.query.app.findMany({
-      limit: pageSize + 1,
-      offset: (page - 1) * pageSize,
-      orderBy: {
-        createdAt: "desc",
-      },
-      where: {
-        RAW: (fields, { and, eq: eqValue, or }) =>
-          and(
-            eqValue(fields.projectId, context.project.id),
-            or(
-              ...scopes.map(({ scope, scopeKey }) =>
-                and(
-                  eqValue(fields.scopeKey, scopeKey),
-                  eqValue(fields.scope, scope)
-                )
-              )
-            )
-          ) ?? eqValue(fields.projectId, context.project.id),
-      },
-      with: {
-        currentDeployment: {
-          where: {
-            status: "published",
-          },
-          with: { app: { columns: { shortId: true } } },
-        },
-      },
-    });
+    const apps = await discoverApps(context.project.id, input.body);
 
     return {
       body: {
@@ -109,6 +132,65 @@ const listApps = cliRouter
           pageSize,
         },
       },
+    };
+  });
+
+/** Host-only discovery and runtime authorization share the same scoped database query. */
+const runtimeDiscover = protectedRouter
+  .meta(openapi({ method: "POST", path: "/apps/runtime/discover" }))
+  .input(
+    z.object({
+      body: paginationQuery.extend({
+        ...runtimeViewerSchema.shape,
+        appIds: z.array(z.string().min(1).max(256)).optional(),
+        scopes: scopesSchema,
+        slot: z.string().min(1),
+        viewPaths: z.array(z.string().min(1)),
+      }),
+    })
+  )
+  .output(
+    paginatedOutput(
+      z.object({
+        app: AppWithCurrentDeployment,
+        session: runtimeSessionSchema,
+      })
+    ).extend({ headers: z.object({ "cache-control": z.literal("no-store") }) })
+  )
+  .handler(async ({ context, input }) => {
+    const { page, pageSize, slot, viewPaths } = input.body;
+    const apps = await discoverApps(context.project.id, input.body);
+
+    const matching = apps
+      .slice(0, pageSize)
+      .map((installation) =>
+        withAppAssetUrl(installation, context.project.shortId)
+      )
+      .filter((installation) =>
+        installation.views.some(
+          (view) =>
+            view.slot === slot &&
+            view.instances === true &&
+            !view.disabled &&
+            viewPaths.includes(view.path)
+        )
+      );
+
+    return {
+      body: {
+        items: await Promise.all(
+          matching.map(async (installation) => ({
+            app: installation,
+            session: await createRuntimeSession(
+              context,
+              installation,
+              input.body
+            ),
+          }))
+        ),
+        pagination: { hasMore: apps.length > pageSize, page, pageSize },
+      },
+      headers: { "cache-control": "no-store" },
     };
   });
 
@@ -448,6 +530,7 @@ export const appRouter = o.router({
   get: getApp,
   install: installApp,
   list: listApps,
+  runtimeDiscover,
   runtimeSession,
   update: updateApp,
 });

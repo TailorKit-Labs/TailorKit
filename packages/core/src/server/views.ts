@@ -1,6 +1,5 @@
 import type { ViewInstance } from "@patchsmith/app/client";
 import { createClient, reference } from "@patchsmith/app/client/connection";
-import { appsRuntimeSession } from "@patchsmith/client-platform/client";
 import * as v from "valibot";
 
 import type { PatchsmithSchema } from "#schema/schema";
@@ -13,8 +12,7 @@ import {
 import type { ViewsResult, ViewLayer, ViewContextValues } from "#views";
 
 import type { Context } from "./context";
-import { listApps } from "./list-apps";
-import { platformAppSelector } from "./platform-app-selector";
+import { discoverViewApps } from "./runtime-discovery";
 import { selectPatchsmithScopes } from "./scope";
 
 const resolver = reference<
@@ -111,7 +109,16 @@ export const handleViews = async (
 
   try {
     request.signal.throwIfAborted();
-    const discovered = await listApps(context, scopes, controller.signal);
+
+    const { apps: discovered, sessions } = await discoverViewApps(
+      context,
+      input,
+      definition,
+      viewer,
+      scopes,
+      toolUrl,
+      controller.signal
+    );
 
     const apps = discovered.filter(
       (app) => input.appIds === undefined || input.appIds.includes(app.id)
@@ -194,20 +201,13 @@ export const handleViews = async (
         }
 
         const backend = createClient({
+          // oxlint-disable-next-line require-await -- The async provider returns this request's already authorized session without I/O.
           getSession: async () => {
-            const { data: session } = await appsRuntimeSession({
-              body: {
-                app: platformAppSelector(app.id),
-                scopes,
-                subjectId: viewer.subjectId,
-                toolUrl,
-              },
-              client: context.platform,
-              headers: context.platformHeaders,
-              responseStyle: "fields",
-              signal: controller.signal,
-              throwOnError: true,
-            });
+            const session = sessions.get(app.id);
+
+            if (!session) {
+              throw new Error("Missing discovered runtime session");
+            }
 
             return session;
           },

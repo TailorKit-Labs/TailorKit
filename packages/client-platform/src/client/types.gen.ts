@@ -611,8 +611,121 @@ export type AppsListResponses = {
 
 export type AppsListResponse = AppsListResponses[keyof AppsListResponses];
 
+export type AppsRuntimeDiscoverData = {
+  body: {
+    page?: number;
+    pageSize?: number;
+    subjectId: string;
+    toolUrl: string;
+    appIds?: Array<string>;
+    scopes: Array<{
+      name: string;
+      value: {
+        [key: string]: Schema0;
+      };
+    }>;
+    slot: string;
+    viewPaths: Array<string>;
+  };
+  path?: never;
+  query?: never;
+  url: '/apps/runtime/discover';
+};
+
+export type AppsRuntimeDiscoverResponses = {
+  /**
+   * OK
+   */
+  200: {
+    items: Array<{
+      app: {
+        createdAt: string;
+        createdByAgent: boolean;
+        currentDeploymentId: string | null;
+        description: string | null;
+        id: string;
+        name: string;
+        projectId: string;
+        scope: {
+          name: string;
+          value: {
+            [key: string]: Schema0;
+          };
+        };
+        shortId: string;
+        /**
+         * Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens.
+         */
+        slug: string;
+        updatedAt: string;
+        clientPath?: string;
+        currentDeployment: {
+          appId: string;
+          clientEntryFileId: string | null;
+          createdAt: string;
+          id: string;
+          logoDarkFileId: string | null;
+          logoDarkPath: string | null;
+          logoLightFileId: string | null;
+          logoLightPath: string | null;
+          shortId: string;
+          status: 'uploading' | 'deploying' | 'verifying' | 'published';
+          updatedAt: string;
+          views: Array<{
+            disabled?: true;
+            instances?: true;
+            path: string;
+            slot: string;
+          }>;
+        } | null;
+        logoPaths?: {
+          dark?: string;
+          light?: string;
+        };
+        views: Array<{
+          disabled?: true;
+          instances?: true;
+          path: string;
+          slot: string;
+        }>;
+      };
+      session: {
+        expiresAt: number;
+        identity: {
+          appId: string;
+          appShortId: string;
+          deploymentId: string;
+          expiresAt: number;
+          installationId: string;
+          projectId: string;
+          projectShortId: string;
+          scope: {
+            name: string;
+            value: {
+              [key: string]: Schema0;
+            };
+          };
+          subjectId: string;
+          toolUrl: string;
+        };
+        token: string;
+        url: string;
+      };
+    }>;
+    pagination: {
+      hasMore: boolean;
+      page: number;
+      pageSize: number;
+    };
+  };
+};
+
+export type AppsRuntimeDiscoverResponse = AppsRuntimeDiscoverResponses[keyof AppsRuntimeDiscoverResponses];
+
 export type AppsRuntimeSessionData = {
   body: {
+    subjectId: string;
+    toolUrl: string;
     app: {
       id: string;
     } | {
@@ -629,8 +742,6 @@ export type AppsRuntimeSessionData = {
         [key: string]: Schema0;
       };
     }>;
-    subjectId: string;
-    toolUrl: string;
   };
   path?: never;
   query?: never;
