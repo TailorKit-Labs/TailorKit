@@ -141,7 +141,7 @@ export const fn = createFunctions({ database: db });
 Each function file exports its public router. Handlers receive the scoped database automatically, with read-only access in queries and write access in mutations:
 
 ```ts
-// src/functions/tasks.ts
+// src/functions/tasks.fn.ts
 import { defineRouter } from "patchsmith/server";
 
 import { fn } from "#db";
@@ -153,15 +153,16 @@ const listTasks = fn.query.handler(({ db }) =>
 export default defineRouter({ listTasks });
 ```
 
-Import default routers in the server entry point:
+Enable `server: {}` in `patchsmith.config.ts`. The builder discovers `src/functions/**/*.fn.ts` and registers each default router automatically; no `src/server.ts` is needed. Other files remain ordinary helpers.
 
-```ts
-// src/server.ts
-import { defineServer } from "patchsmith/server";
+File paths prefix router keys. Both `billing.invoices.fn.ts` and `billing/invoices.fn.ts` expose `api.billing.invoices.*`; mixed dots and directories work too. `index.fn.ts` creates an `index` namespace. Router objects may nest, so `tasks.fn.ts` exporting `defineRouter({ get: { children, parents } })` exposes `api.tasks.get.children` and `api.tasks.get.parents`.
 
-import tasks from "#functions/tasks";
+Shared namespaces merge across files. Duplicate callable paths and function/namespace conflicts fail the build with the API path and both source files. Every namespace and function name must start with a letter and contain at most 64 letters, digits, or underscores. `name` and `then` are reserved because client references use them internally.
 
-export default defineServer({ tasks });
-```
+Run `patchsmith generate` after adding, moving, or deleting function files. Generated `src/patchsmith.functions.gen.ts` imports routers only as types; `src/patchsmith.gen.ts` uses those types for client `api` references. Builds refresh the function registry, and build watch mode tracks new, renamed, and removed modules. Private implementations stay out of the browser bundle.
 
-Regenerate bindings after registration. The client calls `api.tasks.listTasks`. Actions can declare `.functions({ tasks })` and call `queries.tasks.listTasks()`; they receive no direct database handle.
+Actions can import a router from `#functions/tasks.fn`, declare `.functions({ tasks })`, and call `queries.tasks.listTasks()`; they receive no direct database handle. Discovery does not grant additional action capabilities.
+
+### Migrating from server.ts
+
+Rename registered router modules to `.fn.ts` under `src/functions`, preserving the namespaces previously assigned in `defineServer`. For example, `defineServer({ billing: { invoices } })` becomes `src/functions/billing/invoices.fn.ts`. Keep `server: {}` (and any migration settings), remove `server.entry` from configuration, delete the app's `src/server.ts`, and regenerate bindings. Rename reserved router keys before regenerating. Moving between dotted filenames and directories preserves API paths; changing namespace segments changes the public API.

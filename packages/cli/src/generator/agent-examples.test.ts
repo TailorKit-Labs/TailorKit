@@ -8,6 +8,10 @@ import { promisify } from "node:util";
 
 import { primitives } from "@patchsmith/core/primitives/zod";
 import { createPatchsmithSchema } from "@patchsmith/core/schema";
+import {
+  discoverFunctionFiles,
+  generateFunctionTypes,
+} from "@patchsmith/vite/builder";
 import { build } from "vite";
 import { expect, it } from "vite-plus/test";
 
@@ -179,20 +183,14 @@ it("typechecks and bundles examples with scaffold imports and the public SDK", a
 
     expect(Object.keys(sources).length).toBeGreaterThanOrEqual(10);
     sources["src/examples/source-aliases.ts"] =
-      'export { NoteEditor } from "#components/note-editor";\nexport { Empty } from "#components/empty";\nexport { default as notes } from "#functions/notes";';
+      'export { NoteEditor } from "#components/note-editor";\nexport { Empty } from "#components/empty";\nexport { default as notes } from "#functions/notes.fn";';
     sources["src/components/empty/index.tsx"] =
       "export const Empty = () => null;";
-    // Compile the independent action and legacy form snippets with their API namespaces.
-    const server = sources["src/server.ts"];
-
-    if (server === undefined) {
-      throw new Error("Missing registration example.");
-    }
-
-    sources["src/server.ts"] =
-      `import preview from "#functions/preview";\n${server.replace("defineServer({ notes })", "defineServer({ notes, todos: notes, preview })")}`;
+    // Legacy form examples call api.todos; reuse the notes router under that namespace.
+    sources["src/functions/todos.fn.ts"] =
+      'export { default } from "#functions/notes.fn";';
     sources["src/patchsmith.gen.ts"] = renderGeneratedTypes(schema, {
-      serverModule: "./server",
+      functionsModule: "./patchsmith.functions.gen",
     });
 
     const references = renderGeneratedReferences(schema, {
@@ -234,6 +232,7 @@ it("typechecks and bundles examples with scaffold imports and the public SDK", a
         await writeFile(destination, content);
       })
     );
+    await generateFunctionTypes(root, await discoverFunctionFiles(root));
     const require = createRequire(import.meta.url);
     const preact = path.dirname(require.resolve("preact/package.json"));
     const appServer = import.meta.resolve("@patchsmith/app/server");

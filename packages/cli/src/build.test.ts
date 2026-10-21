@@ -19,7 +19,7 @@ it("builds the app's Vite config with custom plugins, aliases, constants and out
 
   try {
     await linkTestDependencies(root);
-    await mkdir(path.join(root, "src"));
+    await mkdir(path.join(root, "src/functions"), { recursive: true });
     await mkdir(path.join(root, "config"));
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(
@@ -40,12 +40,12 @@ it("builds the app's Vite config with custom plugins, aliases, constants and out
     `
     );
     await writeFile(
-      path.join(root, "src/server.ts"),
+      path.join(root, "src/functions/example.fn.ts"),
       `
-      import { defineServer, fn } from "patchsmith/server";
+      import { defineRouter, fn } from "patchsmith/server";
       import { message } from "@/message";
       import value from "virtual:example";
-      export default defineServer({ read: fn.query.handler(() => message + value + CUSTOM_CONSTANT) });
+      export default defineRouter({ read: fn.query.handler(() => message + value + CUSTOM_CONSTANT) });
     `
     );
     await writeFile(

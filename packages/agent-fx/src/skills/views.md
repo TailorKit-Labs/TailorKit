@@ -79,7 +79,7 @@ export default defineRoute({ shellComponent: Shell });
 
 A slot with `multiple: true` displays separate instances of a view, such as one tile per record. Each instance has a stable unique `key`, host-supported `metadata` for labels/placement, and `data` for the component.
 
-Enable `server: {}` in `patchsmith.config.ts` and declare inline `instances` in a module-level `defineView`. The `resolve` arrow/function expression returns items; `dataSchema` validates their data. Single-instance slots omit `instances`. The backend entry, `src/server.ts`, can export `defineServer({})` if no app functions are needed.
+Enable `server: {}` in `patchsmith.config.ts` and declare inline `instances` in a module-level `defineView`. The `resolve` arrow/function expression returns items; `dataSchema` validates their data. Single-instance slots omit `instances`. No backend entry file is needed, including when the app has no functions.
 
 The resolver runs on the backend with `{ context, identity, signal, queries }`. Read saved records through registered queries and enforce access there. Return the instances; read the selected item's data with `definition.useInstance()` inside the view. Keep resolver dependencies backend-safe. Instance lists refresh through the host separately from query subscriptions.
 

@@ -7,7 +7,8 @@ const config = {
     light: "logo-light.svg",
   },
 {% endunless %}
-  name: {{ appName }},
+{% unless bare %}  server: {},
+{% endunless %}  name: {{ appName }},
   slug: {{ appSlug }},
 } satisfies PatchsmithConfig;
 

@@ -4,7 +4,10 @@ export {
   query,
   mutation,
   action,
+  validateFunctionName,
 } from "./server/functions";
+
+export { createFileServer } from "./server/file-functions";
 
 export { createFunctions, fn } from "./server/builder";
 

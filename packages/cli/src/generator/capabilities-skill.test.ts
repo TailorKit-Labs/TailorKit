@@ -78,11 +78,11 @@ it("generates a discoverable skill with working reference links, including custo
   try {
     await writeFile(
       path.join(root, "patchsmith.config.mjs"),
-      'export default { name: "Example", slug: "example", host: "https://host.test" };'
+      'export default { name: "Example", slug: "example", host: "https://host.test", server: {} };'
     );
     await mkdir(path.join(root, "src"));
     await writeFile(
-      path.join(root, "src/server.ts"),
+      path.join(root, "src/unused-server.ts"),
       'throw new Error("Never evaluate server code");'
     );
 
@@ -339,7 +339,7 @@ it("removes obsolete references on regeneration and preserves unrelated source a
   try {
     await writeFile(
       path.join(root, "patchsmith.config.mjs"),
-      'export default { name: "Example", slug: "example", host: "https://host.test" };'
+      'export default { name: "Example", slug: "example", host: "https://host.test", server: {} };'
     );
     await generateTypes({ cwd: root, schema });
 
@@ -388,7 +388,7 @@ it("preserves an existing references directory without a generated ownership mar
   try {
     await writeFile(
       path.join(root, "patchsmith.config.mjs"),
-      'export default { name: "Example", slug: "example", host: "https://host.test" };'
+      'export default { name: "Example", slug: "example", host: "https://host.test", server: {} };'
     );
 
     const referencesDirectory = path.join(

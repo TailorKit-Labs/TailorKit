@@ -153,12 +153,21 @@ export const isFunction = (
 
 const functionNamePattern = /^[a-zA-Z][a-zA-Z0-9_]{0,63}$/u;
 
+/** Validate every API path segment, including file-derived namespaces. */
+export const validateFunctionName = (name: string): void => {
+  if (!functionNamePattern.test(name)) {
+    throw new Error(`Invalid function name: ${JSON.stringify(name)}`);
+  }
+
+  if (name === "name" || name === "then") {
+    throw new Error(`Reserved function name: ${JSON.stringify(name)}`);
+  }
+};
+
 /** Declare the functions exposed by a module, preserving their inferred types. */
 export const defineRouter = <const F extends Functions>(functions: F): F => {
   for (const [name, value] of Object.entries(functions)) {
-    if (!functionNamePattern.test(name)) {
-      throw new Error("Invalid function name");
-    }
+    validateFunctionName(name);
 
     if (!isFunction(value)) {
       defineRouter(value);

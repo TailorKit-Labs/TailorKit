@@ -62,22 +62,19 @@ it("rejects app descriptions longer than 255 characters", () => {
   ).toThrow();
 });
 
-it.each([{ server: { entry: "./backend.ts" } }])(
-  "accepts configured server entry points: %j",
-  (override) => {
-    expect(v.parse(patchsmithConfigSchema, { ...config, ...override })).toEqual(
-      {
-        ...config,
-        ...override,
-      }
-    );
-  }
-);
+it("rejects the removed server.entry option", () => {
+  expect(() =>
+    v.parse(patchsmithConfigSchema, {
+      ...config,
+      server: { entry: "./backend.ts" },
+    })
+  ).toThrow("entry");
+});
 
-it("defaults entries while preserving backend enablement and migration configuration", () => {
+it("preserves backend enablement and migration configuration", () => {
   expect(v.parse(patchsmithConfigSchema, { ...config, server: {} })).toEqual({
     ...config,
-    server: { entry: "src/server.ts" },
+    server: {},
   });
   expect(
     v.parse(patchsmithConfigSchema, {
@@ -86,7 +83,7 @@ it("defaults entries while preserving backend enablement and migration configura
     })
   ).toEqual({
     ...config,
-    server: { entry: "src/server.ts", migrations: "./migrations" },
+    server: { migrations: "./migrations" },
   });
 });
 

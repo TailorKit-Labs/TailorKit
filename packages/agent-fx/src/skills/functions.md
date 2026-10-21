@@ -12,9 +12,9 @@ App functions run on Patchsmith's managed backend. Enable `server: {}` in `patch
 
 Database functions use `fn` from `#db`. These snippets use the shared `notes` table (`id`, `title`) from `patchsmith-database`.
 
-A query reads data synchronously. For example, in `src/functions/notes.ts`:
+A query reads data synchronously. For example, in `src/functions/notes.fn.ts`:
 
-<!-- example: src/functions/notes.ts -->
+<!-- example: src/functions/notes.fn.ts -->
 
 ```ts
 import { fn } from "#db";
@@ -26,7 +26,7 @@ const list = fn.query.handler(({ db }) =>
 
 Add a mutation in the same module to validate and save input:
 
-<!-- continue: src/functions/notes.ts -->
+<!-- continue: src/functions/notes.fn.ts -->
 
 ```ts
 import * as v from "valibot";
@@ -48,7 +48,7 @@ Queries, mutations, and their validators finish synchronously; each mutation run
 
 A router groups named functions. Export the handlers from the same module:
 
-<!-- continue: src/functions/notes.ts -->
+<!-- continue: src/functions/notes.fn.ts -->
 
 ```ts
 import { defineRouter } from "patchsmith/server";
@@ -56,22 +56,15 @@ import { defineRouter } from "patchsmith/server";
 export default defineRouter({ list, add });
 ```
 
-Register routers in `src/server.ts`, then run `pnpm run generate`. Router names become API namespaces such as `api.notes.list`:
+The builder discovers `src/functions/**/*.fn.ts` automatically. Run `pnpm run generate` after adding, moving, or removing modules. `notes.fn.ts` exposes `api.notes.list` and `api.notes.add`; no `src/server.ts` is needed.
 
-<!-- example: src/server.ts -->
-
-```ts
-import { defineServer } from "patchsmith/server";
-
-import notes from "#functions/notes";
-export default defineServer({ notes });
-```
+Dots and directories create the same namespaces: `billing.invoices.fn.ts` and `billing/invoices.fn.ts` both prefix their router keys with `api.billing.invoices`. Nested router objects add further segments. Shared namespaces merge; duplicate callable paths and function/namespace conflicts fail the build with both source files. Every segment must start with a letter and contain at most 64 letters, digits, or underscores. `name` and `then` are reserved at every depth. `index` is literal. Other files are ordinary helpers.
 
 ## Actions
 
 Use `fn` from `patchsmith/server` for actions without a database. This action fetches a summary; replace the URL with the requested service:
 
-<!-- example: src/functions/preview.ts -->
+<!-- example: src/functions/preview.fn.ts -->
 
 ```ts
 import { AppError, defineRouter, fn } from "patchsmith/server";
@@ -89,7 +82,7 @@ const summary = fn.action.output(result).handler(async ({ signal }) => {
 export default defineRouter({ summary });
 ```
 
-Actions have no `db`. Declare `.functions({ notes })` to use `queries.notes.list()` or `mutations.notes.add(input)` in the handler. Each mutation commits separately. Use handler `tools` for host server operations. Pass `signal` to fetch and design external writes for the service's retry behavior.
+Actions have no `db`. Import routers explicitly (for example, `import notes from "#functions/notes.fn"`). Declare `.functions({ notes })` to use `queries.notes.list()` or `mutations.notes.add(input)` in the handler. Each mutation commits separately. Use handler `tools` for host server operations. Pass `signal` to fetch and design external writes for the service's retry behavior.
 
 ## Access control
 

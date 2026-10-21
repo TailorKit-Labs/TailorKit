@@ -383,8 +383,8 @@ export const renderReferences = (
     "- [Host tools](tools.md): inputs, results, and client/server execution.",
     "- [Styling](styling.md): token and responsive/state lookup.",
     hasApi
-      ? `- App functions: \`api\` comes from your registered server; search the [generated bindings](${bindingsPath}) for \`AppServerFunctions\` and inspect your own function source when needed.`
-      : "- App functions: register a server, then regenerate bindings to expose its api references.",
+      ? `- App functions: \`api\` references routers discovered in \`src/functions/**/*.fn.ts\`; search the [generated bindings](${bindingsPath}) for \`AppServerFunctions\` and inspect your own function source when needed.`
+      : "- App functions: enable `server: {}`, add a router under `src/functions/**/*.fn.ts`, then regenerate bindings to expose `api`.",
     "",
     "## Components",
     "",

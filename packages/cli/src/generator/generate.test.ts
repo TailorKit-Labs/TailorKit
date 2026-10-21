@@ -132,7 +132,7 @@ describe("generateApp", () => {
     expect(manifest.dependencies).not.toHaveProperty("zod");
 
     const greeting = await readFile(
-      path.join(targetDirectory, "src/functions/greeting.ts"),
+      path.join(targetDirectory, "src/functions/greeting.fn.ts"),
       "utf-8"
     );
 
@@ -188,11 +188,11 @@ describe("generateApp", () => {
       path.join("src", "root.tsx"),
       path.join("src", "slots", "sidebar", "customers.view.tsx"),
       path.join("src", "patchsmith.gen.ts"),
-      path.join("src", "server.ts"),
+      path.join("src", "patchsmith.functions.gen.ts"),
       path.join("src", "db", "schema.ts"),
       path.join("src", "db", "index.ts"),
       path.join("src", "db", "relations.ts"),
-      path.join("src", "functions", "greeting.ts"),
+      path.join("src", "functions", "greeting.fn.ts"),
     ];
 
     await Promise.all(
@@ -229,7 +229,7 @@ describe("generateApp", () => {
     expect(database).toContain("createFunctions({ database: db })");
 
     const functions = await readFile(
-      path.join(targetDirectory, "src/functions/greeting.ts"),
+      path.join(targetDirectory, "src/functions/greeting.fn.ts"),
       "utf-8"
     );
 
@@ -237,13 +237,9 @@ describe("generateApp", () => {
     expect(functions).toContain("export default defineRouter({ getGreeting })");
     expect(functions).not.toContain(".database(");
 
-    const server = await readFile(
-      path.join(targetDirectory, "src/server.ts"),
-      "utf-8"
-    );
-
-    expect(server).toContain('import greeting from "#functions/greeting"');
-    expect(server).toContain("defineServer({ greeting })");
+    await expect(
+      readFile(path.join(targetDirectory, "src/server.ts"))
+    ).rejects.toThrow();
     expect(
       await readFile(
         path.join(targetDirectory, "src/slots/sidebar/customers.view.tsx"),
@@ -679,9 +675,11 @@ describe("generateApp", () => {
       'import { createRemoteComponent } from "patchsmith/client"'
     );
     expect(bindings).toContain("export const Box");
-    expect(bindings).toContain('import type app from "./server"');
     expect(bindings).toContain(
-      "export const api = createApi<typeof app.functions>();"
+      'import type { AppServerFunctions } from "./patchsmith.functions.gen"'
+    );
+    expect(bindings).toContain(
+      "export const api = createApi<AppServerFunctions>();"
     );
     expect(bindings).toContain('"/customers": {');
     expect(bindings).toContain("customer?: string;");
