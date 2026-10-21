@@ -88,6 +88,7 @@
   "dependencies": {
     "@orpc/client": "catalog:",
     "@orpc/contract": "catalog:",
+    "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
     "@patchsmith/app": "workspace:*",
     "@patchsmith/client-platform": "workspace:*",
@@ -95,7 +96,6 @@
     "valibot": "catalog:"
   },
   "devDependencies": {
-    "@orpc/openapi": "catalog:",
     "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "@valibot/to-json-schema": "^1.8.0",

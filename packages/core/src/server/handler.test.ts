@@ -376,54 +376,63 @@ describe("createPatchsmithServer", () => {
 
   const authenticateImplementation = authenticateImplementationImplementation;
 
-  it("selects only requested authenticated scope names for host app reads", async () => {
-    const platformBodies: unknown[] = [];
+  it.each([
+    { names: ["org", "userOrg"], query: "" },
+    { names: ["userOrg"], query: "?scopes=userOrg" },
+    { names: ["userOrg"], query: "?scopes=userOrg&scopes=userOrg" },
+    { names: ["userOrg", "org"], query: "?scopes=userOrg&scopes=org" },
+  ])(
+    "selects authenticated scopes for host app reads: $query",
+    async ({ query, names }) => {
+      const platformBodies: unknown[] = [];
 
-    const server = createPatchsmithServer({
-      $internal: {
-        platformFetch: async (input, init) => {
-          const request =
-            input instanceof Request ? input : new Request(input, init);
+      const server = createPatchsmithServer({
+        $internal: {
+          platformFetch: async (input, init) => {
+            const request =
+              input instanceof Request ? input : new Request(input, init);
 
-          platformBodies.push(await request.json());
+            platformBodies.push(await request.json());
 
-          return Response.json({
-            items: [],
-            pagination: { hasMore: false, page: 1, pageSize: 100 },
-          });
+            return Response.json({
+              items: [],
+              pagination: { hasMore: false, page: 1, pageSize: 100 },
+            });
+          },
         },
-      },
-      baseUrl: "https://example.com/api/patchsmith",
-      components: {},
-      scopes: { org: testScopeSchema, userOrg: testScopeSchema },
-    });
+        baseUrl: "https://example.com/api/patchsmith",
+        components: {},
+        scopes: { org: testScopeSchema, userOrg: testScopeSchema },
+      });
 
-    const authenticate = authenticateImplementation;
+      const authenticate = authenticateImplementation;
 
-    const response = await server.handler(
-      new Request(
-        "https://example.com/api/patchsmith/apps?scopes=userOrg&scopes=userOrg"
-      ),
-      { authenticate }
-    );
+      const response = await server.handler(
+        new Request(`https://example.com/api/patchsmith/apps${query}`),
+        { authenticate }
+      );
 
-    expect(response.status).toBe(200);
-    expect(platformBodies).toEqual([
-      {
-        page: 1,
-        pageSize: 100,
-        scopes: [{ name: "userOrg", value: { tenant: "user_org" } }],
-      },
-    ]);
+      expect(response.status).toBe(200);
+      expect(platformBodies).toEqual([
+        {
+          page: 1,
+          pageSize: 100,
+          scopes: names.map((name) => ({
+            name,
+            value: { tenant: name === "org" ? "org" : "user_org" },
+          })),
+        },
+      ]);
 
-    const invalid = await server.handler(
-      new Request("https://example.com/api/patchsmith/apps?scopes=missing"),
-      { authenticate }
-    );
+      const invalid = await server.handler(
+        new Request("https://example.com/api/patchsmith/apps?scopes=missing"),
+        { authenticate }
+      );
 
-    expect(invalid.status).toBe(400);
-    expect(platformBodies).toHaveLength(1);
-  });
+      expect(invalid.status).toBe(400);
+      expect(platformBodies).toHaveLength(1);
+    }
+  );
 
   const authenticateImplementation2 = authenticateImplementation2Implementation;
 

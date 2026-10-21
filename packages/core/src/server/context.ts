@@ -1,9 +1,13 @@
 import type { Client as PlatformClient } from "@patchsmith/client-platform/client/client/index";
 
-import type { PatchsmithSchema } from "#schema/index";
+import type { PatchsmithSchema, SchemaSerializer } from "#schema/index";
 
 import type { PatchsmithScopeSchemas } from "./scope";
-import type { PatchsmithPlatformOptions, PatchsmithScopes } from "./types";
+import type {
+  PatchsmithPlatformOptions,
+  PatchsmithScopes,
+  ToolExecutionInput,
+} from "./types";
 
 const isFunctionValue = <TValue>(
   value: TValue
@@ -15,6 +19,15 @@ export interface PatchsmithRuntimeContext {
 }
 
 export interface Context {
+  publicOrigin: string;
+  toolUrl: string;
+  schemaSerializer?: SchemaSerializer;
+  cliAuthSignInPath?: `/${string}`;
+  resHeaders?: Headers;
+  toolExecutor?: (
+    request: Request,
+    input: ToolExecutionInput
+  ) => Promise<Response>;
   agentInstructions?: string;
   platform: PlatformClient;
   platformHeaders: Record<string, string>;
@@ -32,6 +45,14 @@ export interface Context {
 }
 
 export interface CreateContextOptions {
+  toolExecutor?: (
+    request: Request,
+    input: ToolExecutionInput
+  ) => Promise<Response>;
+  publicOrigin: string;
+  toolUrl: string;
+  schemaSerializer?: SchemaSerializer;
+  cliAuthSignInPath?: `/${string}`;
   agentInstructions?: string;
   platform: PlatformClient;
   platformHeaders?: PatchsmithPlatformOptions["headers"];
@@ -58,10 +79,15 @@ export const createContext = async (
   return {
     agentInstructions: options.agentInstructions,
     authenticate: options.authenticate,
+    cliAuthSignInPath: options.cliAuthSignInPath,
     platform: options.platform,
     platformHeaders,
+    publicOrigin: options.publicOrigin,
     request: options.request,
     schema: options.schema,
+    schemaSerializer: options.schemaSerializer,
     scopeSchemas: options.scopeSchemas,
+    toolExecutor: options.toolExecutor,
+    toolUrl: options.toolUrl,
   };
 };

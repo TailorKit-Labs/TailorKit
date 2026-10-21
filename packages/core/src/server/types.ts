@@ -20,6 +20,12 @@ import type { PatchsmithRouter } from "./router";
 
 type HeaderInput = ConstructorParameters<typeof Headers>[0];
 
+export interface ToolExecutionInput {
+  path: string;
+  input?: unknown;
+  requestId: string;
+}
+
 export interface PatchsmithPlatformOptions {
   baseUrl?: PlatformClientOptions["baseUrl"];
   fetch?: typeof fetch;
@@ -75,6 +81,10 @@ export interface PatchsmithServerBaseOptions<
    * @internal
    */
   $internal?: {
+    toolExecutor?: (
+      request: Request,
+      input: ToolExecutionInput
+    ) => Promise<Response>;
     platformBaseUrl?: PatchsmithPlatformOptions["baseUrl"];
     platformFetch?: typeof fetch;
     platformHeaders?: PatchsmithPlatformOptions["headers"];

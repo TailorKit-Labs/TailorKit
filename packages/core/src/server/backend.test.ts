@@ -1,6 +1,59 @@
+import type { AppsRuntimeSessionResponses } from "@patchsmith/client-platform/client/types.gen";
 import { beforeEach, expect, it, vi } from "vite-plus/test";
+import { z } from "zod";
 
-import { handleBackendSession } from "./backend";
+import { createPatchsmithServer } from "./handler";
+import type { PatchsmithScopes } from "./types";
+
+type IssueSession = (
+  appId: string,
+  scopes: PatchsmithScopes,
+  subjectId: string
+) => Promise<AppsRuntimeSessionResponses[200] | Response>;
+
+// Exercise the actual HTTP router; this adapter models only the downstream platform service.
+const handleBackendSession = async (
+  input: Request,
+  authenticate: (input: { request: Request }) => Promise<{
+    subjectId: string;
+    scopes: { workspace: { id: string } };
+  } | null>,
+  issue: IssueSession
+) => {
+  const server = createPatchsmithServer({
+    $internal: {
+      platformFetch: async (request, init) => {
+        const body = z
+          .object({
+            app: z.object({ shortId: z.string() }),
+            scopes: z.array(
+              z.object({
+                name: z.string(),
+                value: z.record(z.string(), z.string()),
+              })
+            ),
+            subjectId: z.string(),
+          })
+          .parse(await new Request(request, init).json());
+
+        const result = await issue(
+          body.app.shortId,
+          Object.fromEntries(
+            body.scopes.map(({ name, value }) => [name, value])
+          ),
+          body.subjectId
+        );
+
+        return result instanceof Response ? result : Response.json(result);
+      },
+    },
+    baseUrl: "https://host.test/api/patchsmith",
+    components: {},
+    scopes: { workspace: z.object({ id: z.string() }) },
+  });
+
+  return await server.handler(input, { authenticate });
+};
 
 const session = {
   expiresAt: 123,
@@ -123,7 +176,7 @@ it.each(["GET", "PUT"])("rejects %s session requests", async (method) => {
     issueSession
   );
 
-  expect(response.status).toBe(400);
+  expect(response.status).toBe(404);
   expect(issueSession).not.toHaveBeenCalled();
 });
 

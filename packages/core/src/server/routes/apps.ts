@@ -1,3 +1,5 @@
+import { openapi } from "@orpc/openapi";
+import { ORPCError } from "@orpc/server";
 import {
   appsCreate,
   appsDelete,
@@ -8,13 +10,17 @@ import {
 } from "@patchsmith/client-platform/client";
 import * as v from "valibot";
 
+import { httpPolicy } from "#server/http";
+import { listApps } from "#server/list-apps";
 import { platformAppSelector } from "#server/platform-app-selector";
 import {
   getPatchsmithScope,
   getPatchsmithScopes,
   o,
   requireCliDeployToken,
+  requireHostAuth,
 } from "#server/procedures";
+import { selectPatchsmithScopes } from "#server/scope";
 
 const paginationInput = v.object({
   page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
@@ -139,3 +145,45 @@ export const appRouter = {
         })
     ),
 };
+
+/** Browser discovery uses host authentication; CLI app operations keep deploy-token authentication. */
+export const discoverApps = o
+  .meta(
+    openapi({ method: "GET", path: "/apps" }),
+    httpPolicy({ authenticate: true })
+  )
+  .use(requireHostAuth)
+  .input(
+    v.object({
+      scopes: v.optional(
+        v.union([
+          v.pipe(
+            v.string(),
+            v.transform((name) => [name])
+          ),
+          v.array(v.string()),
+        ])
+      ),
+    })
+  )
+  .handler(async ({ context, input }) => {
+    const names = input.scopes;
+
+    let scopes;
+
+    try {
+      scopes =
+        names?.length === 1 && names[0] === ""
+          ? []
+          : selectPatchsmithScopes(context.patchsmith.scopes, names);
+    } catch (error) {
+      throw new ORPCError("BAD_REQUEST", {
+        message:
+          error instanceof Error ? error.message : "Invalid scope selection.",
+      });
+    }
+
+    return scopes.length
+      ? await listApps(context, scopes, context.request.signal)
+      : [];
+  });

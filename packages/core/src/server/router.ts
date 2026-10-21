@@ -1,9 +1,14 @@
 import type { RouterClient } from "@orpc/server";
 
 import { appAgentRouter } from "./routes/app-agent";
-import { appRouter } from "./routes/apps";
+import { appRouter, discoverApps } from "./routes/apps";
+import { backendSession } from "./routes/backend";
 import { cliAuthRouter } from "./routes/cli-auth";
+import { cliAuthPageRouter } from "./routes/cli-auth-page";
 import { deploymentRouter } from "./routes/deployments";
+import { meta, schema } from "./routes/metadata";
+import { toolsRouter } from "./routes/tools";
+import { views } from "./routes/views";
 
 export const patchsmithRouter = {
   appAgent: appAgentRouter,
@@ -15,3 +20,14 @@ export const patchsmithRouter = {
 export type PatchsmithRouter = typeof patchsmithRouter;
 
 export type PatchsmithRouterClient = RouterClient<PatchsmithRouter>;
+
+/** Existing plain HTTP URLs, served by oRPC's OpenAPI transport. */
+export const patchsmithHttpRouter = {
+  apps: discoverApps,
+  backend: { session: backendSession },
+  cliAuthPage: cliAuthPageRouter,
+  meta,
+  schema,
+  tools: toolsRouter,
+  views,
+};

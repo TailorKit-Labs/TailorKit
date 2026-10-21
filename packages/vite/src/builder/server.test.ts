@@ -33,6 +33,9 @@ import { linkTestDependencies, createDatabaseTestApp } from "#test-utils";
 import { readClientManifest } from "./client-views";
 import { runtimeManifest } from "./server";
 
+// These integration cases run real builds, schema checks, and browser evaluation.
+vi.setConfig({ testTimeout: 30_000 });
+
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
