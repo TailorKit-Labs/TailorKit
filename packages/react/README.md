@@ -56,7 +56,7 @@ const input = {
 
 Views return `{ status: "ready", data }`, or `{ status: "idle" | "loading" }` when context is unresolved. These context states are separate from TanStack's request status. The API does not read `useViewContext` registrations; changing explicit context changes the query key and fetches again. The existing `useViews` hook remains the option for automatically following registered context.
 
-Refresh view lists after installing or updating an app with `queryClient.invalidateQueries({ queryKey: ["patchsmith", patchsmithClient.baseUrl.toString(), "views"] })`. Existing `useApps`, `useViews`, and managed `RenderSlot` requests retain their separate nanostore cache. To refresh both caches, also call the existing hooks' `fetch()` methods.
+Refresh installed-app and view lists after installing or updating an app with `queryClient.invalidateQueries({ queryKey: ["patchsmith", patchsmithClient.baseUrl.toString(), "apps"] })` and `queryClient.invalidateQueries({ queryKey: ["patchsmith", patchsmithClient.baseUrl.toString(), "views"] })`. Existing `useApps`, `useViews`, and managed `RenderSlot` requests retain their separate nanostore cache. To refresh both caches, also call the existing hooks' `fetch()` methods.
 
 Include the active account or workspace in keys when switching between authenticated scopes. On sign-out or account changes, cancel and remove the corresponding TanStack queries and call `patchsmithClient.clearCache()` to reset Patchsmith's cached data and sessions. `clearCache()` does not clear an external query client.
 
