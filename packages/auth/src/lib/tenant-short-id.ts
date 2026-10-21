@@ -1,6 +1,9 @@
 import { createShortId } from "@patchsmith/db/short-id";
 
 export const tenantShortIdField = {
+  // Dash filters input:false fields out of organization-hook results. Supply
+  // the identity at the adapter boundary when that removes the hook's value.
+  defaultValue: createShortId,
   input: false,
   required: true,
   type: "string",
