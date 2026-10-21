@@ -1217,6 +1217,9 @@ importers:
       '@orpc/contract':
         specifier: 'catalog:'
         version: 2.0.0-beta.40
+      '@orpc/openapi':
+        specifier: 'catalog:'
+        version: 2.0.0-beta.40(crossws@0.4.15(srvx@1.0.4))
       '@orpc/server':
         specifier: 'catalog:'
         version: 2.0.0-beta.40(crossws@0.4.15(srvx@1.0.4))
@@ -1233,9 +1236,6 @@ importers:
         specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
     devDependencies:
-      '@orpc/openapi':
-        specifier: 'catalog:'
-        version: 2.0.0-beta.40(crossws@0.4.15(srvx@1.0.4))
       '@patchsmith/config':
         specifier: workspace:*
         version: link:../config

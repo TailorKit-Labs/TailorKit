@@ -317,7 +317,7 @@ it("requires authentication and rejects cross-origin and malformed requests", as
       }),
     });
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(init.method === "GET" ? 404 : 400);
   }
 
   expect(platformBodies).toHaveLength(0);
