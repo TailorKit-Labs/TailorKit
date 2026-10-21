@@ -1,0 +1,19 @@
+apps/web/src/components/apps/app-installations.tsx
+  s_f14b1f1a176a75::t_5fe285bf771e6e 73,87-88,114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e9cfbf09d253c39bf7c1ae82cc8b614d0a67ac7b",
+  "prompts": {},
+  "sessions": {
+    "s_f14b1f1a176a75": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15cff-9ef0-7ac2-9903-33d905fdc98b",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
