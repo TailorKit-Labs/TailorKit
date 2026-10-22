@@ -1,0 +1,137 @@
+packages/agent/src/skills/backend-functions.md
+  s_dc8bce25077cef::t_f4ed154aae141b 5,12,40
+packages/app/README.md
+  s_dc8bce25077cef::t_f4ed154aae141b 144,156,158,160,162-166,168
+packages/cli/src/generator/agent-examples.test.ts
+  s_dc8bce25077cef::t_f4ed154aae141b 186,189-191,193,235
+  s_dc8bce25077cef::t_0257180d5af3e7 11-14
+packages/vite/README.md
+  s_dc8bce25077cef::t_f4ed154aae141b 3,23-26
+packages/agent-fx/src/agent.integration.test.ts
+  s_dc8bce25077cef::t_f4ed154aae141b 414
+packages/cli/src/generator/capabilities-skill.test.ts
+  s_dc8bce25077cef::t_56ff2664740740 81,85,342,391
+packages/agent-fx/src/skills/functions.md
+  s_dc8bce25077cef::t_f4ed154aae141b 15,17,29,51,59,61,67,85
+packages/vite/src/builder/file-functions.ts
+  s_dc8bce25077cef::t_411532e0542fe1 1,3-8,10-28,30-31,36-45,52,54,56-57,59-110,112-179,181-187,191,196-215,217-218
+  s_dc8bce25077cef::t_fec76e3587e34a 2,29,32-33,35,46-51,53
+  s_dc8bce25077cef::t_f96546ecc1f8af 55
+  s_dc8bce25077cef::t_4b9daebff60196 9
+  s_dc8bce25077cef::t_de9a128e81fd95 34
+  s_dc8bce25077cef::t_ca862bb25a6e94 58
+  s_dc8bce25077cef::t_6bd86a11ed8430 111
+  s_dc8bce25077cef::t_e9f1c6b2ce9d57 180
+  s_dc8bce25077cef::t_4d81586c41c484 188-190
+  s_dc8bce25077cef::t_6559fddf4c9f16 192-195
+  s_dc8bce25077cef::t_761d1390f797f9 216
+packages/app/src/server.ts
+  s_dc8bce25077cef::t_99ab0661715acc 7,10
+  s_dc8bce25077cef::t_2e82d4c95aed43 11
+packages/vite/src/builder/index.ts
+  s_dc8bce25077cef::t_411532e0542fe1 13-17,19
+  s_dc8bce25077cef::t_15e0b453932676 18
+packages/cli/src/generator/generate.ts
+  s_dc8bce25077cef::t_ebac8bded4510c 287
+packages/cli/src/build.test.ts
+  s_dc8bce25077cef::t_56ff2664740740 22,43,45,48
+packages/app/src/server/functions.ts
+  s_dc8bce25077cef::t_99ab0661715acc 156-166,170
+packages/cli/src/generator/templates/patchsmith.config.ts.liquid
+  s_dc8bce25077cef::t_56ff2664740740 10-11
+packages/vite/src/builder/server.ts
+  s_dc8bce25077cef::t_7e12e14a16ef84 1,4,23-51,99,155-156,227-229
+packages/app/src/server/file-functions.ts
+  s_dc8bce25077cef::t_99ab0661715acc 1-17,20-46,49-60,63-90
+  s_dc8bce25077cef::t_298fa72a1055c9 18-19
+  s_dc8bce25077cef::t_4a3e287e749e4e 47-48
+  s_dc8bce25077cef::t_335dc09b6c87ad 61-62
+packages/cli/src/generator/templates/vite.config.ts.liquid
+  s_dc8bce25077cef::t_56ff2664740740 7,10
+packages/vite/src/builder/server.test.ts
+  s_dc8bce25077cef::t_56ff2664740740 213,221,224-225,242-243,246,250-251,306,311,522,524,526-527,531
+  s_dc8bce25077cef::t_44b54c4f6b278f 480
+  s_dc8bce25077cef::t_e250f7a8cde012 155,159
+  s_dc8bce25077cef::t_653c3e26013a9d 8,94-99,168-182,184-191,193-197,199-206
+  s_dc8bce25077cef::t_d91b596c3c7e8e 100,210,212,279-281,394-396
+  s_dc8bce25077cef::t_1433662eabeef7 101-154,156-158,160-167,207-209,211
+  s_dc8bce25077cef::t_ec1afce5a02065 183
+  s_dc8bce25077cef::t_83919a86ce0a2d 192
+  s_dc8bce25077cef::t_684b432415c537 198
+packages/vite/src/config/loader.test.ts
+  s_dc8bce25077cef::t_56ff2664740740 74,77,86
+  s_dc8bce25077cef::t_e250f7a8cde012 65-68,70-72
+  s_dc8bce25077cef::t_1c3ec188654794 69
+packages/app/src/server/file-functions.test.ts
+  s_dc8bce25077cef::t_44b54c4f6b278f 39
+  s_dc8bce25077cef::t_1a3815943b9da0 1-16,18-19,22-28,30-38,40-41,44-46,49-51,54-101,103-106
+  s_dc8bce25077cef::t_1ed996ea1d013e 17
+  s_dc8bce25077cef::t_19290bf1421669 20-21
+  s_dc8bce25077cef::t_28de06fd61b265 29
+  s_dc8bce25077cef::t_fe3a50bfcd2aa0 42-43
+  s_dc8bce25077cef::t_2b998535c6438c 47-48
+  s_dc8bce25077cef::t_c6c47fd498165d 52-53
+  s_dc8bce25077cef::t_5a4814e390af0e 102
+packages/vite/src/builder/file-functions.test.ts
+  s_dc8bce25077cef::t_fec76e3587e34a 27
+  s_dc8bce25077cef::t_1a3815943b9da0 1-6,8-16,18-24,26,30-34,37-40,42-60,62-71,73-81,83-102,104-105,109-111,113-114,118-120,122-123,127-129,131
+  s_dc8bce25077cef::t_8114db8e313a39 7,17,25,28-29,35-36,41,61,72,82,103,106-108,112,115-117,121,124-126,130,132
+.changeset/quiet-functions-register.md
+  s_dc8bce25077cef::t_38ebac6de6b5cc 1-12
+packages/agent-fx/src/instructions.md
+  s_dc8bce25077cef::t_f4ed154aae141b 44-45,48
+packages/cli/src/generator/types.test.ts
+  s_dc8bce25077cef::t_e250f7a8cde012 111
+  s_dc8bce25077cef::t_a0f15ee82aaf3b 65-66,70,73,75-76,79,81-82,84-86,95,97-100,107-110,112,115,120-122,124-126,128
+packages/cli/src/generator/types.ts
+  s_dc8bce25077cef::t_ebac8bded4510c 1,10-13,805,843-845,850,950-952,954,956-957,960-963,965,968,976
+packages/cli/src/deploy.ts
+  s_dc8bce25077cef::t_ebac8bded4510c 270-271
+  s_dc8bce25077cef::t_e250f7a8cde012 272
+  s_dc8bce25077cef::t_653c3e26013a9d 284
+  s_dc8bce25077cef::t_407067e0433ead 367-369,371-379
+  s_dc8bce25077cef::t_066f21b5449d75 370
+  s_dc8bce25077cef::t_35183d6451a730 275-278,281
+packages/cli/src/deploy.test.ts
+  s_dc8bce25077cef::t_56ff2664740740 122,255,309,312,335,338,343,395-399,459,507
+  s_dc8bce25077cef::t_407067e0433ead 354-373,375-378,380-387,389-391
+  s_dc8bce25077cef::t_7747d2295a5030 374
+  s_dc8bce25077cef::t_dbbf350f484e2c 379
+  s_dc8bce25077cef::t_7a7f7667a8c72c 388
+packages/cli/src/generator/generate.test.ts
+  s_dc8bce25077cef::t_56ff2664740740 135,191,195,232,240-242,679-682
+packages/vite/src/test-utils.ts
+  s_dc8bce25077cef::t_56ff2664740740 65,67,74
+  s_dc8bce25077cef::t_3b05aab2beac20 75-76
+packages/cli/src/generator/templates/index.ts
+  s_dc8bce25077cef::t_ebac8bded4510c 17
+packages/vite/src/index.ts
+  s_dc8bce25077cef::t_7e12e14a16ef84 14,91-92,94-95,107,144,274-282,325
+  s_dc8bce25077cef::t_090274e39a8ee0 93
+  s_dc8bce25077cef::t_4fb64ab3d31b95 335
+docs/writing-apps/overview.mdx
+  s_dc8bce25077cef::t_0a25ed54298d02 28,37,53-54,60
+  s_dc8bce25077cef::t_efc7058ba9a1e0 61
+packages/agent-fx/src/skills/views.md
+  s_dc8bce25077cef::t_f4ed154aae141b 82
+packages/cli/src/generator/references.ts
+  s_dc8bce25077cef::t_332800ba9378b5 386-387
+playground/apps/todo/.agents/skills/patchsmith-capabilities/references/index.md
+  s_dc8bce25077cef::t_88df0986946284 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c96def078fb673acc300952a3e9de85d00ecb991",
+  "prompts": {},
+  "sessions": {
+    "s_dc8bce25077cef": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1609d-c2e3-7f21-8d84-489fe802c40b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
