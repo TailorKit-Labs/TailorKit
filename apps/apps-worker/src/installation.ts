@@ -15,6 +15,7 @@ import { verifier } from "./supervisor/auth";
 import { deploymentSource, installationName } from "./supervisor/source";
 import type { ServerDeployment } from "./supervisor/source";
 import { createSubscriptions } from "./supervisor/subscriptions";
+import { RuntimeTimings } from "./timing";
 import {
   createInstallationHandler,
   rpcErrorResponse,
@@ -50,14 +51,21 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
   );
 
   async fetch(request: Request): Promise<Response> {
-    return await Effect.runPromise(
+    const timings = new RuntimeTimings();
+    const finish = timings.start("runtime_installation");
+
+    const result = await Effect.runPromise(
       Effect.gen({ self: this }, function* install() {
         const token = yield* Effect.try({
           catch: appError,
           try: () => bearerToken(request),
         });
 
-        const identity = yield* this.#verify(token);
+        const identity = yield* timings.measure(
+          "runtime_auth",
+          this.#verify(token)
+        );
+
         yield* Effect.try({
           catch: appError,
           try: () => {
@@ -98,7 +106,12 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
           try: async () =>
             await this.#http.handle(request, {
               context: {
-                installation: this.#operations(identity, token, request.signal),
+                installation: this.#operations(
+                  identity,
+                  token,
+                  request.signal,
+                  timings
+                ),
               },
               prefix: "/rpc",
             }),
@@ -117,37 +130,53 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
         catchEffect((err) => Effect.succeed(rpcErrorResponse(err)))
       )
     );
+
+    finish();
+
+    return timings.response(result);
   }
 
   #operations(
     identity: Identity,
     token: string,
-    signal?: AbortSignal
+    signal: AbortSignal | undefined,
+    timings: RuntimeTimings
   ): Installation {
     return {
       action: (input, callSignal) =>
-        this.#action(input, identity, token, signal ?? callSignal).pipe(
-          Effect.flatMap((result) => resultEffect(result.result))
-        ),
+        this.#action(
+          input,
+          identity,
+          token,
+          timings,
+          signal ?? callSignal
+        ).pipe(Effect.flatMap((result) => resultEffect(result.result))),
       mutate: (input) =>
-        this.#mutate(input, identity).pipe(
+        this.#mutate(input, identity, timings).pipe(
           Effect.flatMap((result) => resultEffect(result.result))
         ),
       query: (input) =>
-        this.#query(input, identity).pipe(
+        this.#query(input, identity, timings).pipe(
           Effect.flatMap((result) => resultEffect(result.result))
         ),
     };
   }
 
-  #facet(identity: Identity) {
+  #facet(identity: Identity, timings = new RuntimeTimings()) {
     return Effect.gen({ self: this }, function* facet() {
-      const deployment = yield* this.#source.current(
-        identity,
-        this.ctx.storage.kv.get<string>("version")?.split(":")[0]
+      const deployment = yield* timings.measure(
+        "runtime_metadata",
+        this.#source.current(
+          identity,
+          this.ctx.storage.kv.get<string>("version")?.split(":")[0],
+          timings
+        )
       );
 
-      return (yield* this.#prepareFacet(deployment, identity)).facet;
+      return (yield* timings.measure(
+        "runtime_prepare",
+        this.#prepareFacet(deployment, identity, timings)
+      )).facet;
     });
   }
 
@@ -164,45 +193,74 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
     }
   }
 
-  #databaseQuery(input: Invocation, identity: Identity) {
-    return this.#facet(identity).pipe(
+  #databaseQuery(
+    input: Invocation,
+    identity: Identity,
+    timings = new RuntimeTimings()
+  ) {
+    return this.#facet(identity, timings).pipe(
       Effect.flatMap((facet: Pick<AppFacet, "query">) =>
-        Effect.tryPromise({
-          catch: appError,
-          try: async () =>
-            await this.#callFacet(
-              facet,
-              async () => await facet.query(input, identity)
-            ),
-        })
+        timings.measure(
+          "runtime_execute",
+          Effect.tryPromise({
+            catch: appError,
+            try: async () =>
+              await this.#callFacet(
+                facet,
+                async () => await facet.query(input, identity)
+              ),
+          })
+        )
       )
     );
   }
 
-  #query(input: Invocation, identity: Identity) {
-    return this.#queue.withPermits(1)(this.#databaseQuery(input, identity));
+  #query(input: Invocation, identity: Identity, timings: RuntimeTimings) {
+    return this.#queued(this.#databaseQuery(input, identity, timings), timings);
   }
 
-  #mutate(input: Invocation & { requestId: string }, identity: Identity) {
-    return this.#queue.withPermits(1)(
-      Effect.gen({ self: this }, function* mutation() {
-        const facet = yield* this.#facet(identity);
+  #queued<A, E, R>(operation: Effect.Effect<A, E, R>, timings: RuntimeTimings) {
+    return Effect.suspend(() => {
+      const admitted = timings.start("runtime_queue");
 
-        const result = yield* Effect.tryPromise({
-          catch: appError,
-          try: async () =>
-            await this.#callFacet(
-              facet,
-              async () => await facet.mutate(input, identity)
-            ),
-        });
+      return this.#queue.withPermits(1)(
+        Effect.gen(function* queued() {
+          admitted();
+
+          return yield* operation;
+        })
+      );
+    });
+  }
+
+  #mutate(
+    input: Invocation & { requestId: string },
+    identity: Identity,
+    timings: RuntimeTimings
+  ) {
+    return this.#queued(
+      Effect.gen({ self: this }, function* mutation() {
+        const facet = yield* this.#facet(identity, timings);
+
+        const result = yield* timings.measure(
+          "runtime_execute",
+          Effect.tryPromise({
+            catch: appError,
+            try: async () =>
+              await this.#callFacet(
+                facet,
+                async () => await facet.mutate(input, identity)
+              ),
+          })
+        );
 
         if (result.committed && result.tables.length) {
           yield* this.#refresh(result.tables, facet);
         }
 
         return result;
-      })
+      }),
+      timings
     );
   }
 
@@ -243,7 +301,11 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
     await this.#subscriptions.alarm();
   }
 
-  #prepareFacet(deployment: ServerDeployment, identity: Identity) {
+  #prepareFacet(
+    deployment: ServerDeployment,
+    identity: Identity,
+    timings: RuntimeTimings
+  ) {
     return Effect.gen({ self: this }, function* prepareFacet() {
       const version = `${deployment.deploymentId}:${deployment.checksum}`;
 
@@ -258,7 +320,10 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
       }
 
       // Verify code before stopping the running version. Cache belongs to this installation.
-      const code = yield* this.#source.code(deployment);
+      const code = yield* timings.measure(
+        "runtime_bundle",
+        this.#source.code(deployment)
+      );
 
       return yield* Effect.try({
         catch: appError,
@@ -320,49 +385,54 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
     input: Invocation,
     identity: Identity,
     token: string,
+    timings: RuntimeTimings,
     signal?: AbortSignal
   ) {
-    const admission = this.#queue.withPermits(1)(
+    const admission = this.#queued(
       Effect.gen({ self: this }, function* admission() {
-        const facet = yield* this.#facet(identity);
+        const facet = yield* this.#facet(identity, timings);
 
         return { facet, lease: this.#actions.open(identity, signal) };
-      })
+      }),
+      timings
     );
 
     return Effect.acquireUseRelease(
       admission,
       ({ facet, lease }) =>
-        Effect.tryPromise({
-          catch: appError,
-          try: async () => {
-            lease.signal.throwIfAborted();
+        timings.measure(
+          "runtime_execute",
+          Effect.tryPromise({
+            catch: appError,
+            try: async () => {
+              lease.signal.throwIfAborted();
 
-            const capability = new ActionCapability(
-              lease,
-              async (tables) => {
-                await Effect.runPromise(
-                  this.#queue.withPermits(1)(this.#refresh(tables, facet))
-                );
-              },
-              { token, url: identity.toolUrl }
-            );
+              const capability = new ActionCapability(
+                lease,
+                async (tables) => {
+                  await Effect.runPromise(
+                    this.#queue.withPermits(1)(this.#refresh(tables, facet))
+                  );
+                },
+                { token, url: identity.toolUrl }
+              );
 
-            return await abortable(
-              this.#callFacet(
-                facet,
-                async () =>
-                  await facet.action(
-                    input,
-                    identity,
-                    capability,
-                    cancellationStream(lease.signal)
-                  )
-              ),
-              lease.signal
-            );
-          },
-        }),
+              return await abortable(
+                this.#callFacet(
+                  facet,
+                  async () =>
+                    await facet.action(
+                      input,
+                      identity,
+                      capability,
+                      cancellationStream(lease.signal)
+                    )
+                ),
+                lease.signal
+              );
+            },
+          })
+        ),
       ({ lease }) =>
         Effect.sync(() => {
           lease.close();
