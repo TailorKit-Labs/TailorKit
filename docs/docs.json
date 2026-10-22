@@ -23,7 +23,8 @@
           "concepts/slots",
           "concepts/views",
           "concepts/components",
-          "concepts/tools"
+          "concepts/tools",
+          "concepts/hooks"
         ]
       },
       {

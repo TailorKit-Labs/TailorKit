@@ -1,0 +1,116 @@
+---
+title: "Call app logic from your host"
+sidebarTitle: "Hooks"
+description: "Let apps implement backend logic that your host can call."
+---
+
+A hook is a function your host declares and an app implements. Use hooks to ask an app to sync data, process an event, or perform another backend task.
+
+Your host decides when to call a hook, such as from a scheduled job, a verified webhook, or a user action. Apps can implement any subset of the hooks you declare.
+
+## Define a hook
+
+Declare its input and output in your contract:
+
+```ts title="patchsmith.ts"
+import { defineContract, hook } from "patchsmith";
+import { z } from "zod";
+
+export const contract = defineContract({
+  scopes: { team: z.object({ id: z.string() }) },
+  hooks: {
+    sync: hook()
+      .input(z.object({ mode: z.enum(["full", "incremental"]) }))
+      .output(z.object({ processed: z.number(), hasMore: z.boolean() })),
+  },
+});
+```
+
+A [tool](/concepts/tools) lets an app call your host's code. A hook lets your host call an app's code.
+
+## Implement it in an app
+
+Regenerate the app's host bindings with `patchsmith generate`. Add a file under `src/hooks` that default-exports `defineHook`:
+
+```ts title="src/hooks/sync.hook.ts"
+import { defineHook } from "patchsmith/server";
+
+export default defineHook({
+  hook: "sync",
+  handler: async ({ input, actions }) => {
+    return await actions.customers.sync(input);
+  },
+});
+```
+
+This example assumes the app has a `customers.sync` action that accepts the sync mode and returns `{ processed, hasMore }`. The generated bindings check the handler's input and output against your contract.
+
+Hook files are discovered automatically. The `hook` name must match the file path: `sync.hook.ts` implements `sync`, and `customers/sync.hook.ts` implements `"customers.sync"`. Publish the app so its deployment advertises the hooks it supports.
+
+Handlers run in the app's isolated backend. They can call the app's `queries`, `mutations`, and `actions`, plus the server [tools](/concepts/tools#server-tools) you expose. They have no direct database handle; use queries and mutations for installation data.
+
+## Find apps and call the hook
+
+Use the server returned by `createServer` in your [host integration](/getting-started/installation#implement-the-server). Resolve the authorized team and subject in trusted server code, then find supporting installations:
+
+```ts title="Host server code"
+const context = {
+  scopes: { team: { id: teamId } },
+  subjectId: user.id,
+};
+
+const apps = await patchsmith.hooks.sync.list({ context });
+
+for (const app of apps) {
+  const result = await patchsmith.hooks.sync.invoke({
+    appId: app.id,
+    context,
+    input: { mode: "incremental" },
+  });
+
+  console.log(result.processed);
+}
+```
+
+`list` checks each installation's selected published deployment for the hook name without running app code. `invoke` calls one installation and waits for its result. Patchsmith validates the input before execution and the output before returning it.
+
+Your host controls scheduling, retries, and any further calls when `hasMore` is `true`. Keep batches bounded and make writes safe to repeat. Hooks do not provide durable execution or automatic retries.
+
+## SDK reference
+
+Import `hook` and `defineContract` from `patchsmith`. Declare hooks in `defineContract({ hooks })`, keyed by name.
+
+| Method            | Meaning                                             |
+| ----------------- | --------------------------------------------------- |
+| `hook()`          | Declares a hook apps can implement.                 |
+| `.input(schema)`  | Defines its argument. Omit for no input.            |
+| `.output(schema)` | Defines its return value. Omit for no return value. |
+
+Call hooks on the server returned by `createServer` from `patchsmith/server`:
+
+| Method | Arguments | Result |
+| --- | --- | --- |
+| `patchsmith.hooks.sync.list` | `{ context, signal? }` | A promise of supporting installations. |
+| `patchsmith.hooks.sync.invoke` | `{ appId, context, input, signal? }` | A promise of the declared output. `input` can be omitted for hooks without required input. |
+
+`context` contains authorized `scopes` and a required `subjectId`. Both methods accept an optional `AbortSignal`. For dotted hook names, use bracket access such as `patchsmith.hooks["customers.sync"]`.
+
+In app code, import `defineHook` from `patchsmith/server`. Its handler receives `input`, `queries`, `mutations`, `actions`, `tools`, `identity`, `scope`, `requestId`, and `signal`.
+
+## Frequently asked questions
+
+<AccordionGroup>
+  <Accordion title="Does every app need to implement every hook?">
+    No. Apps implement the hooks they support. Use `list` to find installations
+    whose selected deployment includes a handler for that hook.
+  </Accordion>
+  <Accordion title="Can a browser call a hook directly?">
+    Hook invocation requires a host-issued server session for that named hook.
+    For a user-triggered operation, authenticate and authorize the request on
+    your server before invoking it.
+  </Accordion>
+  <Accordion title="Why doesn't an older deployment appear in the list?">
+    Hook names are recorded when an app is built and published. Rebuild and
+    republish with hook support to populate that metadata.
+  </Accordion>
+</AccordionGroup>
