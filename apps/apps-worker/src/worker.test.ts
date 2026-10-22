@@ -140,6 +140,18 @@ const setup = () => {
     tables: [],
   });
 
+  const facetMutate = vi.fn<AppFacet["mutate"]>().mockResolvedValue({
+    committed: false,
+    result: { ok: true, value: "result" },
+    tables: [],
+  });
+
+  const facetAction = vi.fn<AppFacet["action"]>().mockResolvedValue({
+    committed: false,
+    result: { ok: true, value: "result" },
+    tables: [],
+  });
+
   const startup =
     vi.fn<
       (options: {
@@ -159,7 +171,7 @@ const setup = () => {
     (_name: string, options: () => Parameters<typeof startup>[0]) => {
       startup(options());
 
-      return { query: facetQuery };
+      return { action: facetAction, mutate: facetMutate, query: facetQuery };
     }
   );
 
@@ -226,6 +238,8 @@ const setup = () => {
     abort,
     ctx,
     env,
+    facetAction,
+    facetMutate,
     facetQuery,
     get,
     getByName,
@@ -454,6 +468,55 @@ it("loads isolated code, passes only the verified identity and caches a warm dep
   expect(fixtures.abort).not.toHaveBeenCalled();
   expect(globalThis.fetch).toHaveBeenCalledOnce();
 });
+
+it.each(["query", "mutate", "action"] as const)(
+  "reacquires the cached facet after a rejected %s RPC without retrying the call",
+  async (method) => {
+    const fixtures = setup();
+
+    const installation = new PatchsmithAppInstallation(
+      fixtures.ctx,
+      fixtures.env
+    );
+
+    const initial = await installation.fetch(await request());
+    expect(initial.status).toBe(200);
+
+    const calls = {
+      action: fixtures.facetAction,
+      mutate: fixtures.facetMutate,
+      query: fixtures.facetQuery,
+    };
+
+    calls[method].mockRejectedValueOnce(
+      new AppError("UNAVAILABLE", "Facet reset")
+    );
+    const routes = { action: "actions", mutate: "mutations", query: "queries" };
+
+    const failed = await installation.fetch(
+      await request(
+        {},
+        `/rpc/${routes[method]}`,
+        JSON.stringify({
+          json:
+            method === "mutate"
+              ? { name: "list", requestId: crypto.randomUUID() }
+              : { name: "list" },
+        })
+      )
+    );
+
+    expect(failed.status).toBe(503);
+    expect(fixtures.get).toHaveBeenCalledOnce();
+
+    const recovered = await installation.fetch(await request());
+    expect(await recovered.json()).toEqual({ json: "result" });
+    expect(fixtures.get).toHaveBeenCalledTimes(2);
+    expect(fixtures.put).toHaveBeenCalledOnce();
+    expect(fixtures.abort).not.toHaveBeenCalled();
+    expect(calls[method]).toHaveBeenCalledTimes(method === "query" ? 3 : 1);
+  }
+);
 
 it("changes code on the same facet and accepts old client tokens without switching back", async () => {
   const fixtures = setup();
