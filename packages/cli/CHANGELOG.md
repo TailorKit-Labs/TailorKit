@@ -1,5 +1,21 @@
 # @patchsmith/cli
 
+## 0.1.0-beta.61
+
+### Minor Changes
+
+- 3c23da7: Always build and deploy a private backend for every app, including apps with no functions. Function discovery, generated API bindings, view instance resolvers, and database migration generation now work without `server: {}` in `patchsmith.config.ts`.
+
+  The optional `server` field continues to configure settings such as a custom migrations path. Apps that previously omitted it now include a backend automatically; existing empty `server: {}` settings can be removed.
+
+### Patch Changes
+
+- Updated dependencies [3c23da7]
+- Updated dependencies [dfca420]
+  - @patchsmith/vite@0.1.0-beta.61
+  - @patchsmith/core@0.1.0-beta.61
+  - @patchsmith/client-platform@0.1.0-beta.61
+
 ## 0.1.0-beta.60
 
 ### Patch Changes

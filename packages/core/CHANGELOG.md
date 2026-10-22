@@ -1,5 +1,13 @@
 # @patchsmith/core
 
+## 0.1.0-beta.61
+
+### Patch Changes
+
+- Updated dependencies [dfca420]
+  - @patchsmith/app@0.1.0-beta.61
+  - @patchsmith/client-platform@0.1.0-beta.61
+
 ## 0.1.0-beta.60
 
 ### Patch Changes
