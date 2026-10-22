@@ -17,7 +17,10 @@ export default defineConfig({
     target: "node22",
   },
   test: {
+    // Watch assertions span client and server rebuilds on shared CI runners.
+    expect: { poll: { timeout: 10_000 } },
     // Build fixtures also launch Vite and Drizzle; avoid saturating CI CPUs.
     maxWorkers: 2,
+    testTimeout: 30_000,
   },
 });
