@@ -1,0 +1,44 @@
+.changeset/nearby-instance-resolution.md
+  h_18044dd1b61a81 7-8
+benchmarks/instance-resolution/README.md
+  h_18044dd1b61a81 11-14
+packages/api-platform/openapi.json
+  h_18044dd1b61a81 3648-3664,6127-6160
+packages/api-platform/package.json
+  h_18044dd1b61a81 46
+packages/api-platform/src/routes/apps.test.ts
+  h_18044dd1b61a81 347-393
+packages/api-platform/src/routes/apps.ts
+  h_18044dd1b61a81 1,8,207-212,214-217,251-256,258-259,261-273,275-284,286,289-290,292-299,301,303-311
+packages/api-platform/src/runtime/view-resolution.test.ts
+  h_18044dd1b61a81 1,5-6,10-27,330,357,416-517
+packages/api-platform/src/runtime/view-resolution.ts
+  h_18044dd1b61a81 6,85-94,96,103-108,111-118,121-125,128-129,131-134,137-139,141-180,182-194,196,198-200,202-237,239-240,244-254
+packages/client-platform/src/client/index.ts
+  h_18044dd1b61a81 4
+packages/client-platform/src/client/sdk.gen.ts
+  h_18044dd1b61a81 5,102
+packages/client-platform/src/client/types.gen.ts
+  h_18044dd1b61a81 11-30,784-792
+packages/core/package.json
+  h_18044dd1b61a81 91,97
+packages/core/src/server/routes/views.ts
+  h_18044dd1b61a81 1,5,23-28,30-80,82,87-102,105,107-113,122,126-138,140,142-143,146-178,180,182-184,186-188,190-194,196-223,225,227-249,251-289,291-292
+packages/core/src/server/views.test.ts
+  h_18044dd1b61a81 361-365,370,388-399
+pnpm-lock.yaml
+  h_18044dd1b61a81 188-190,797-799,1226-1228,1244-1246,19451
+pnpm-workspace.yaml
+  h_18044dd1b61a81 43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "875dd1165eb3a4de966014d6522407db983a8b37",
+  "prompts": {},
+  "humans": {
+    "h_18044dd1b61a81": {
+      "author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
