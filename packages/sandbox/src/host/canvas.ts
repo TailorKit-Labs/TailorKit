@@ -89,6 +89,7 @@ export const createCanvasTarget = (
   let connection: { close: (message: string) => void } | null = null;
   let disposed = false;
   let lastPresentation = -Infinity;
+  let lastWake = -Infinity;
 
   return {
     close: () => {
@@ -106,7 +107,6 @@ export const createCanvasTarget = (
       let presentationTimer: ReturnType<typeof setTimeout> | null = null;
       let sequence = 0;
       let waitSequence = 0;
-      let lastWake = -Infinity;
       let waitTimer: ReturnType<typeof setTimeout> | null = null;
       let closed = false;
       let input: ReturnType<typeof createCanvasInput> | null = null;

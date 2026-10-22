@@ -14,20 +14,25 @@ type PresentationReply =
   | { sequence: number; type: "ready" }
   | { message: string; type: "closed" };
 
-const fixture = (hidden: boolean) => {
-  vi.useFakeTimers();
-  vi.stubGlobal("ImageBitmap", Bitmap);
-
-  const port = Object.assign(new EventTarget(), {
+const createPort = () =>
+  Object.assign(new EventTarget(), {
     close: vi.fn<() => void>(),
     postMessage: vi.fn<(message: PresentationReply) => void>(),
     start: vi.fn<() => void>(),
   });
 
+const fixture = (hidden: boolean) => {
+  vi.useFakeTimers();
+  vi.stubGlobal("ImageBitmap", Bitmap);
+
+  let port = createPort();
+
   vi.stubGlobal(
     "MessageChannel",
     // oxlint-disable-next-line prefer-arrow-callback -- The host calls this with new; arrow functions are not constructors.
     vi.fn(function createChannel() {
+      port = createPort();
+
       return { port1: port, port2: new EventTarget() };
     })
   );
@@ -56,7 +61,15 @@ const fixture = (hidden: boolean) => {
 
       return bitmap;
     },
-    port,
+    get port() {
+      return port;
+    },
+    reconnect: () => {
+      port.dispatchEvent(
+        new MessageEvent("message", { data: { type: "close" } })
+      );
+      target.connect();
+    },
     send: (data: { type: string; sequence: number; delay?: number }) =>
       port.dispatchEvent(new MessageEvent("message", { data })),
     target,
@@ -95,6 +108,30 @@ it("paces bitmap-free draws on the host clock and enforces the host cap", async 
       type: "ready",
     });
     expect(test.transfer).not.toHaveBeenCalled();
+  } finally {
+    test.target.close();
+  }
+});
+
+it("preserves the wake-up limit when a producer reconnects to the same surface", async () => {
+  const test = fixture(false);
+
+  try {
+    test.send({ delay: 0, sequence: 1, type: "wait" });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(test.port.postMessage).toHaveBeenLastCalledWith({
+      sequence: 1,
+      type: "ready",
+    });
+    test.reconnect();
+    test.send({ delay: 0, sequence: 1, type: "wait" });
+    await vi.advanceTimersByTimeAsync(49);
+    expect(test.port.postMessage).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(test.port.postMessage).toHaveBeenCalledExactlyOnceWith({
+      sequence: 1,
+      type: "ready",
+    });
   } finally {
     test.target.close();
   }

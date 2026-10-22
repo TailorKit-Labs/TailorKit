@@ -93,7 +93,7 @@ const surface = experimental_useCanvasSurface(
 );
 ```
 
-The default path still relies on host acknowledgements for backpressure. A continuously skipped frame yields with a timer, at the requested interval or approximately 60 Hz by default, so skipping cannot create a tight microtask loop. Timers are used because the sandbox iframe is hidden. Pending waits are cancelled when the connection is retired, and repeated invalidations coalesce. Updating the requested rate takes effect after any existing wait finishes. These controls do not impose hard execution quotas on app code.
+The default path still relies on host acknowledgements for backpressure. A continuously skipped frame waits on the host clock through `surface.waitForFrame`, at the requested interval or approximately 60 Hz by default, subject to the host's FPS policy, so skipping cannot create a tight microtask loop. Pending waits are cancelled when the connection is retired, and repeated invalidations coalesce. Updating the requested rate cancels any outstanding wait and applies the new rate immediately. These controls do not impose hard execution quotas on app code.
 
 ### Library lifecycle and native local input
 
