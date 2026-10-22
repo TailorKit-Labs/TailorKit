@@ -1,5 +1,20 @@
 # @patchsmith/cli
 
+## 0.1.0-beta.62
+
+### Minor Changes
+
+- a0ed266: Require `.router.ts` for automatically registered backend router modules in `src/functions/`. The CLI scaffolds `greeting.router.ts`, and generated guidance uses the new suffix. Both `.router.ts` and legacy `.fn.ts` modules remain blocked from browser bundles.
+
+  This is a breaking change: rename existing `.fn.ts` modules to `.router.ts`, update their imports, and run `patchsmith generate` to refresh bindings. Only `src/functions/**/*.router.ts` files register backend functions; `.fn.ts` files are no longer discovered. The `functions/` directory and API namespaces stay the same.
+
+### Patch Changes
+
+- Updated dependencies [a0ed266]
+  - @patchsmith/vite@0.1.0-beta.62
+  - @patchsmith/client-platform@0.1.0-beta.62
+  - @patchsmith/core@0.1.0-beta.62
+
 ## 0.1.0-beta.61
 
 ### Minor Changes
