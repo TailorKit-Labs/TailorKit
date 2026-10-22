@@ -243,9 +243,15 @@ describe("platform appRouter", () => {
         requests.push(request);
         await request.clone().json();
 
-        return Response.json({
-          json: [{ data: {}, key: "page", metadata: { label: "Page" } }],
-        });
+        return Response.json(
+          { json: [{ data: {}, key: "page", metadata: { label: "Page" } }] },
+          {
+            headers: {
+              "server-timing":
+                "runtime_execute;dur=3.0, private;desc=platform-token",
+            },
+          }
+        );
       });
 
     const findMany = vi.spyOn(db.query.app, "findMany");
@@ -280,7 +286,13 @@ describe("platform appRouter", () => {
       expect(response.response?.status).toBe(200);
       expect(response.response?.headers.get("cache-control")).toBe("no-store");
       expect(response.response?.headers.get("server-timing")).toMatch(
-        /^views_discovery;dur=\d+\.\d, views_instances;dur=\d+\.\d$/u
+        /^views_discovery;dur=\d+\.\d, views_instances;dur=\d+\.\d(?:, [a-z_]+;dur=\d+\.\d)*$/u
+      );
+      expect(response.response?.headers.get("server-timing")).toContain(
+        "runtime_execute_max;dur=3.0"
+      );
+      expect(response.response?.headers.get("server-timing")).not.toContain(
+        "platform-token"
       );
       const text = await response.response?.text();
       expect(text).not.toContain("platform-token");

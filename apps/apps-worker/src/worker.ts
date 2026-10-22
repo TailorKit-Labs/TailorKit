@@ -17,6 +17,7 @@ import { validateDeploymentPublication } from "./publication";
 import { appError } from "./runtime/errors";
 import { verifier } from "./supervisor/auth";
 import { metadataLifetimeSeconds, installationName } from "./supervisor/source";
+import { RuntimeTimings } from "./timing";
 import { routeInstallation, rpcErrorResponse } from "./transport";
 
 export default {
@@ -44,8 +45,12 @@ export default {
       "access-control-allow-headers": "authorization, content-type",
       "access-control-allow-methods": "POST, OPTIONS",
       "access-control-allow-origin": "*",
+      "access-control-expose-headers": "server-timing",
       "cache-control": "no-store",
     });
+
+    const timings = new RuntimeTimings();
+    const finish = timings.start("runtime_gateway");
 
     const response = await Effect.runPromise(
       Effect.gen(function* response() {
@@ -135,7 +140,10 @@ export default {
             ),
           verify: (token) =>
             Effect.gen(function* verify() {
-              const identity = yield* verifier(env)(token);
+              const identity = yield* timings.measure(
+                "runtime_gateway_auth",
+                verifier(env)(token)
+              );
 
               if (
                 identity.projectShortId !== appRoute.projectShortId ||
@@ -158,6 +166,8 @@ export default {
       )
     );
 
+    finish();
+
     if (response.status === 101) {
       return response;
     }
@@ -168,6 +178,8 @@ export default {
       headers.set(key, value);
     }
 
-    return new Response(response.body, { headers, status: response.status });
+    return timings.response(
+      new Response(response.body, { headers, status: response.status })
+    );
   },
 } satisfies ExportedHandler<Env>;

@@ -24,6 +24,7 @@ import {
   runtimeViewContexts,
   runtimeViewWarning,
 } from "#runtime/view-resolution";
+import { ViewResolutionTimings } from "#runtime/view-timing";
 import {
   canonicalizeScope,
   canonicalizeScopes,
@@ -230,13 +231,18 @@ const runtimeResolve = protectedRouter
 
       const instancesStarted = yield* Clock.currentTimeMillis;
       const discoveryMs = instancesStarted - discoveryStarted;
+      const runtimeTimings = new ViewResolutionTimings();
 
       const result = yield* resolveRuntimeViews(
         [...apps.values()],
         input.body,
         {
           createSession: async (appValue) =>
-            await createRuntimeSession(context, appValue, input.body),
+            await runtimeTimings.session(
+              async () =>
+                await createRuntimeSession(context, appValue, input.body)
+            ),
+          fetch: runtimeTimings.fetch,
         }
       );
 
@@ -246,7 +252,13 @@ const runtimeResolve = protectedRouter
         body: result,
         headers: {
           "cache-control": "no-store" as const,
-          "server-timing": `views_discovery;dur=${discoveryMs.toFixed(1)}, views_instances;dur=${instancesMs.toFixed(1)}`,
+          "server-timing": [
+            `views_discovery;dur=${discoveryMs.toFixed(1)}`,
+            `views_instances;dur=${instancesMs.toFixed(1)}`,
+            runtimeTimings.header(),
+          ]
+            .filter(Boolean)
+            .join(", "),
         },
       };
     })

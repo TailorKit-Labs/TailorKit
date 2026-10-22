@@ -219,6 +219,14 @@ Each warm installation reuses validated metadata for up to five seconds and keep
 
 Publication does not broadcast to every installation. Active clients discover an update on subsequent calls or authentication renewal. KV propagation and the five-second warm cache can delay discovery for existing tokens. Cache expiry is checked on access, with no background polling; restarts discard warm state. Failed refreshes fail the call rather than serving expired metadata. The host does not remount the app; server deployments must preserve compatibility with existing client code. Active actions are cancelled on facet replacement and are not automatically retried.
 
+## Runtime timings
+
+HTTP RPC responses include `Server-Timing` durations in milliseconds. The gateway preserves installation timings and appends `runtime_gateway` (gateway request through installation response) and `runtime_gateway_auth`. Installation phases are `runtime_installation` (total), `runtime_auth`, `runtime_queue` (initial semaphore admission), `runtime_metadata`, `runtime_prepare` and `runtime_execute`. Metadata includes nested `runtime_metadata_kv` and `runtime_metadata_platform` when those operations occur. Preparation includes `runtime_bundle` for reading, verifying and decoding code; warm prepared facets skip that work entirely. Cache fills run in the background and are outside these response timings.
+
+These phases overlap: totals include their children. `runtime_execute` measures the facet RPC, including first-use facet startup, migrations, app execution and any tool/network calls. It does not isolate the app handler's CPU time. WebSocket upgrade responses are passed through unchanged.
+
+Platform view-resolution responses forward allowlisted numeric runtime phases with a `_max` suffix and include `views_session_max` and `runtime_roundtrip_max`. Each is the maximum observed across concurrent app calls, so maxima can come from different installations and must not be added. The round trip ends at response headers; `views_instances` also includes response decoding and validation. Comparing a single installation's gateway duration with its platform round trip helps identify transport/dispatch overhead, without proving the object's geographic placement. Timing headers contain no tokens, context values, installation IDs or app output.
+
 ## Sandbox networking
 
 Sandbox iframes allow HTTP(S) and WebSocket connections. They retain an opaque `null` origin through `sandbox="allow-scripts"`; backend calls omit cookies and require scoped JWTs. Initial rendering does not require a backend session.

@@ -9,6 +9,7 @@ import { maxDeploymentBytes } from "@patchsmith/asset-delivery";
 import { Effect } from "effect";
 
 import { appError } from "../runtime/errors";
+import { RuntimeTimings } from "../timing";
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -180,7 +181,11 @@ export const deploymentSource = (
         )
       ),
 
-    current: (identity: Identity, runningDeploymentId?: string) =>
+    current: (
+      identity: Identity,
+      runningDeploymentId?: string,
+      timings = new RuntimeTimings()
+    ) =>
       Effect.tryPromise({
         catch: appError,
         try: async () => {
@@ -200,7 +205,11 @@ export const deploymentSource = (
           }
 
           const cachedMetadata = appDeploymentMetadata.safeParse(
-            await env.DEPLOYMENTS.get(key, "json").catch(() => null)
+            await timings.time(
+              "runtime_metadata_kv",
+              async () =>
+                await env.DEPLOYMENTS.get(key, "json").catch(() => null)
+            )
           );
 
           let deployment = cachedMetadata.success
@@ -227,22 +236,26 @@ export const deploymentSource = (
               throw new Error("Platform URL requires HTTPS");
             }
 
-            const response = await fetch(
-              new URL(
-                `apps/${encodeURIComponent(identity.appId)}/runtime`,
-                base
-              ),
-              {
-                body: JSON.stringify({}),
-                headers: {
-                  authorization: `Bearer ${env.RUNTIME_SERVICE_TOKEN}`,
-                  "content-type": "application/json",
-                  "x-patchsmith-project-id": identity.projectId,
-                },
-                method: "POST",
-                redirect: "manual",
-                signal: AbortSignal.timeout(10_000),
-              }
+            const response = await timings.time(
+              "runtime_metadata_platform",
+              async () =>
+                await fetch(
+                  new URL(
+                    `apps/${encodeURIComponent(identity.appId)}/runtime`,
+                    base
+                  ),
+                  {
+                    body: JSON.stringify({}),
+                    headers: {
+                      authorization: `Bearer ${env.RUNTIME_SERVICE_TOKEN}`,
+                      "content-type": "application/json",
+                      "x-patchsmith-project-id": identity.projectId,
+                    },
+                    method: "POST",
+                    redirect: "manual",
+                    signal: AbortSignal.timeout(10_000),
+                  }
+                )
             );
 
             if (!response.ok) {

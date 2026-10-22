@@ -1066,6 +1066,15 @@ export const migrations = ${JSON.stringify(history)};`;
 
     const response = await invoke("one");
     assert.equal(response.status, 200, await response.clone().text());
+    const timing = response.headers.get("server-timing");
+    assert.match(timing, /runtime_gateway;dur=\d/u);
+    assert.match(timing, /runtime_installation;dur=\d/u);
+    assert.match(timing, /runtime_execute;dur=\d/u);
+    assert.match(timing, /runtime_metadata_kv;dur=\d/u);
+    assert.equal(
+      response.headers.get("access-control-expose-headers"),
+      "server-timing"
+    );
     const one = (await response.json()).json;
     assert.equal(one.globals, 1);
     assert.equal(one.networkBlocked, true);

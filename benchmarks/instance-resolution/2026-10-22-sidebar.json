@@ -1,0 +1,772 @@
+{
+  "capturedAt": "2026-10-22T10:17:24.372Z",
+  "url": "https://demo.patchsmith.io",
+  "browserTimezone": "Australia/Melbourne",
+  "methodology": {
+    "transport": "Authenticated browser fetch; cache: no-store; sequential; response body fully consumed",
+    "samplesPerScenario": 10,
+    "order": "First 3 rounds interleaved across all 5 scenarios, then 7 consecutive sidebar samples, then 7 rounds of the other 4 scenarios. Natural idle gaps between tool batches; no forced cold starts.",
+    "context": {
+      "view": "/",
+      "layers": [
+        {
+          "path": "/",
+          "status": "ready",
+          "contextFields": ["workspace.id", "workspace.name", "page"],
+          "page": "/contacts"
+        }
+      ]
+    },
+    "limitations": [
+      "Small diagnostic sample, not a load test or service-level estimate.",
+      "Default-profile existing workspace; old Doom and Messages deployments remain installed.",
+      "Outside-host time includes browser scheduling, network, ingress, platform dispatch and body consumption; it is not a pure RTT measurement.",
+      "views_discovery and views_instances are contained within views_platform, which is contained within host. workspace_auth is contained within views_auth.",
+      "Exact Durable Object location and runtime substage times are unavailable."
+    ]
+  },
+  "deployment": {
+    "host": {
+      "commit": "f79f7bd93a99343f68e9ab6b504338445549f697",
+      "deploymentId": "dpl_J6tgxkWJFTT1UmKv48LhWEBXDrPq",
+      "regions": ["iad1"]
+    },
+    "platform": {
+      "commit": "e3cdd73d13dc4267dfda4690f311ae940d5f6726",
+      "deploymentId": "dpl_D7cFiLQbA66wJwAF8nbvPjQsog6i",
+      "regions": ["iad1"]
+    }
+  },
+  "apps": [
+    {
+      "deployment": "3e046d41-5267-4b2e-aa55-ff26d5d6534c",
+      "id": "04522c51-de2b-40cd-b5d9-0959dffba826",
+      "name": "Doom"
+    },
+    {
+      "deployment": "b4f8406d-7bdb-4aa6-a21e-d33493b4926c",
+      "id": "6dcf04e4-796b-46f4-92ad-9b246854cb84",
+      "name": "Messages"
+    }
+  ],
+  "summary": [
+    {
+      "label": "auth-only",
+      "n": 10,
+      "median": 276.8500000089407,
+      "min": 267,
+      "max": 302.3999999910593,
+      "stages": {
+        "views_auth": 9.95,
+        "workspace_auth": 9.9,
+        "host": 10.7
+      },
+      "outsideHost": 266.2000000059604
+    },
+    {
+      "label": "navbar",
+      "n": 10,
+      "median": 350.8999999985099,
+      "min": 320.59999999403954,
+      "max": 419.6000000089407,
+      "stages": {
+        "views_auth": 9.649999999999999,
+        "views_discovery": 59.849999999999994,
+        "workspace_auth": 9.55,
+        "host": 71.6
+      },
+      "outsideHost": 277.15000000596046
+    },
+    {
+      "label": "panel",
+      "n": 10,
+      "median": 338.30000000447035,
+      "min": 319.09999999403954,
+      "max": 450.8999999910593,
+      "stages": {
+        "views_auth": 9.4,
+        "views_discovery": 60.75,
+        "workspace_auth": 9.350000000000001,
+        "host": 70.8
+      },
+      "outsideHost": 267.29999999701977
+    },
+    {
+      "label": "page-no-match",
+      "n": 10,
+      "median": 340.8999999985099,
+      "min": 316.40000000596046,
+      "max": 410.1000000089407,
+      "stages": {
+        "views_auth": 9.850000000000001,
+        "views_platform": 59.7,
+        "views_discovery": 4,
+        "views_instances": 0.5,
+        "workspace_auth": 9.75,
+        "host": 72.94999999999999
+      },
+      "outsideHost": 263.1500000014901
+    },
+    {
+      "label": "sidebar-page",
+      "n": 10,
+      "median": 618.6000000014901,
+      "min": 589.2999999970198,
+      "max": 1238.5,
+      "stages": {
+        "views_auth": 9.7,
+        "views_platform": 342.2,
+        "views_discovery": 4,
+        "views_instances": 269.5,
+        "workspace_auth": 9.600000000000001,
+        "host": 353.45
+      },
+      "outsideHost": 266.1500000029803
+    }
+  ],
+  "samples": [
+    {
+      "bytes": 42,
+      "count": 0,
+      "label": "auth-only",
+      "ms": 279.80000001192093,
+      "round": 0,
+      "status": 200,
+      "timing": "views_auth;dur=10.0, workspace_auth;dur=9.9, host;dur=10.9",
+      "vercel": "syd1::iad1::54jjl-1792664108138-7c2f2df4183c"
+    },
+    {
+      "bytes": 1739,
+      "count": 1,
+      "label": "navbar",
+      "ms": 386.09999999403954,
+      "round": 0,
+      "status": 200,
+      "timing": "views_auth;dur=10.3, views_discovery;dur=52.7, workspace_auth;dur=10.2, host;dur=64.1",
+      "vercel": "syd1::iad1::4bn5n-1792664108414-434e223a01d7"
+    },
+    {
+      "bytes": 3441,
+      "count": 2,
+      "label": "panel",
+      "ms": 348.90000000596046,
+      "round": 0,
+      "status": 200,
+      "timing": "views_auth;dur=10.3, views_discovery;dur=53.5, workspace_auth;dur=10.2, host;dur=64.9",
+      "vercel": "syd1::iad1::c9gmb-1792664108805-dd61a25767ab"
+    },
+    {
+      "bytes": 42,
+      "count": 0,
+      "label": "page-no-match",
+      "ms": 343.29999999701977,
+      "round": 0,
+      "status": 200,
+      "timing": "views_auth;dur=13.7, views_platform;dur=73.4, views_discovery;dur=4.0, views_instances;dur=1.0, workspace_auth;dur=13.6, host;dur=89.2",
+      "vercel": "syd1::iad1::c9gmb-1792664109149-259ea4ef4646"
+    },
+    {
+      "bytes": 1806,
+      "count": 1,
+      "label": "sidebar-page",
+      "ms": 1108.3999999910593,
+      "round": 0,
+      "status": 200,
+      "timing": "views_auth;dur=9.4, views_platform;dur=843.5, views_discovery;dur=4.0, views_instances;dur=682.0, workspace_auth;dur=9.2, host;dur=854.0",
+      "vercel": "syd1::iad1::4dqr9-1792664109491-485d94091bb8"
+    },
+    {
+      "bytes": 42,
+      "count": 0,
+      "label": "auth-only",
+      "ms": 269.3999999910593,
+      "round": 1,
+      "status": 200,
+      "timing": "views_auth;dur=9.9, workspace_auth;dur=9.8, host;dur=10.7",
+      "vercel": "syd1::iad1::7g6t9-1792664110602-57dcb57ef3ce"
+    },
+    {
+      "bytes": 1739,
+      "count": 1,
+      "label": "navbar",
+      "ms": 391.30000001192093,
+      "round": 1,
+      "status": 200,
+      "timing": "views_auth;dur=10.1, views_discovery;dur=85.8, workspace_auth;dur=10.0, host;dur=96.8",
+      "vercel": "syd1::iad1::bjbjq-1792664110870-df5884f77e3d"
+    },
+    {
+      "bytes": 3441,
+      "count": 2,
+      "label": "panel",
+      "ms": 319.09999999403954,
+      "round": 1,
+      "status": 200,
+      "timing": "views_auth;dur=9.5, views_discovery;dur=56.1, workspace_auth;dur=9.4, host;dur=66.7",
+      "vercel": "syd1::iad1::4dqr9-1792664111261-b72d616699b4"
+    },
+    {
+      "bytes": 42,
+      "count": 0,
+      "label": "page-no-match",
+      "ms": 333.90000000596046,
+      "round": 1,
+      "status": 200,
+      "timing": "views_auth;dur=10.1, views_platform;dur=57.0, views_discovery;dur=3.0, views_instances;dur=1.0, workspace_auth;dur=10.1, host;dur=68.3",
+      "vercel": "syd1::iad1::4bn5n-1792664111579-e572ffcd1c6e"
+    },
+    {
+      "bytes": 1806,
+      "count": 1,
+      "label": "sidebar-page",
+      "ms": 739.5,
+      "round": 1,
+      "status": 200,
+      "timing": "views_auth;dur=10.0, views_platform;dur=458.0, views_discovery;dur=4.0, views_instances;dur=373.0, workspace_auth;dur=9.9, host;dur=469.2",
+      "vercel": "syd1::iad1::kml27-1792664111913-60d124485b6d"
+    },
+    {
+      "bytes": 42,
+      "count": 0,
+      "label": "auth-only",
+      "ms": 273.79999999701977,
+      "round": 2,
+      "status": 200,
+      "timing": "views_auth;dur=10.0, workspace_auth;dur=9.9, host;dur=10.7",
+      "vercel": "syd1::iad1::bjbjq-1792664112653-7ff75c584ad4"
+    },
+    {
+      "bytes": 1739,
+      "count": 1,
+      "label": "navbar",
+      "ms": 330,
+      "round": 2,
+      "status": 200,
+      "timing": "views_auth;dur=9.3, views_discovery;dur=61.6, workspace_auth;dur=9.2, host;dur=72.1",
+      "vercel": "syd1::iad1::bjbjq-1792664112928-1c4f0792d4c2"
+    },
+    {
+      "bytes": 3441,
+      "count": 2,
+      "label": "panel",
+      "ms": 450.8999999910593,
+      "round": 2,
+      "status": 200,
+      "timing": "views_auth;dur=10.2, views_discovery;dur=76.4, workspace_auth;dur=10.1, host;dur=87.9",
+      "vercel": "syd1::iad1::8psbv-1792664113258-f0b3666c5ca7"
+    },
+    {
+      "bytes": 42,
+      "count": 0,
+      "label": "page-no-match",
+      "ms": 328.70000000298023,
+      "round": 2,
+      "status": 200,
+      "timing": "views_auth;dur=9.6, views_platform;dur=54.3, views_discovery;dur=4.0, views_instances;dur=0.0, workspace_auth;dur=9.5, host;dur=64.9",
+      "vercel": "syd1::iad1::s5twt-1792664113708-80de723ed07d"
+    },
+    {
+      "bytes": 1806,
+      "count": 1,
+      "label": "sidebar-page",
+      "ms": 610.6000000089407,
+      "round": 2,
+      "status": 200,
+      "timing": "views_auth;dur=10.2, views_platform;dur=332.9, views_discovery;dur=5.0, views_instances;dur=268.0, workspace_auth;dur=10.1, host;dur=344.4",
+      "vercel": "syd1::iad1::bkbv2-1792664114036-8b2916b1c7b7"
+    },
+    {
+      "bytes": 1806,
+      "count": 1,
+      "label": "sidebar-page",
+      "ms": 1238.5,
+      "round": 3,
+      "status": 200,
+      "timing": "views_auth;dur=10.2, views_platform;dur=946.1, views_discovery;dur=4.0, views_instances;dur=882.0, workspace_auth;dur=10.1, host;dur=957.6",
+      "vercel": "syd1::iad1::qhfw4-1792664133932-dfd76b3c9825"
+    },
+    {
+      "bytes": 1806,
+      "count": 1,
+      "label": "sidebar-page",
+      "ms": 626.5999999940395,
+      "round": 4,
+      "status": 200,
+      "timing": "views_auth;dur=9.9, views_platform;dur=351.5, views_discovery;dur=5.0, views_instances;dur=277.0, workspace_auth;dur=9.8, host;dur=362.5",
+      "vercel": "syd1::iad1::qhfw4-1792664135171-b5af64e8ae4f"
+    },
+    {
+      "bytes": 1806,
+      "count": 1,
+      "label": "sidebar-page",
+      "ms": 633.7999999970198,
+      "round": 5,
+      "status": 200,
+      "timing": "views_auth;dur=9.3, views_platform;dur=357.4, views_discovery;dur=6.0, views_instances;dur=269.0, workspace_auth;dur=9.2, host;dur=367.7",
+      "vercel": "syd1::iad1::bsfvm-1792664135799-afd712d2b948"
+    },
+    {
+      "bytes": 1806,
+      "count": 1,
+      "label": "sidebar-page",
+      "ms": 603.2999999970198,
+      "round": 6,
+      "status": 200,
+      "timing": "views_auth;dur=9.4, views_platform;dur=324.1, views_discovery;dur=4.0, views_instances;dur=270.0, workspace_auth;dur=9.3, host;dur=334.6",
+      "vercel": "syd1::iad1::bsfvm-1792664136430-0603d9c8a92e"
+    },
+    {
+      "bytes": 1806,
+      "count": 1,
+      "label": "sidebar-page",
+      "ms": 590.6000000089407,
+      "round": 7,
+      "status": 200,
+      "timing": "views_auth;dur=9.5, views_platform;dur=316.5, views_discovery;dur=4.0, views_instances;dur=245.0, workspace_auth;dur=9.4, host;dur=327.0",
+      "vercel": "syd1::iad1::wdbdt-1792664137033-0f63d8b7ac95"
+    },
+    {
+      "bytes": 1806,
+      "count": 1,
+      "label": "sidebar-page",
+      "ms": 589.2999999970198,
+      "round": 8,
+      "status": 200,
+      "timing": "views_auth;dur=9.2, views_platform;dur=327.9, views_discovery;dur=4.0, views_instances;dur=263.0, workspace_auth;dur=9.1, host;dur=338.3",
+      "vercel": "syd1::iad1::wdbdt-1792664137623-c9f4c0950510"
+    },
+    {
+      "bytes": 1806,
+      "count": 1,
+      "label": "sidebar-page",
+      "ms": 609.0999999940395,
+      "round": 9,
+      "status": 200,
+      "timing": "views_auth;dur=10.8, views_platform;dur=324.9, views_discovery;dur=4.0, views_instances;dur=268.0, workspace_auth;dur=10.7, host;dur=336.7",
+      "vercel": "syd1::iad1::4dqr9-1792664138214-1b2952496809"
+    },
+    {
+      "bytes": 42,
+      "count": 0,
+      "label": "auth-only",
+      "ms": 293,
+      "round": 3,
+      "status": 200,
+      "timing": "views_auth;dur=10.8, workspace_auth;dur=10.7, host;dur=11.6",
+      "vercel": "syd1::iad1::7g6t9-1792664217431-a43fc1c118c3"
+    },
+    {
+      "bytes": 1739,
+      "count": 1,
+      "label": "navbar",
+      "ms": 331.09999999403954,
+      "round": 3,
+      "status": 200,
+      "timing": "views_auth;dur=9.3, views_discovery;dur=58.4, workspace_auth;dur=9.2, host;dur=68.7",
+      "vercel": "syd1::iad1::7g6t9-1792664217723-020312e48749"
+    },
+    {
+      "bytes": 3441,
+      "count": 2,
+      "label": "panel",
+      "ms": 337.5,
+      "round": 3,
+      "status": 200,
+      "timing": "views_auth;dur=9.1, views_discovery;dur=59.9, workspace_auth;dur=9.0, host;dur=70.1",
+      "vercel": "syd1::iad1::7g6t9-1792664218055-a8064f2953bf"
+    },
+    {
+      "bytes": 42,
+      "count": 0,
+      "label": "page-no-match",
+      "ms": 316.40000000596046,
+      "round": 3,
+      "status": 200,
+      "timing": "views_auth;dur=9.9, views_platform;dur=54.3, views_discovery;dur=4.0, views_instances;dur=0.0, workspace_auth;dur=9.8, host;dur=65.1",
+      "vercel": "syd1::iad1::7g6t9-1792664218393-65ad6b427b76"
+    },
+    {
+      "bytes": 42,
+      "count": 0,
+      "label": "auth-only",
+      "ms": 267,
+      "round": 4,
+      "status": 200,
+      "timing": "views_auth;dur=9.0, workspace_auth;dur=9.0, host;dur=9.7",
+      "vercel": "syd1::iad1::8xz4c-1792664218709-083850795948"
+    },
+    {
+      "bytes": 1739,
+      "count": 1,
+      "label": "navbar",
+      "ms": 335.20000000298023,
+      "round": 4,
+      "status": 200,
+      "timing": "views_auth;dur=9.1, views_discovery;dur=55.4, workspace_auth;dur=9.1, host;dur=65.3",
+      "vercel": "syd1::iad1::4bn5n-1792664218976-37ff8dcdb80c"
+    },
+    {
+      "bytes": 3441,
+      "count": 2,
+      "label": "panel",
+      "ms": 339.1000000089407,
+      "round": 4,
+      "status": 200,
+      "timing": "views_auth;dur=15.8, views_discovery;dur=67.3, workspace_auth;dur=15.7, host;dur=84.2",
+      "vercel": "syd1::iad1::4bn5n-1792664219311-8d3dc9c7dd72"
+    },
+    {
+      "bytes": 42,
+      "count": 0,
+      "label": "page-no-match",
+      "ms": 342.20000000298023,
+      "round": 4,
+      "status": 200,
+      "timing": "views_auth;dur=9.0, views_platform;dur=58.8, views_discovery;dur=3.0, views_instances;dur=1.0, workspace_auth;dur=8.9, host;dur=68.7",
+      "vercel": "syd1::iad1::4bn5n-1792664219653-2273c727d3bf"
+    },
+    {
+      "bytes": 42,
+      "count": 0,
+      "label": "auth-only",
+      "ms": 267.90000000596046,
+      "round": 5,
+      "status": 200,
+      "timing": "views_auth;dur=9.9, workspace_auth;dur=9.9, host;dur=10.6",
+      "vercel": "syd1::iad1::4bn5n-1792664219993-bada1839e160"
+    },
+    {
+      "bytes": 1739,
+      "count": 1,
+      "label": "navbar",
+      "ms": 340.59999999403954,
+      "round": 5,
+      "status": 200,
+      "timing": "views_auth;dur=9.6, views_discovery;dur=61.4, workspace_auth;dur=9.5, host;dur=73.3",
+      "vercel": "syd1::iad1::4bn5n-1792664220260-aff2aa580b5e"
+    },
+    {
+      "bytes": 3441,
+      "count": 2,
+      "label": "panel",
+      "ms": 428.09999999403954,
+      "round": 5,
+      "status": 200,
+      "timing": "views_auth;dur=9.3, views_discovery;dur=68.2, workspace_auth;dur=9.3, host;dur=78.8",
+      "vercel": "syd1::iad1::7v6rc-1792664220603-5533a7a5ea41"
+    },
+    {
+      "bytes": 42,
+      "count": 0,
+      "label": "page-no-match",
+      "ms": 348,
+      "round": 5,
+      "status": 200,
+      "timing": "views_auth;dur=10.3, views_platform;dur=74.2, views_discovery;dur=5.0, views_instances;dur=0.0, workspace_auth;dur=10.3, host;dur=85.5",
+      "vercel": "syd1::iad1::4mgc2-1792664221030-294ce0edda5a"
+    },
+    {
+      "bytes": 42,
+      "count": 0,
+      "label": "auth-only",
+      "ms": 275.6000000089407,
+      "round": 6,
+      "status": 200,
+      "timing": "views_auth;dur=9.3, workspace_auth;dur=9.2, host;dur=10.1",
+      "vercel": "syd1::iad1::4mgc2-1792664221378-bbf3fd4d14d1"
+    },
+    {
+      "bytes": 1739,
+      "count": 1,
+      "label": "navbar",
+      "ms": 370.6000000089407,
+      "round": 6,
+      "status": 200,
+      "timing": "views_auth;dur=17.3, views_discovery;dur=68.2, workspace_auth;dur=17.2, host;dur=86.2",
+      "vercel": "syd1::iad1::4rn7h-1792664221654-0ff8fb4d5de2"
+    },
+    {
+      "bytes": 3441,
+      "count": 2,
+      "label": "panel",
+      "ms": 334.59999999403954,
+      "round": 6,
+      "status": 200,
+      "timing": "views_auth;dur=8.9, views_discovery;dur=57.8, workspace_auth;dur=8.8, host;dur=67.4",
+      "vercel": "syd1::iad1::4mgc2-1792664222024-f9878c3dc3c3"
+    },
+    {
+      "bytes": 42,
+      "count": 0,
+      "label": "page-no-match",
+      "ms": 410.1000000089407,
+      "round": 6,
+      "status": 200,
+      "timing": "views_auth;dur=20.2, views_platform;dur=53.5, views_discovery;dur=4.0, views_instances;dur=0.0, workspace_auth;dur=20.1, host;dur=74.6",
+      "vercel": "syd1::iad1::bjbjq-1792664222360-a5ecd999f4bf"
+    },
+    {
+      "bytes": 42,
+      "count": 0,
+      "label": "auth-only",
+      "ms": 302.3999999910593,
+      "round": 7,
+      "status": 200,
+      "timing": "views_auth;dur=15.0, workspace_auth;dur=14.9, host;dur=15.6",
+      "vercel": "syd1::iad1::4mgc2-1792664222768-0d8bc1c94363"
+    },
+    {
+      "bytes": 1739,
+      "count": 1,
+      "label": "navbar",
+      "ms": 361.20000000298023,
+      "round": 7,
+      "status": 200,
+      "timing": "views_auth;dur=19.2, views_discovery;dur=51.5, workspace_auth;dur=19.1, host;dur=71.5",
+      "vercel": "syd1::iad1::h4txm-1792664223069-d95e66c07837"
+    },
+    {
+      "bytes": 3441,
+      "count": 2,
+      "label": "panel",
+      "ms": 333.8999999910593,
+      "round": 7,
+      "status": 200,
+      "timing": "views_auth;dur=9.1, views_discovery;dur=59.1, workspace_auth;dur=9.0, host;dur=69.1",
+      "vercel": "syd1::iad1::95hjz-1792664223431-f2e1475ad8c9"
+    },
+    {
+      "bytes": 42,
+      "count": 0,
+      "label": "page-no-match",
+      "ms": 363,
+      "round": 7,
+      "status": 200,
+      "timing": "views_auth;dur=8.8, views_platform;dur=70.2, views_discovery;dur=3.0, views_instances;dur=1.0, workspace_auth;dur=8.8, host;dur=80.0",
+      "vercel": "syd1::iad1::8psbv-1792664223775-65e95bc541c4"
+    },
+    {
+      "bytes": 42,
+      "count": 0,
+      "label": "auth-only",
+      "ms": 279.20000000298023,
+      "round": 8,
+      "status": 200,
+      "timing": "views_auth;dur=11.6, workspace_auth;dur=11.5, host;dur=12.3",
+      "vercel": "syd1::iad1::8psbv-1792664224131-8701aaa1aeb5"
+    },
+    {
+      "bytes": 1739,
+      "count": 1,
+      "label": "navbar",
+      "ms": 320.59999999403954,
+      "round": 8,
+      "status": 200,
+      "timing": "views_auth;dur=9.0, views_discovery;dur=56.2, workspace_auth;dur=8.9, host;dur=66.0",
+      "vercel": "syd1::iad1::8psbv-1792664224407-83986a0706f5"
+    },
+    {
+      "bytes": 3441,
+      "count": 2,
+      "label": "panel",
+      "ms": 381.20000000298023,
+      "round": 8,
+      "status": 200,
+      "timing": "views_auth;dur=9.6, views_discovery;dur=67.9, workspace_auth;dur=9.5, host;dur=78.3",
+      "vercel": "syd1::iad1::njpsg-1792664224730-ff34daa72225"
+    },
+    {
+      "bytes": 42,
+      "count": 0,
+      "label": "page-no-match",
+      "ms": 339.59999999403954,
+      "round": 8,
+      "status": 200,
+      "timing": "views_auth;dur=9.0, views_platform;dur=75.0, views_discovery;dur=4.0, views_instances;dur=0.0, workspace_auth;dur=8.9, host;dur=85.0",
+      "vercel": "syd1::iad1::54jjl-1792664225109-755e8cd88d8c"
+    },
+    {
+      "bytes": 42,
+      "count": 0,
+      "label": "auth-only",
+      "ms": 278.1000000089407,
+      "round": 9,
+      "status": 200,
+      "timing": "views_auth;dur=8.8, workspace_auth;dur=8.8, host;dur=9.4",
+      "vercel": "syd1::iad1::4bn5n-1792664225450-71affc4a84c3"
+    },
+    {
+      "bytes": 1739,
+      "count": 1,
+      "label": "navbar",
+      "ms": 419.6000000089407,
+      "round": 9,
+      "status": 200,
+      "timing": "views_auth;dur=9.7, views_discovery;dur=61.3, workspace_auth;dur=9.6, host;dur=71.7",
+      "vercel": "syd1::iad1::4bn5n-1792664225727-a4b825fa9ab6"
+    },
+    {
+      "bytes": 3441,
+      "count": 2,
+      "label": "panel",
+      "ms": 331.40000000596046,
+      "round": 9,
+      "status": 200,
+      "timing": "views_auth;dur=9.1, views_discovery;dur=61.6, workspace_auth;dur=9.0, host;dur=71.5",
+      "vercel": "syd1::iad1::4rn7h-1792664226147-07ecf7587abc"
+    },
+    {
+      "bytes": 42,
+      "count": 0,
+      "label": "page-no-match",
+      "ms": 327.19999998807907,
+      "round": 9,
+      "status": 200,
+      "timing": "views_auth;dur=9.8, views_platform;dur=60.6, views_discovery;dur=3.0, views_instances;dur=1.0, workspace_auth;dur=9.7, host;dur=71.3",
+      "vercel": "syd1::iad1::54jjl-1792664226480-df58d12c7e11"
+    }
+  ],
+  "initialViews": [
+    {
+      "ms": 335.70000000298023,
+      "status": 200,
+      "timing": [
+        {
+          "duration": 9.5,
+          "name": "views_auth"
+        },
+        {
+          "duration": 71.7,
+          "name": "views_discovery"
+        },
+        {
+          "duration": 9.5,
+          "name": "workspace_auth"
+        },
+        {
+          "duration": 82.7,
+          "name": "host"
+        }
+      ],
+      "ttfb": 334.40000000596046
+    },
+    {
+      "ms": 418.59999999403954,
+      "status": 200,
+      "timing": [
+        {
+          "duration": 31.7,
+          "name": "views_auth"
+        },
+        {
+          "duration": 111.5,
+          "name": "views_discovery"
+        },
+        {
+          "duration": 31.6,
+          "name": "workspace_auth"
+        },
+        {
+          "duration": 144.2,
+          "name": "host"
+        }
+      ],
+      "ttfb": 417.90000000596046
+    },
+    {
+      "ms": 1447.3999999910593,
+      "status": 504,
+      "timing": [
+        {
+          "duration": 33.4,
+          "name": "views_auth"
+        },
+        {
+          "duration": 1148.9,
+          "name": "views_platform"
+        },
+        {
+          "duration": 33.3,
+          "name": "workspace_auth"
+        },
+        {
+          "duration": 1184.1,
+          "name": "host"
+        }
+      ],
+      "ttfb": 1447
+    }
+  ],
+  "additionalNavigationTimeouts": [
+    {
+      "path": "/contacts",
+      "ms": 1423.1,
+      "status": 504,
+      "timing": "views_auth;dur=37.6, views_platform;dur=1099.9, workspace_auth;dur=37.6, host;dur=1139.2"
+    },
+    {
+      "path": "/pipeline",
+      "ms": 1329.2000000029802,
+      "status": 504,
+      "timing": "views_auth;dur=9.8, views_platform;dur=1061.4, workspace_auth;dur=9.8, host;dur=1073.0"
+    }
+  ],
+  "directRuntime": {
+    "description": "Same Doom resolver called directly from the browser using a host-issued session, without including session acquisition. Diagnostic only; no suggested change to the host/sandbox boundary.",
+    "firstSample": {
+      "status": 200,
+      "ms": 1155.9,
+      "bytes": 75
+    },
+    "samples": [
+      {
+        "bytes": 75,
+        "label": "browser-direct-resolver",
+        "ms": 1304.7999999970198,
+        "round": 0,
+        "status": 200,
+        "timing": null
+      },
+      {
+        "bytes": 75,
+        "label": "browser-direct-resolver",
+        "ms": 491,
+        "round": 1,
+        "status": 200,
+        "timing": null
+      },
+      {
+        "bytes": 75,
+        "label": "browser-direct-resolver",
+        "ms": 479.5,
+        "round": 2,
+        "status": 200,
+        "timing": null
+      },
+      {
+        "bytes": 75,
+        "label": "browser-direct-resolver",
+        "ms": 588.7999999970198,
+        "round": 3,
+        "status": 200,
+        "timing": null
+      },
+      {
+        "bytes": 75,
+        "label": "browser-direct-resolver",
+        "ms": 508.70000000298023,
+        "round": 4,
+        "status": 200,
+        "timing": null
+      },
+      {
+        "bytes": 75,
+        "label": "browser-direct-resolver",
+        "ms": 632.2999999970198,
+        "round": 5,
+        "status": 200,
+        "timing": null
+      }
+    ]
+  }
+}
