@@ -32,6 +32,15 @@ export const installationName = (identity: Identity, issuer: string) =>
 export const metadataLifetimeSeconds = 300;
 export const warmMetadataLifetimeMs = 5000;
 
+const runningDeploymentChanged = (
+  deployment: ServerDeployment,
+  runningDeploymentId?: string
+) =>
+  runningDeploymentId !== undefined &&
+  runningDeploymentId !== null &&
+  runningDeploymentId !== "" &&
+  deployment.deploymentId !== runningDeploymentId;
+
 /** Bound stored and inflated bytes before allocating or executing bundle code. */
 const readBundleBytes = async (
   stream: ReadableStream<Uint8Array>
@@ -213,10 +222,7 @@ export const deploymentSource = (
             !deployment ||
             deployment.deploymentId !== identity.deploymentId ||
             deploymentHintChanged ||
-            (runningDeploymentId !== undefined &&
-              runningDeploymentId !== null &&
-              runningDeploymentId !== "" &&
-              deployment.deploymentId !== runningDeploymentId)
+            runningDeploymentChanged(deployment, runningDeploymentId)
           ) {
             const base = new URL(
               env.PLATFORM_URL.endsWith("/")
