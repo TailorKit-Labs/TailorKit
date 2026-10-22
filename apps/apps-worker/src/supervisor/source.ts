@@ -211,6 +211,7 @@ export const deploymentSource = (
           // This prevents a stale KV replica from switching an installation backwards.
           if (
             !deployment ||
+            deployment.deploymentId !== identity.deploymentId ||
             deploymentHintChanged ||
             (runningDeploymentId !== undefined &&
               runningDeploymentId !== null &&

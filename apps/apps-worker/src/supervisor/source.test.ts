@@ -225,6 +225,69 @@ it("serves KV hits to old clients and fills misses from the platform", async () 
   expect(fetch).toHaveBeenCalledTimes(2);
 });
 
+it.each([undefined, "v1"])(
+  "confirms a cold KV pointer that disagrees with the token (running: %s)",
+  async (runningDeploymentId) => {
+    const current = { ...deployment, deploymentId: "v2" };
+
+    const fetch = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(Response.json(current));
+
+    const get = vi.fn(asyncFixture(() => deployment));
+    const put = vi.fn(asyncFixture(() => {}));
+
+    const source = deploymentSource({
+      BUNDLES: { get: vi.fn() },
+      DEPLOYMENTS: { get, put },
+      PLATFORM_URL: "https://platform.test",
+      RUNTIME_SERVICE_TOKEN: "private",
+    });
+
+    const caller = { ...identity, deploymentId: "v2" };
+
+    expect(
+      await Effect.runPromise(source.current(caller, runningDeploymentId))
+    ).toEqual(current);
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(put).toHaveBeenCalledWith(
+      expect.any(String),
+      JSON.stringify(current),
+      expect.any(Object)
+    );
+    expect(await Effect.runPromise(source.current(caller, "v2"))).toEqual(
+      current
+    );
+    expect(get).toHaveBeenCalledOnce();
+    expect(fetch).toHaveBeenCalledOnce();
+  }
+);
+
+it("does not cache or reuse mismatched KV metadata when platform confirmation fails", async () => {
+  const fetch = vi
+    .spyOn(globalThis, "fetch")
+    .mockResolvedValue(new Response(null, { status: 503 }));
+
+  const put = vi.fn(asyncFixture(() => {}));
+
+  const source = deploymentSource({
+    BUNDLES: { get: vi.fn() },
+    DEPLOYMENTS: { get: asyncFixture(() => deployment), put },
+    PLATFORM_URL: "https://platform.test",
+    RUNTIME_SERVICE_TOKEN: "private",
+  });
+
+  const caller = { ...identity, deploymentId: "v2" };
+
+  const first = await Effect.runPromiseExit(source.current(caller));
+  const retry = await Effect.runPromiseExit(source.current(caller));
+
+  expect(first._tag).toBe("Failure");
+  expect(retry._tag).toBe("Failure");
+  expect(fetch).toHaveBeenCalledTimes(2);
+  expect(put).not.toHaveBeenCalled();
+});
+
 it("bounds warm metadata reuse and refreshes when a token signals a deployment change", async () => {
   vi.useFakeTimers({ toFake: ["Date"] });
   const get = vi.fn(asyncFixture(() => deployment));

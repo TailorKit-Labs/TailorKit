@@ -155,12 +155,29 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
     });
   }
 
+  async #callFacet<T>(facet: Pick<AppFacet, "query">, call: () => Promise<T>) {
+    try {
+      return await call();
+    } catch (error) {
+      // An older in-flight action must not evict a replacement deployment's stub.
+      if (this.#prepared?.facet === facet) {
+        this.#prepared = undefined;
+      }
+
+      throw error;
+    }
+  }
+
   #databaseQuery(input: Invocation, identity: Identity) {
     return this.#facet(identity).pipe(
       Effect.flatMap((facet: Pick<AppFacet, "query">) =>
         Effect.tryPromise({
           catch: appError,
-          try: async () => await facet.query(input, identity),
+          try: async () =>
+            await this.#callFacet(
+              facet,
+              async () => await facet.query(input, identity)
+            ),
         })
       )
     );
@@ -177,7 +194,11 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
 
         const result = yield* Effect.tryPromise({
           catch: appError,
-          try: async () => await facet.mutate(input, identity),
+          try: async () =>
+            await this.#callFacet(
+              facet,
+              async () => await facet.mutate(input, identity)
+            ),
         });
 
         if (result.committed && result.tables.length) {
@@ -195,7 +216,11 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
       (input: Invocation, subscriber) =>
         Effect.tryPromise({
           catch: appError,
-          try: async () => await facet.query(input, subscriber),
+          try: async () =>
+            await this.#callFacet(
+              facet,
+              async () => await facet.query(input, subscriber)
+            ),
         }).pipe(
           Effect.flatMap((result) =>
             resultEffect(result.result).pipe(
@@ -328,11 +353,15 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
             );
 
             return await abortable(
-              facet.action(
-                input,
-                identity,
-                capability,
-                cancellationStream(lease.signal)
+              this.#callFacet(
+                facet,
+                async () =>
+                  await facet.action(
+                    input,
+                    identity,
+                    capability,
+                    cancellationStream(lease.signal)
+                  )
               ),
               lease.signal
             );
