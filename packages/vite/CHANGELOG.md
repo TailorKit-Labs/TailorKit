@@ -1,5 +1,22 @@
 # @patchsmith/vite
 
+## 0.1.0-beta.61
+
+### Minor Changes
+
+- 3c23da7: Always build and deploy a private backend for every app, including apps with no functions. Function discovery, generated API bindings, view instance resolvers, and database migration generation now work without `server: {}` in `patchsmith.config.ts`.
+
+  The optional `server` field continues to configure settings such as a custom migrations path. Apps that previously omitted it now include a backend automatically; existing empty `server: {}` settings can be removed.
+
+### Patch Changes
+
+- dfca420: Add `.internal()` to app query, mutation, and action builders. Internal functions stay registered for backend execution and are omitted from the typed client API. The runtime rejects direct client calls and subscriptions, including mutation receipt replays, while declared action dependencies and view instance resolvers can call internal queries and mutations.
+
+  Backend builds now require the `internal-functions` runtime capability. Deploy the updated apps worker before upgrading the SDK and builder; older workers reject new bundles rather than ignore internal visibility. Existing function definitions remain public by default. Actions continue to call queries and mutations only; this does not add action-to-action calls.
+
+- Updated dependencies [dfca420]
+  - @patchsmith/app@0.1.0-beta.61
+
 ## 0.1.0-beta.60
 
 ### Patch Changes

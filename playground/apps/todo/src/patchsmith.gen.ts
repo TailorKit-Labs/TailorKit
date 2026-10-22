@@ -8,6 +8,14 @@
 import { createRemoteComponent } from "patchsmith/client";
 
 
+import { createApi } from "patchsmith/client";
+import type { AppServerFunctions } from "./patchsmith.functions.gen";
+declare module "patchsmith/client" {
+  interface PatchsmithServerFunctions extends AppServerFunctions {}
+}
+
+export const api = createApi<AppServerFunctions>();
+
 import { callTool } from "patchsmith/client";
 
 export interface ViewPropsByPath {

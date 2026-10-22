@@ -9,7 +9,7 @@ Choose the supported slot/path from generated capabilities. A normal list or pan
 
 ## Repeated instances
 
-Read the generated views page for a schema-specific registration example. For `multiple: true`, enable `server: {}` and provide inline `instances: { dataSchema, resolve: (...) => ... }` on a module-level `defineView` with a literal path. Single-instance slots omit it.
+Read the generated views page for a schema-specific registration example. For `multiple: true`, provide inline `instances: { dataSchema, resolve: (...) => ... }` on a module-level `defineView` with a literal path. Single-instance slots omit it.
 
 The build extracts the resolver into the backend. It receives `{ context, identity, signal, queries }` and may await registered queries, not mutations/actions. Keep dependencies backend-safe and access checks in the queries. Return stable unique keys, supported metadata, and schema-valid data. Read instance data with `useInstance()` inside the view.
 

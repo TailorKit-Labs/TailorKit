@@ -57,6 +57,6 @@ Use these files to add UI, backend logic, and configuration:
 | `patchsmith.config.ts` | The host URL and app logos. |
 | `vite.config.ts` | Build configuration. |
 
-Backend functions require `server: {}` in `patchsmith.config.ts`. File paths supply API namespaces: `greeting.router.ts` exporting `defineRouter({ getGreeting })` exposes `api.greeting.getGreeting`. Dots and directories both create nested namespaces. Run `patchsmith generate` after adding or moving modules; the builder creates the private server entry automatically.
+Every app includes a private backend, even when it has no functions. Use the optional `server` setting in `patchsmith.config.ts` to customize the migrations path. File paths supply API namespaces: `greeting.router.ts` exporting `defineRouter({ getGreeting })` exposes `api.greeting.getGreeting`. Dots and directories both create nested namespaces. Run `patchsmith generate` after adding or moving modules; the builder creates the private server entry automatically.
 
 Start by [writing UI for a slot](/writing-apps/ui).

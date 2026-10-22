@@ -19,13 +19,7 @@ export const generateAppMigrations = async (
 ) => {
   const loaded = await loadPatchsmithConfig(options.configPath, options.cwd);
 
-  if (!loaded.config.server) {
-    throw new Error(
-      "Enable server: {} in patchsmith.config.ts before generating database migrations."
-    );
-  }
-
-  const paths = appDatabasePaths(loaded.root, loaded.config.server.migrations);
+  const paths = appDatabasePaths(loaded.root, loaded.config.server?.migrations);
   await access(paths.schema).catch((error: ErrorOptions["cause"]) => {
     throw new Error(
       `Define the app database schema in ${path.relative(loaded.root, paths.schema)} before generating migrations.`,

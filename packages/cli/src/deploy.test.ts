@@ -119,7 +119,6 @@ beforeEach(async () => {
       appId: "app-one",
       host: "https://host.example",
       name: "Test App",
-      server: {},
       slug: "test-app",
     },
     filepath: path.join(root, "patchsmith.config.ts"),
@@ -252,7 +251,6 @@ it.each([
       config: {
         host: "https://host.example",
         name: "Test App",
-        server: {},
         slug: "test-app",
       },
       filepath: configPath,
@@ -504,7 +502,6 @@ it.each(["vite config", "option"])(
         appId: "app-one",
         host: "https://host.example",
         name: "Test App",
-        server: {},
         slug: "test-app",
       },
       filepath: path.join(root, "patchsmith.config.ts"),

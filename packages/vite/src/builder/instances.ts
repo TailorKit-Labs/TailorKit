@@ -715,7 +715,6 @@ export const extractInstances = async (
 
 export const instanceExtractionPlugin = (
   root: () => string,
-  serverConfigured: () => boolean,
   modules: Map<string, InstanceModule>
 ): Plugin => ({
   enforce: "pre",
@@ -738,12 +737,6 @@ export const instanceExtractionPlugin = (
       modules.delete(filename);
 
       return undefined;
-    }
-
-    if (!serverConfigured()) {
-      throw new Error(
-        "View instances require server configuration in patchsmith.config.ts."
-      );
     }
 
     modules.set(filename, { filename, names: result.names });

@@ -93,7 +93,7 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
     | Awaited<ReturnType<typeof createFileFunctionEntry>>
     | undefined;
 
-  let serverWatcher: Awaited<ReturnType<typeof buildServer>>;
+  let serverWatcher: Awaited<ReturnType<typeof buildServer>> | undefined;
   let resolved: ResolvedConfig;
   let customPlugins: Plugin[] = [];
   const instanceModules = new Map<string, InstanceModule>();
@@ -141,7 +141,7 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
 
     serverWatcher = await buildServer(
       loaded,
-      functionEntry?.entry ?? "",
+      requireValue(functionEntry).entry,
       watching,
       resolvedOutDir,
       activeModules,
@@ -200,7 +200,7 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
     );
     await writeFile(
       path.join(resolvedOutDir, "patchsmith-upload.json"),
-      `${JSON.stringify(createPatchsmithUploadManifest(logoManifest, Boolean(loaded.config.server), views, loaded.config.appId), null, 2)}\n`,
+      `${JSON.stringify(createPatchsmithUploadManifest(logoManifest, true, views, loaded.config.appId), null, 2)}\n`,
       "utf-8"
     );
   };
@@ -272,13 +272,11 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
         validateServerBuildOutput(loaded, resolvedOutDir);
         clientOutDir = path.join(resolvedOutDir, "client");
 
-        if (loaded.config.server) {
-          functionEntry = await createFileFunctionEntry(
-            loaded.root,
-            resolvedOutDir,
-            watching
-          );
-        }
+        functionEntry = await createFileFunctionEntry(
+          loaded.root,
+          resolvedOutDir,
+          watching
+        );
 
         fileEntry = await createFileRouteEntry(
           loaded.root,
@@ -306,11 +304,7 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
       },
     },
     fileRoutesPlugin(() => loaded.root),
-    instanceExtractionPlugin(
-      () => loaded.root,
-      () => Boolean(loaded.config.server),
-      instanceModules
-    ),
+    instanceExtractionPlugin(() => loaded.root, instanceModules),
     {
       enforce: "pre",
       name: "patchsmith-browser-server-boundary",

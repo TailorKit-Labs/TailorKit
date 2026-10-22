@@ -1,6 +1,6 @@
 # Backend functions
 
-App functions run on Patchsmith's managed backend. Enable `server: {}` in `patchsmith.config.ts`; no separate server deployment is needed.
+App functions run on Patchsmith's managed backend. Every app includes a backend; no separate server deployment is needed.
 
 | Function | Use | Handler access |
 | --- | --- | --- |
