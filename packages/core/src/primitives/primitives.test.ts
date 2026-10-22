@@ -1,8 +1,10 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
+import * as v from "valibot";
 import { describe, expect, it } from "vite-plus/test";
 
 import { createPatchsmithSchema } from "#schema/schema";
 import { resolveJsonSchema } from "#spec/schema-references";
+import { PatchsmithSchemaSpec } from "#spec/spec";
 
 import { primitives as arktypePrimitives } from "./arktype";
 import { primitives as valibotPrimitives } from "./valibot";
@@ -28,6 +30,33 @@ const isValid = (
 };
 
 describe("primitive schema components", () => {
+  it.each([
+    ["Zod", zodPrimitives],
+    ["Valibot", valibotPrimitives],
+    ["ArkType", arktypePrimitives],
+  ] as const)("includes a leaf Icon in %s primitives", (_name, define) => {
+    const { Icon } = define();
+    expect(Icon.children).toBe(false);
+    expect(isValid(Icon.fields, { name: "arrow-right", size: 16 })).toBe(true);
+    expect(
+      isValid(Icon.fields, { name: "future-lucide-icon-from-newer-sdk" })
+    ).toBe(true);
+    expect(isValid(Icon.fields, {})).toBe(false);
+    expect(isValid(Icon.fields, { name: 123 })).toBe(false);
+  });
+
+  it("serializes Icon with the other primitives", () => {
+    const serialized = createPatchsmithSchema({
+      components: zodPrimitives(),
+    }).serialize();
+
+    expect(serialized.components.Icon).toMatchObject({
+      children: false,
+      fields: { required: ["name"] },
+    });
+    expect(v.safeParse(PatchsmithSchemaSpec, serialized).success).toBe(true);
+  });
+
   const theme = {
     breakpoints: {
       lg: "1024px",

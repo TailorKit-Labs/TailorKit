@@ -1,0 +1,9 @@
+{
+  "extends": "@patchsmith/config/tsconfig.base.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "noEmit": true,
+    "lib": ["ESNext", "DOM"]
+  },
+  "include": ["scripts/**/*.mjs", "tests/**/*.ts", "src/**/*.ts"]
+}

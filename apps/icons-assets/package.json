@@ -1,0 +1,24 @@
+{
+  "name": "@patchsmith/icons-assets",
+  "private": true,
+  "license": "BUSL-1.1",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-assets.mjs",
+    "check-types": "tsc --noEmit",
+    "dev": "wrangler dev --local",
+    "deploy": "wrangler deploy",
+    "test": "vp test run",
+    "lint": "vp lint .",
+    "lint:fix": "vp lint --fix ."
+  },
+  "devDependencies": {
+    "@patchsmith/config": "workspace:*",
+    "@patchsmith/core": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "valibot": "catalog:",
+    "vite-plus": "catalog:",
+    "wrangler": "4.151.1"
+  }
+}

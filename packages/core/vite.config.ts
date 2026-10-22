@@ -5,6 +5,10 @@ export default defineConfig({
     clean: true,
     dts: false,
     entry: {
+      "icons-arktype": "src/icons/arktype.ts",
+      "icons-definition": "src/icons/definition.ts",
+      "icons-valibot": "src/icons/valibot.ts",
+      "icons-zod": "src/icons/zod.ts",
       "primitives-arktype": "src/primitives/arktype.ts",
       "primitives-theme": "src/primitives/theme.ts",
       "primitives-valibot": "src/primitives/valibot.ts",

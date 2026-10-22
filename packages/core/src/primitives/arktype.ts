@@ -1,5 +1,6 @@
 import { type } from "arktype";
 
+import { Icon } from "#icons/arktype";
 import type { ComponentDefinition } from "#schema/index";
 
 import {
@@ -19,7 +20,7 @@ type FieldValidators = Record<string, Parameters<typeof type>[0]>;
 type PrimitiveComponents = Record<
   PrimitiveName,
   ComponentDefinition & { children: true }
->;
+> & { Icon: ReturnType<typeof Icon> };
 
 const tokenExpr = (tokens: Record<string, string> | undefined): string => {
   const keys = Object.keys(tokens ?? {});
@@ -98,5 +99,5 @@ export const primitives = (
     ),
   }));
 
-  return components;
+  return { ...components, Icon: Icon({ library: "lucide" }) };
 };

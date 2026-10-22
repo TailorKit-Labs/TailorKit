@@ -39,6 +39,13 @@ it("compacts real primitive schemas and preserves their expanded meaning", () =>
 
     expect(v.parse(JsonSchema, compact)).toEqual(compact);
     expect(resolveJsonSchema(compact)).toEqual(original);
+
+    if (!component.children) {
+      // Leaf Icon fields contain no repeated schemas to deduplicate.
+      expect(compact).toEqual(original);
+      continue;
+    }
+
     expect(JSON.stringify(compact).length).toBeLessThan(
       JSON.stringify(original).length / 3
     );

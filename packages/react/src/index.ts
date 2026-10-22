@@ -34,3 +34,15 @@ export type {
 } from "./hooks/use-view-context";
 
 export { primitives } from "./primitives";
+
+export { Icon } from "#icons/icon";
+
+export type { IconRendererOptions } from "#icons/loader";
+
+export type {
+  IconLibrary,
+  IconName,
+  IconOptions,
+  IconProps,
+  LucideIconName,
+} from "@patchsmith/core/icons";

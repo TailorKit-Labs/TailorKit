@@ -27,3 +27,11 @@ export type {
   Patchsmith,
   PatchsmithTheme,
 } from "@patchsmith/core/schema";
+
+export type {
+  IconLibrary,
+  IconName,
+  IconOptions,
+  IconProps,
+  LucideIconName,
+} from "@patchsmith/core/icons";

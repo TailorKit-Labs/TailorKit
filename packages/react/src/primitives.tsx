@@ -4,6 +4,8 @@ import type { PatchsmithTheme } from "@patchsmith/core/schema";
 import { createContext, useContext, useId, useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
+import { Icon } from "#icons/icon";
+
 interface PrimitiveThemeContextValue {
   viewId: string;
   theme: PatchsmithTheme;
@@ -226,6 +228,7 @@ export const primitives = {
       {children}
     </Primitive>
   ),
+  Icon: Icon({ library: "lucide" }),
   Inline: ({
     props,
     children,

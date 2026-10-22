@@ -118,10 +118,10 @@ export type Disabled = boolean;
 export type Layout = "inline" | "box" | "flex" | "grid";
 
 export interface experimental_CanvasProps {
-  ariaLabel?: string;
-  height?: number;
-  surface?: string;
-  width?: number;
+  ariaLabel: string;
+  height: number;
+  surface: string;
+  width: number;
 }
 
 export const experimental_Canvas = /* @__PURE__ */ createRemoteComponent<experimental_CanvasProps, false>("experimental_Canvas", {
@@ -267,6 +267,15 @@ export const Pressable = /* @__PURE__ */ createRemoteComponent<PressableProps, t
   callbacks: { "onPress": 0 },
 });
 
+export interface IconProps {
+  name: string;
+  size?: number;
+}
+
+export const Icon = /* @__PURE__ */ createRemoteComponent<IconProps, false>("Icon", {
+  children: false,
+});
+
 export interface ButtonProps {
   disabled?: boolean;
   size?: "default" | "sm" | "lg" | "icon" | "icon-sm";
@@ -281,7 +290,7 @@ export const Button = /* @__PURE__ */ createRemoteComponent<ButtonProps, true>("
 
 export interface InputProps {
   placeholder?: string;
-  value?: string;
+  value: string;
   onValueChange?: (input: {
     value: string;
   }) => void | Promise<void>;

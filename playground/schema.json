@@ -8361,6 +8361,26 @@
         }
       }
     },
+    "Icon": {
+      "callbacks": {},
+      "children": false,
+      "fields": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "size": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 256
+          }
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      }
+    },
     "Button": {
       "callbacks": {
         "onClick": {}

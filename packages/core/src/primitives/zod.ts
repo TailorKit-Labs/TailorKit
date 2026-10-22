@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { Icon } from "#icons/zod";
 import type { ComponentDefinition } from "#schema/index";
 
 import {
@@ -16,7 +17,7 @@ type FieldValidators = Record<string, z.ZodType>;
 type PrimitiveComponents = Record<
   PrimitiveName,
   ComponentDefinition & { children: true }
->;
+> & { Icon: ReturnType<typeof Icon> };
 
 const tokenEnum = (tokens: Record<string, string> | undefined): z.ZodType => {
   const keys = Object.keys(tokens ?? {});
@@ -107,5 +108,5 @@ export const primitives = (
     };
   });
 
-  return components;
+  return { ...components, Icon: Icon({ library: "lucide" }) };
 };

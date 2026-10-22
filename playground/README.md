@@ -34,7 +34,7 @@ pnpm playground:todo:build
 
 `playground:generate` serializes the selected contract to `playground/schema.json`, then runs `patchsmith generate --schema` for the todo app. It does not need the host to be running. Repeated JSON Schema definitions use local `$defs`/`$ref` references in both the generated file and the host response; the app type generator resolves them before producing TypeScript. The file contains the raw schema object accepted by `patchsmith generate --schema`, matching the `schema` value inside the host's `/meta` response.
 
-The host contract exposes these components: the standard `Box`, `Flex`, `Grid`, `Inline`, and `Pressable` primitives, plus `Button`, `Input`, and the opt-in `experimental_Canvas`. The host maps `Button` and `Input` to `@patchsmith/ui` and uses the standard React renderers for primitives.
+The host contract exposes these components: the standard `Box`, `Flex`, `Grid`, `Inline`, `Pressable`, and Lucide-backed `Icon` primitives, plus `Button`, `Input`, and the opt-in `experimental_Canvas`. The host maps `Button` and `Input` to `@patchsmith/ui` and uses the standard React renderers for primitives.
 
 The Todo panel includes Pressable examples with inline, box, flex, and grid layouts, an email row with nested layout children, an icon-only action with an explicit name, and a disable toggle. Try hover, hold, Tab / Shift+Tab, Enter, and Space.
 

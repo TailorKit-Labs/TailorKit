@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import { Icon as iconContract } from "@patchsmith/core/icons/zod";
 import { primitives } from "@patchsmith/core/primitives/zod";
 import {
   tool,
@@ -17,6 +18,20 @@ import { assert, describe, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
 import { generateTypes, readSchemaFile, renderGeneratedTypes } from "./types";
+
+it("generates forward-compatible string names for an icon registered under any name", () => {
+  const schema = createPatchsmithSchema({
+    components: { Glyph: iconContract({ library: "lucide" }) },
+  }).serialize();
+
+  const output = renderGeneratedTypes(v.parse(PatchsmithSchemaSpec, schema));
+  expect(output).toContain("export interface GlyphProps");
+  expect(output).toContain("name: string;");
+  expect(output).not.toContain('"a-arrow-down"');
+  expect(output).not.toContain("strokeWidth");
+  expect(output).not.toContain("label");
+  expect(output).toContain("size?: number;");
+});
 
 it.each([undefined, "{", '{"version":2,"components":{}}'])(
   "includes the original schema loading error and preserves its cause for %s",
@@ -364,7 +379,7 @@ describe("renderGeneratedTypes", () => {
     expect(output).not.toContain("export type Disabled = boolean;");
     expect(output).not.toContain("export type Label = string;");
     expect(output).toContain("disabled?: boolean;");
-    expect(output).toContain("label?: string;");
+    expect(output).toContain("label: string;");
     expect(output).toContain("onClick?: () => void | Promise<void>;");
     expect(output).toContain("onValueChange?: (input: {");
     expect(output).toContain("value: string;");
@@ -762,7 +777,7 @@ it("generates conditional primitive types from the contract's breakpoint aliases
     "export interface PressableProps {\n  background?: Background;"
   );
   expect(output).toContain(
-    "export interface CustomProps {\n  background?: number;"
+    "export interface CustomProps {\n  background: number;"
   );
   expect(output).toContain("onPress?: () => void | Promise<void>;");
   expect(output).toContain(
@@ -855,8 +870,8 @@ it("generates experimental canvas bindings with serializable fields and their pu
 
   const output = renderGeneratedTypes(v.parse(PatchsmithSchemaSpec, schema));
   expect(output).toContain("export const experimental_Canvas");
-  expect(output).toContain("surface?: string;");
-  expect(output).toContain("width?: number;");
-  expect(output).toContain("height?: number;");
-  expect(output).toContain("ariaLabel?: string;");
+  expect(output).toContain("surface: string;");
+  expect(output).toContain("width: number;");
+  expect(output).toContain("height: number;");
+  expect(output).toContain("ariaLabel: string;");
 });

@@ -16,5 +16,6 @@ Read this index, then only the component or capability needed for the change. Ke
 - [Grid](components/Grid.md)
 - [Inline](components/Inline.md)
 - [Pressable](components/Pressable.md)
+- [Icon](components/Icon.md)
 - [Button](components/Button.md)
 - [Input](components/Input.md)

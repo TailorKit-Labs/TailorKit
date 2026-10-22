@@ -37,13 +37,20 @@ const JsonSchemaSchema: v.GenericSchema<
   maxItems: v.optional(
     v.pipe(v.pipe(v.number(), v.finite()), v.integer(), v.minValue(0))
   ),
+  maxLength: v.optional(
+    v.pipe(v.number(), v.finite(), v.integer(), v.minValue(0))
+  ),
   maximum: v.optional(v.pipe(v.number(), v.finite())),
   minItems: v.optional(
     v.pipe(v.pipe(v.number(), v.finite()), v.integer(), v.minValue(0))
   ),
+  minLength: v.optional(
+    v.pipe(v.number(), v.finite(), v.integer(), v.minValue(0))
+  ),
   minimum: v.optional(v.pipe(v.number(), v.finite())),
   not: v.optional(v.lazy(() => JsonSchemaSchema)),
   oneOf: v.optional(v.lazy(() => v.array(JsonSchemaSchema))),
+  pattern: v.optional(v.string()),
   prefixItems: v.optional(v.lazy(() => v.array(JsonSchemaSchema))),
   properties: v.optional(v.lazy(() => v.record(v.string(), JsonSchemaSchema))),
   propertyNames: v.optional(v.lazy(() => JsonSchemaSchema)),

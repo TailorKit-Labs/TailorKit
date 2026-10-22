@@ -1,4 +1,6 @@
 import type { ComponentRenderer } from "@patchsmith/client-core";
+import { Icon as iconContract } from "@patchsmith/core/icons/zod";
+import { primitives as contractPrimitives } from "@patchsmith/core/primitives/zod";
 import { defineContract } from "@patchsmith/core/schema";
 import type { ComponentDefinition } from "@patchsmith/core/schema";
 /* oxlint-disable react/rules-of-hooks -- Compile-only API tests exercise hook signatures outside runtime components. */
@@ -7,9 +9,11 @@ import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { ReactNode } from "react";
 import { z } from "zod";
 
+import { Icon as iconRenderer } from "#icons/icon";
 import type { PatchsmithInstance, UseAppsResult, UseViewsResult } from "#index";
 import { components, createClient } from "#patchsmith";
 import type { PatchsmithApp } from "#patchsmith";
+import { primitives as reactPrimitives } from "#primitives";
 
 const requireValue = <T,>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -694,3 +698,34 @@ transformedClient.useViewContext("/", { context: { count: "1" } });
 
 // @ts-expect-error registration must match the schema input, before transformation
 transformedClient.useViewContext("/", { context: { count: 1 } });
+
+// Default primitives include the Icon contract and renderer.
+const primitivesContract = defineContract({ components: contractPrimitives() });
+
+createClient({
+  baseUrl: "https://host.test",
+  components: reactPrimitives,
+  contract: primitivesContract,
+});
+
+components(primitivesContract, {});
+
+const iconLeaf: false = primitivesContract.components.Icon.children;
+
+void iconLeaf;
+
+// Standalone icons can be registered under any shared name.
+const icons = defineContract({
+  components: { icon: iconContract({ library: "lucide" }) },
+});
+
+createClient({
+  baseUrl: "https://host.test",
+  components: { icon: iconRenderer({ library: "lucide" }) },
+  contract: icons,
+});
+
+iconContract({
+  // @ts-expect-error Only supported libraries can be configured.
+  library: "unknown",
+});

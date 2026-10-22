@@ -72,6 +72,22 @@
     "./views": {
       "types": "./dist/views.d.ts",
       "import": "./dist/views.js"
+    },
+    "./icons": {
+      "types": "./dist/icons/definition.d.ts",
+      "import": "./dist/icons-definition.js"
+    },
+    "./icons/zod": {
+      "types": "./dist/icons/zod.d.ts",
+      "import": "./dist/icons-zod.js"
+    },
+    "./icons/valibot": {
+      "types": "./dist/icons/valibot.d.ts",
+      "import": "./dist/icons-valibot.js"
+    },
+    "./icons/arktype": {
+      "types": "./dist/icons/arktype.d.ts",
+      "import": "./dist/icons-arktype.js"
     }
   },
   "publishConfig": {
@@ -83,7 +99,8 @@
     "generate:native": "tsx scripts/generate-native-components/index.ts",
     "test": "vp test run --typecheck --exclude '**/*.test-d.ts'",
     "lint": "vp lint .",
-    "lint:fix": "vp lint --fix ."
+    "lint:fix": "vp lint --fix .",
+    "generate:icons": "node --import tsx scripts/generate-icon-names.ts"
   },
   "dependencies": {
     "@orpc/client": "catalog:",
@@ -103,6 +120,7 @@
     "@valibot/to-json-schema": "^1.8.0",
     "ai": "catalog:",
     "arktype": "^2.2.8",
+    "lucide-react": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:",

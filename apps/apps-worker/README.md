@@ -16,6 +16,8 @@ Backend execution reads the private gzip object through the R2 binding and decom
 
 Local Miniflare tests verify stored bytes, cache behavior, and public headers. Validate the deployed zone separately with `Accept-Encoding: br`, `gzip`, and `identity`; the selected delivery encoding depends on the zone configuration. See [Cloudflare's compression behavior](https://developers.cloudflare.com/speed/optimization/content/compression/).
 
+The public icon catalogue is deployed independently from [`apps/icons-assets`](../icons-assets/README.md).
+
 ## Authenticate app requests
 
 The host SDK uses its existing `authenticate` callback and calls `POST /apps/{appId}/runtime/session` with its project key, verified scopes, required product-defined `subjectId`, and product tool URL. The platform checks the app belongs to that project and one of those scopes, resolves its published deployment, and issues a short-lived ES256 JSON Web Token (JWT).
