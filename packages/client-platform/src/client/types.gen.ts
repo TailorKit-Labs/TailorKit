@@ -856,6 +856,12 @@ export type AppsRuntimeResolveResponses = {
       };
     }>;
     status: 'ready';
+    warnings?: Array<{
+      appId: string;
+      code: 'INSTANCE_RESOLUTION_TIMEOUT';
+      message: 'View resolution timed out';
+      path: string;
+    }>;
   };
 };
 

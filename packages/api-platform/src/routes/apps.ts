@@ -22,6 +22,7 @@ import {
 import {
   resolveRuntimeViews,
   runtimeViewContexts,
+  runtimeViewWarning,
 } from "#runtime/view-resolution";
 import {
   canonicalizeScope,
@@ -240,6 +241,7 @@ const runtimeResolve = protectedRouter
             })
           ),
           status: z.literal("ready"),
+          warnings: z.array(runtimeViewWarning).optional(),
         }),
       ]),
       headers: z.object({

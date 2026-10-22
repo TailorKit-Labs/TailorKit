@@ -391,6 +391,71 @@ describe("platform appRouter", () => {
     }
   });
 
+  it("returns per-app timeout warnings with completed data over HTTP", async () => {
+    const views = [{ instances: true as const, path: "/", slot: "page" }];
+    const completed = await seedRuntimeApp("completewarn", views);
+    const stalled = await seedRuntimeApp("stalledwarn", views);
+    const requests: Request[] = [];
+
+    const runtimeFetch = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async (value, init) => {
+        const request =
+          value instanceof Request ? value : new Request(value, init);
+
+        requests.push(request);
+
+        if (request.url.includes(`/a/${completed.app.shortId}/`)) {
+          return Response.json({
+            json: [{ data: {}, key: "ready", metadata: {} }],
+          });
+        }
+
+        return await Promise.withResolvers<Response>().promise;
+      });
+
+    try {
+      const handler = new OpenAPIHandler({ apps: appRouter });
+
+      const result = await handler.handle(
+        new Request("https://platform.test/api/platform/apps/runtime/resolve", {
+          body: JSON.stringify({
+            contexts: [{ context: {}, path: "/", status: "ready" }],
+            scopes: [productionScope],
+            slot: "page",
+            subjectId: "principal",
+            toolUrl: "https://host.test/tools",
+          }),
+          headers: { "content-type": "application/json" },
+          method: "POST",
+        }),
+        { context: createContext(), prefix: "/api/platform" }
+      );
+
+      expect(result.response?.status).toBe(200);
+      expect(await result.response?.json()).toMatchObject({
+        data: [{ app: { id: completed.app.id }, key: "ready" }],
+        status: "ready",
+        warnings: [
+          {
+            appId: stalled.app.id,
+            code: "INSTANCE_RESOLUTION_TIMEOUT",
+            message: "View resolution timed out",
+            path: "/",
+          },
+        ],
+      });
+      expect(requests).toHaveLength(2);
+      expect(
+        requests.find((request) =>
+          request.url.includes(`/a/${stalled.app.shortId}/`)
+        )?.signal.aborted
+      ).toBe(true);
+    } finally {
+      runtimeFetch.mockRestore();
+    }
+  });
+
   it("continues platform resolution past an entire page with no matching views", async () => {
     const matching = await seedRuntimeApp("oldermatch", [
       { instances: true, path: "/", slot: "page" },

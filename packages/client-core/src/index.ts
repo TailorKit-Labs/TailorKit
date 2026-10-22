@@ -4,3 +4,5 @@ export * from "./store/index";
 export type { PatchsmithApp } from "./types";
 
 export * from "./client/index";
+
+export type { ViewResolutionWarning } from "@patchsmith/core/views";

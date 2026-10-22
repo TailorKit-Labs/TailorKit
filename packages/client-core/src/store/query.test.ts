@@ -269,3 +269,37 @@ it("keeps root-slot discovery stable across child context changes and refreshes 
   store.views.unregister(root);
   store.views.unregister(child);
 });
+
+it("exposes partial-response warnings with data and clears them after a complete refetch", async () => {
+  const { fetch, store, app } = setup(false);
+
+  const warnings = [
+    {
+      appId: "timed-out-app",
+      code: "INSTANCE_RESOLUTION_TIMEOUT",
+      message: "View resolution timed out",
+      path: "/",
+    },
+  ];
+
+  fetch.mockResolvedValueOnce(
+    Response.json({ data: [{ app }], status: "ready", warnings })
+  );
+  const query = createViewsQuery(store, { slot: "page" });
+  expect(query.state.get().warnings).toEqual([]);
+  const stop = query.state.listen(() => {});
+  await allTasks();
+  expect(query.state.get()).toMatchObject({
+    data: [{ app }],
+    error: null,
+    isSuccess: true,
+    warnings,
+  });
+
+  fetch.mockResolvedValueOnce(
+    Response.json({ data: [{ app }], status: "ready" })
+  );
+  await query.refetch();
+  expect(query.state.get().warnings).toEqual([]);
+  stop();
+});

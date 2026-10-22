@@ -42,6 +42,13 @@ const instance = {
   metadata: { title: "Report" },
 };
 
+const warning = (appId: string) => ({
+  appId,
+  code: "INSTANCE_RESOLUTION_TIMEOUT",
+  message: "View resolution timed out",
+  path: "/customers",
+});
+
 const input = {
   contexts: [
     { context: { user: "viewer" }, path: "/", status: "ready" as const },
@@ -450,6 +457,7 @@ it("returns completed instances at one second and closes uncooperative backend r
       expect(yield* Fiber.join(fiber)).toEqual({
         data: [{ ...instance, app: { ...app, id: "second" } }],
         status: "ready",
+        warnings: [warning(app.id)],
       });
       expect(options.requests[1]?.signal.aborted).toBe(true);
       expect(options.fetch).toHaveBeenCalledTimes(2);
@@ -558,6 +566,7 @@ it("keeps discovery order when completed resolvers finish out of order", async (
           { ...instance, app: installations[1], key: "second" },
         ],
         status: "ready",
+        warnings: [warning("stalled")],
       });
       expect(options.requests[2]?.signal.aborted).toBe(true);
     }).pipe(Effect.provide(TestClock.layer()))
@@ -579,7 +588,11 @@ it("returns an empty completed response when a sibling times out during session 
       ).pipe(Effect.forkChild);
 
       yield* TestClock.adjust(1000);
-      expect(yield* Fiber.join(fiber)).toEqual({ data: [], status: "ready" });
+      expect(yield* Fiber.join(fiber)).toEqual({
+        data: [],
+        status: "ready",
+        warnings: [warning(app.id)],
+      });
       expect(options.fetch).toHaveBeenCalledOnce();
       session.resolve(
         yield* Effect.promise(async () => await setup().createSession(app))

@@ -44,6 +44,13 @@ export const runtimeViewContexts = z
     "View contexts must have unique paths."
   );
 
+export const runtimeViewWarning = z.object({
+  appId: z.string(),
+  code: z.literal("INSTANCE_RESOLUTION_TIMEOUT"),
+  message: z.literal("View resolution timed out"),
+  path: viewPath,
+});
+
 const instancesSchema = z
   .array(
     z.object({
@@ -102,6 +109,8 @@ export const resolveRuntimeViews = <TApp extends RuntimeInstallation>(
   }
 ) =>
   Effect.suspend(() => {
+    const pending = new Map<string, string>();
+
     const completed = new Map<
       string,
       (z.infer<typeof instancesSchema>[number] & { app: TApp })[]
@@ -205,6 +214,10 @@ export const resolveRuntimeViews = <TApp extends RuntimeInstallation>(
           }),
       });
 
+      for (const { app, path } of resolved) {
+        pending.set(app.id, path);
+      }
+
       const instances = yield* Effect.forEach(
         resolved,
         ({ app, context, path }) =>
@@ -245,6 +258,7 @@ export const resolveRuntimeViews = <TApp extends RuntimeInstallation>(
               Effect.tap((appInstances) =>
                 Effect.sync(() => {
                   completed.set(app.id, appInstances);
+                  pending.delete(app.id);
                 })
               )
             );
@@ -261,6 +275,12 @@ export const resolveRuntimeViews = <TApp extends RuntimeInstallation>(
             ? Effect.succeed({
                 data: apps.flatMap((app) => completed.get(app.id) ?? []),
                 status: "ready" as const,
+                warnings: [...pending].map(([appId, path]) => ({
+                  appId,
+                  code: "INSTANCE_RESOLUTION_TIMEOUT" as const,
+                  message: "View resolution timed out" as const,
+                  path,
+                })),
               })
             : Effect.fail(
                 new ORPCError("GATEWAY_TIMEOUT", {

@@ -223,3 +223,38 @@ it("exposes host failures and recovers on fetch", async () => {
     isPending: false,
   });
 });
+
+it("exposes partial data and warnings without an error, then clears warnings on retry", async () => {
+  const warnings = [
+    {
+      appId: "timed-out-app",
+      code: "INSTANCE_RESOLUTION_TIMEOUT",
+      message: "View resolution timed out",
+      path: "/",
+    },
+  ];
+
+  vi.spyOn(globalThis, "fetch")
+    .mockResolvedValueOnce(
+      Response.json({ data: items, status: "ready", warnings })
+    )
+    .mockImplementation(asyncFixture(ready));
+
+  const { result } = renderHook(() => client.useViews({ slot: "single" }), {
+    wrapper,
+  });
+
+  await waitFor(() => {
+    expect(result.current.warnings).toEqual(warnings);
+  });
+  expect(result.current).toMatchObject({
+    data: items,
+    error: null,
+    isPending: false,
+  });
+  await act(async () => {
+    await result.current.fetch();
+  });
+  expect(result.current.warnings).toEqual([]);
+  expect(result.current.data).toEqual(items);
+});

@@ -8,7 +8,26 @@ Validated context values retain the existing RPC serialization semantics across 
 
 The platform discovers all installation pages and checks selected context readiness before issuing sessions or starting any resolver. A selected error rejects the request; loading returns a loading result. Unsupported or disabled deeper contexts do not prevent an enabled ancestor from resolving. A nearer view without instances blocks fallback through it. Cancelling the host request cancels its platform request and the platform's outstanding app calls. Runtime sessions and credentials are never part of the resolution response.
 
-The resolution phase has one shared 1,000 ms budget, including context decoding, session issuance, cold runtime startup, resolver execution, and response-body reading for every selected app. Discovery and host authentication/validation run before this budget; network travel to the platform is additional. On expiry the platform interrupts unfinished resolution fibers and closes outstanding backend clients. If any app completed, it returns those apps' fully validated results in discovery order, including valid empty results; unfinished apps are omitted. If no app completed, it returns a sanitized 504 `View resolution timed out`, which the host preserves. Caller cancellation and resolver failures still fail the request. No actions are retried. Partial results use the existing ready response shape and the normal client cache freshness window (30 seconds by default); callers can explicitly refetch. Adjust `instanceResolutionTimeoutMs` in `packages/api-platform/src/runtime/view-resolution.ts` to change the limit.
+The resolution phase has one shared 1,000 ms budget, including context decoding, session issuance, cold runtime startup, resolver execution, and response-body reading for every selected app. Discovery and host authentication/validation run before this budget; network travel to the platform is additional. On expiry the platform interrupts unfinished resolution fibers and closes outstanding backend clients. If any app completed, it returns those apps' fully validated results in discovery order, including valid empty results; unfinished apps are omitted. If no app completed, it returns a sanitized 504 `View resolution timed out`, which the host preserves. Caller cancellation and resolver failures still fail the request. No actions are retried. Partial results use a ready response with optional `warnings` metadata and the normal client cache freshness window (30 seconds by default); callers can explicitly refetch. Adjust `instanceResolutionTimeoutMs` in `packages/api-platform/src/runtime/view-resolution.ts` to change the limit.
+
+A partial HTTP response includes one structured warning per timed-out app:
+
+```json
+{
+  "status": "ready",
+  "data": [],
+  "warnings": [
+    {
+      "code": "INSTANCE_RESOLUTION_TIMEOUT",
+      "appId": "timed-out-installation-id",
+      "path": "/customers",
+      "message": "View resolution timed out"
+    }
+  ]
+}
+```
+
+`data` contains only completed results, and can be empty when a completed app returned no instances. Complete HTTP responses omit `warnings` for compatibility; framework-neutral view queries and React `useViews()` always expose a `warnings` array, empty when there are none. Warnings remain alongside their data during a refresh and clear when a complete response replaces it. Partial success keeps `error` null. A UI can show a non-blocking “Some apps couldn't load” notice when `warnings.length > 0` and use the existing `fetch()` callback to retry. The warning code is stable; consumers should not parse the message. No runtime credentials or underlying exception details are included.
 
 The new platform and host handlers use oRPC's `handlerGen` integration. Effect handles concurrent work, interruption, and backend-client finalization; Promise-based SDK and database calls are adapted at their boundaries.
 

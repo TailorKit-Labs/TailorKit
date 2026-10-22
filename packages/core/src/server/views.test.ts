@@ -397,3 +397,26 @@ it("returns the platform's resolver timeout as a sanitized 504 without retrying"
   expect(platformFetch).toHaveBeenCalledOnce();
   expect(runtimeFetch).not.toHaveBeenCalled();
 });
+
+it("preserves successful data and per-app timeout warnings from the platform", async () => {
+  const { reply, run, runtimeFetch } = setup();
+
+  const partial = {
+    data: [{ ...instance, app }],
+    status: "ready",
+    warnings: [
+      {
+        appId: "timed-out-installation",
+        code: "INSTANCE_RESOLUTION_TIMEOUT",
+        message: "View resolution timed out",
+        path: "/customers",
+      },
+    ],
+  };
+
+  reply.mockResolvedValueOnce(Response.json(partial));
+  const response = await run();
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual(partial);
+  expect(runtimeFetch).not.toHaveBeenCalled();
+});

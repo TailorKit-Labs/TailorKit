@@ -3621,6 +3621,33 @@
                         "status": {
                           "type": "string",
                           "const": "ready"
+                        },
+                        "warnings": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "appId": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string",
+                                "const": "INSTANCE_RESOLUTION_TIMEOUT"
+                              },
+                              "message": {
+                                "type": "string",
+                                "const": "View resolution timed out"
+                              },
+                              "path": {
+                                "type": "string",
+                                "maxLength": 1024,
+                                "format": "starts_with",
+                                "pattern": "^\\/.*"
+                              }
+                            },
+                            "required": ["appId", "code", "message", "path"],
+                            "additionalProperties": false
+                          }
                         }
                       },
                       "required": ["data", "status"],
