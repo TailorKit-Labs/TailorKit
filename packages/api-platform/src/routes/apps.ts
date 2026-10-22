@@ -598,7 +598,19 @@ const deploy = cliRouter
       throw new ORPCError("BAD_REQUEST", { message: "Failed to deploy app." });
     }
 
-    if (deployment.status === "published") {
+    const { selectRuntimeDeployment } =
+      await import("#runtime/deployment-steps");
+
+    const selected = await selectRuntimeDeployment(
+      {
+        appId: context.app.id,
+        deploymentId: deployment.id,
+        projectId: context.project.id,
+      },
+      db
+    );
+
+    if (selected && deployment.status === "published") {
       const server = await db.query.appDeploymentFile.findFirst({
         where: {
           appDeploymentId: deployment.id,

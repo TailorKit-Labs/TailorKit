@@ -844,11 +844,24 @@ const publishAppDeployment = cliRouter
           and(eq(app.id, context.app.id), eq(app.projectId, context.project.id))
         );
 
+      const { selectRuntimeDeployment } =
+        await import("#runtime/deployment-steps");
+
+      const selected = await selectRuntimeDeployment(
+        {
+          appId: context.app.id,
+          deploymentId: publishedDeployment.id,
+          projectId: context.project.id,
+        },
+        db
+      );
+
       const server = files.find((file) =>
         file.objectKey.endsWith("/server/server.js")
       );
 
       if (
+        selected &&
         server?.checksum !== undefined &&
         server?.checksum !== null &&
         server?.checksum !== ""

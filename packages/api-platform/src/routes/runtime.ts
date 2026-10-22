@@ -237,15 +237,12 @@ export const getRuntimeBundle = protectedRouter
     };
   });
 
-/** Roll out installed scopes before enqueueing independently retryable warm-up steps. */
+/** Enqueue independently retryable warm-up steps after deployment selection. */
 export const publishRuntimeMetadata = async (
   metadata: AppDeploymentMetadata,
   _appShortId: string
 ) => {
-  const { selectRuntimeDeployment } = await import("#runtime/deployment-steps");
-  const selected = await selectRuntimeDeployment(metadata, db);
-
-  if (!selected || env.APP_RUNTIME_SERVICE_TOKEN === undefined) {
+  if (env.APP_RUNTIME_SERVICE_TOKEN === undefined) {
     return;
   }
 
