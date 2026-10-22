@@ -2,7 +2,6 @@ import type {
   experimental_requestCanvas,
   experimental_CanvasSurface,
 } from "./canvas";
-import { waitForCanvasFrame } from "./canvas-scheduler";
 
 export interface experimental_CanvasFrame {
   /** Monotonic milliseconds from the sandbox performance clock. */
@@ -181,7 +180,7 @@ export const createCanvasController = <T>(
   const wait = async (connection: Connection, delay: number) => {
     const pacing = new AbortController();
     connection.pacing = pacing;
-    await waitForCanvasFrame(
+    await connection.surface.waitForFrame(
       delay,
       AbortSignal.any([connection.lifetime.signal, pacing.signal])
     );

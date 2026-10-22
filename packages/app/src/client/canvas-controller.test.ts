@@ -3,6 +3,7 @@ import { expect, it, vi } from "vite-plus/test";
 import type { experimental_CanvasSurface } from "./canvas";
 import { createCanvasController } from "./canvas-controller";
 import type { experimental_CanvasHookState } from "./canvas-controller";
+import { createCanvasFrameScheduler } from "./canvas-scheduler";
 
 const createSurface = () => {
   const lifetime = new AbortController();
@@ -15,7 +16,31 @@ const createSurface = () => {
     .fn<experimental_CanvasSurface["present"]>()
     .mockResolvedValue();
 
+  const timers = new Map<number, ReturnType<typeof setTimeout>>();
+
+  const pacing = createCanvasFrameScheduler((message) => {
+    if (message.type === "cancelWait") {
+      clearTimeout(timers.get(message.sequence));
+      timers.delete(message.sequence);
+    } else {
+      timers.set(
+        message.sequence,
+        setTimeout(() => {
+          timers.delete(message.sequence);
+          pacing.receive(message.sequence);
+        }, message.delay)
+      );
+    }
+  });
+
   const close = vi.fn(() => {
+    pacing.close(new Error("Closed"));
+
+    for (const timer of timers.values()) {
+      clearTimeout(timer);
+    }
+
+    timers.clear();
     lifetime.abort(new Error("Closed"));
   });
 
@@ -24,6 +49,7 @@ const createSurface = () => {
     close,
     present,
     signal: lifetime.signal,
+    waitForFrame: pacing.wait,
   };
 
   return { lifetime, surface };

@@ -75,6 +75,37 @@ const checkEvaluation = async () => {
   );
 };
 
+const checkPacing = async (
+  surface: experimental_CanvasSurface,
+  context: OffscreenCanvasRenderingContext2D,
+  configuration: v.InferOutput<typeof Configuration>
+) => {
+  const lifetime = new AbortController();
+  const start = performance.now();
+
+  for (let frame = 0; frame < configuration.frames; frame += 1) {
+    // oxlint-disable-next-line no-await-in-loop -- Exercise host-paced waits inside the real hidden opaque iframe, including draws without a bitmap.
+    await surface.waitForFrame(1000 / 30, lifetime.signal);
+
+    if (configuration.mode === "paced" || frame % 2 === 1) {
+      context.fillStyle = "rgb(42, 128, 0)";
+      context.fillRect(0, 0, surface.canvas.width, surface.canvas.height);
+      // oxlint-disable-next-line no-await-in-loop -- Preserve canvas backpressure while testing frame pacing.
+      await surface.present();
+    }
+  }
+
+  const elapsedMs = performance.now() - start;
+
+  if (elapsedMs > configuration.frames * 100) {
+    throw new Error(`Canvas pacing was throttled: ${elapsedMs}ms.`);
+  }
+
+  await callTool("client", "verify", { red: 42 });
+
+  return { elapsedMs, passed: true };
+};
+
 const run = async (configuration: v.InferOutput<typeof Configuration>) => {
   if (configuration.mode === "evaluation") {
     return await checkEvaluation();
@@ -90,7 +121,7 @@ const run = async (configuration: v.InferOutput<typeof Configuration>) => {
     throw new Error("Unregistered surface was granted.");
   }
 
-  if (configuration.mode === "wrong-size" || configuration.mode === "flood") {
+  if (["wrong-size", "flood"].includes(configuration.mode)) {
     const request = globalThis.__patchsmithRequestCanvas;
 
     if (!request) {
@@ -150,6 +181,10 @@ const run = async (configuration: v.InferOutput<typeof Configuration>) => {
   }
 
   try {
+    if (configuration.mode.startsWith("paced")) {
+      return await checkPacing(surface, context, configuration);
+    }
+
     if (configuration.mode === "native-input") {
       await callTool("client", "verifyInput", { focusable: true });
 

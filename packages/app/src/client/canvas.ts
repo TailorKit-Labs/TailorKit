@@ -1,6 +1,7 @@
 import * as v from "valibot";
 
 import { CanvasInputBatch, createCanvasInput } from "./canvas-input";
+import { createCanvasFrameScheduler } from "./canvas-scheduler";
 
 /** Runtime ABI. The host grants a port, never a DOM element or rendering context. */
 export interface experimental_CanvasConnection {
@@ -38,11 +39,14 @@ export interface experimental_CanvasSurface {
   signal: AbortSignal;
   /** Presents one complete frame; transfer mode clears the source by default. */
   present: (options?: experimental_CanvasPresentationOptions) => Promise<void>;
+  /** Wait on the host clock, avoiding hidden-iframe timer throttling. Abort cancels the wait. */
+  waitForFrame: (milliseconds: number, signal: AbortSignal) => Promise<void>;
   close: () => void;
 }
 
 const Reply = v.variant("type", [
   v.strictObject({ sequence: v.number(), type: v.literal("presented") }),
+  v.strictObject({ sequence: v.number(), type: v.literal("ready") }),
   v.strictObject({ message: v.string(), type: v.literal("closed") }),
 ]);
 
@@ -76,6 +80,11 @@ export const experimental_requestCanvas = async (
 
   const lifetime = new AbortController();
   const input = createCanvasInput(canvas);
+
+  const pacing = createCanvasFrameScheduler((message) => {
+    port.postMessage(message);
+  });
+
   let inputSequence = 0;
   let closed = false;
   let sequence = 0;
@@ -92,6 +101,7 @@ export const experimental_requestCanvas = async (
     }
 
     closed = true;
+    pacing.close(new Error(message));
 
     if (pending) {
       clearTimeout(pending.timer);
@@ -139,6 +149,12 @@ export const experimental_requestCanvas = async (
 
     if (parsed.output.type === "closed") {
       close(parsed.output.message);
+
+      return;
+    }
+
+    if (parsed.output.type === "ready") {
+      pacing.receive(parsed.output.sequence);
 
       return;
     }
@@ -211,5 +227,6 @@ export const experimental_requestCanvas = async (
       await promise;
     },
     signal: lifetime.signal,
+    waitForFrame: pacing.wait,
   };
 };

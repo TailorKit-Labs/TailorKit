@@ -78,6 +78,10 @@ Returning `false` (or a promise resolving to `false`) skips the bitmap snapshot 
 
 Pass `framesPerSecond` in the hook options to request a lower scheduling cap, for example `{ continuous: true, framesPerSecond: 30 }`. It must be finite, greater than zero, and at most 240; invalid values throw a RangeError. This app-side limit applies to drawing and presentation attempts, including dependency changes and input. The host independently enforces its own maximum; requesting a higher rate cannot override it. It is a maximum requested rate, not a guaranteed cadence.
 
+Pacing waits run on the host clock and return over the surface's MessagePort. Chromium can throttle `setTimeout` inside the hidden opaque-origin iframe to roughly one second, so libraries should advance their simulation from the draw callback instead of running a separate iframe timer or animation-frame loop. `{ continuous: true }` alone uses presentation acknowledgements for pacing; request a lower app cap only when needed.
+
+Low-level producers can `await surface.waitForFrame(milliseconds, signal)` before drawing, including when no bitmap will be presented. Only one pacing wait may be outstanding per surface. Aborting the signal cancels and resolves that wait; surface closure rejects it. The host bounds wake-up frequency by its own FPS policy. This pacing protocol requires matching upgraded app and host SDKs; older apps that only present frames remain supported by the upgraded host.
+
 ```tsx
 const surface = experimental_useCanvasSurface(
   (canvas, { timestamp, deltaTime }) => {
@@ -89,7 +93,7 @@ const surface = experimental_useCanvasSurface(
 );
 ```
 
-The default path still relies on host acknowledgements for backpressure. A continuously skipped frame yields with a timer, at the requested interval or approximately 60 Hz by default, so skipping cannot create a tight microtask loop. Timers are used because the sandbox iframe is hidden. Pending waits are cancelled when the connection is retired, and repeated invalidations coalesce. Updating the requested rate takes effect after any existing wait finishes. These controls do not impose hard execution quotas on app code.
+The default path still relies on host acknowledgements for backpressure. A continuously skipped frame waits on the host clock through `surface.waitForFrame`, at the requested interval or approximately 60 Hz by default, subject to the host's FPS policy, so skipping cannot create a tight microtask loop. Pending waits are cancelled when the connection is retired, and repeated invalidations coalesce. Updating the requested rate cancels any outstanding wait and applies the new rate immediately. These controls do not impose hard execution quotas on app code.
 
 ### Library lifecycle and native local input
 

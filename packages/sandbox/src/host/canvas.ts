@@ -30,6 +30,17 @@ const Frame = v.strictObject({
 
 const Close = v.strictObject({ type: v.literal("close") });
 
+const Wait = v.strictObject({
+  delay: v.pipe(v.number(), v.minValue(0), v.maxValue(2_147_483_647)),
+  sequence: InputAck.entries.sequence,
+  type: v.literal("wait"),
+});
+
+const CancelWait = v.strictObject({
+  sequence: InputAck.entries.sequence,
+  type: v.literal("cancelWait"),
+});
+
 export interface experimental_CanvasTargetOptions {
   /** Presentation is also gated by the browser's animation frames. Default: 60. */
   maxFramesPerSecond?: number;
@@ -78,6 +89,7 @@ export const createCanvasTarget = (
   let connection: { close: (message: string) => void } | null = null;
   let disposed = false;
   let lastPresentation = -Infinity;
+  let lastWake = -Infinity;
 
   return {
     close: () => {
@@ -94,6 +106,8 @@ export const createCanvasTarget = (
       let animationFrame: number | null = null;
       let presentationTimer: ReturnType<typeof setTimeout> | null = null;
       let sequence = 0;
+      let waitSequence = 0;
+      let waitTimer: ReturnType<typeof setTimeout> | null = null;
       let closed = false;
       let input: ReturnType<typeof createCanvasInput> | null = null;
       const visibilityLifetime = new AbortController();
@@ -119,6 +133,12 @@ export const createCanvasTarget = (
         input?.close();
 
         cancelPresentation();
+
+        if (waitTimer !== null) {
+          clearTimeout(waitTimer);
+          waitTimer = null;
+        }
+
         visibilityLifetime.abort();
 
         pending?.bitmap.close();
@@ -207,6 +227,53 @@ export const createCanvasTarget = (
 
         if (v.safeParse(Close, event.data).success) {
           close("Canvas surface closed.");
+
+          return;
+        }
+
+        const wait = v.safeParse(Wait, event.data);
+
+        if (wait.success) {
+          if (
+            closed ||
+            waitTimer !== null ||
+            wait.output.sequence !== waitSequence + 1
+          ) {
+            close("Canvas pacing violates surface limits or backpressure.");
+
+            return;
+          }
+
+          waitSequence = wait.output.sequence;
+
+          // Host timers are not subject to the hidden cross-origin iframe's
+          // one-second wake-up alignment. Bound even bitmap-free draws by policy.
+          const delay = Math.max(
+            wait.output.delay,
+            1000 / maxFramesPerSecond - (performance.now() - lastWake)
+          );
+
+          waitTimer = setTimeout(() => {
+            waitTimer = null;
+            lastWake = performance.now();
+            port1.postMessage({ sequence: waitSequence, type: "ready" });
+          }, Math.ceil(delay));
+
+          return;
+        }
+
+        const cancelWait = v.safeParse(CancelWait, event.data);
+
+        if (cancelWait.success) {
+          if (cancelWait.output.sequence > waitSequence) {
+            close("Invalid canvas pacing cancellation.");
+          } else if (
+            cancelWait.output.sequence === waitSequence &&
+            waitTimer !== null
+          ) {
+            clearTimeout(waitTimer);
+            waitTimer = null;
+          }
 
           return;
         }
