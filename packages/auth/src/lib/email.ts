@@ -1,2 +1,3 @@
-export { sendBetterAuthOtpEmail as sendOtpEmail } from "@tailorkit/email";
-export type { BetterAuthEmailType as EmailType } from "@tailorkit/email";
+export { sendBetterAuthOtpEmail as sendOtpEmail } from "@patchsmith/email";
+
+export type { BetterAuthEmailType as EmailType } from "@patchsmith/email";

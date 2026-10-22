@@ -38,10 +38,12 @@ export const db = new Proxy(
   {
     get: (_target, property) => {
       const instance = getDb();
+
       if (!(property in instance)) {
         /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
         return undefined;
       }
+
       // SAFETY: The proxy only forwards keys present on the initialized Drizzle instance.
       const value =
         instance[
@@ -49,6 +51,7 @@ export const db = new Proxy(
           property as keyof typeof instance
           /* oxlint-enable typescript/no-unsafe-type-assertion */
         ];
+
       return isFunctionValue(value) ? value.bind(instance) : value;
     },
   }

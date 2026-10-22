@@ -22,12 +22,12 @@
     "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
-    "@tailorkit/core": "workspace:*",
+    "@patchsmith/core": "workspace:*",
     "@valibot/to-json-schema": "^1.8.0",
     "arktype": "^2.2.8",
     "drizzle-orm": "catalog:",
-    "tailorkit": "workspace:*",
-    "valibot": "^1.5.0",
+    "patchsmith": "workspace:*",
+    "valibot": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -35,5 +35,8 @@
     "drizzle-kit": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=24.11"
   }
 }

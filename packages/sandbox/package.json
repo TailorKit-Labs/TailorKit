@@ -1,10 +1,10 @@
 {
-  "name": "@tailorkit/sandbox",
-  "version": "0.1.0-beta.36",
+  "name": "@patchsmith/sandbox",
+  "version": "0.1.0-beta.59",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TailorKit-Labs/TailorKit.git",
+    "url": "git+https://github.com/patchsmith-io/patchsmith.git",
     "directory": "packages/sandbox"
   },
   "files": [
@@ -35,6 +35,7 @@
     "access": "public"
   },
   "scripts": {
+    "bench:canvas": "vp dev --config benchmarks/vite.config.ts --host 127.0.0.1 --port 5190",
     "check-types": "tsc --noEmit",
     "test": "vp test run",
     "build": "vp build && tsc -p tsconfig.build.json",
@@ -42,16 +43,19 @@
     "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
-    "@tailorkit/app": "workspace:*",
-    "@tailorkit/core": "workspace:*",
-    "valibot": "^1.5.0"
+    "@patchsmith/app": "workspace:*",
+    "@patchsmith/core": "workspace:*",
+    "valibot": "catalog:"
   },
   "devDependencies": {
-    "@tailorkit/config": "workspace:*",
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
-    "happy-dom": "^20.14.6",
+    "happy-dom": "^21.0.3",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

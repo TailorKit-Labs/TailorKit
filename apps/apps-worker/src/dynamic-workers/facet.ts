@@ -1,5 +1,5 @@
-import type { Invocation } from "@tailorkit/app/protocol";
-import type { Identity } from "@tailorkit/app/server";
+import type { Invocation } from "@patchsmith/app/protocol";
+import type { Identity } from "@patchsmith/app/server";
 import { DurableObject } from "cloudflare:workers";
 import { Effect } from "effect";
 
@@ -13,6 +13,7 @@ installFetchGuard();
 export class AppFacet extends DurableObject<Record<string, never>> {
   readonly #execution = this.ctx.blockConcurrencyWhile(async () => {
     const application = await import("application.js");
+
     return createApplicationExecution(application, {
       execute: (sql, params) => {
         // SAFETY: The database adapter supplies SQLite-compatible positional parameters; this boundary bridges the Workers SQL declaration.
@@ -22,6 +23,7 @@ export class AppFacet extends DurableObject<Record<string, never>> {
           (params as SqlStorageValue[])
           /* oxlint-enable typescript/no-unsafe-type-assertion */
         );
+
         return {
           changes: cursor.rowsWritten,
           columns: cursor.columnNames,
@@ -34,11 +36,13 @@ export class AppFacet extends DurableObject<Record<string, never>> {
 
   async query(input: Invocation, identity: Identity) {
     const execution = await this.#execution;
+
     return Effect.runSync(execution.call("query", input, identity));
   }
 
   async mutate(input: Invocation & { requestId: string }, identity: Identity) {
     const execution = await this.#execution;
+
     return Effect.runSync(execution.call("mutation", input, identity));
   }
 
@@ -51,17 +55,21 @@ export class AppFacet extends DurableObject<Record<string, never>> {
     const execution = await this.#execution;
     const controller = new AbortController();
     const reader = cancellation.getReader();
+
     const cancel = () => {
       controller.abort();
     };
+
     void (async () => {
       try {
         await reader.read();
       } catch {
         /* Either settlement cancels the action. */
       }
+
       cancel();
     })();
+
     return await Effect.runPromise(
       execution
         .action(
@@ -75,6 +83,7 @@ export class AppFacet extends DurableObject<Record<string, never>> {
               const request = new Request(inputValue, init);
               const { signal } = request;
               signal.throwIfAborted();
+
               // Attached AbortSignals cannot be serialized by Workers RPC.
               const transferable = new Request(request.url, {
                 body: request.body,
@@ -82,6 +91,7 @@ export class AppFacet extends DurableObject<Record<string, never>> {
                 method: request.method,
                 redirect: request.redirect,
               });
+
               return await abortable(
                 capability.fetch(transferable, cancellationStream(signal)),
                 signal

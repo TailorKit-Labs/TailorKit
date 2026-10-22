@@ -4,21 +4,52 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdtemp, rm, readFile, writeFile, readdir } from "node:fs/promises";
+import { get } from "node:http";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { gzipSync } from "node:zlib";
+import { gzipSync, gunzipSync } from "node:zlib";
 
 import {
   issueAppToken,
   appTokenVerifier,
   APP_AUDIENCE,
-} from "@tailorkit/api-utils/app-auth";
-import { createClient, createApi, reference } from "@tailorkit/app/client";
+} from "@patchsmith/api-utils/app-auth";
+import { createClient, createApi, reference } from "@patchsmith/app/client";
 import { build } from "vite";
 import { it } from "vite-plus/test";
 
 import { createTestBackend } from "./backend";
+
+/**
+ * Read the wire bytes without fetch/dispatchFetch's transparent gzip decoding.
+ * @param {URL} url Local runtime URL.
+ * @param {Record<string, string>} headers Request headers, including the public host.
+ */
+const fetchWireBytes = async (url, headers) => {
+  /** @type {import("node:http").IncomingMessage} */
+  // oxlint-disable-next-line promise/avoid-new -- node:http exposes callbacks; bridge them to await without fetch's automatic decompression.
+  const response = await new Promise((resolve, reject) => {
+    get(url, { headers }, resolve).on("error", reject);
+  });
+
+  /** @type {Buffer[]} */
+  const chunks = [];
+
+  for await (const chunk of response) {
+    if (!Buffer.isBuffer(chunk)) {
+      throw new TypeError("Expected HTTP response bytes");
+    }
+
+    chunks.push(chunk);
+  }
+
+  return {
+    body: Buffer.concat(chunks),
+    headers: response.headers,
+    status: response.statusCode,
+  };
+};
 
 /** @typedef {NonNullable<import("wrangler").unstable_DevEnv["runtimes"][number]["mf"]>} LocalMiniflare */
 /** @typedef {{ Miniflare: new(options: Record<string, unknown>) => LocalMiniflare, convertV4MiniflareOptions: (options: Record<string, unknown>) => Record<string, unknown> }} WranglerRuntimeModule */
@@ -31,7 +62,7 @@ let globals = 0;
 export const runtimeManifest = { apiVersion: 1, requires: ["database", "actions"] };
 export const migrations = [];
 export default { functions: { probe: {
- kind: "query", args: { safeParse: value => ({ success: true, data: value }) },
+ kind: "query", args: { "~standard": { version: 1, vendor: "fixture", validate: value => ({ value }) } },
  handler({ identity }) {
    let networkBlocked = false;
    try { fetch("https://example.com"); } catch { networkBlocked = true; }
@@ -43,25 +74,29 @@ export default { functions: { probe: {
 it("runs isolated app backends with persistent SQLite and two-client realtime updates", async () => {
   // Exercise precisely the workerd/Miniflare version bundled with this project's Wrangler.
   const require = createRequire(import.meta.url);
+
   /** @type {WranglerRuntimeModule} */
   const wranglerRuntime = createRequire(require.resolve("wrangler"))(
     "miniflare"
   );
+
   const { Miniflare, convertV4MiniflareOptions } = wranglerRuntime;
 
-  const state = await mkdtemp(path.join(tmpdir(), "tailorkit-apps-worker-"));
+  const state = await mkdtemp(path.join(tmpdir(), "patchsmith-apps-worker-"));
 
   const keys = await crypto.subtle.generateKey(
     { name: "ECDSA", namedCurve: "P-256" },
     true,
     ["sign", "verify"]
   );
+
   const signing = {
     audience: APP_AUDIENCE,
     issuer: "https://platform.test/api/platform",
     keyId: "test",
     privateKey: keys.privateKey,
   };
+
   const publicKeys = {
     keys: [
       {
@@ -73,9 +108,9 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
 
   const projectId = "22222222-2222-4222-8222-222222222222";
   const otherProjectId = "33333333-3333-4333-8333-333333333333";
-  const publicTeamId = "abc123def45678";
-  const appPublicId = "app000000001";
-  const rpcUrl = `https://${publicTeamId}.tailorkit.app/p/${projectId}/a/${appPublicId}/rpc`;
+  const projectShortId = "abc123def456";
+  const appShortId = "app000000001";
+  const rpcUrl = `https://${projectShortId}.tailorkit.app/a/${appShortId}/rpc`;
   /** @type {PublishedDeployment} */
   let published;
   /** @type {Set<string>} */
@@ -88,6 +123,7 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
   let metadataReads = 0;
 
   const dist = path.resolve(import.meta.dirname, "../../dist");
+
   const options = {
     bindings: {
       APP_RUNTIME_PUBLIC_KEYS: publicKeys,
@@ -97,7 +133,7 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
     },
     compatibilityDate: "2026-10-01",
     durableObjects: {
-      STORES: { className: "AppInstallation", useSQLite: true },
+      STORES: { className: "PatchsmithAppInstallation", useSQLite: true },
     },
     kvNamespaces: ["DEPLOYMENTS"],
     modules: [
@@ -107,11 +143,11 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
         .map((name) => ({ path: path.join(dist, name), type: "Text" })),
     ],
     modulesRoot: dist,
-    name: "tailorkit-runtime-test",
+    name: "patchsmith-runtime-test",
     /** @param {Request} request Outbound request made by the isolated worker. */
     // oxlint-disable-next-line eslint/complexity -- Keep this validation or rendering lifecycle together: its guards share the same state, cleanup, and error handling.
     outboundService: async (request) => {
-      if (request.url === "https://host.test/api/tailorkit/tools/execute") {
+      if (request.url === "https://host.test/api/patchsmith/tools/execute") {
         const { path: toolPath, input, requestId } = await request.json();
         assert.match(requestId, /^[0-9a-f-]{36}$/u);
         const token = request.headers.get("authorization").slice(7);
@@ -119,12 +155,15 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
           appTokens.has(token),
           "tool calls reuse an issued app execution JWT"
         );
+
         const verified = await appTokenVerifier({ ...signing, publicKeys })(
           token
         );
+
         if (toolPath === "echo") {
           return Response.json({ output: input });
         }
+
         return Response.json({
           output: {
             installationId: verified.installationId,
@@ -185,6 +224,7 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
         `Bearer ${"x".repeat(32)}`
       );
       metadataReads += 1;
+
       return Response.json(published);
     },
     r2Buckets: { BUNDLES: "private-apps" },
@@ -200,7 +240,7 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
   /** @param {number} version Fixture deployment to publish. */
   const publish = async (version) => {
     const code = bundle(version);
-    const objectKey = `teams/${publicTeamId}/projects/${projectId}/apps/${appPublicId}/deployments/deploy00000${version}/server/server.js`;
+    const objectKey = `projects/${projectShortId}/apps/${appShortId}/deployments/deploy00000${version}/server/server.js`;
     const bucket = await mf.getR2Bucket("BUNDLES");
     const bytes = version === 1 ? Buffer.from(code) : gzipSync(code);
     await bucket.put(objectKey, bytes, {
@@ -225,8 +265,9 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
             objectKey,
             projectId,
           };
+
     const response = await mf.dispatchFetch(
-      `https://internal.tailorkit.app/p/${projectId}/a/${appPublicId}/new-deployment`,
+      `https://internal.tailorkit.app/p/${projectId}/a/${appShortId}/new-deployment`,
       {
         body: JSON.stringify(published),
         headers: {
@@ -236,10 +277,12 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
         method: "POST",
       }
     );
+
     assert.equal(response.status, 204, await response.text());
   };
 
   const defaultProbe = { name: "probe" };
+
   const invoke = async (
     installationId,
     deploymentId = published.deploymentId,
@@ -248,18 +291,20 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
     rawInput = defaultProbe
   ) => {
     const input = rawInput ?? { name: "probe" };
+
     const session = await issueAppToken(signing, {
       appId: "app",
-      appPublicId,
+      appShortId,
       deploymentId,
       installationId,
       projectId,
-      publicTeamId,
+      projectShortId,
       scope: { name: "org", value: { id: "tenant" } },
       subjectId: "user",
-      toolUrl: "https://host.test/api/tailorkit/tools/execute",
+      toolUrl: "https://host.test/api/patchsmith/tools/execute",
       ...overrides,
     });
+
     return await mf.dispatchFetch(
       `${rpcUrl.replace(projectId, overrides.projectId ?? projectId)}/${endpoint}`,
       {
@@ -267,7 +312,7 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
         headers: {
           authorization: `Bearer ${session.token}`,
           "content-type": "application/json",
-          "x-tailorkit-identity": "forged",
+          "x-patchsmith-identity": "forged",
         },
         method: "POST",
       }
@@ -278,10 +323,12 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
     const repo = path.resolve(import.meta.dirname, "../../../..");
     const backend = path.join(state, "backend");
     await createTestBackend(backend);
+
     const sql = await readFile(
       new URL("fixtures/todos-init.sql", import.meta.url),
       "utf-8"
     );
+
     const migrations = [
       {
         hash: createHash("sha256").update(sql).digest("hex"),
@@ -294,32 +341,34 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
 
     const publishRpc = async (history, deploymentId) => {
       // Use the same migration bootstrap bundled into production server artifacts.
-      const setup = `import app from ${JSON.stringify(path.join(backend, "server.ts"))};
-import { defineServer, action, query, table, text, integer, AppError } from ${JSON.stringify(path.join(repo, "packages/app/dist/server.js"))};
+      const setup = `import functions from ${JSON.stringify(path.join(backend, "functions.ts"))};
+import { defineRouter, action, query, AppError } from ${JSON.stringify(path.join(repo, "packages/app/dist/server.js"))};
+import { table, text, integer } from ${JSON.stringify(path.join(repo, "packages/app-db/dist/index.js"))};
 import { env } from "cloudflare:workers";
 
 let globals = 0;
 const migratedTodos = table("todos", { id: text(), priority: integer() });
-const nested = { read: app.functions.list, add: app.functions.add };
-const actionApp = defineServer({ ...app.functions,
-  toolProbe: action({ args: app.functions.list.args, handler: ctx => ctx.tools.product.identity() }),
+const nested = { read: functions.list, add: functions.add };
+const actionFunctions = defineRouter({ ...functions,
+  toolProbe: action({ args: functions.list.args, handler: ctx => ctx.tools.product.identity() }),
   nested,
-  tasks: { read: action({ functions: { nested }, args: app.functions.list.args, handler: ctx => ctx.queries.nested.read() }) },
-  migrationProbe: query({ args: app.functions.list.args, handler: ({ db }) => db.select().from(migratedTodos).all() }),
-  isolation: action({ args: app.functions.list.args, handler: context => ({ bindings: Object.keys(env), db: "db" in context, globals: ++globals, subjectId: context.identity.subjectId }) }),
-  failAfterWrite: action({ functions: app.functions, args: app.functions.list.args, async handler(ctx) {
+  tasks: { read: action({ functions: { nested }, args: functions.list.args, handler: ctx => ctx.queries.nested.read() }) },
+  migrationProbe: query({ args: functions.list.args, handler: ({ db }) => db.select().from(migratedTodos).all() }),
+  isolation: action({ args: functions.list.args, handler: context => ({ bindings: Object.keys(env), db: "db" in context, globals: ++globals, subjectId: context.identity.subjectId }) }),
+  failAfterWrite: action({ functions: functions, args: functions.list.args, async handler(ctx) {
     await ctx.mutations.add({ text: "Committed before the action failed" });
     throw new AppError("CONFLICT", "Intentional action failure");
   } }),
-  readTodos: action({ functions: app.functions, args: app.functions.list.args, handler: ctx => ctx.queries.list() }),
-  manyDatabaseCalls: action({ functions: app.functions, args: app.functions.list.args, async handler(ctx) {
+  readTodos: action({ functions: functions, args: functions.list.args, handler: ctx => ctx.queries.list() }),
+  manyDatabaseCalls: action({ functions: functions, args: functions.list.args, async handler(ctx) {
     for (let call = 0; call < 100; call++) await ctx.queries.list();
     return "ok";
   } }),
 });
-export default actionApp;
+export default { functions: actionFunctions };
 export const runtimeManifest = { apiVersion: 1, requires: ["database", "actions"] };
 export const migrations = ${JSON.stringify(history)};`;
+
       await writeFile(entry, setup);
       await build({
         build: {
@@ -342,6 +391,7 @@ export const migrations = ${JSON.stringify(history)};`;
         path.join(state, "fixture/server.js"),
         "utf-8"
       );
+
       const bucket = await mf.getR2Bucket("BUNDLES");
 
       const bytes = gzipSync(code);
@@ -369,6 +419,7 @@ export const migrations = ${JSON.stringify(history)};`;
     await publishRpc(migrations, "backend");
 
     let renewals = 0;
+
     const makeClient = (installationId = "backend-todos") =>
       createClient({
         connect: async (url, protocols) => {
@@ -376,6 +427,7 @@ export const migrations = ${JSON.stringify(history)};`;
             new URL(url).pathname,
             `${new URL(rpcUrl).pathname}/queries`
           );
+
           const response = await mf.dispatchFetch(
             url.replace("wss:", "https:"),
             {
@@ -385,35 +437,41 @@ export const migrations = ${JSON.stringify(history)};`;
               },
             }
           );
+
           if (response.status !== 101) {
             throw new Error(
               `WebSocket handshake ${response.status}: ${await response.text()}`
             );
           }
+
           const socket = response.webSocket;
           socket.accept();
+
           return socket;
         },
         // oxlint-disable-next-line typescript/promise-function-async, typescript/no-base-to-string -- This fixture returns the original deferred or runtime Promise and installs its resolver synchronously. The fixture sends string URLs and serialized JSON bodies; this assertion inspects those controlled wire values through the broader fetch signature.
         fetch: (url, init) => mf.dispatchFetch(String(url), init),
         getSession: async () => {
           renewals += 1;
+
           const session = await issueAppToken(
             // Renew after five seconds while keeping the production one-minute renewal window.
             { ...signing, lifetimeSeconds: 65 },
             {
               appId: "app",
-              appPublicId,
+              appShortId,
               deploymentId: published.deploymentId,
               installationId,
               projectId,
-              publicTeamId,
+              projectShortId,
               scope: { name: "org", value: { id: "tenant" } },
               subjectId: "user",
-              toolUrl: "https://host.test/api/tailorkit/tools/execute",
+              toolUrl: "https://host.test/api/patchsmith/tools/execute",
             }
           );
+
           appTokens.add(session.token);
+
           return { ...session, url: rpcUrl };
         },
         retryDelayMs: 20,
@@ -421,14 +479,15 @@ export const migrations = ${JSON.stringify(history)};`;
 
     const first = makeClient();
     const second = makeClient();
-    /** @type {import("@tailorkit/app/client").Reference<"query", undefined, Todo[]>} */
+    /** @type {import("@patchsmith/app/client").Reference<"query", undefined, Todo[]>} */
     const list = reference("list", "query");
-    /** @type {import("@tailorkit/app/client").Reference<"mutation", {text: string}, Todo>} */
+    /** @type {import("@patchsmith/app/client").Reference<"mutation", {text: string}, Todo>} */
     const add = reference("add", "mutation");
     /** @type {Todo[][][]} */
     const snapshots = [[], []];
     /** @type {unknown[]} */
     const errors = [];
+
     const stops = [first, second].map((client, index) =>
       client.subscribe(
         list,
@@ -447,6 +506,7 @@ export const migrations = ${JSON.stringify(history)};`;
     /** @param {() => boolean} predicate Completion condition. @param {string} label Failure context. */
     const wait = async (predicate, label) => {
       const until = Date.now() + 15_000;
+
       while (
         !(
           predicate() !== undefined &&
@@ -463,6 +523,7 @@ export const migrations = ${JSON.stringify(history)};`;
             `Timeout: ${label}: ${JSON.stringify(errors.slice(-3))}`
           );
         }
+
         // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
         await (async () => {
           const {
@@ -470,11 +531,13 @@ export const migrations = ${JSON.stringify(history)};`;
             resolve,
             reject: rejectPending,
           } = Promise.withResolvers();
+
           try {
             setTimeout(resolve, 25);
           } catch (error) {
             rejectPending(error);
           }
+
           return await pendingPromise;
         })();
       }
@@ -496,9 +559,11 @@ export const migrations = ${JSON.stringify(history)};`;
       });
 
       const input = { text: "Both clients see this persisted mutation" };
+
       const saved = await first.mutate(add, input, {
         requestId: "00000000-0000-4000-8000-000000000001",
       });
+
       assert.deepEqual(
         await second.mutate(add, input, {
           requestId: "00000000-0000-4000-8000-000000000001",
@@ -528,17 +593,21 @@ export const migrations = ${JSON.stringify(history)};`;
             resolve,
             reject: rejectPending,
           } = Promise.withResolvers();
+
           try {
             releaseExternal = resolve;
           } catch (error) {
             rejectPending(error);
           }
+
           return await pendingPromise;
         })();
         const oldCalls = externalCalls;
+
         const action = first.action(reference("importTodo", "action"), {
           url: "https://third-party.test/slow",
         });
+
         await Promise.race([
           wait(() => externalCalls > oldCalls, "action reaches external API"),
           action,
@@ -655,6 +724,7 @@ export const migrations = ${JSON.stringify(history)};`;
       for (const stop of stops) {
         stop();
       }
+
       first.close?.();
       second.close?.();
     }
@@ -681,6 +751,7 @@ export const migrations = ${JSON.stringify(history)};`;
       path.join(import.meta.dirname, "fixtures/todos-priority.sql"),
       "utf-8"
     );
+
     const upgrade = {
       hash: createHash("sha256").update(upgradeSql).digest("hex"),
       id: "20261002000000_priority",
@@ -689,6 +760,7 @@ export const migrations = ${JSON.stringify(history)};`;
 
     const live = makeClient();
     const liveSnapshots = [];
+
     const stopLive = live.subscribe(
       list,
       undefined,
@@ -701,6 +773,7 @@ export const migrations = ${JSON.stringify(history)};`;
         },
       }
     );
+
     await wait(
       () => liveSnapshots.length === 1,
       "subscription before deployment change"
@@ -711,25 +784,31 @@ export const migrations = ${JSON.stringify(history)};`;
         resolve,
         reject: rejectPending,
       } = Promise.withResolvers();
+
       try {
         releaseExternal = resolve;
       } catch (error) {
         rejectPending(error);
       }
+
       return await pendingPromise;
     })();
     const beforeUpgradeCalls = externalCalls;
+
     const oldAction = live.action(reference("importTodo", "action"), {
       url: "https://third-party.test/slow",
     });
+
     const oldActionResult = (async () => {
       try {
         await oldAction;
+
         return "unexpected";
       } catch (error) {
         return error.code;
       }
     })();
+
     await wait(
       () => externalCalls > beforeUpgradeCalls,
       "action before deployment replacement"
@@ -746,6 +825,7 @@ export const migrations = ${JSON.stringify(history)};`;
         name: "list",
       }
     );
+
     assert.equal(
       upgradeResponse.status,
       200,
@@ -753,6 +833,7 @@ export const migrations = ${JSON.stringify(history)};`;
     );
     assert.equal(await oldActionResult, "UNAVAILABLE");
     releaseExternal();
+
     try {
       await wait(
         () => liveSnapshots.length > 1,
@@ -779,6 +860,7 @@ export const migrations = ${JSON.stringify(history)};`;
       path.join(import.meta.dirname, "fixtures/todos-required.sql"),
       "utf-8"
     );
+
     const failed = {
       hash: createHash("sha256").update(requiredSql).digest("hex"),
       id: "20261003000000_required",
@@ -796,6 +878,7 @@ export const migrations = ${JSON.stringify(history)};`;
         name: "list",
       }
     );
+
     assert.equal(failedResponse.status, 500);
 
     await publishRpc([...migrations, upgrade], "backend-retry");
@@ -812,6 +895,7 @@ export const migrations = ${JSON.stringify(history)};`;
         name: "list",
       }
     );
+
     assert.equal(retryResponse.status, 200, await retryResponse.clone().text());
 
     const retried = makeClient();
@@ -848,40 +932,65 @@ export const migrations = ${JSON.stringify(history)};`;
     // Assets and app code share one R2 binding, but public routes cannot expose server code.
     const assets = await mf.getR2Bucket("BUNDLES");
     const assetBase = `${rpcUrl.replace(/\/rpc$/u, "")}/d/deploy000001`;
-    const clientKey = `teams/${publicTeamId}/projects/${projectId}/apps/${appPublicId}/deployments/deploy000001/client/client.js`;
+    const clientKey = `projects/${projectShortId}/apps/${appShortId}/deployments/deploy000001/client/client.js`;
     const clientBytes = gzipSync("export default 'client';");
     await assets.put(clientKey, clientBytes, {
       httpMetadata: { contentEncoding: "gzip" },
     });
+    const publicClientUrl = new URL(`${assetBase}/client/client.js`);
+    const wireUrl = new URL(publicClientUrl.pathname, await mf.ready);
     await Array.fromAsync(
       Array.from({ length: 2 }, (_, attempt) => attempt),
       async (attempt) => {
-        const compressed = await mf.dispatchFetch(
-          `${assetBase}/client/client.js`,
-          {
-            headers: { "Accept-Encoding": "gzip" },
-          }
-        );
-        assert.equal(compressed.headers.get("mf-content-encoding"), "gzip");
-        assert.equal(compressed.headers.get("vary"), "Accept-Encoding");
-        // Miniflare dispatchFetch decodes HTTP gzip and preserves its header here.
+        const compressed = await fetchWireBytes(wireUrl, {
+          "Accept-Encoding": "gzip",
+          Host: publicClientUrl.host,
+          "MF-Original-URL": publicClientUrl.href,
+        });
+
+        assert.equal(compressed.status, 200);
+        assert.equal(compressed.headers["content-encoding"], "gzip");
+        assert.equal(compressed.headers.vary, "Accept-Encoding");
         assert.equal(
-          await compressed.text(),
+          compressed.headers["x-patchsmith-content-encoding"],
+          undefined
+        );
+        assert.deepEqual(compressed.body, clientBytes);
+        assert.equal(
+          gunzipSync(compressed.body).toString(),
           "export default 'client';",
           `gzip request ${attempt}`
         );
       }
     );
+    const cache = await mf.getCaches();
+    const cacheUrl = new URL(publicClientUrl);
+    cacheUrl.searchParams.set("__patchsmith_asset_cache", "opaque-v1");
+    const cachedClient = await cache.default.match(cacheUrl);
+    assert.ok(cachedClient !== undefined);
+    assert.equal(cachedClient.headers.get("content-encoding"), null);
+    assert.equal(
+      cachedClient.headers.get("x-patchsmith-content-encoding"),
+      "gzip"
+    );
+    assert.deepEqual(
+      Buffer.from(await cachedClient.arrayBuffer()),
+      clientBytes
+    );
+
     const client = await mf.dispatchFetch(`${assetBase}/client/client.js`, {
       headers: { "Accept-Encoding": "identity" },
     });
+
     assert.equal(client.status, 200);
     assert.equal(await client.text(), "export default 'client';");
     assert.equal(client.headers.get("cache-control"), "private, max-age=3600");
+
     const clientHead = await mf.dispatchFetch(`${assetBase}/client/client.js`, {
       headers: { "Accept-Encoding": "gzip" },
       method: "HEAD",
     });
+
     assert.equal(clientHead.headers.get("mf-content-encoding"), "gzip");
     assert.equal(
       clientHead.headers.get("content-length"),
@@ -893,7 +1002,7 @@ export const migrations = ${JSON.stringify(history)};`;
     );
     const logoHash = "a".repeat(64);
     await assets.put(
-      `teams/${publicTeamId}/projects/${projectId}/apps/${appPublicId}/logos/${logoHash}.svg`,
+      `projects/${projectShortId}/apps/${appShortId}/logos/${logoHash}.svg`,
       "<svg/>"
     );
     const logo = await mf.dispatchFetch(`${assetBase}/logos/${logoHash}.svg`);
@@ -906,10 +1015,11 @@ export const migrations = ${JSON.stringify(history)};`;
 
     const rejected = await mf.dispatchFetch(`${rpcUrl}/queries`, {
       headers: {
-        "sec-websocket-protocol": "tailorkit, jwt.forged",
+        "sec-websocket-protocol": "patchsmith, jwt.forged",
         upgrade: "websocket",
       },
     });
+
     assert.equal(rejected.status, 401);
 
     const response = await invoke("one");
@@ -926,6 +1036,7 @@ export const migrations = ${JSON.stringify(history)};`;
     )
       .json()
       .then((result) => result.json);
+
     assert.equal(two.globals, 1);
     assert.equal(
       (await (await invoke("one")).json().then((result) => result.json))
@@ -941,11 +1052,13 @@ export const migrations = ${JSON.stringify(history)};`;
     assert.equal(metadataReads, before + 1);
 
     published = { ...published, projectId: otherProjectId };
+
     const otherProject = await (
       await invoke("one", "v1", { projectId: otherProjectId })
     )
       .json()
       .then((result) => result.json);
+
     assert.equal(otherProject.globals, 1);
 
     published = { ...published, projectId: otherProjectId };
@@ -962,6 +1075,7 @@ export const migrations = ${JSON.stringify(history)};`;
     )
       .json()
       .then((result) => result.json);
+
     assert.equal(updated.version, 2);
     assert.equal(updated.globals, 2);
 
@@ -974,6 +1088,7 @@ export const migrations = ${JSON.stringify(history)};`;
     )
       .json()
       .then((result) => result.json);
+
     assert.equal(recovered.globals, 1);
     assert.equal(recovered.version, 2);
 

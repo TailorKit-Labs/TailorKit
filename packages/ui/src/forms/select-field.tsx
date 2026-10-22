@@ -103,9 +103,11 @@ export const SelectField = ({
                 }
 
                 event.preventDefault();
+
                 if (hasBaseUIHandlerControl(event)) {
                   event.preventBaseUIHandler();
                 }
+
                 onValueChange?.(null);
                 setOpen(false);
               }}

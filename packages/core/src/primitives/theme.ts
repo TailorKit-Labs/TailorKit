@@ -1,14 +1,20 @@
-export interface TailorKitTheme {
+/** Host-defined media query aliases. Conditional style keys are reserved. */
+export type ThemeBreakpoints = Record<string, string> & {
+  default?: never;
+  [state: `:${string}`]: never;
+};
+
+export interface PatchsmithTheme {
   /**
    * Responsive breakpoint names used by responsive primitive props.
    *
-   * The `base` breakpoint should be `null`; every other value is used as a
-   * CSS `min-width` media query.
+   * Values are used as CSS `min-width` media queries. Use `default` in style
+   * values for the fallback; `default` and names starting with `:` are reserved.
    *
-   * Defaults: `base: null`, `sm: "640px"`, `md: "768px"`,
+   * Defaults: `sm: "640px"`, `md: "768px"`,
    * `lg: "1024px"`, `xl: "1280px"`, `2xl: "1536px"`.
    */
-  breakpoints?: Record<string, string | null>;
+  breakpoints?: ThemeBreakpoints;
   tokens?: {
     /**
      * Background color tokens used by the `background` primitive prop.
@@ -97,7 +103,6 @@ export interface TailorKitTheme {
 
 export const defaultBreakpoints = {
   "2xl": "1536px",
-  base: null,
   lg: "1024px",
   md: "768px",
   sm: "640px",
@@ -214,15 +219,15 @@ const defaultTokenGroups = {
   textAlign: defaultTextAlign,
   textOverflow: defaultTextOverflow,
   textTransform: defaultTextTransform,
-} satisfies TailorKitTheme["tokens"];
+} satisfies PatchsmithTheme["tokens"];
 
 const isTokenName = (name: string): name is keyof typeof defaultTokenGroups =>
   Object.hasOwn(defaultTokenGroups, name);
 
 const resolveTokens = (
-  theme: TailorKitTheme | undefined
-): TailorKitTheme["tokens"] => {
-  const tokens: NonNullable<TailorKitTheme["tokens"]> = { ...theme?.tokens };
+  theme: PatchsmithTheme | undefined
+): PatchsmithTheme["tokens"] => {
+  const tokens: NonNullable<PatchsmithTheme["tokens"]> = { ...theme?.tokens };
 
   for (const [key, value] of Object.entries(defaultTokenGroups)) {
     if (isTokenName(key)) {
@@ -234,8 +239,17 @@ const resolveTokens = (
 };
 
 export const resolveTheme = (
-  theme: TailorKitTheme | undefined
-): TailorKitTheme => ({
-  breakpoints: theme?.breakpoints ?? defaultBreakpoints,
-  tokens: resolveTokens(theme),
-});
+  theme: PatchsmithTheme | undefined
+): PatchsmithTheme => {
+  const breakpoints = theme?.breakpoints ?? defaultBreakpoints;
+
+  for (const name of Object.keys(breakpoints)) {
+    if (name === "default" || name.startsWith(":")) {
+      throw new Error(
+        `Breakpoint name "${name}" is reserved for conditional styles.`
+      );
+    }
+  }
+
+  return { breakpoints, tokens: resolveTokens(theme) };
+};

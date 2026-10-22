@@ -1,18 +1,18 @@
+import { createPatchsmithStore } from "@patchsmith/client-core";
+import { defineContract } from "@patchsmith/core/schema";
+import type { ViewContextValues } from "@patchsmith/core/views";
 import type {
   StandardJSONSchemaV1,
   StandardSchemaV1,
 } from "@standard-schema/spec";
-import { createTailorKitStore } from "@tailorkit/client-core";
-import { defineContract } from "@tailorkit/core/schema";
-import type { ViewContextValues } from "@tailorkit/core/views";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { StrictMode } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 
-import { TailorkitContext } from "#components/context";
+import { PatchsmithContext } from "#components/context";
 import type { ViewState } from "#hooks/use-view-context";
-import { createClient } from "#tailorkit";
+import { createClient } from "#patchsmith";
 
 const isViewContext = <TValue,>(
   value: TValue
@@ -27,22 +27,26 @@ const contextSchema: StandardSchemaV1<unknown, ViewContextValues | undefined> &
       if (value === undefined || isViewContext(value)) {
         return { value };
       }
+
       return { issues: [{ message: "Expected view context fields." }] };
     },
     vendor: "test",
     version: 1,
   },
 };
+
 const contract = defineContract({
   components: {},
   scopes: { user: contextSchema },
   views: { "/": contextSchema },
 });
+
 type Options = ViewState<{ "/": typeof contextSchema }, "/">;
 
 beforeEach(() => {
   vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json({}));
 });
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -50,20 +54,24 @@ afterEach(() => {
 
 const setup = () => {
   const client = createClient({ baseUrl: "https://host.test", contract });
-  const store = createTailorKitStore({
+
+  const store = createPatchsmithStore({
     apps: [],
     baseUrl: client.baseUrl,
     client: client.fetchClient,
     contract,
   });
+
   const contextValue1 = Object.freeze({ client, store });
+
   const wrapper = ({ children }: { children: ReactNode }) => (
     <StrictMode>
-      <TailorkitContext.Provider value={contextValue1}>
+      <PatchsmithContext.Provider value={contextValue1}>
         {children}
-      </TailorkitContext.Provider>
+      </PatchsmithContext.Provider>
     </StrictMode>
   );
+
   return { client, store, wrapper };
 };
 
@@ -122,6 +130,7 @@ it.each([
   "registers $status with context $context from query state",
   async ({ options, status, context }) => {
     const { client, store, wrapper } = setup();
+
     const { unmount } = renderHook(
       () => {
         client.useViewContext("/", options);
@@ -130,6 +139,7 @@ it.each([
         wrapper,
       }
     );
+
     await waitFor(() => {
       expect(store.views.getSnapshot()).toEqual({
         layers: [{ context, path: "/", status }],
@@ -145,6 +155,7 @@ it.each([
 
 it("updates loading, error, and ready context as query results change", async () => {
   const { client, store, wrapper } = setup();
+
   const { rerender } = renderHook<ReturnType<() => void>, Options>(
     (options) => {
       client.useViewContext("/", options);
@@ -154,6 +165,7 @@ it("updates loading, error, and ready context as query results change", async ()
       wrapper,
     }
   );
+
   await waitFor(() => {
     expect(store.views.getSnapshot()?.layers[0]?.status).toBe("loading");
   });
@@ -185,6 +197,7 @@ it("updates loading, error, and ready context as query results change", async ()
 
 it("does not republish equivalent context or changes to ignored query data", async () => {
   const { client, store, wrapper } = setup();
+
   const { rerender } = renderHook<ReturnType<() => void>, Options>(
     (options) => {
       client.useViewContext("/", options);
@@ -194,6 +207,7 @@ it("does not republish equivalent context or changes to ignored query data", asy
       wrapper,
     }
   );
+
   await waitFor(() => {
     expect(store.views.getSnapshot()?.layers[0]?.status).toBe("ready");
   });

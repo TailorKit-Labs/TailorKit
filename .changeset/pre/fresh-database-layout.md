@@ -1,8 +1,8 @@
 ---
-"@tailorkit/app": minor
-"@tailorkit/cli": minor
-"@tailorkit/sandbox": patch
-"tailorkit": minor
+"@patchsmith/app": minor
+"@patchsmith/cli": minor
+"@patchsmith/sandbox": patch
+"patchsmith": minor
 ---
 
 Scaffold app databases in `src/db` with schema, relations and a `defineDatabase` export. Generate migrations in `src/db/migrations`, support typed synchronous Drizzle relational queries in database handlers.

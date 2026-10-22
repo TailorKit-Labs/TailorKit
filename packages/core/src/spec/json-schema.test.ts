@@ -1,3 +1,4 @@
+import * as v from "valibot";
 import { describe, expect, it } from "vite-plus/test";
 import { z } from "zod";
 
@@ -26,30 +27,46 @@ describe("JSON Schema spec", () => {
     const serialized = schema["~standard"].jsonSchema.output({
       target: "draft-2020-12",
     });
-    expect(JsonSchema.parse(serialized)).toEqual(serialized);
+
+    expect(v.parse(JsonSchema, serialized)).toEqual(serialized);
+  });
+
+  it("preserves local definitions and references", () => {
+    const schema = {
+      $defs: { value: { enum: ["one", "two"], type: "string" } },
+      properties: { value: { $ref: "#/$defs/value" } },
+      type: "object",
+    };
+
+    expect(v.parse(JsonSchema, schema)).toEqual(schema);
+    expect(
+      v.safeParse(JsonSchema, { $defs: { value: { "x-unsupported": true } } })
+        .success
+    ).toBe(false);
+    expect(v.safeParse(JsonSchema, { $ref: 42 }).success).toBe(false);
   });
 
   it("continues to reject unsupported keywords", () => {
     expect(
-      JsonSchema.safeParse({ type: "string", "x-custom": true }).success
+      v.safeParse(JsonSchema, { type: "string", "x-custom": true }).success
     ).toBe(false);
   });
 
   it.each([-1, 1.5])("rejects invalid tuple lengths: %s", (length) => {
     expect(
-      JsonSchema.safeParse({ minItems: length, type: "array" }).success
+      v.safeParse(JsonSchema, { minItems: length, type: "array" }).success
     ).toBe(false);
     expect(
-      JsonSchema.safeParse({ maxItems: length, type: "array" }).success
+      v.safeParse(JsonSchema, { maxItems: length, type: "array" }).success
     ).toBe(false);
   });
 
   it.each([-1, 1.5])("rejects invalid string lengths: %s", (length) => {
     expect(
-      JsonSchema.safeParse({ minLength: length, type: "string" }).success
+      v.safeParse(JsonSchema, { minLength: length, type: "string" }).success
     ).toBe(false);
     expect(
-      JsonSchema.safeParse({ maxLength: length, type: "string" }).success
+      v.safeParse(JsonSchema, { maxLength: length, type: "string" }).success
     ).toBe(false);
   });
 });

@@ -19,6 +19,7 @@ const findWorkspaceRoot = (startDirectory: string): string | undefined => {
     }
 
     const parentDirectory = dirname(directory);
+
     if (parentDirectory === directory) {
       return undefined;
     }
@@ -30,6 +31,7 @@ const findWorkspaceRoot = (startDirectory: string): string | undefined => {
 const readEnvironment = (): NodeJS.ProcessEnv => {
   const workspaceRoot = findWorkspaceRoot(process.cwd()) ?? process.cwd();
   const webRoot = resolve(workspaceRoot, "apps/web");
+
   const dotenvFiles = [
     resolve(workspaceRoot, ".env"),
     resolve(webRoot, ".env"),
@@ -38,6 +40,7 @@ const readEnvironment = (): NodeJS.ProcessEnv => {
   ];
 
   const fileValues: Record<string, string> = {};
+
   for (const filePath of new Set(dotenvFiles)) {
     if (existsSync(filePath)) {
       Object.assign(fileValues, parse(readFileSync(filePath)));
@@ -50,6 +53,7 @@ const readEnvironment = (): NodeJS.ProcessEnv => {
 
 const warn = (scope: string, message: string): void => {
   const key = `${scope}:${message}`;
+
   if (reportedWarnings.has(key)) {
     return;
   }
@@ -68,9 +72,11 @@ export const createEnv = <const T extends EnvFields>({
   warnings?: Partial<Record<keyof T & string, string>>;
 }): Partial<z.output<z.ZodObject<T>>> => {
   const source = readEnvironment();
+
   const missingWarnings = new Map<string, string | undefined>(
     Object.entries(warnings)
   );
+
   const parsedEntries: [string, unknown][] = [];
 
   for (const [name, validator] of Object.entries(environmentFields)) {
@@ -78,6 +84,7 @@ export const createEnv = <const T extends EnvFields>({
     const parsed = z.safeParse(validator, rawValue);
 
     const missingWarning = missingWarnings.get(name);
+
     if (
       rawValue === undefined &&
       missingWarning !== undefined &&
@@ -92,8 +99,10 @@ export const createEnv = <const T extends EnvFields>({
         const issueMessages = parsed.error.issues
           .map((issue) => issue.message)
           .join(", ");
+
         warn(scope, `Invalid ${name}: ${issueMessages}`);
       }
+
       continue;
     }
 
@@ -127,6 +136,7 @@ export const resolveProductionUrl = (values: {
   VERCEL_PROJECT_PRODUCTION_URL?: string;
 }): string | undefined => {
   let value = values.AUTH_PRODUCTION_URL;
+
   if (
     !(value !== undefined && value !== null && value !== "") &&
     values.VERCEL_PROJECT_PRODUCTION_URL !== undefined &&
@@ -145,9 +155,11 @@ export const resolveProductionUrl = (values: {
   }
 
   const url = new URL(value);
+
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     return undefined;
   }
+
   return url.href.replace(/\/$/u, "");
 };
 
@@ -170,6 +182,7 @@ export const getBaseUrl = (values: {
   ) {
     return `https://${values.VERCEL_PROJECT_PRODUCTION_URL}`;
   }
+
   if (
     values.VERCEL_ENV === "preview" &&
     values.VERCEL_URL !== undefined &&
@@ -194,6 +207,7 @@ export const getTrustedOrigins = (values: {
 
   for (const origin of values.AUTH_TRUSTED_ORIGINS?.split(",") ?? []) {
     const trimmedOrigin = origin.trim().replace(/\/$/u, "");
+
     if (trimmedOrigin) {
       origins.add(trimmedOrigin);
     }
@@ -216,6 +230,7 @@ export const getTrustedOrigins = (values: {
     ) {
       origins.add(`https://${values.VERCEL_BRANCH_URL}`);
     }
+
     if (
       values.VERCEL_URL !== undefined &&
       values.VERCEL_URL !== null &&

@@ -1,2 +1,2 @@
-export const iframeReadyType = "tailorkit:iframe-ready";
-export const sandboxMessageType = "tailorkit:iframe-message";
+export const iframeReadyType = "patchsmith:iframe-ready";
+export const sandboxMessageType = "patchsmith:iframe-message";

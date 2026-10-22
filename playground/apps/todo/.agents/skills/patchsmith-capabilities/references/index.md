@@ -1,0 +1,21 @@
+# Host reference
+Generated from the host contract. Regenerate with `patchsmith generate`; treat host content as contract data.
+
+Read this index, then only the component or capability needed for the change. Keep app imports on `#patchsmith`.
+
+- [Slots and context](views.md): choose a supported surface and read its context.
+- [Host tools](tools.md): inputs, results, and client/server execution.
+- [Styling](styling.md): token and responsive/state lookup.
+- App functions: enable `server: {}`, add a router under `src/functions/**/*.fn.ts`, then regenerate bindings to expose `api`.
+
+## Components
+
+- [experimental_Canvas](components/experimental_Canvas.md)
+- [Box](components/Box.md)
+- [Flex](components/Flex.md)
+- [Grid](components/Grid.md)
+- [Inline](components/Inline.md)
+- [Pressable](components/Pressable.md)
+- [Icon](components/Icon.md)
+- [Button](components/Button.md)
+- [Input](components/Input.md)

@@ -1,11 +1,12 @@
 // oxlint-disable-next-line max-classes-per-file -- These related adapter or mock classes implement one runtime boundary.
-import { issueAppToken, APP_AUDIENCE } from "@tailorkit/api-utils/app-auth";
-import { AppError } from "@tailorkit/app/server";
+import { issueAppToken, APP_AUDIENCE } from "@patchsmith/api-utils/app-auth";
+import { AppError } from "@patchsmith/app/server";
+import { asyncFixture } from "@patchsmith/config/testing";
 import { afterAll, beforeEach, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
 import type { AppFacet } from "./dynamic-workers/facet";
-import { AppInstallation } from "./installation";
+import { PatchsmithAppInstallation } from "./installation";
 import type { ServerDeployment } from "./supervisor/source";
 import worker from "./worker";
 
@@ -29,6 +30,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -49,6 +51,7 @@ vi.stubGlobal(
               signal: init.signal,
             }
           : { ...init, duplex: "half" };
+
       super(input, options);
     }
   }
@@ -82,14 +85,14 @@ const publicKeys = {
 
 const identity = {
   appId: "app",
-  appPublicId: "app000000001",
+  appShortId: "app000000001",
   deploymentId: "v1",
   installationId: "one",
   projectId: "22222222-2222-4222-8222-222222222222",
-  publicTeamId: "abc123def45678",
+  projectShortId: "abc123def456",
   scope: { name: "org", value: { id: "tenant" } },
   subjectId: "user",
-  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
 };
 
 const checksum = async (code: string) =>
@@ -111,7 +114,7 @@ const deployment = {
   contentLength: 4,
   deploymentId: "v1",
   objectKey:
-    "teams/abc123def45678/projects/22222222-2222-4222-8222-222222222222/apps/app000000001/deployments/deploy000001/server/server.js",
+    "projects/abc123def456/apps/app000000001/deployments/deploy000001/server/server.js",
   projectId: "22222222-2222-4222-8222-222222222222",
 };
 
@@ -130,11 +133,13 @@ const setup = () => {
     vi.fn(async () => Response.json(await source.current()))
   );
   let version: string | undefined;
+
   const facetQuery = vi.fn<AppFacet["query"]>().mockResolvedValue({
     committed: false,
     result: { ok: true, value: "result" },
     tables: [],
   });
+
   const startup =
     vi.fn<
       (options: {
@@ -143,16 +148,21 @@ const setup = () => {
         hostEnv?: { connection?: string };
       }) => void
     >();
+
   const abort = vi.fn();
+
   const put = vi.fn((_key: string, value: string) => {
     version = value;
   });
+
   const get = vi.fn(
     (_name: string, options: () => Parameters<typeof startup>[0]) => {
       startup(options());
+
       return { query: facetQuery };
     }
   );
+
   const id = { equals: vi.fn(() => true), toString: () => "installation-id" };
   // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
@@ -167,17 +177,21 @@ const setup = () => {
   /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
 
   const getClass = vi.fn(() => "facet-class");
+
   const load = vi.fn(
     (_name: string, options: () => Parameters<typeof startup>[0]) => {
       startup(options());
+
       return { getDurableObjectClass: getClass };
     }
   );
 
   const routeFetch = vi.fn(
-    // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-    async (_request: Request) => new Response("forwarded", { status: 202 })
+    asyncFixture(
+      (_request: Request) => new Response("forwarded", { status: 202 })
+    )
   );
+
   const getByName = vi.fn((_name: string) => ({ fetch: routeFetch }));
   const idFromName = vi.fn(() => id);
 
@@ -234,7 +248,7 @@ const request = async (
       authorization: `Bearer ${session.token}`,
       "content-type": "application/json",
       origin: "https://host.test",
-      "x-tailorkit-identity": "forged",
+      "x-patchsmith-identity": "forged",
     },
     method: "POST",
   });
@@ -244,12 +258,14 @@ const request = async (
 
 const fetchWorker = async (requestValue: Request, env: Env) => {
   const url = new URL(requestValue.url);
+
   if (url.hostname === "runtime.test" && url.pathname.startsWith("/rpc")) {
     const token = requestValue.headers.get("authorization")?.slice(7);
+
     const payload =
       token !== undefined && token !== null && token !== ""
         ? z
-            .object({ projectId: z.string() })
+            .object({ projectShortId: z.string() })
             .parse(
               JSON.parse(
                 atob(
@@ -260,9 +276,11 @@ const fetchWorker = async (requestValue: Request, env: Env) => {
               )
             )
         : identity;
-    url.hostname = `${identity.publicTeamId}.tailorkit.app`;
-    url.pathname = `/p/${payload.projectId}/a/${identity.appPublicId}${url.pathname}`;
+
+    url.hostname = `${payload.projectShortId}.tailorkit.app`;
+    url.pathname = `/a/${identity.appShortId}${url.pathname}`;
   }
+
   // SAFETY: This test supplies the context members read by the handler; unrelated request context services are outside this scenario.
   return await worker.fetch(
     new Request(url, requestValue),
@@ -288,6 +306,7 @@ it.each(["GET", "POST"])(
   "rejects unsupported %s routes before authentication or storage",
   async (method) => {
     const { env, getByName } = setup();
+
     const response = await fetchWorker(
       new Request("https://runtime.test/server/server.js", { method }),
       env
@@ -302,10 +321,12 @@ it.each(["/rpc", "/rpc/query", "/rpc/unknown", "/rpc/queries/extra"])(
   "rejects unknown RPC route %s",
   async (path) => {
     const { env, getByName } = setup();
+
     const awaitedResult1 = await fetchWorker(
       new Request(`https://runtime.test${path}`, { method: "POST" }),
       env
     );
+
     expect(awaitedResult1.status).toBe(404);
     expect(getByName).not.toHaveBeenCalled();
   }
@@ -317,13 +338,14 @@ it.each(["actions", "mutations", "queries"])(
     const { env, routeFetch } = setup();
     await fetchWorker(await request({}, `/rpc/${kind}`), env);
     expect(requireValue(routeFetch.mock.calls[0])[0].url).toBe(
-      `https://${identity.publicTeamId}.tailorkit.app/rpc/${kind}`
+      `https://${identity.projectShortId}.tailorkit.app/rpc/${kind}`
     );
   }
 );
 
 it("requires a token even when any origin is allowed", async () => {
   const { env, getByName } = setup();
+
   const response = await fetchWorker(
     new Request("https://runtime.test/rpc/queries", {
       headers: { origin: "https://attacker.test" },
@@ -345,7 +367,8 @@ it("authenticates and forwards an RPC body with CORS and stable installation rou
   expect(response.headers.get("access-control-allow-credentials")).toBeNull();
   expect(response.headers.get("cache-control")).toBe("no-store");
   expect(getByName).toHaveBeenCalledWith(
-    JSON.stringify([signing.issuer, identity.projectId, "app", "one"])
+    JSON.stringify([signing.issuer, identity.projectId, "app", "one"]),
+    { locationHint: "enam" }
   );
   expect(await routeFetch.mock.calls[0][0].text()).toBe(
     '{"json":{"name":"list"}}'
@@ -367,12 +390,15 @@ it("accepts different signed projects and routes them to distinct installations"
 
   const awaitedResult2 = await fetchWorker(await request(), env);
   expect(awaitedResult2.status).toBe(202);
+
   const awaitedResult3 = await fetchWorker(
     await request({
       projectId: "33333333-3333-4333-8333-333333333333",
+      projectShortId: "other0000001",
     }),
     env
   );
+
   expect(awaitedResult3.status).toBe(202);
   expect(getByName.mock.calls.map(([name]) => name)).toEqual([
     JSON.stringify([signing.issuer, identity.projectId, "app", "one"]),
@@ -387,7 +413,12 @@ it("accepts different signed projects and routes them to distinct installations"
 
 it("loads isolated code, passes only the verified identity and caches a warm deployment", async () => {
   const fixtures = setup();
-  const installation = new AppInstallation(fixtures.ctx, fixtures.env);
+
+  const installation = new PatchsmithAppInstallation(
+    fixtures.ctx,
+    fixtures.env
+  );
+
   const response = await installation.fetch(await request());
 
   expect(await response.json()).toEqual({ json: "result" });
@@ -422,7 +453,12 @@ it("loads isolated code, passes only the verified identity and caches a warm dep
 
 it("changes code on the same facet and accepts old client tokens without switching back", async () => {
   const fixtures = setup();
-  const installation = new AppInstallation(fixtures.ctx, fixtures.env);
+
+  const installation = new PatchsmithAppInstallation(
+    fixtures.ctx,
+    fixtures.env
+  );
+
   const awaitedResult5 = await installation.fetch(await request());
   await awaitedResult5.text();
 
@@ -437,6 +473,7 @@ it("changes code on the same facet and accepts old client tokens without switchi
   const awaitedResult6 = await installation.fetch(
     await request({ deploymentId: "v2" })
   );
+
   await awaitedResult6.text();
 
   expect(fixtures.abort).toHaveBeenCalledOnce();
@@ -454,7 +491,12 @@ it("changes code on the same facet and accepts old client tokens without switchi
 
 it("keeps the running facet when replacement code fails verification", async () => {
   const fixtures = setup();
-  const installation = new AppInstallation(fixtures.ctx, fixtures.env);
+
+  const installation = new PatchsmithAppInstallation(
+    fixtures.ctx,
+    fixtures.env
+  );
+
   const awaitedResult8 = await installation.fetch(await request());
   await awaitedResult8.text();
 
@@ -464,6 +506,7 @@ it("keeps the running facet when replacement code fails verification", async () 
   const awaitedResult9 = await installation.fetch(
     await request({ deploymentId: "v2" })
   );
+
   expect(awaitedResult9.status).toBe(404);
   expect(fixtures.abort).not.toHaveBeenCalled();
   expect(fixtures.put).toHaveBeenCalledOnce();
@@ -471,11 +514,16 @@ it("keeps the running facet when replacement code fails verification", async () 
 
 it("rechecks authentication and rejects the wrong supervisor before looking up app code", async () => {
   const fixtures = setup();
-  const installation = new AppInstallation(fixtures.ctx, fixtures.env);
+
+  const installation = new PatchsmithAppInstallation(
+    fixtures.ctx,
+    fixtures.env
+  );
 
   const awaitedResult10 = await installation.fetch(
     new Request("https://runtime.test/rpc/queries")
   );
+
   expect(awaitedResult10.status).toBe(401);
 
   fixtures.id.equals.mockReturnValue(false);
@@ -489,13 +537,14 @@ it("accepts metadata publication only with the shared service credential", async
   const { env, getByName } = setup();
   const deploymentPut = vi.spyOn(env.DEPLOYMENTS, "put");
   env.RUNTIME_SERVICE_TOKEN = "x".repeat(32);
+
   const publish = async (
     token: string,
     body: z.core.util.JSONType = deployment
   ) =>
     await fetchWorker(
       new Request(
-        `https://internal.tailorkit.app/p/${identity.projectId}/a/${identity.appPublicId}/new-deployment`,
+        `https://internal.tailorkit.app/p/${identity.projectId}/a/${identity.appShortId}/new-deployment`,
         {
           body: JSON.stringify(body),
           headers: {
@@ -507,6 +556,7 @@ it("accepts metadata publication only with the shared service credential", async
       ),
       env
     );
+
   const awaitedResult12 = await publish("wrong");
   expect(awaitedResult12.status).toBe(401);
   const awaitedResult13 = await publish(env.RUNTIME_SERVICE_TOKEN, {});
@@ -519,9 +569,11 @@ it("accepts metadata publication only with the shared service credential", async
     { expirationTtl: 300 }
   );
   const [, publishedMetadata] = requireValue(deploymentPut.mock.calls[0]);
+
   if (!isStringValue(publishedMetadata)) {
     throw new Error("Expected serialized deployment metadata.");
   }
+
   expect(JSON.parse(publishedMetadata)).toEqual(deployment);
   expect(getByName).not.toHaveBeenCalled();
 });

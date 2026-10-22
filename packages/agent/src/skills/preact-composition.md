@@ -1,13 +1,9 @@
 # Preact composition
 
-Compose generated host components with local Preact components, fragments, and providers. Use types from `preact` and hooks from `preact/hooks`.
+Use ordinary components and props. Keep state in the component that owns it; lift it to the nearest shared parent when another component needs it. See the [state example](references/local-state.md).
 
-- Prefer children and explicit variants over growing sets of boolean mode props. Share internals between variants; use compound components when several pieces share one interaction.
-- Lift shared state to the nearest common parent or a focused provider. Expose the state and actions consumers need; keep storage details inside the provider. Separate unrelated state with different update frequencies.
-- Keep temporary UI state local. Read durable state through backend queries and derive counts, filters, and flags during render instead of synchronizing copied state with effects.
-- Define components at module scope to preserve identity. Key changing lists by stable record IDs.
-- Use `createContext` and `preact/hooks.useContext` for local shared state. The registered view's `view.useContext()` supplies host page data; these are separate contexts.
-- Preserve generated callback payload types: host callbacks need not carry browser events. Use the contract's supported children, labels, accessibility props, and pending/disabled states.
-- Keep server functions and database modules in the backend. UI imports generated `api`, components, and tools from `#tailorkit`.
+Extract a component when it removes repetition or makes a substantial section easier to read. Keep components at module scope and use stable record keys. Add context or custom hooks only when props or existing SDK hooks no longer keep the current feature clear.
 
-Adapt composition ideas to the installed Preact API. React 19 and Next.js examples require translation; the host contract determines which UI capabilities are available.
+Import hooks from `preact/hooks` and types from `preact`. Local components compose the generated product controls through supported props and children. A view's `useContext()` supplies product context; it is separate from Preact context.
+
+Keep database/server modules out of client imports. Render durable data from queries rather than mirroring it in state. Keep the SDK's required `ClientProvider` mounted above backend hooks. React/Next.js patterns must fit Preact and the product's actual capabilities.

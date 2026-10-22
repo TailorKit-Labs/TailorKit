@@ -1,4 +1,4 @@
-import { Button } from "@tailorkit/ui/button";
+import { Button } from "@patchsmith/ui/button";
 import {
   Card,
   CardAction,
@@ -6,8 +6,8 @@ import {
   CardHeader,
   CardPanel,
   CardTitle,
-} from "@tailorkit/ui/card";
-import { DateAgo } from "@tailorkit/ui/date";
+} from "@patchsmith/ui/card";
+import { DateAgo } from "@patchsmith/ui/date";
 import {
   Dialog,
   DialogClose,
@@ -17,22 +17,22 @@ import {
   DialogPanel,
   DialogPopup,
   DialogTitle,
-} from "@tailorkit/ui/dialog";
-import { Field, FieldLabel } from "@tailorkit/ui/field";
+} from "@patchsmith/ui/dialog";
+import { Field, FieldLabel } from "@patchsmith/ui/field";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
-} from "@tailorkit/ui/input-group";
+} from "@patchsmith/ui/input-group";
 import {
   Select,
   SelectItem,
   SelectPopup,
   SelectTrigger,
   SelectValue,
-} from "@tailorkit/ui/select";
-import { toastManager } from "@tailorkit/ui/toast";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "@tailorkit/ui/tooltip";
+} from "@patchsmith/ui/select";
+import { toastManager } from "@patchsmith/ui/toast";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "@patchsmith/ui/tooltip";
 import {
   useMutation,
   useQueryClient,
@@ -89,6 +89,7 @@ const ProjectApiKeysPage = () => {
   const { orgSlug, projectSlug } = useParams({
     from: "/(app)/$orgSlug/$projectSlug/settings/api-keys",
   });
+
   const queryClient = useQueryClient();
   const [gracePeriodSeconds, setGracePeriodSeconds] = useState("3600");
   const [rotateDialogOpen, setRotateDialogOpen] = useState(false);
@@ -96,9 +97,11 @@ const ProjectApiKeysPage = () => {
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
   const [showNewApiKey, setShowNewApiKey] = useState(false);
   const [showStoredApiKey, setShowStoredApiKey] = useState(false);
+
   const [storedApiKey, setStoredApiKey] = useState(() =>
     getProjectApiKey(orgSlug, projectSlug)
   );
+
   const { data: apiKeys } = useSuspenseQuery(
     orpc.project.apiKeys.queryOptions({ input: { orgSlug, projectSlug } })
   );
@@ -113,6 +116,7 @@ const ProjectApiKeysPage = () => {
     onError: (cause: unknown) => {
       const message =
         cause instanceof Error ? cause.message : "Failed to rotate API key";
+
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: async (result) => {
@@ -134,6 +138,7 @@ const ProjectApiKeysPage = () => {
 
   const activeKey = apiKeys.active[0] ?? null;
   const expiringKeys = apiKeys.rotating;
+
   const projectKeyPanel = (() => {
     if (!(activeKey !== undefined && activeKey !== null)) {
       return <p className="text-sm text-muted-foreground">No API key yet.</p>;
@@ -365,7 +370,7 @@ const ProjectApiKeysPage = () => {
         <CardHeader>
           <CardTitle>Project key</CardTitle>
           <CardDescription>
-            Used to by your platform to integrate with Tailorkit.
+            Used to by your platform to integrate with Patchsmith.
           </CardDescription>
           <CardAction>
             <Button

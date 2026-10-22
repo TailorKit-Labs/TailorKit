@@ -12,6 +12,7 @@ describe("icon renderer", () => {
     const pending = Promise.withResolvers<Response>();
     const fetchIcon = vi.fn<typeof fetch>(async () => await pending.promise);
     const Renderer = Icon({ fetch: fetchIcon, library: "lucide" });
+
     const view = render(
       <Renderer
         props={{
@@ -20,6 +21,7 @@ describe("icon renderer", () => {
         }}
       />
     );
+
     const svg = view.container.querySelector("svg");
     expect(svg).not.toBeNull();
     expect(svg?.getAttribute("width")).toBe("16");
@@ -40,6 +42,7 @@ describe("icon renderer", () => {
     const fetchIcon = vi.fn<typeof fetch>(
       async () => await Promise.resolve(Response.json(arrow))
     );
+
     const Renderer = Icon({ fetch: fetchIcon, library: "lucide" });
     const first = render(<Renderer props={{ name: "arrow-right" }} />);
     await waitFor(() => {
@@ -56,12 +59,14 @@ describe("icon renderer", () => {
 
   it("ignores stale responses when the icon name changes", async () => {
     const pending = Promise.withResolvers<Response>();
+
     const fetchIcon = vi
       .fn<typeof fetch>()
       .mockImplementationOnce(async () => await pending.promise)
       .mockResolvedValueOnce(
         Response.json({ nodes: [["circle", { r: 2 }]], size: 24 })
       );
+
     const Renderer = Icon({ fetch: fetchIcon, library: "lucide" });
     const view = render(<Renderer props={{ name: "arrow-right" }} />);
     view.rerender(<Renderer props={{ name: "circle" }} />);
@@ -82,12 +87,14 @@ describe("icon renderer", () => {
         await Promise.resolve(new Response(null, { status: 404 })),
       library: "lucide",
     });
+
     const view = render(
       <>
         <Renderer props={{ name: "camera" }} />
         <span>Still visible</span>
       </>
     );
+
     await act(async () => {
       await Promise.resolve();
     });

@@ -26,7 +26,7 @@ import {
 
 import { checkAppSchema } from "./schema-check";
 
-const root = await mkdtemp(path.join(tmpdir(), "tailorkit-schema-test-"));
+const root = await mkdtemp(path.join(tmpdir(), "patchsmith-schema-test-"));
 const migrations = path.join(root, "src/db/migrations");
 const schemaFile = path.join(root, "src/db/schema.ts");
 const missingMigrations = path.join(root, "missing");
@@ -35,10 +35,12 @@ let contents: string[] = [];
 
 const migrationFiles = async () => {
   const entries = await readdir(migrations, { recursive: true });
+
   return entries.filter(
     (name) => name.endsWith(".sql") || name.endsWith(".json")
   );
 };
+
 const migrationContents = async () =>
   await Promise.all(
     files.map(
@@ -55,13 +57,16 @@ beforeAll(async () => {
   files = await migrationFiles();
   contents = await migrationContents();
 });
+
 beforeEach(async () => {
   await writeFile(schemaFile, testSchema);
 });
+
 afterEach(async () => {
   expect(await migrationFiles()).toEqual(files);
   expect(await migrationContents()).toEqual(contents);
 });
+
 afterAll(async () => {
   await rm(root, { force: true, recursive: true });
 });
@@ -85,7 +90,7 @@ it("rejects schema drift without rewriting committed migrations", async () => {
 
 it("requires migrations for a schema with tables", async () => {
   await expect(checkAppSchema(root, missingMigrations)).rejects.toThrow(
-    "Run tailorkit db generate"
+    "Run patchsmith db generate"
   );
 });
 

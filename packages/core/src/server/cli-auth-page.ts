@@ -1,8 +1,12 @@
-import { cliAuthApprove, cliAuthDeny } from "@tailorkit/client-platform/client";
-import type { Client as PlatformClient } from "@tailorkit/client-platform/client/client/index";
+import {
+  cliAuthApprove,
+  cliAuthDeny,
+} from "@patchsmith/client-platform/client";
+import type { Client as PlatformClient } from "@patchsmith/client-platform/client/client/index";
 
-import { selectTailorKitScopes } from "./scope";
-import type { TailorKitNamedScope, TailorKitScopes } from "./types";
+import type { PatchsmithRuntimeContext } from "./context";
+import { selectPatchsmithScopes } from "./scope";
+import type { PatchsmithNamedScope, PatchsmithScopes } from "./types";
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
@@ -11,22 +15,19 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
 type HeaderInput = ConstructorParameters<typeof Headers>[0];
 
-interface TailorKitRuntimeContext {
-  scopes: TailorKitScopes;
-}
-
 export interface CliAuthApprovalPageOptions {
   authenticate: (ctx: {
     request: Request;
   }) =>
-    | TailorKitRuntimeContext
+    | PatchsmithRuntimeContext
     | null
-    | Promise<TailorKitRuntimeContext | null>;
+    | Promise<PatchsmithRuntimeContext | null>;
   platform: PlatformClient;
   platformHeaders: HeaderInput;
   request: Request;
@@ -37,7 +38,7 @@ type ApprovalPageState =
   | {
       code: string;
       error?: string;
-      scopes?: TailorKitScopes;
+      scopes?: PatchsmithScopes;
       selectedScopeName?: string;
       status: "idle";
     }
@@ -54,7 +55,9 @@ const redirectToSignIn = ({
   const signInUrl = new URL(signInPath, approvalUrl);
 
   if (signInUrl.origin !== approvalUrl.origin) {
-    throw new Error("TailorKit cliAuth.signInPath must be a same-origin path.");
+    throw new Error(
+      "Patchsmith cliAuth.signInPath must be a same-origin path."
+    );
   }
 
   signInUrl.searchParams.set(
@@ -90,6 +93,7 @@ const renderOtpInputs = (code: string): string =>
   Array.from({ length: 9 }, (_, index) => {
     const autocomplete = index === 0 ? "one-time-code" : "off";
     const character = code[index] ?? "";
+
     const separator =
       index === 2 || index === 5
         ? `<span class="otp-separator" aria-hidden="true">-</span>`
@@ -102,25 +106,30 @@ const formatCode = (code: string): string =>
   normalizeCode(code).replaceAll(/(?<section>.{3})(?=.)/gu, "$<section>-");
 
 export const renderScopeControl = (
-  scopes: TailorKitScopes | undefined,
+  scopes: PatchsmithScopes | undefined,
   selectedName: string | undefined,
   controlId: string,
   label: string
 ): string => {
   const names = Object.keys(scopes ?? {});
+
   if (names.length === 0) {
     return "";
   }
+
   if (names.length === 1) {
     return `<input type="hidden" name="scope" value="${escapeHtml(requireValue(names[0]))}">`;
   }
+
   const options = names
     .map(
       (name) =>
         `<option value="${escapeHtml(name)}"${name === selectedName ? " selected" : ""}>${escapeHtml(name)}</option>`
     )
     .join("");
+
   const placeholder = `<option value="" disabled${selectedName !== undefined && selectedName !== null && selectedName !== "" ? "" : " selected"}>Choose a scope</option>`;
+
   return `<label for="${controlId}">${label}</label><select id="${controlId}" name="scope" required>${placeholder}${options}</select>`;
 };
 
@@ -602,13 +611,13 @@ const renderHtml = (state: ApprovalPageState): string =>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Approve TailorKit CLI</title>
+  <title>Approve Patchsmith CLI</title>
   <style>${approvalStyles}</style>
 </head>
 <body>
   <main class="page">
     ${renderCard(state)}
-    <p class="footer-link">Powered by <a href="https://tailorkit.dev/home">TailorKit</a></p>
+    <p class="footer-link">Powered by <a href="https://patchsmith.io/home">Patchsmith</a></p>
   </main>
   ${state.status === "idle" ? `<script>${script}</script>` : ""}
 </body>
@@ -622,18 +631,21 @@ const renderCliAuthApprovalPage = (state: ApprovalPageState): Response =>
   });
 
 export const selectOneScope = (
-  scopes: TailorKitScopes,
+  scopes: PatchsmithScopes,
   selectedName: string | undefined,
   errorMessage: string
-): TailorKitNamedScope => {
+): PatchsmithNamedScope => {
   const availableNames = Object.keys(scopes);
+
   const name =
     selectedName ??
     (availableNames.length === 1 ? requireValue(availableNames[0]) : undefined);
+
   if (name === undefined) {
     throw new TypeError(errorMessage);
   }
-  return requireValue(selectTailorKitScopes(scopes, [name])[0]);
+
+  return requireValue(selectPatchsmithScopes(scopes, [name])[0]);
 };
 
 export const handleCliAuthApprovalPage = async ({
@@ -645,20 +657,20 @@ export const handleCliAuthApprovalPage = async ({
 }: CliAuthApprovalPageOptions): Promise<Response> => {
   if (request.method === "GET") {
     const url = new URL(request.url);
-    const tailorkit = await authenticate({ request });
+    const patchsmith = await authenticate({ request });
 
     if (
       signInPath !== undefined &&
       signInPath !== null &&
       signInPath.length > 0 &&
-      !tailorkit
+      !patchsmith
     ) {
       return redirectToSignIn({ approvalUrl: url, signInPath });
     }
 
     return renderCliAuthApprovalPage({
       code: url.searchParams.get("code") ?? "",
-      scopes: tailorkit?.scopes,
+      scopes: patchsmith?.scopes,
       status: "idle",
     });
   }
@@ -678,18 +690,19 @@ export const handleCliAuthApprovalPage = async ({
   const scopeValue = form.get("scope");
   const selectedScopeName = isStringValue(scopeValue) ? scopeValue : undefined;
 
-  const tailorkit = await authenticate({ request });
+  const patchsmith = await authenticate({ request });
+
   if (!userCode) {
     return renderCliAuthApprovalPage({
       code: userCode,
       error: "Enter the code shown in your terminal.",
-      scopes: tailorkit?.scopes,
+      scopes: patchsmith?.scopes,
       selectedScopeName,
       status: "idle",
     });
   }
 
-  if (!tailorkit) {
+  if (!patchsmith) {
     return renderCliAuthApprovalPage({
       code: userCode,
       error: "You need to sign in before approving this CLI login.",
@@ -701,10 +714,11 @@ export const handleCliAuthApprovalPage = async ({
   try {
     if (intent === "approve") {
       const scope = selectOneScope(
-        tailorkit.scopes,
+        patchsmith.scopes,
         selectedScopeName,
         "Choose one scope for this CLI login."
       );
+
       await cliAuthApprove({
         body: {
           scope,
@@ -735,7 +749,7 @@ export const handleCliAuthApprovalPage = async ({
         error instanceof Error
           ? error.message
           : "Unable to finish this CLI login request.",
-      scopes: tailorkit.scopes,
+      scopes: patchsmith.scopes,
       selectedScopeName,
       status: "idle",
     });
@@ -744,7 +758,7 @@ export const handleCliAuthApprovalPage = async ({
   return renderCliAuthApprovalPage({
     code: userCode,
     error: "Choose whether to approve or deny this CLI login.",
-    scopes: tailorkit.scopes,
+    scopes: patchsmith.scopes,
     selectedScopeName,
     status: "idle",
   });

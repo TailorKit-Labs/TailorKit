@@ -11,8 +11,8 @@ import { tmpdir } from "node:os";
 import type * as nodeOs from "node:os";
 import path from "node:path";
 
-import { createTailorKitClient } from "@tailorkit/core/server";
-import { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
+import { createPatchsmithClient } from "@patchsmith/core/server";
+import { loadPatchsmithConfig } from "@patchsmith/vite/config/loader";
 import { SignJWT } from "jose";
 import {
   afterEach,
@@ -24,19 +24,20 @@ import {
 } from "vite-plus/test";
 import { z } from "zod";
 
-vi.mock("@tailorkit/vite/config/loader", () => ({
-  loadTailorKitConfig: vi.fn(),
+vi.mock("@patchsmith/vite/config/loader", () => ({
+  loadPatchsmithConfig: vi.fn(),
 }));
 
-vi.mock("@tailorkit/core/server", () => ({
-  createTailorKitClient: vi.fn(),
+vi.mock("@patchsmith/core/server", () => ({
+  createPatchsmithClient: vi.fn(),
 }));
 
 const temporaryDirectories: string[] = [];
 
 const createTemporaryHome = async (): Promise<string> => {
-  const directory = await mkdtemp(path.join(tmpdir(), "tailorkit-auth-"));
+  const directory = await mkdtemp(path.join(tmpdir(), "patchsmith-auth-"));
   temporaryDirectories.push(directory);
+
   return directory;
 };
 
@@ -51,7 +52,7 @@ const loadAuthModule = async (homeDirectory: string) => {
 };
 
 const authStorePath = (homeDirectory: string) =>
-  path.join(homeDirectory, ".tailorkit", "auth.json");
+  path.join(homeDirectory, ".patchsmith", "auth.json");
 
 const writeAuthStoreFixture = async (
   homeDirectory: string,
@@ -60,6 +61,7 @@ const writeAuthStoreFixture = async (
   const filePath = authStorePath(homeDirectory);
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, JSON.stringify(value));
+
   return filePath;
 };
 
@@ -83,6 +85,7 @@ describe("auth store", () => {
 
   it("stores and reads deploy tokens by host", async () => {
     const homeDirectory = await createTemporaryHome();
+
     const { getDeployToken, saveDeployToken } =
       await loadAuthModule(homeDirectory);
 
@@ -107,34 +110,19 @@ describe("auth store", () => {
     await expect(getDeployToken("https://example.com")).rejects.toThrow();
   });
 
-  it("keeps legacy tokens readable while discarding their unnamed scope", async () => {
-    const homeDirectory = await createTemporaryHome();
-    await writeAuthStoreFixture(homeDirectory, {
-      hosts: {
-        "https://example.com": {
-          deployToken: "deploy-token",
-          scope: { userId: "user-1" },
-        },
-      },
-    });
-    const { getDeployToken } = await loadAuthModule(homeDirectory);
-
-    await expect(getDeployToken("https://example.com")).resolves.toEqual({
-      deployToken: "deploy-token",
-      scope: undefined,
-    });
-  });
-
   it("preserves unknown top-level auth.json keys when saving a host token", async () => {
     const homeDirectory = await createTemporaryHome();
+
     const filePath = await writeAuthStoreFixture(homeDirectory, {
       futureKey: { value: true },
       hosts: {
         "https://existing.example.com": {
           deployToken: "existing-token",
+          scope: { name: "user", value: { userId: "user-1" } },
         },
       },
     });
+
     const { saveDeployToken } = await loadAuthModule(homeDirectory);
 
     await saveDeployToken("https://new.example.com", {
@@ -148,6 +136,7 @@ describe("auth store", () => {
         hosts: {
           "https://existing.example.com": {
             deployToken: "existing-token",
+            scope: { name: "user", value: { userId: "user-1" } },
           },
           "https://new.example.com": {
             deployToken: "new-token",
@@ -186,11 +175,15 @@ describe("auth store", () => {
     expect(fileStat.mode % 0o1000).toBe(0o600);
   });
 
-  it("resolves the host URL from tailorkit.config.ts", async () => {
+  it("resolves the host URL from patchsmith.config.ts", async () => {
     const homeDirectory = await createTemporaryHome();
-    vi.mocked(loadTailorKitConfig).mockResolvedValue({
-      config: { host: "https://example.com///" },
-      filepath: path.join(homeDirectory, "tailorkit.config.ts"),
+    vi.mocked(loadPatchsmithConfig).mockResolvedValue({
+      config: {
+        host: "https://example.com///",
+        name: "Test App",
+        slug: "test-app",
+      },
+      filepath: path.join(homeDirectory, "patchsmith.config.ts"),
       root: homeDirectory,
     });
     const { resolveHostUrl } = await loadAuthModule(homeDirectory);
@@ -198,7 +191,7 @@ describe("auth store", () => {
     await expect(resolveHostUrl({ cwd: homeDirectory })).resolves.toBe(
       "https://example.com"
     );
-    expect(loadTailorKitConfig).toHaveBeenCalledWith(undefined, homeDirectory);
+    expect(loadPatchsmithConfig).toHaveBeenCalledWith(undefined, homeDirectory);
   });
 
   it("creates a browser approval URL from the host API URL", async () => {
@@ -207,11 +200,11 @@ describe("auth store", () => {
 
     expect(
       createCliAuthApprovalUrl(
-        "https://example.com/api/tailorkit",
+        "https://example.com/api/patchsmith",
         "ABC-123-XYZ"
       )
     ).toBe(
-      "https://example.com/api/tailorkit/cli-auth/approve?code=ABC-123-XYZ"
+      "https://example.com/api/patchsmith/cli-auth/approve?code=ABC-123-XYZ"
     );
   });
 
@@ -223,10 +216,10 @@ describe("auth store", () => {
       resolveHostUrl({
         configPath: "missing.config.ts",
         cwd: homeDirectory,
-        host: "https://example.com/api/tailorkit///?unused=true#fragment",
+        host: "https://example.com/api/patchsmith///?unused=true#fragment",
       })
-    ).resolves.toBe("https://example.com/api/tailorkit");
-    expect(loadTailorKitConfig).not.toHaveBeenCalled();
+    ).resolves.toBe("https://example.com/api/patchsmith");
+    expect(loadPatchsmithConfig).not.toHaveBeenCalled();
   });
 
   it.each(["", "localhost:3000", "ftp://example.com"])(
@@ -238,37 +231,42 @@ describe("auth store", () => {
       await expect(
         resolveHostUrl({ cwd: homeDirectory, host })
       ).rejects.toThrow("host URL");
-      expect(loadTailorKitConfig).not.toHaveBeenCalled();
+      expect(loadPatchsmithConfig).not.toHaveBeenCalled();
     }
   );
 
   it("logs in, verifies credentials, and logs out using an explicit host without config", async () => {
     vi.useFakeTimers();
     const homeDirectory = await createTemporaryHome();
-    const hostUrl = "https://example.com/api/tailorkit";
+    const hostUrl = "https://example.com/api/patchsmith";
     const scope = { name: "user", value: { userId: "user-1" } };
+
     const start = vi.fn().mockResolvedValue({
       deviceCode: "device-code",
       expiresAt: new Date(Date.now() + 60_000),
       userCode: "ABC-123",
     });
+
     const poll = vi.fn().mockResolvedValue({
       deployToken: "deploy-token",
       scope,
       status: "approved",
     });
+
     const verifyToken = vi.fn().mockResolvedValue({ scope });
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
-    vi.mocked(createTailorKitClient).mockReturnValue(
+    vi.mocked(createPatchsmithClient).mockReturnValue(
       /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
       {
         cliAuth: { poll, start, verifyToken },
-      } as unknown as ReturnType<typeof createTailorKitClient>
+      } as unknown as ReturnType<typeof createPatchsmithClient>
       /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
     );
+
     const { runLogin, runWhoami, runLogout, getDeployToken } =
       await loadAuthModule(homeDirectory);
+
     const onUserCode = vi.fn<Parameters<typeof runLogin>[1]>();
     const options = { cwd: homeDirectory, host: `${hostUrl}/` };
     const login = runLogin(options, onUserCode);
@@ -280,7 +278,7 @@ describe("auth store", () => {
     );
     expect(poll).toHaveBeenCalledWith({ deviceCode: "device-code" });
     await expect(runWhoami(options)).resolves.toEqual({ hostUrl, scope });
-    expect(createTailorKitClient).toHaveBeenLastCalledWith({
+    expect(createPatchsmithClient).toHaveBeenLastCalledWith({
       headers: { authorization: "Bearer deploy-token" },
       url: hostUrl,
     });
@@ -289,14 +287,18 @@ describe("auth store", () => {
       removed: true,
     });
     await expect(getDeployToken(hostUrl)).resolves.toBeUndefined();
-    expect(loadTailorKitConfig).not.toHaveBeenCalled();
+    expect(loadPatchsmithConfig).not.toHaveBeenCalled();
   });
 
   it("identifies missing host credentials as not logged in", async () => {
     const homeDirectory = await createTemporaryHome();
-    vi.mocked(loadTailorKitConfig).mockResolvedValue({
-      config: { host: "https://example.com" },
-      filepath: path.join(homeDirectory, "tailorkit.config.ts"),
+    vi.mocked(loadPatchsmithConfig).mockResolvedValue({
+      config: {
+        host: "https://example.com",
+        name: "Test App",
+        slug: "test-app",
+      },
+      filepath: path.join(homeDirectory, "patchsmith.config.ts"),
       root: homeDirectory,
     });
     const { NotLoggedInError, runWhoami } = await loadAuthModule(homeDirectory);
@@ -308,14 +310,18 @@ describe("auth store", () => {
 
   it("treats unauthorized token verification as not logged in", async () => {
     const homeDirectory = await createTemporaryHome();
-    vi.mocked(loadTailorKitConfig).mockResolvedValue({
-      config: { host: "https://example.com" },
-      filepath: path.join(homeDirectory, "tailorkit.config.ts"),
+    vi.mocked(loadPatchsmithConfig).mockResolvedValue({
+      config: {
+        host: "https://example.com",
+        name: "Test App",
+        slug: "test-app",
+      },
+      filepath: path.join(homeDirectory, "patchsmith.config.ts"),
       root: homeDirectory,
     });
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
-    vi.mocked(createTailorKitClient).mockReturnValue(
+    vi.mocked(createPatchsmithClient).mockReturnValue(
       /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
       {
         cliAuth: {
@@ -324,13 +330,14 @@ describe("auth store", () => {
             error: { code: "UNAUTHORIZED", message: "token expired" },
           }),
         },
-      } as unknown as ReturnType<typeof createTailorKitClient>
+      } as unknown as ReturnType<typeof createPatchsmithClient>
       /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
     );
     await writeAuthStoreFixture(homeDirectory, {
       hosts: {
         "https://example.com": {
           deployToken: "expired-token",
+          scope: { name: "user", value: { userId: "user-1" } },
         },
       },
     });
@@ -340,7 +347,7 @@ describe("auth store", () => {
       NotLoggedInError
     );
     await expect(runWhoami({ cwd: homeDirectory })).rejects.toThrow(
-      "Not logged in for https://example.com. Run tailorkit login --host https://example.com."
+      "Not logged in for https://example.com. Run patchsmith login --host https://example.com."
     );
   });
 
@@ -369,12 +376,17 @@ describe("auth store", () => {
     { error: null, label: "null rejection", rejected: true },
   ])("preserves $label unchanged", async ({ error, rejected }) => {
     const homeDirectory = await createTemporaryHome();
-    vi.mocked(loadTailorKitConfig).mockResolvedValue({
-      config: { host: "https://example.com" },
-      filepath: path.join(homeDirectory, "tailorkit.config.ts"),
+    vi.mocked(loadPatchsmithConfig).mockResolvedValue({
+      config: {
+        host: "https://example.com",
+        name: "Test App",
+        slug: "test-app",
+      },
+      filepath: path.join(homeDirectory, "patchsmith.config.ts"),
       root: homeDirectory,
     });
     const verifyToken = vi.fn();
+
     if (rejected) {
       verifyToken.mockRejectedValue(error);
     } else {
@@ -382,16 +394,23 @@ describe("auth store", () => {
     }
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
-    vi.mocked(createTailorKitClient).mockReturnValue(
+    vi.mocked(createPatchsmithClient).mockReturnValue(
       /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
       {
         cliAuth: { verifyToken },
-      } as unknown as ReturnType<typeof createTailorKitClient>
+      } as unknown as ReturnType<typeof createPatchsmithClient>
       /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
     );
+
     const fixture = {
-      hosts: { "https://example.com": { deployToken: "deploy-token" } },
+      hosts: {
+        "https://example.com": {
+          deployToken: "deploy-token",
+          scope: { name: "user", value: { userId: "user-1" } },
+        },
+      },
     };
+
     const filePath = await writeAuthStoreFixture(homeDirectory, fixture);
     const { runWhoami } = await loadAuthModule(homeDirectory);
 
@@ -403,14 +422,18 @@ describe("auth store", () => {
 
   it("returns the verified named scope", async () => {
     const homeDirectory = await createTemporaryHome();
-    vi.mocked(loadTailorKitConfig).mockResolvedValue({
-      config: { host: "https://example.com" },
-      filepath: path.join(homeDirectory, "tailorkit.config.ts"),
+    vi.mocked(loadPatchsmithConfig).mockResolvedValue({
+      config: {
+        host: "https://example.com",
+        name: "Test App",
+        slug: "test-app",
+      },
+      filepath: path.join(homeDirectory, "patchsmith.config.ts"),
       root: homeDirectory,
     });
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
-    vi.mocked(createTailorKitClient).mockReturnValue(
+    vi.mocked(createPatchsmithClient).mockReturnValue(
       /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
       {
         cliAuth: {
@@ -423,11 +446,16 @@ describe("auth store", () => {
             },
           }),
         },
-      } as unknown as ReturnType<typeof createTailorKitClient>
+      } as unknown as ReturnType<typeof createPatchsmithClient>
       /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
     );
     await writeAuthStoreFixture(homeDirectory, {
-      hosts: { "https://example.com": { deployToken: "deploy-token" } },
+      hosts: {
+        "https://example.com": {
+          deployToken: "deploy-token",
+          scope: { name: "user", value: { userId: "user-1" } },
+        },
+      },
     });
     const { runWhoami } = await loadAuthModule(homeDirectory);
 
@@ -442,14 +470,18 @@ describe("auth store", () => {
 
   it("rejects a legacy verification response before changing stored auth", async () => {
     const homeDirectory = await createTemporaryHome();
-    vi.mocked(loadTailorKitConfig).mockResolvedValue({
-      config: { host: "https://example.com" },
-      filepath: path.join(homeDirectory, "tailorkit.config.ts"),
+    vi.mocked(loadPatchsmithConfig).mockResolvedValue({
+      config: {
+        host: "https://example.com",
+        name: "Test App",
+        slug: "test-app",
+      },
+      filepath: path.join(homeDirectory, "patchsmith.config.ts"),
       root: homeDirectory,
     });
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
-    vi.mocked(createTailorKitClient).mockReturnValue(
+    vi.mocked(createPatchsmithClient).mockReturnValue(
       /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
       {
         cliAuth: {
@@ -457,12 +489,19 @@ describe("auth store", () => {
             .fn()
             .mockResolvedValue({ data: { scopeId: "legacy-scope" } }),
         },
-      } as unknown as ReturnType<typeof createTailorKitClient>
+      } as unknown as ReturnType<typeof createPatchsmithClient>
       /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
     );
+
     const filePath = await writeAuthStoreFixture(homeDirectory, {
-      hosts: { "https://example.com": { deployToken: "deploy-token" } },
+      hosts: {
+        "https://example.com": {
+          deployToken: "deploy-token",
+          scope: { name: "user", value: { userId: "user-1" } },
+        },
+      },
     });
+
     const { runWhoami } = await loadAuthModule(homeDirectory);
 
     await expect(runWhoami({ cwd: homeDirectory })).rejects.toBeInstanceOf(
@@ -470,7 +509,12 @@ describe("auth store", () => {
     );
     await expect(readFile(filePath, "utf-8").then(JSON.parse)).resolves.toEqual(
       {
-        hosts: { "https://example.com": { deployToken: "deploy-token" } },
+        hosts: {
+          "https://example.com": {
+            deployToken: "deploy-token",
+            scope: { name: "user", value: { userId: "user-1" } },
+          },
+        },
       }
     );
   });
@@ -479,38 +523,51 @@ describe("auth store", () => {
     const home = await createTemporaryHome();
     const now = Math.floor(Date.now() / 1000);
     const scope = { name: "user", value: { userId: "one" } };
+
     const jwt = await new SignJWT({
       appId: "app",
-      aud: "tailorkit-platform-cli",
+      aud: "patchsmith-platform-cli",
       exp: now + 3600,
       iat: now,
-      iss: "tailorkit-agent",
+      iss: "patchsmith-agent",
       platformUrl: "https://platform.test/api/platform",
       projectId: "project",
       scope,
     })
-      .setProtectedHeader({ alg: "HS256", typ: "tailorkit-agent+jwt" })
+      .setProtectedHeader({ alg: "HS256", typ: "patchsmith-agent+jwt" })
       .sign(new TextEncoder().encode("test-only-signing-secret"));
-    vi.stubEnv("TAILORKIT_AGENT_TOKEN", jwt);
+
+    vi.stubEnv("PATCHSMITH_AGENT_TOKEN", jwt);
+
     const stored = await writeAuthStoreFixture(home, {
-      hosts: { "http://localhost:1": { deployToken: "existing-token" } },
+      hosts: {
+        "http://localhost:1": {
+          deployToken: "existing-token",
+          scope: { name: "user", value: { userId: "user-1" } },
+        },
+      },
     });
+
     const original = await readFile(stored, "utf-8");
     const { runLogin, runWhoami, runLogout } = await loadAuthModule(home);
+
     const fetch = vi
       .spyOn(globalThis, "fetch")
       .mockImplementation(async (input) => {
         if (!(input instanceof Request)) {
           throw new Error("Expected a Request.");
         }
+
         const request = input;
         expect(request.url).toBe(
           "https://platform.test/api/platform/cli-auth/verify-token"
         );
         expect(request.headers.get("authorization")).toBe(`Bearer ${jwt}`);
         expect(await request.json()).toEqual({ deployToken: jwt });
+
         return Response.json({ scope });
       });
+
     const onCode = vi.fn<Parameters<typeof runLogin>[1]>();
     expect(await runLogin({ host: "http://localhost:1" }, onCode)).toEqual({
       hostUrl: "https://platform.test/api/platform",

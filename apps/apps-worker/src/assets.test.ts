@@ -1,6 +1,6 @@
 import { gzipSync, gunzipSync } from "node:zlib";
 
-import { assetHeaders, maxDeploymentBytes } from "@tailorkit/asset-delivery";
+import { assetHeaders, maxDeploymentBytes } from "@patchsmith/asset-delivery";
 import {
   afterEach,
   beforeEach,
@@ -16,26 +16,31 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
-const projectId = "22222222-2222-4222-8222-222222222222";
+const projectId = "proj00000001";
 const appId = "app000000001";
 const deploymentId = "deploy000001";
-const path = `/p/${projectId}/a/${appId}/d/${deploymentId}/client/client.js`;
-const url = `https://abc123def45678.tailorkit.app${path}`;
-const key = `teams/abc123def45678/projects/${projectId}/apps/${appId}/deployments/${deploymentId}/client/client.js`;
+const path = `/a/${appId}/d/${deploymentId}/client/client.js`;
+const url = `https://${projectId}.tailorkit.app${path}`;
+const key = `projects/${projectId}/apps/${appId}/deployments/${deploymentId}/client/client.js`;
 const bundle = "export default 'tenant bundle';";
 const get = vi.fn();
 const head = vi.fn();
+
 // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-const match = vi.fn(
-  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-  async (_request: Request) => undefined as Response | undefined
-);
+const cacheMiss: Response | undefined = undefined;
+
+const match = vi
+  .fn<(request: Request) => Promise<Response | undefined>>()
+  .mockResolvedValue(cacheMiss);
+
 const put = vi
   .fn<(_request: Request, _response: Response) => Promise<void>>()
   .mockReturnValue(Promise.resolve());
+
 const waitUntil = vi.fn();
 // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
@@ -45,6 +50,7 @@ const env =
     ASSET_DOMAIN: "tailorkit.app",
     BUNDLES: { get, head },
   } as unknown as Env;
+
 /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
 // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
@@ -66,12 +72,13 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.stubGlobal("caches", { default: { match, put } });
 });
+
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
-describe("tenant asset gateway", () => {
+describe("project asset gateway", () => {
   it("never serves server bundles, manifests or migrations publicly", async () => {
     await Promise.all(
       [
@@ -87,6 +94,7 @@ describe("tenant asset gateway", () => {
             const response = await fetchAsset(
               new Request(url.replace("client.js", suffix), { method })
             );
+
             expect(response.status).toBe(404);
           })
         );
@@ -101,14 +109,16 @@ describe("tenant asset gateway", () => {
     get.mockResolvedValueOnce(object());
     const response = await fetchAsset(new Request(url));
     expect(get).toHaveBeenCalledWith(key);
-    expect(match.mock.calls[0]?.[0].url).toBe(url);
+    expect(match.mock.calls[0]?.[0].url).toBe(
+      `${url}?__patchsmith_asset_cache=opaque-v1`
+    );
     expect(put).toHaveBeenCalledOnce();
     expect(waitUntil).toHaveBeenCalledOnce();
     expect(await response.text()).toBe(bundle);
     expect(response.headers.get("Cache-Control")).toBe("private, max-age=3600");
     const cachedResponse = put.mock.calls[0]?.[1];
     expect(cachedResponse?.headers.get("Cache-Control")).toBe(
-      "public, max-age=86400"
+      "public, max-age=86400, no-transform"
     );
     expect(response.headers.get("Content-Type")).toBe(
       "application/javascript; charset=utf-8"
@@ -143,35 +153,37 @@ describe("tenant asset gateway", () => {
 
   it("serves logos with their image content type", async () => {
     get.mockResolvedValueOnce(object("<svg/>"));
+
     const response = await fetchAsset(
       new Request(
         url.replace("client/client.js", `logos/${"a".repeat(64)}.svg`)
       )
     );
+
     expect(response.headers.get("Content-Type")).toBe("image/svg+xml");
     expect(get).toHaveBeenCalledWith(
-      `teams/abc123def45678/projects/${projectId}/apps/${appId}/logos/${"a".repeat(64)}.svg`
+      `projects/${projectId}/apps/${appId}/logos/${"a".repeat(64)}.svg`
     );
   });
 
-  it("uses the hostname tenant ID as part of the storage namespace", async () => {
+  it("uses the hostname project short ID as the storage namespace", async () => {
     get.mockResolvedValueOnce(object());
-    const otherUrl = url.replace("abc123def45678", "xyz123def45678");
+    const otherUrl = url.replace(projectId, "xyz123def456");
     await fetchAsset(new Request(otherUrl));
-    expect(get).toHaveBeenCalledWith(
-      key.replace("abc123def45678", "xyz123def45678")
-    );
+    expect(get).toHaveBeenCalledWith(key.replace(projectId, "xyz123def456"));
   });
 
-  it.each(["team-abcdefghi", "a------------z", "0123456789abcd"])(
-    "serves bundles for hyphenated team ID %s",
-    async (publicId) => {
+  it.each(["abcdef012345", "012345678901", "zzzzzzzzzzzz"])(
+    "serves bundles for DNS-safe project short ID %s",
+    async (shortId) => {
       get.mockResolvedValueOnce(object());
+
       const response = await fetchAsset(
-        new Request(url.replace("abc123def45678", publicId))
+        new Request(url.replace(projectId, shortId))
       );
+
       expect(response.status).toBe(200);
-      expect(get).toHaveBeenCalledWith(key.replace("abc123def45678", publicId));
+      expect(get).toHaveBeenCalledWith(key.replace(projectId, shortId));
       expect(await response.text()).toBe(bundle);
     }
   );
@@ -179,22 +191,21 @@ describe("tenant asset gateway", () => {
   it("rejects foreign hosts, slugs, malformed paths and query strings before R2", async () => {
     await Promise.all(
       [
-        url.replace("abc123def45678", "abc123def4"),
-        url.replace("abc123def45678", "team-abcde"),
-        url.replace("abc123def45678", "team-abc123def45678"),
-        url.replace("abc123def45678", "editable-slug"),
-        url.replace("abc123def45678", "-bc123def4"),
-        url.replace("abc123def45678", "abc123def-"),
-        url.replace("abc123def45678", "abc_23def4"),
-        url.replace("abc123def45678", "-bc123def45678"),
-        url.replace("abc123def45678", "abc123def4567-"),
-        url.replace("abc123def45678", "abc_23def45678"),
-        url.replace("abc123def45678", "01234567890"),
-        url.replace("abc123def45678", "012345678901"),
-        url.replace("abc123def45678", "0123456789012"),
-        url.replace("abc123def45678", "012345678901234"),
+        url.replace(projectId, "abc123def4"),
+        url.replace(projectId, "team-abcde"),
+        url.replace(projectId, "team-abc123def456"),
+        url.replace(projectId, "editable-slug"),
+        url.replace(projectId, "-bc123def4"),
+        url.replace(projectId, "abc123def-"),
+        url.replace(projectId, "abc_23def4"),
+        url.replace(projectId, "-bc123def45678"),
+        url.replace(projectId, "abc123def4567-"),
+        url.replace(projectId, "abc_23def45678"),
+        url.replace(projectId, "01234567890"),
+        url.replace(projectId, "0123456789012"),
+        url.replace(projectId, "012345678901234"),
         url.replace("tailorkit.app", "tailorkit.app.evil.example"),
-        url.replace("abc123def45678", "nested.abc123def45678"),
+        url.replace(projectId, "nested.abc123def456"),
         `${url}?token=anything`,
         url.replace("client.js", "secret.js"),
         url.replace(appId, "app-slug"),
@@ -273,6 +284,7 @@ it("keeps the response usable when a background cache write fails", async () => 
 
 const gzipObject = (body = bundle) => {
   const bytes = gzipSync(body);
+
   return {
     ...object(),
     body: new Response(bytes).body,
@@ -281,12 +293,52 @@ const gzipObject = (body = bundle) => {
   };
 };
 
+const cachedGzipHeaders = (size: number, etag?: string) => {
+  const headers = assetHeaders({ contentLength: size, etag });
+  headers.set("X-Patchsmith-Content-Encoding", "gzip");
+  headers.set("Vary", "Accept-Encoding");
+
+  return headers;
+};
+
+it.each(["R2", "cache"])(
+  "allows CDN negotiation while retaining stored gzip from %s",
+  async (source) => {
+    const stored = gzipObject();
+
+    if (source === "R2") {
+      get.mockResolvedValueOnce(stored);
+    } else {
+      const headers = cachedGzipHeaders(stored.size);
+      headers.set("Cache-Control", "public, max-age=86400, no-transform");
+      match.mockResolvedValueOnce(new Response(stored.body, { headers }));
+    }
+
+    const request = new Request(url, {
+      headers: { "Accept-Encoding": "br, gzip" },
+    });
+
+    // Cloudflare normalizes the Worker-facing header even for identity clients.
+    Object.defineProperty(request, "cf", {
+      value: { clientAcceptEncoding: "identity" },
+    });
+    const response = await fetchAsset(request);
+    expect(response.headers.get("Content-Encoding")).toBe("gzip");
+    expect(response.headers.get("Cache-Control")).toBe("private, max-age=3600");
+    expect(response.headers.get("Vary")).toBe("Accept-Encoding");
+    expect(response.headers.get("X-Patchsmith-Content-Encoding")).toBeNull();
+    expect(Buffer.from(await response.arrayBuffer())).toEqual(gzipSync(bundle));
+  }
+);
+
 it("serves stored gzip bytes and caches them without double compression", async () => {
   const stored = gzipObject();
   get.mockResolvedValueOnce(stored);
+
   const response = await fetchAsset(
     new Request(url, { headers: { "Accept-Encoding": "br, gzip" } })
   );
+
   expect(response.headers.get("Content-Encoding")).toBe("gzip");
   expect(response.headers.get("Content-Length")).toBe(String(stored.size));
   expect(response.headers.get("Vary")).toBe("Accept-Encoding");
@@ -294,29 +346,66 @@ it("serves stored gzip bytes and caches them without double compression", async 
     bundle
   );
   const [, cached] = requireValue(put.mock.calls[0]);
-  expect(cached.headers.get("Content-Encoding")).toBe("gzip");
+  expect(cached.headers.get("Content-Encoding")).toBeNull();
+  expect(cached.headers.get("X-Patchsmith-Content-Encoding")).toBe("gzip");
   expect(gunzipSync(Buffer.from(await cached.arrayBuffer())).toString()).toBe(
     bundle
   );
 });
+
+it.each(["GET", "HEAD"])(
+  "serves opaque cached gzip bytes for %s without reading R2 again",
+  async (method) => {
+    const stored = gzipObject();
+    get.mockResolvedValueOnce(stored);
+
+    const initial = await fetchAsset(
+      new Request(url, { headers: { "Accept-Encoding": "gzip" } })
+    );
+
+    await initial.arrayBuffer();
+    await requireValue(waitUntil.mock.calls[0])[0];
+    const [, cached] = requireValue(put.mock.calls[0]);
+    match.mockResolvedValueOnce(cached);
+
+    const response = await fetchAsset(
+      new Request(url, { headers: { "Accept-Encoding": "gzip" }, method })
+    );
+
+    expect(response.headers.get("Content-Encoding")).toBe("gzip");
+    expect(response.headers.get("Content-Length")).toBe(String(stored.size));
+    expect(response.headers.get("X-Patchsmith-Content-Encoding")).toBeNull();
+    const bytes = Buffer.from(await response.arrayBuffer());
+
+    if (method === "HEAD") {
+      expect(bytes.byteLength).toBe(0);
+    } else {
+      expect(bytes).toEqual(gzipSync(bundle));
+      expect(gunzipSync(bytes).toString()).toBe(bundle);
+    }
+
+    expect(get).toHaveBeenCalledOnce();
+    expect(head).not.toHaveBeenCalled();
+    expect(put).toHaveBeenCalledOnce();
+  }
+);
 
 it.each(["R2", "cache"])(
   "caps inflated bytes from %s at 3 MiB",
   async (source) => {
     const stored = gzipObject("a".repeat(maxDeploymentBytes + 1));
     expect(stored.size).toBeLessThan(maxDeploymentBytes);
+
     if (source === "R2") {
       get.mockResolvedValueOnce(stored);
     } else {
       match.mockResolvedValueOnce(
         new Response(stored.body, {
-          headers: assetHeaders({
-            contentEncoding: "gzip",
-            contentLength: stored.size,
-          }),
+          headers: cachedGzipHeaders(stored.size),
         })
       );
     }
+
     const response = await fetchAsset(new Request(url));
     const body = requireValue(response.body);
     let deliveredBytes = 0;
@@ -326,6 +415,7 @@ it.each(["R2", "cache"])(
           if (!(value instanceof Uint8Array)) {
             throw new Error("Expected asset bytes");
           }
+
           deliveredBytes += value.byteLength;
         }
       })()
@@ -347,13 +437,10 @@ it.each([undefined, "identity", "gzip;q=0, *;q=1"])(
     const stored = gzipObject();
     match.mockResolvedValueOnce(
       new Response(stored.body, {
-        headers: assetHeaders({
-          contentEncoding: "gzip",
-          contentLength: stored.size,
-          etag: stored.httpEtag,
-        }),
+        headers: cachedGzipHeaders(stored.size, stored.httpEtag),
       })
     );
+
     const response = await fetchAsset(
       new Request(url, {
         headers:
@@ -362,8 +449,10 @@ it.each([undefined, "identity", "gzip;q=0, *;q=1"])(
             : undefined,
       })
     );
+
     expect(await response.text()).toBe(bundle);
     expect(response.headers.get("Content-Encoding")).toBeNull();
+    expect(response.headers.get("X-Patchsmith-Content-Encoding")).toBeNull();
     expect(response.headers.get("Content-Length")).toBeNull();
     expect(response.headers.get("ETag")).toBe('W/"etag"');
     expect(response.headers.get("Vary")).toBe("Accept-Encoding");
@@ -376,12 +465,14 @@ it.each(["gzip", "identity"])(
   async (encoding) => {
     const stored = gzipObject();
     head.mockResolvedValueOnce(stored);
+
     const response = await fetchAsset(
       new Request(url, {
         headers: { "Accept-Encoding": encoding },
         method: "HEAD",
       })
     );
+
     expect(response.headers.get("Content-Encoding")).toBe(
       encoding === "gzip" ? "gzip" : null
     );

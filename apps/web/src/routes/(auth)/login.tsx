@@ -1,7 +1,7 @@
 "use client";
 
-import { cn } from "@tailorkit/ui";
-import { Button } from "@tailorkit/ui/button";
+import { cn } from "@patchsmith/ui";
+import { Button } from "@patchsmith/ui/button";
 import {
   Card,
   CardFooter,
@@ -10,9 +10,9 @@ import {
   CardHeader,
   CardPanel,
   CardTitle,
-} from "@tailorkit/ui/card";
-import { useAppForm } from "@tailorkit/ui/form";
-import { Logo } from "@tailorkit/ui/logo";
+} from "@patchsmith/ui/card";
+import { useAppForm } from "@patchsmith/ui/form";
+import { Logo } from "@patchsmith/ui/logo";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   useNavigate,
@@ -51,23 +51,30 @@ const RouteComponent = () => {
     error_description,
     return_to,
   } = useSearch({ from: "/(auth)/login" });
+
   const navigate = useNavigate({ from: "/login" });
+
   const socialProvidersQuery = useQuery(
     orpc.user.getSocialProviders.queryOptions()
   );
+
   const [step, setStep] = useState<Step>("email");
   const [visible, setVisible] = useState(true);
   const [email, setEmail] = useState(emailFromSearch ?? "");
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [socialError, setSocialError] = useState<string | null>(null);
+
   const [socialPending, setSocialPending] = useState<
     "github" | "google" | null
   >(null);
+
   const [passkeyError, setPasskeyError] = useState<string | null>(null);
   const [passkeyPending, setPasskeyPending] = useState(false);
   const authPending = socialPending !== null || passkeyPending;
+
   const primarySignInError =
     passkeyError ?? socialError ?? error_description ?? "";
+
   const signInError =
     primarySignInError === "" ? authenticationError : primarySignInError;
 
@@ -78,6 +85,7 @@ const RouteComponent = () => {
       if (nextEmail !== undefined) {
         setEmail(nextEmail);
       }
+
       setStep(nextStep);
       setVisible(true);
     }, 150);
@@ -92,11 +100,13 @@ const RouteComponent = () => {
           resolve,
           reject: rejectPending,
         } = Promise.withResolvers();
+
         try {
           setTimeout(resolve, 300);
         } catch (error) {
           rejectPending(error);
         }
+
         return await pendingPromise;
       })();
       transition("password", value.email);
@@ -116,21 +126,24 @@ const RouteComponent = () => {
 
     try {
       const returnPath = getSameOriginPath(return_to, window.location.origin);
+
       if (
         returnPath !== undefined &&
         returnPath !== null &&
         returnPath !== ""
       ) {
         window.sessionStorage.setItem(
-          "tailorkit.two-factor-return-to",
+          "patchsmith.two-factor-return-to",
           returnPath
         );
       } else {
-        window.sessionStorage.removeItem("tailorkit.two-factor-return-to");
+        window.sessionStorage.removeItem("patchsmith.two-factor-return-to");
       }
+
       const callbackURL =
         getSameOriginUrl(return_to, window.location.origin) ??
         window.location.origin;
+
       const result = await authClient.signIn.social({
         callbackURL,
         errorCallbackURL: getAuthErrorCallbackUrl(
@@ -161,9 +174,11 @@ const RouteComponent = () => {
 
     try {
       const result = await authClient.signIn.passkey();
+
       if (result.error) {
         setPasskeyError(result.error.message ?? "Passkey sign in failed");
         setPasskeyPending(false);
+
         return;
       }
 
@@ -181,18 +196,20 @@ const RouteComponent = () => {
     onSubmit: async ({ value }) => {
       setPasswordError(null);
       const returnPath = getSameOriginPath(return_to, window.location.origin);
+
       if (
         returnPath !== undefined &&
         returnPath !== null &&
         returnPath !== ""
       ) {
         window.sessionStorage.setItem(
-          "tailorkit.two-factor-return-to",
+          "patchsmith.two-factor-return-to",
           returnPath
         );
       } else {
-        window.sessionStorage.removeItem("tailorkit.two-factor-return-to");
+        window.sessionStorage.removeItem("patchsmith.two-factor-return-to");
       }
+
       await authClient.signIn.email(
         { email, password: value.password },
         {
@@ -202,8 +219,10 @@ const RouteComponent = () => {
                 search: { email, return_to },
                 to: "/verify-email",
               });
+
               return;
             }
+
             setPasswordError(
               errorValue2.error.message ||
                 errorValue2.error.statusText ||
@@ -219,12 +238,14 @@ const RouteComponent = () => {
               return;
             }
 
-            window.sessionStorage.removeItem("tailorkit.two-factor-return-to");
+            window.sessionStorage.removeItem("patchsmith.two-factor-return-to");
             await queryClient.invalidateQueries();
+
             const returnPathValue = getSameOriginPath(
               return_to,
               window.location.origin
             );
+
             if (
               returnPathValue !== undefined &&
               returnPathValue !== null &&
@@ -255,10 +276,10 @@ const RouteComponent = () => {
       <div className="flex w-full max-w-sm flex-col items-center gap-4">
         <a
           className="flex items-center gap-2"
-          href="https://tailorkit.dev/home"
+          href="https://patchsmith.io/home"
         >
           <Logo className="size-6" />
-          <span className="text-lg font-semibold">TailorKit</span>
+          <span className="text-lg font-semibold">Patchsmith</span>
         </a>
         <CardFrame className="w-full">
           <Card>

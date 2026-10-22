@@ -1,36 +1,54 @@
-import { z } from "zod";
+import * as v from "valibot";
 
-const logosConfigSchema = z.object({
-  dark: z.string().min(1).optional(),
-  light: z.string().min(1).optional(),
+const logosConfigSchema = v.object({
+  dark: v.optional(v.pipe(v.string(), v.minLength(1))),
+  light: v.optional(v.pipe(v.string(), v.minLength(1))),
 });
 
-const tailorkitConfigSchema = z.strictObject({
-  appId: z.string().min(1).optional(),
-  host: z.url(),
-  logos: logosConfigSchema.optional(),
-  server: z
-    .strictObject({
-      entry: z.string().min(1).default("src/server.ts"),
-      migrations: z.string().min(1).optional(),
+const patchsmithConfigSchema = v.strictObject({
+  appId: v.optional(v.pipe(v.string(), v.minLength(1))),
+  description: v.optional(
+    v.nullable(v.pipe(v.string(), v.trim(), v.maxLength(255)))
+  ),
+  host: v.pipe(v.string(), v.url()),
+  logos: v.optional(logosConfigSchema),
+  name: v.pipe(v.string(), v.trim(), v.minLength(1)),
+  server: v.optional(
+    v.strictObject({
+      migrations: v.optional(v.pipe(v.string(), v.minLength(1))),
     })
-    .optional(),
+  ),
+  slug: v.pipe(
+    v.string(),
+    v.minLength(3),
+    v.maxLength(32),
+    v.regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u)
+  ),
 });
 
 /**
- * App configuration exported from `tailorkit.config.ts`.
+ * App configuration exported from `patchsmith.config.ts`.
  * Relative paths resolve from the app root: the Vite config directory when building.
  */
-export interface TailorKitConfig extends z.input<typeof tailorkitConfigSchema> {
+export interface PatchsmithConfig extends v.InferInput<
+  typeof patchsmithConfigSchema
+> {
   /**
-   * ID of the app on the TailorKit host, used for deployment and remote preview.
+   * ID of the app on the Patchsmith host, used for deployment.
    * When omitted, the first deployment creates an app and saves its ID here.
-   * Remote preview requires an existing app ID.
    * @default undefined
    */
   appId?: string;
   /**
-   * URL of the TailorKit host used for authentication, deployment, remote preview,
+   * App description applied during deployment, including updates to an existing app.
+   * Trimmed to remove surrounding whitespace; accepts at most 255 characters.
+   * Set to null to clear the description. When omitted, existing apps keep their
+   * current description and new apps have no description.
+   * @default undefined
+   */
+  description?: string | null;
+  /**
+   * URL of the Patchsmith host used for authentication, deployment,
    * and fetching the host schema for generated types. Required; has no default.
    */
   host: string;
@@ -52,16 +70,17 @@ export interface TailorKitConfig extends z.input<typeof tailorkitConfigSchema> {
     light?: string;
   };
   /**
+   * App name applied during deployment, including updates to an existing app.
+   * Trimmed to remove surrounding whitespace; must not be blank.
+   * Required; has no default.
+   */
+  name: string;
+  /**
    * Enables the private app backend and its database migrations when present.
    * Set to `{}` to use the default paths; omit for a client-only app.
    * @default undefined
    */
   server?: {
-    /**
-     * Source entry point for the app's private backend bundle.
-     * @default "src/server.ts"
-     */
-    entry?: string;
     /**
      * Directory containing Drizzle migrations, used for generation and bundling.
      * When omitted, uses `./src/db/migrations` and allows that directory to be absent.
@@ -70,11 +89,21 @@ export interface TailorKitConfig extends z.input<typeof tailorkitConfigSchema> {
      */
     migrations?: string;
   };
+  /**
+   * Permanent app slug used when creating an app during deployment.
+   * Use 3–32 lowercase letters or digits, separated by single hyphens.
+   * Existing linked apps keep their slug. Required; has no default.
+   */
+  slug: string;
 }
-export type ResolvedTailorKitConfig = z.output<typeof tailorkitConfigSchema>;
 
-export { tailorkitConfigSchema };
+export type ResolvedPatchsmithConfig = v.InferOutput<
+  typeof patchsmithConfigSchema
+>;
 
-export const defineConfig = (config: TailorKitConfig): TailorKitConfig =>
+export { patchsmithConfigSchema };
+
+export const defineConfig = (config: PatchsmithConfig): PatchsmithConfig =>
   config;
-export const defineTailorKitConfig = defineConfig;
+
+export const definePatchsmithConfig = defineConfig;

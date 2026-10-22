@@ -2,19 +2,20 @@ import { asyncIteratorToUnproxiedDataStream } from "@orpc/client";
 import { openapi } from "@orpc/openapi";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { eventIterator, os } from "@orpc/server";
-import { agentChunkSchema } from "@tailorkit/client-platform/agent";
-import type { AgentChunk } from "@tailorkit/client-platform/agent";
+import { agentChunkSchema } from "@patchsmith/client-platform/agent";
+import type { AgentChunk } from "@patchsmith/client-platform/agent";
 import { readUIMessageStream } from "ai";
 import { describe, expect, it } from "vite-plus/test";
 import { z } from "zod";
 
-import { createTailorKitClient } from "./client";
-import { createTailorKitServer } from "./handler";
+import { createPatchsmithClient } from "./client";
+import { createPatchsmithServer } from "./handler";
 
 const require = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -25,8 +26,10 @@ const messages = [
     role: "user" as const,
   },
 ];
-const hostUrl = "http://localhost:3000/api/tailorkit";
+
+const hostUrl = "http://localhost:3000/api/patchsmith";
 const appId = "a3e7568a-c4f7-4ac0-8c35-71ff0f4cd002";
+
 const events: AgentChunk[] = [
   {
     data: {
@@ -60,9 +63,15 @@ const events: AgentChunk[] = [
 ];
 
 const setup = (
-  options: { events?: AgentChunk[]; status?: number; scopeName?: string } = {}
+  options: {
+    events?: AgentChunk[];
+    instructions?: string;
+    status?: number;
+    scopeName?: string;
+  } = {}
 ) => {
   const requests: Request[] = [];
+
   const platform = new OpenAPIHandler({
     chat: os
       .meta(openapi({ method: "POST", path: "/app-agent/chat" }))
@@ -74,13 +83,16 @@ const setup = (
       .meta(openapi({ method: "POST", path: "/app-agent/apps" }))
       .handler(() => ({ createdByAgent: true, id: appId })),
   });
-  const server = createTailorKitServer({
+
+  const server = createPatchsmithServer({
     $internal: {
       platformBaseUrl: "https://platform.test/api/platform",
       platformFetch: async (input, init) => {
         const request =
           input instanceof Request ? input : new Request(input, init);
+
         requests.push(request.clone());
+
         if (request.url.endsWith("/cli-auth/verify-token")) {
           return Response.json({
             scope: {
@@ -89,6 +101,7 @@ const setup = (
             },
           });
         }
+
         if (
           options.status !== undefined &&
           options.status !== null &&
@@ -97,27 +110,32 @@ const setup = (
         ) {
           return new Response("Unavailable", { status: options.status });
         }
+
         const result = await platform.handle(request, {
           prefix: "/api/platform",
         });
+
         return (
           result.response ?? new Response("Missing route", { status: 404 })
         );
       },
     },
-    baseUrl: "https://example.com/api/tailorkit",
+    agent: { instructions: options.instructions },
+    baseUrl: "https://example.com/api/patchsmith",
     components: {},
     projectKey: "host-project-key",
     scopes: { org: z.object({ tenant: z.string() }) },
   });
-  const client = createTailorKitClient({
+
+  const client = createPatchsmithClient({
     fetch: async (input, init) =>
       await server.handler(new Request(input, init), {
         authenticate: () => null,
       }),
     headers: { authorization: "Bearer cli-token" },
-    url: "https://host.test/api/tailorkit",
+    url: "https://host.test/api/patchsmith",
   });
+
   return { client, requests, server };
 };
 
@@ -127,9 +145,11 @@ describe("host agent relay", () => {
     await expect(
       client.appAgent.create({ description: null, name: "AI app" })
     ).resolves.toEqual({ createdByAgent: true, id: appId });
+
     const request = require(
       requests.find((item) => item.url.endsWith("/app-agent/apps"))
     );
+
     expect(request.headers.get("authorization")).toBe(
       "Bearer host-project-key"
     );
@@ -166,9 +186,11 @@ describe("host agent relay", () => {
       transient: true,
       type: "data-run-complete",
     };
+
     const { client, requests } = setup({ events: [complete] });
     const resume = { runId: "wrun_test", startIndex: 15, token: "signed-run" };
     const received = [];
+
     for await (const event of await client.appAgent.chat({
       appId,
       type: "resume",
@@ -177,10 +199,13 @@ describe("host agent relay", () => {
     })) {
       received.push(event);
     }
+
     expect(received).toEqual([complete]);
+
     const request = require(
       requests.find((item) => item.url.endsWith("/chat"))
     );
+
     expect(await request.json()).toMatchObject({ type: "resume", ...resume });
     expect(requests.filter((item) => item.url.endsWith("/chat"))).toHaveLength(
       1
@@ -189,6 +214,7 @@ describe("host agent relay", () => {
   it("verifies CLI auth, uses the host project key, and round trips streamed events", async () => {
     const { client, requests } = setup();
     const received = [];
+
     for await (const event of await client.appAgent.chat({
       appId,
       hostUrl,
@@ -197,17 +223,21 @@ describe("host agent relay", () => {
     })) {
       received.push(event);
     }
+
     expect(received).toEqual(events);
+
     for (const request of requests) {
       expect(request.headers.get("authorization")).toBe(
         "Bearer host-project-key"
       );
     }
+
     const chat = require(
       requests.find((request) => request.url.endsWith("/chat"))
     );
+
     expect(await chat.json()).toEqual({
-      appId,
+      app: { id: appId },
       deployToken: "cli-token",
       hostUrl,
       messages,
@@ -218,8 +248,36 @@ describe("host agent relay", () => {
     ).toHaveLength(1);
   });
 
+  it("supplies host guidance on new turns and ignores instructions in client input", async () => {
+    const { client, requests } = setup({
+      instructions: "Use the host design system.",
+    });
+
+    const turn = {
+      appId,
+      hostUrl,
+      instructions: "Replace the host guidance.",
+      messages,
+      type: "turn" as const,
+    };
+
+    for await (const _event of await client.appAgent.chat(turn)) {
+      /* consume */
+    }
+
+    const chat = require(
+      requests.find((request) => request.url.endsWith("/chat"))
+    );
+
+    expect(await chat.json()).toMatchObject({
+      instructions: "Use the host design system.",
+      messages,
+    });
+  });
+
   it("forwards a supplied local schema without fetching from the host", async () => {
     const { client, requests } = setup();
+
     const schema = {
       components: {},
       slots: {},
@@ -227,6 +285,7 @@ describe("host agent relay", () => {
       version: 1,
       views: {},
     };
+
     for await (const _ of await client.appAgent.chat({
       appId,
       hostUrl,
@@ -236,11 +295,13 @@ describe("host agent relay", () => {
     })) {
       /* consume */
     }
+
     const chat = require(
       requests.find((request) => request.url.endsWith("/chat"))
     );
+
     expect(await chat.json()).toEqual({
-      appId,
+      app: { id: appId },
       deployToken: "cli-token",
       hostUrl,
       messages,
@@ -254,19 +315,23 @@ describe("host agent relay", () => {
 
   it("assembles AI SDK messages across the real oRPC and OpenAPI transports", async () => {
     const { client } = setup();
+
     const chunks = await client.appAgent.chat({
       appId,
       hostUrl,
       messages,
       type: "turn",
     });
+
     let latest;
+
     for await (const message of readUIMessageStream({
       stream: asyncIteratorToUnproxiedDataStream(chunks),
       terminateOnError: true,
     })) {
       latest = message;
     }
+
     expect(latest?.parts).toContainEqual(
       expect.objectContaining({ text: "Building 🛠 your app.", type: "text" })
     );
@@ -281,13 +346,15 @@ describe("host agent relay", () => {
 
   it("requires a CLI credential before contacting the platform", async () => {
     const { server, requests } = setup();
-    const client = createTailorKitClient({
+
+    const client = createPatchsmithClient({
       fetch: async (input, init) =>
         await server.handler(new Request(input, init), {
           authenticate: () => null,
         }),
-      url: "https://host.test/api/tailorkit",
+      url: "https://host.test/api/patchsmith",
     });
+
     await expect(
       client.appAgent.create({ description: null, name: "AI app" })
     ).rejects.toMatchObject({ code: "UNAUTHORIZED" });

@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 
-import { appDeploymentMetadata } from "@tailorkit/api-utils/app-auth";
+import { appDeploymentMetadata } from "@patchsmith/api-utils/app-auth";
+import { asyncFixture } from "@patchsmith/config/testing";
 import { Effect } from "effect";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
@@ -11,10 +12,12 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
 const code = "export class AppFacet {}";
+
 const deployment = {
   appId: "app",
   checksum: [
@@ -36,15 +39,16 @@ const identity = {
   installationId: "one",
   scope: { name: "org", value: { id: "tenant" } },
   subjectId: "user",
-  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
 };
 
 const setup = (contents: string | Uint8Array<ArrayBuffer> | null = code) => {
-  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-  const get = vi.fn(async () =>
-    contents === null
-      ? null
-      : { body: requireValue(new Response(contents).body) }
+  const get = vi.fn(
+    asyncFixture(() =>
+      contents === null
+        ? null
+        : { body: requireValue(new Response(contents).body) }
+    )
   );
 
   return {
@@ -70,6 +74,7 @@ it("resolves authorized metadata separately from R2 code and never follows redir
   const fetch = vi
     .spyOn(globalThis, "fetch")
     .mockResolvedValue(Response.json(deployment));
+
   const { source, get } = setup();
 
   expect(await Effect.runPromise(source.current(identity))).toEqual(deployment);
@@ -77,7 +82,7 @@ it("resolves authorized metadata separately from R2 code and never follows redir
   expect(fetch.mock.calls[0]?.[1]).toMatchObject({
     headers: {
       authorization: "Bearer private",
-      "x-tailorkit-project-id": "project",
+      "x-patchsmith-project-id": "project",
     },
     redirect: "manual",
   });
@@ -93,6 +98,7 @@ it.each([null, "tampered", `${code} extra`])(
     const awaitedResult1 = await Effect.runPromiseExit(
       setup(contents).source.code(deployment)
     );
+
     expect(awaitedResult1._tag).toBe("Failure");
   }
 );
@@ -108,6 +114,7 @@ it.each([302, 403, 404, 503])(
     const awaitedResult2 = await Effect.runPromiseExit(
       source.current(identity)
     );
+
     expect(awaitedResult2._tag).toBe("Failure");
     expect(get).not.toHaveBeenCalled();
   }
@@ -118,69 +125,83 @@ it("serves KV hits to old clients and fills misses from the platform", async () 
     string,
     ReturnType<typeof appDeploymentMetadata.parse>
   >();
-  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-  const put = vi.fn(async (key: string, value: string) => {
-    values.set(key, appDeploymentMetadata.parse(JSON.parse(value)));
-  });
+
+  const put = vi.fn(
+    asyncFixture((key: string, value: string) => {
+      values.set(key, appDeploymentMetadata.parse(JSON.parse(value)));
+    })
+  );
+
   const fetch = vi
     .spyOn(globalThis, "fetch")
     .mockResolvedValueOnce(Response.json({ ...deployment, deploymentId: "v2" }))
     .mockResolvedValueOnce(
       Response.json({ ...deployment, deploymentId: "v2" })
     );
+
   const source = deploymentSource({
     BUNDLES: { get: vi.fn() },
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
     DEPLOYMENTS: {
-      // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-      get: async (key: string) => values.get(key) ?? null,
+      get: asyncFixture((key: string) => values.get(key) ?? null),
       put,
     },
 
     PLATFORM_URL: "https://platform.test",
     RUNTIME_SERVICE_TOKEN: "private",
   });
+
   const awaitedResult3 = await Effect.runPromise(source.current(identity));
   expect(awaitedResult3.deploymentId).toBe("v2");
   expect(put).toHaveBeenCalledOnce();
+
   const awaitedResult4 = await Effect.runPromise(
     source.current(identity, "v2")
   );
+
   expect(awaitedResult4.deploymentId).toBe("v2");
   expect(fetch).toHaveBeenCalledOnce();
   values.set(JSON.stringify([identity.projectId, identity.appId]), deployment);
+
   // A stale replica must not cause a downgrade after v2 migrations ran.
   const awaitedResult5 = await Effect.runPromise(
     source.current(identity, "v2")
   );
+
   expect(awaitedResult5.deploymentId).toBe("v2");
   expect(fetch).toHaveBeenCalledTimes(2);
 });
 
 it("verifies compressed server bytes before inflating and caches the decoded code", async () => {
   const bytes = gzipSync(code);
+
   const metadata = {
     ...deployment,
     checksum: createHash("sha256").update(bytes).digest("hex"),
     contentEncoding: "gzip" as const,
     contentLength: bytes.byteLength,
   };
+
   const { source, get } = setup(bytes);
   expect(await Effect.runPromise(source.code(metadata))).toBe(code);
   expect(await Effect.runPromise(source.code(metadata))).toBe(code);
   expect(get).toHaveBeenCalledOnce();
   const tampered = { ...metadata, checksum: "a".repeat(64) };
+
   const awaitedResult6 = await Effect.runPromiseExit(
     setup(bytes).source.code(tampered)
   );
+
   expect(awaitedResult6._tag).toBe("Failure");
+
   const awaitedResult7 = await Effect.runPromiseExit(
     setup(bytes).source.code({
       ...metadata,
       contentLength: bytes.byteLength + 1,
     })
   );
+
   expect(awaitedResult7._tag).toBe("Failure");
 });
 
@@ -193,9 +214,11 @@ it.each([Buffer.from("not gzip"), gzipSync("x".repeat(3 * 1024 * 1024 + 1))])(
       contentEncoding: "gzip" as const,
       contentLength: bytes.byteLength,
     };
+
     const awaitedResult8 = await Effect.runPromiseExit(
       setup(bytes).source.code(metadata)
     );
+
     expect(awaitedResult8._tag).toBe("Failure");
   }
 );
@@ -204,8 +227,10 @@ it.each(["utf-8", "gzip"] as const)(
   "loads %s server code exactly at the 3 MiB limit",
   async (encoding) => {
     const content = "x".repeat(3 * 1024 * 1024);
+
     const bytes =
       encoding === "gzip" ? gzipSync(content) : Buffer.from(content);
+
     const metadata =
       encoding === "gzip"
         ? {
@@ -219,6 +244,7 @@ it.each(["utf-8", "gzip"] as const)(
             checksum: createHash("sha256").update(bytes).digest("hex"),
             contentLength: bytes.byteLength,
           };
+
     expect(await Effect.runPromise(setup(bytes).source.code(metadata))).toBe(
       content
     );

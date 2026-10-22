@@ -7,7 +7,8 @@ import { expect, it } from "vite-plus/test";
 import { appDatabasePaths } from "./database-paths";
 
 it("uses src/db regardless of files at old locations and honors custom migrations", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-db-paths-"));
+  const root = await mkdtemp(path.join(tmpdir(), "patchsmith-db-paths-"));
+
   try {
     expect(appDatabasePaths(root)).toEqual({
       migrations: path.join(root, "src/db/migrations"),

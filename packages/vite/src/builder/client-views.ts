@@ -1,9 +1,9 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
-import { z } from "zod";
+import * as v from "valibot";
 
-import { tailorkitUploadManifestSchema } from "./upload-manifest";
+import { patchsmithUploadManifestSchema } from "./upload-manifest";
 
 // Inspect the developer's bundled client in a short-lived build process, never on the platform.
 const inspectClient = `
@@ -20,7 +20,7 @@ const views = Object.entries(client.slots).flatMap(([slot, definitions]) =>
     return [{ slot, path, ...(resolver !== undefined ? { instances: true } : {}) }];
   })
 );
-process.stdout.write("\\nTAILORKIT_VIEWS=" + JSON.stringify({ views, instanceResolvers }));
+process.stdout.write("\\nPATCHSMITH_VIEWS=" + JSON.stringify({ views, instanceResolvers }));
 process.exit(0);
 `;
 
@@ -32,21 +32,25 @@ export const readClientManifest = async (filename: string) => {
       ["--input-type=module", "--eval", inspectClient, filename],
       { maxBuffer: 2 * 1024 * 1024, timeout: 10_000 }
     );
+
     const result = stdout.slice(
-      stdout.lastIndexOf("\nTAILORKIT_VIEWS=") + "\nTAILORKIT_VIEWS=".length
+      stdout.lastIndexOf("\nPATCHSMITH_VIEWS=") + "\nPATCHSMITH_VIEWS=".length
     );
-    const manifest = z
-      .object({
-        instanceResolvers: z.array(
-          z.object({
-            path: z.string(),
-            resolver: z.string().regex(/^i[0-9a-f]{24}$/u),
-            slot: z.string(),
+
+    const manifest = v.parse(
+      v.object({
+        instanceResolvers: v.array(
+          v.object({
+            path: v.string(),
+            resolver: v.pipe(v.string(), v.regex(/^i[0-9a-f]{24}$/u)),
+            slot: v.string(),
           })
         ),
-        views: tailorkitUploadManifestSchema.shape.views.unwrap(),
-      })
-      .parse(JSON.parse(result));
+        views: v.unwrap(patchsmithUploadManifestSchema.entries.views),
+      }),
+      JSON.parse(result)
+    );
+
     return manifest;
   } catch (error) {
     throw new Error(
@@ -58,5 +62,6 @@ export const readClientManifest = async (filename: string) => {
 
 export const readClientViews = async (filename: string) => {
   const awaitedResult1 = await readClientManifest(filename);
+
   return awaitedResult1.views.filter((view) => !view.disabled);
 };

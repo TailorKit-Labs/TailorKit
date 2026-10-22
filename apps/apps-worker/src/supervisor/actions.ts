@@ -1,11 +1,12 @@
-import type { ToolBridge } from "@tailorkit/app/client";
-import { AppError } from "@tailorkit/app/server";
+import type { ToolBridge } from "@patchsmith/app/client";
+import { AppError } from "@patchsmith/app/server";
 import { RpcTarget } from "cloudflare:workers";
 import { z } from "zod";
 
 /** Tracks active actions only for cancellation and token expiry. */
 export const createActionLeases = () => {
   const active = new Set<AbortController>();
+
   return {
     closeAll: () => {
       for (const controller of active) {
@@ -14,18 +15,25 @@ export const createActionLeases = () => {
     },
     open: (identity: { expiresAt: number }, parent?: AbortSignal) => {
       const deadline = identity.expiresAt;
+
       if (deadline <= Date.now()) {
         throw new AppError("UNAUTHORIZED", "App token expired");
       }
+
       const controller = new AbortController();
+
       const cancel = () => {
         controller.abort(new AppError("UNAVAILABLE", "Action cancelled"));
       };
+
       const timer = setTimeout(cancel, deadline - Date.now());
+
       const signal = parent
         ? AbortSignal.any([controller.signal, parent])
         : controller.signal;
+
       active.add(controller);
+
       return {
         close: () => {
           clearTimeout(timer);
@@ -52,6 +60,7 @@ const privateIPv4 = ([first = 0, second = 0]: number[]) =>
 /** HTTPS Internet access only; validate every redirect rather than forwarding it implicitly. */
 export const actionDestination = (url: URL) => {
   const host = url.hostname.toLowerCase();
+
   const octets = /^\d+\.\d+\.\d+\.\d+$/u.test(host)
     ? host.split(".").map(Number)
     : undefined;
@@ -93,6 +102,7 @@ export class ActionCapability extends RpcTarget {
     input: Parameters<ToolBridge["client"]>[1]
   ): ReturnType<ToolBridge["client"]> {
     const credential = this.appSession;
+
     if (
       !credential ||
       this.lease.signal.aborted ||
@@ -100,13 +110,16 @@ export class ActionCapability extends RpcTarget {
     ) {
       throw new AppError("UNAVAILABLE", "Action has ended");
     }
+
     if (
       !/^[a-zA-Z][a-zA-Z0-9_]*(?:\.[a-zA-Z][a-zA-Z0-9_]*)*$/u.test(path) ||
       path.length > 512
     ) {
       throw new AppError("BAD_REQUEST", "Invalid tool path");
     }
+
     actionDestination(new URL(credential.url));
+
     const response = await fetch(credential.url, {
       body: JSON.stringify({ input, path, requestId: crypto.randomUUID() }),
       headers: {
@@ -117,12 +130,14 @@ export class ActionCapability extends RpcTarget {
       redirect: "manual",
       signal: this.lease.signal,
     });
+
     if (!response.ok) {
       throw new AppError(
         response.status === 401 ? "UNAUTHORIZED" : "UNAVAILABLE",
         "Tool call failed"
       );
     }
+
     return z
       .object({ output: z.unknown().optional() })
       .parse(await response.json()).output;
@@ -139,6 +154,7 @@ export class ActionCapability extends RpcTarget {
   ): Promise<Response> {
     const controller = new AbortController();
     const reader = cancellation.getReader();
+
     const cleanup = () => {
       this.lease.signal.removeEventListener("abort", cleanup);
       void (async () => {
@@ -149,21 +165,26 @@ export class ActionCapability extends RpcTarget {
         }
       })();
     };
+
     // Keep per-request cancellation alive while the returned body is being read.
     // The action lease bounds all readers, including responses abandoned by app code.
     this.lease.signal.addEventListener("abort", cleanup, { once: true });
+
     const cancel = () => {
       controller.abort();
       cleanup();
     };
+
     void (async () => {
       try {
         await reader.read();
       } catch {
         /* Either settlement cancels the action. */
       }
+
       cancel();
     })();
+
     try {
       return await this.#fetch(request, controller.signal);
     } catch (error) {
@@ -177,10 +198,13 @@ export class ActionCapability extends RpcTarget {
 
     for (let redirect = 0; redirect <= 4; redirect += 1) {
       actionDestination(new URL(next.url));
+
       if (this.lease.signal.aborted || this.lease.deadline <= Date.now()) {
         throw new AppError("UNAVAILABLE", "Action has ended");
       }
+
       const backup = next.clone();
+
       // oxlint-disable-next-line no-await-in-loop -- Each retry depends on the result of the previous attempt.
       const response = await fetch(next, {
         signal: AbortSignal.any([
@@ -191,6 +215,7 @@ export class ActionCapability extends RpcTarget {
       });
 
       const location = response.headers.get("location");
+
       if (
         ![301, 302, 303, 307, 308].includes(response.status) ||
         !(location !== undefined && location !== null && location !== "")
@@ -201,8 +226,10 @@ export class ActionCapability extends RpcTarget {
       if (request.redirect === "manual") {
         return response;
       }
+
       // oxlint-disable-next-line no-await-in-loop -- Each retry depends on the result of the previous attempt.
       await response.body?.cancel();
+
       if (request.redirect === "error") {
         throw new TypeError("Fetch encountered a redirect");
       }
@@ -219,6 +246,7 @@ export class ActionCapability extends RpcTarget {
         (response.status === 303 && !["GET", "HEAD"].includes(backup.method)) ||
         ((response.status === 301 || response.status === 302) &&
           backup.method === "POST");
+
       if (get) {
         headers.delete("content-type");
         headers.delete("content-length");

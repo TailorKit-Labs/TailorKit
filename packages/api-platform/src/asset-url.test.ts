@@ -9,13 +9,14 @@ const env = vi.hoisted(() => ({
   NODE_ENV: "production" as "development" | "production",
   PORT: undefined as number | undefined,
 }));
+
 vi.mock("../../api-utils/src/env.ts", () => ({ env }));
 
-const projectId = "22222222-2222-4222-8222-222222222222";
+const projectShortId = "proj00000001";
 const appId = "33333333-3333-4333-8333-333333333333";
 const deploymentId = "44444444-4444-4444-8444-444444444444";
-const appPublicId = "app000000001";
-const deploymentPublicId = "deploy000001";
+const appShortId = "app000000001";
+const deploymentShortId = "deploy000001";
 
 describe("hosted asset URLs", () => {
   afterEach(() => {
@@ -23,7 +24,7 @@ describe("hosted asset URLs", () => {
     env.NODE_ENV = "production";
   });
 
-  it("uses stable team, project, app and deployment identifiers", () => {
+  it("uses stable project, app and deployment short IDs", () => {
     const app = {
       currentDeployment: {
         appId,
@@ -33,47 +34,46 @@ describe("hosted asset URLs", () => {
         id: deploymentId,
         logoDarkPath: `logos/${"a".repeat(64)}.svg`,
         logoLightPath: `logos/${"b".repeat(64)}.webp`,
-        publicId: deploymentPublicId,
         publishedAt: new Date(),
+        shortId: deploymentShortId,
         status: "published" as const,
         updatedAt: new Date(),
       },
       id: appId,
-      publicId: appPublicId,
+      shortId: appShortId,
     };
-    expect(withAppAssetUrl(app, "abc123def45678", projectId).clientPath).toBe(
-      `https://abc123def45678.tailorkit.app/p/${projectId}/a/${appPublicId}/d/${deploymentPublicId}/client/client.js`
+
+    expect(withAppAssetUrl(app, projectShortId).clientPath).toBe(
+      `https://${projectShortId}.tailorkit.app/a/${appShortId}/d/${deploymentShortId}/client/client.js`
     );
-    expect(withAppAssetUrl(app, "abc123def45678", projectId).logoPaths).toEqual(
-      {
-        dark: `https://abc123def45678.tailorkit.app/p/${projectId}/a/${appPublicId}/d/${deploymentPublicId}/logos/${"a".repeat(64)}.svg`,
-        light: `https://abc123def45678.tailorkit.app/p/${projectId}/a/${appPublicId}/d/${deploymentPublicId}/logos/${"b".repeat(64)}.webp`,
-      }
-    );
+    expect(withAppAssetUrl(app, projectShortId).logoPaths).toEqual({
+      dark: `https://${projectShortId}.tailorkit.app/a/${appShortId}/d/${deploymentShortId}/logos/${"a".repeat(64)}.svg`,
+      light: `https://${projectShortId}.tailorkit.app/a/${appShortId}/d/${deploymentShortId}/logos/${"b".repeat(64)}.webp`,
+    });
   });
 
   it("uses deployment URLs for content-addressed logos without duplicating stored files", () => {
     const logoHash = "b".repeat(64);
+
     const app = {
       currentDeployment: {
         clientEntryFileId: "55555555-5555-4555-8555-555555555555",
         logoDarkPath: `logos/${logoHash}.svg`,
         logoLightPath: null,
-        publicId: deploymentPublicId,
+        shortId: deploymentShortId,
         status: "published" as const,
       },
-      publicId: appPublicId,
+      shortId: appShortId,
     };
 
-    expect(withAppAssetUrl(app, "abc123def45678", projectId).logoPaths).toEqual(
-      {
-        dark: `https://abc123def45678.tailorkit.app/p/${projectId}/a/${appPublicId}/d/${deploymentPublicId}/logos/${logoHash}.svg`,
-      }
-    );
+    expect(withAppAssetUrl(app, projectShortId).logoPaths).toEqual({
+      dark: `https://${projectShortId}.tailorkit.app/a/${appShortId}/d/${deploymentShortId}/logos/${logoHash}.svg`,
+    });
   });
 
   it("uses the same-origin Node route in local development", () => {
     env.NODE_ENV = "development";
+
     const app = {
       currentDeployment: {
         appId,
@@ -81,20 +81,22 @@ describe("hosted asset URLs", () => {
         createdAt: new Date(),
         errorMessage: null,
         id: deploymentId,
-        publicId: deploymentPublicId,
         publishedAt: new Date(),
+        shortId: deploymentShortId,
         status: "published" as const,
         updatedAt: new Date(),
       },
-      publicId: appPublicId,
+      shortId: appShortId,
     };
-    expect(withAppAssetUrl(app, "abc123def45678", projectId).clientPath).toBe(
-      `http://localhost:3000/api/assets/t/abc123def45678/p/${projectId}/a/${appPublicId}/d/${deploymentPublicId}/client/client.js`
+
+    expect(withAppAssetUrl(app, projectShortId).clientPath).toBe(
+      `http://localhost:3000/api/assets/p/${projectShortId}/a/${appShortId}/d/${deploymentShortId}/client/client.js`
     );
   });
 
   it("supports the Node asset route in self-hosted production", () => {
-    env.ASSET_BASE_URL = "https://tailorkit.example.com/api/assets/";
+    env.ASSET_BASE_URL = "https://patchsmith.example.com/api/assets/";
+
     const app = {
       currentDeployment: {
         appId,
@@ -102,15 +104,16 @@ describe("hosted asset URLs", () => {
         createdAt: new Date(),
         errorMessage: null,
         id: deploymentId,
-        publicId: deploymentPublicId,
         publishedAt: new Date(),
+        shortId: deploymentShortId,
         status: "published" as const,
         updatedAt: new Date(),
       },
-      publicId: appPublicId,
+      shortId: appShortId,
     };
-    expect(withAppAssetUrl(app, "abc123def45678", projectId).clientPath).toBe(
-      `https://tailorkit.example.com/api/assets/t/abc123def45678/p/${projectId}/a/${appPublicId}/d/${deploymentPublicId}/client/client.js`
+
+    expect(withAppAssetUrl(app, projectShortId).clientPath).toBe(
+      `https://patchsmith.example.com/api/assets/p/${projectShortId}/a/${appShortId}/d/${deploymentShortId}/client/client.js`
     );
   });
 
@@ -121,16 +124,16 @@ describe("hosted asset URLs", () => {
       createdAt: new Date(),
       errorMessage: null,
       id: deploymentId,
-      publicId: deploymentPublicId,
       publishedAt: null,
+      shortId: deploymentShortId,
       status: "uploading" as const,
       updatedAt: new Date(),
     };
+
     expect(
       withAppAssetUrl(
-        { currentDeployment: deployment, publicId: appPublicId },
-        "abc123def45678",
-        projectId
+        { currentDeployment: deployment, shortId: appShortId },
+        projectShortId
       ).clientPath
     ).toBeUndefined();
   });

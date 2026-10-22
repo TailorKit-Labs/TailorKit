@@ -11,12 +11,14 @@ export const readElementProps = (element: Element): RemoteProps => {
     ["textcolor", "textColor"],
   ]);
 
-  const callbackAttribute = "data-tailorkit-callbacks";
-  const propsAttribute = "data-tailorkit-props";
+  const callbackAttribute = "data-patchsmith-callbacks";
+  const propsAttribute = "data-patchsmith-props";
   const typedProps = element.getAttribute(propsAttribute);
+
   if (typedProps !== null) {
     try {
       const parsed = v.safeParse(RemotePropsSchema, JSON.parse(typedProps));
+
       if (parsed.success) {
         return parsed.output;
       }
@@ -26,12 +28,16 @@ export const readElementProps = (element: Element): RemoteProps => {
   }
 
   const props: RemoteProps = {};
+
   for (const attribute of element.attributes) {
     const name = attribute.name.toLowerCase();
+
     if (name === callbackAttribute || name === propsAttribute) {
       continue;
     }
+
     props[canonicalPropNames.get(name) ?? attribute.name] = attribute.value;
   }
+
   return props;
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@tailorkit/ui/button";
+import { Button } from "@patchsmith/ui/button";
 import {
   Card,
   CardFooter,
@@ -9,20 +9,20 @@ import {
   CardHeader,
   CardPanel,
   CardTitle,
-} from "@tailorkit/ui/card";
+} from "@patchsmith/ui/card";
 import {
   Field,
   FieldDescription,
   FieldError,
   FieldLabel,
-} from "@tailorkit/ui/field";
-import { Logo } from "@tailorkit/ui/logo";
+} from "@patchsmith/ui/field";
+import { Logo } from "@patchsmith/ui/logo";
 import {
   OTPField,
   OTPFieldInput,
   OTPFieldSeparator,
-} from "@tailorkit/ui/otp-field";
-import { toastManager } from "@tailorkit/ui/toast";
+} from "@patchsmith/ui/otp-field";
+import { toastManager } from "@patchsmith/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useNavigate,
@@ -60,8 +60,10 @@ const RouteComponent = () => {
           if (timerRef.current) {
             clearInterval(timerRef.current);
           }
+
           return 0;
         }
+
         return prev - 1;
       });
     }, 1000);
@@ -69,19 +71,24 @@ const RouteComponent = () => {
 
   const sendOtp = useCallback(async () => {
     setSending(true);
+
     const result = await authClient.emailOtp.sendVerificationOtp({
       email,
       type: "sign-in",
     });
+
     setSending(false);
+
     if (result.error) {
       toastManager.add({
         description: result.error.message ?? "Failed to send code",
         title: "Error",
         type: "error",
       });
+
       return;
     }
+
     startResendTimer();
   }, [email, startResendTimer]);
 
@@ -90,6 +97,7 @@ const RouteComponent = () => {
       sentRef.current = true;
       void sendOtp();
     }
+
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -104,6 +112,7 @@ const RouteComponent = () => {
     setInvalid(false);
     const result = await authClient.signIn.emailOtp({ email, otp: code });
     setVerifying(false);
+
     if (result.error) {
       setInvalid(true);
       toastManager.add({
@@ -112,8 +121,10 @@ const RouteComponent = () => {
         type: "error",
       });
       setOtp("");
+
       return;
     }
+
     toastManager.add({
       description: "Your email has been verified.",
       title: "Email verified",
@@ -123,6 +134,7 @@ const RouteComponent = () => {
     queryClient.clear();
 
     const returnPath = getSameOriginPath(return_to, window.location.origin);
+
     if (returnPath !== undefined && returnPath !== null && returnPath !== "") {
       window.location.href = returnPath;
     } else {
@@ -144,10 +156,10 @@ const RouteComponent = () => {
       <div className="flex w-full max-w-sm flex-col items-center gap-4">
         <a
           className="flex items-center gap-2"
-          href="https://tailorkit.dev/home"
+          href="https://patchsmith.io/home"
         >
           <Logo className="size-6" />
-          <span className="text-lg font-semibold">TailorKit</span>
+          <span className="text-lg font-semibold">Patchsmith</span>
         </a>
         <CardFrame className="w-full">
           <Card>

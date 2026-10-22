@@ -1,4 +1,4 @@
-import { defineServer, fn } from "@tailorkit/app/server";
+import { defineRouter, fn } from "@patchsmith/app/server";
 import { Effect } from "effect";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
@@ -7,9 +7,11 @@ import { resultValue } from "./errors";
 import { createExecution } from "./execution";
 
 const nativeFetch = globalThis.fetch;
+
 afterEach(() => {
   globalThis.fetch = nativeFetch;
 });
+
 const identity = {
   appId: "a",
   deploymentId: "d",
@@ -18,8 +20,9 @@ const identity = {
   projectId: "p",
   scope: { name: "org", value: { id: "tenant" } },
   subjectId: "u",
-  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
 };
+
 const endpoint = "https://example.com";
 
 const callsImplementation = (value: string) => ({
@@ -33,58 +36,74 @@ const setup = () => {
   installFetchGuard();
   // Like an SDK: capture fetch once, then use it from nested async helpers.
   const captured = globalThis.fetch;
+
   const read = fn.query.handler(() => {
     void fetch(endpoint);
+
     return null;
   });
+
   const write = fn.mutation.handler(() => {
     void fetch(endpoint);
+
     return null;
   });
+
   let detached: Promise<Response>;
   let release!: () => void;
-  const app = defineServer({
-    ended: fn.action.handler(() => {
-      detached = (async () => {
-        const {
-          promise: pendingPromise,
-          resolve,
-          reject: rejectPending,
-        } = Promise.withResolvers<ReturnType<() => void>>();
-        try {
-          release = resolve;
-        } catch (error) {
-          rejectPending(error);
-        }
-        await pendingPromise;
-      })().then(async () => await captured(endpoint));
-      detached.catch(() => {});
-      return "done";
-    }),
-    nested: fn.action
-      .functions({ read, write })
-      .handler(async ({ queries, mutations }) => {
-        await expect(queries.read()).rejects.toThrow(
-          "only available inside actions"
-        );
-        await expect(mutations.write()).rejects.toThrow(
-          "only available inside actions"
-        );
+
+  const app = {
+    functions: defineRouter({
+      ended: fn.action.handler(() => {
+        detached = (async () => {
+          const {
+            promise: pendingPromise,
+            resolve,
+            reject: rejectPending,
+          } = Promise.withResolvers<ReturnType<() => void>>();
+
+          try {
+            release = resolve;
+          } catch (error) {
+            rejectPending(error);
+          }
+
+          await pendingPromise;
+        })().then(async () => await captured(endpoint));
+        detached.catch(() => {});
+
+        return "done";
+      }),
+      nested: fn.action
+        .functions({ read, write })
+        .handler(async ({ queries, mutations }) => {
+          await expect(queries.read()).rejects.toThrow(
+            "only available inside actions"
+          );
+          await expect(mutations.write()).rejects.toThrow(
+            "only available inside actions"
+          );
+          const response = await captured(endpoint);
+
+          return await response.text();
+        }),
+      read,
+      run: fn.action.handler(async () => {
         const response = await captured(endpoint);
+
         return await response.text();
       }),
-    read,
-    run: fn.action.handler(async () => {
-      const response = await captured(endpoint);
-      return await response.text();
+      write,
     }),
-    write,
-  });
+  };
+
   const execution = createExecution(app, {
     execute: () => ({ changes: 0, columns: [], rows: [] }),
     transaction: (run) => run(),
   });
+
   const calls = callsImplementation;
+
   return {
     calls,
     detached: async () => await detached,
@@ -109,6 +128,7 @@ it("guards queries, mutations and missing contexts, including nested calls", asy
       identity
     )
   ).toThrow("only available inside actions");
+
   const result = await Effect.runPromise(
     execution.action(
       { name: "nested" },
@@ -117,12 +137,14 @@ it("guards queries, mutations and missing contexts, including nested calls", asy
       new AbortController().signal
     )
   );
+
   expect(result.result).toEqual({ ok: true, value: "nested" });
   expect(result).toMatchObject({ committed: false, tables: [] });
 });
 
 it("preserves concurrent action contexts and SDK-captured fetch", async () => {
   const { execution, calls } = setup();
+
   const results = await Promise.all(
     Array.from(
       { length: 8 },
@@ -137,6 +159,7 @@ it("preserves concurrent action contexts and SDK-captured fetch", async () => {
         )
     )
   );
+
   expect(results.map((result) => resultValue(result.result))).toEqual(
     Array.from({ length: 8 }, (_, i) => String(i))
   );

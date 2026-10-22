@@ -7,13 +7,14 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { gzip } from "node:zlib";
 
-import type { TailorKitUploadManifest } from "@tailorkit/vite/builder";
-import type { LoadedTailorKitConfig } from "@tailorkit/vite/config/loader";
-import { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
+import type { PatchsmithUploadManifest } from "@patchsmith/vite/builder";
+import type { LoadedPatchsmithConfig } from "@patchsmith/vite/config/loader";
+import { loadPatchsmithConfig } from "@patchsmith/vite/config/loader";
+import * as v from "valibot";
 import { z } from "zod";
 
 import { getAgentAuth } from "./agent-auth";
-import { readAppName, writeAppIdToConfig } from "./app-link";
+import { writeAppIdToConfig } from "./app-link";
 import { getDeployToken, NotLoggedInError, runWhoami } from "./auth";
 import { buildProject } from "./build";
 import { createCliClient } from "./client";
@@ -75,10 +76,12 @@ const assetUploadSchema = z.object({
   headers: z.record(z.string(), z.string()).optional(),
   uploadUrl: z.string(),
 });
+
 const logoUploadSchema = z.object({
   headers: z.record(z.string(), z.string()).optional(),
   uploadUrl: z.string().optional(),
 });
+
 const deploymentCreateSchema = z.object({
   assets: z.array(assetUploadSchema),
   deployment: z.object({ id: z.string() }),
@@ -90,11 +93,18 @@ const deploymentCreateSchema = z.object({
     .optional(),
   server: assetUploadSchema.optional(),
 });
+
 const deploymentPublishSchema = z.object({
   id: z.string(),
   status: z.string().optional(),
 });
+
 const appCreateSchema = z.object({ id: z.string() });
+
+const appDetailsSchema = z.object({
+  description: z.string().nullable(),
+  name: z.string(),
+});
 
 export interface DeployResult {
   appId: string;
@@ -113,6 +123,7 @@ interface UploadedFileSummary {
 
 const maxDeploymentBytes = 3 * 1024 * 1024;
 const gzipAsync = promisify(gzip);
+
 const logoContentTypeByExtension = new Map<
   string,
   "image/png" | "image/svg+xml" | "image/webp"
@@ -146,11 +157,14 @@ const getErrorMessage = (cause: unknown): string | undefined => {
   if (cause instanceof Error) {
     return cause.message;
   }
+
   if (isStringValue(cause)) {
     return cause;
   }
+
   if (isObjectValue(cause) && "message" in cause) {
     const { message } = cause;
+
     return isStringValue(message) ? message : undefined;
   }
 
@@ -162,10 +176,11 @@ const isNotFoundError = (cause: unknown): boolean =>
 
 const readUploadManifest = async (
   outDir: string,
-  schema: z.ZodType<TailorKitUploadManifest>
-): Promise<TailorKitUploadManifest> => {
-  const manifestPath = path.join(outDir, "tailorkit-upload.json");
-  return schema.parse(JSON.parse(await readFile(manifestPath, "utf-8")));
+  schema: v.GenericSchema<unknown, PatchsmithUploadManifest>
+): Promise<PatchsmithUploadManifest> => {
+  const manifestPath = path.join(outDir, "patchsmith-upload.json");
+
+  return v.parse(schema, JSON.parse(await readFile(manifestPath, "utf-8")));
 };
 
 const sha256Hex = (content: Buffer): string =>
@@ -191,6 +206,7 @@ const uploadAsset = async (
   }
 
   const headers = new Headers(asset.headers);
+
   if (!headers.has("content-type")) {
     headers.set("content-type", "application/javascript");
   }
@@ -215,6 +231,7 @@ const uploadAsset = async (
 const resolveTsconfig = (root: string): string | undefined => {
   for (const filename of ["tsconfig.json", "jsconfig.json"]) {
     const filepath = path.join(root, filename);
+
     if (existsSync(filepath)) {
       return filepath;
     }
@@ -224,9 +241,10 @@ const resolveTsconfig = (root: string): string | undefined => {
 };
 
 const typecheckAppEntries = async (
-  loaded: LoadedTailorKitConfig
+  loaded: LoadedPatchsmithConfig
 ): Promise<TypecheckFailure | undefined> => {
   const baseTsconfig = resolveTsconfig(loaded.root);
+
   if (
     !(
       baseTsconfig !== undefined &&
@@ -236,8 +254,10 @@ const typecheckAppEntries = async (
   ) {
     return undefined;
   }
+
   const requireFromApp = createRequire(path.join(loaded.root, "package.json"));
   let compiler: string;
+
   try {
     compiler = path.join(
       path.dirname(requireFromApp.resolve("typescript/package.json")),
@@ -246,23 +266,26 @@ const typecheckAppEntries = async (
   } catch {
     return undefined;
   }
-  const { getClientSourceFiles } = await import("@tailorkit/vite/builder");
+
+  const { getClientSourceFiles, discoverFunctionFiles } =
+    await import("@patchsmith/vite/builder");
+
   const clientFiles = await getClientSourceFiles(loaded.root);
+
+  const functionFiles = loaded.config.server
+    ? await discoverFunctionFiles(loaded.root)
+    : [];
+
   const entryFiles = [
     ...clientFiles,
-    ...(loaded.config.server
-      ? [
-          path.resolve(
-            loaded.root,
-            loaded.config.server.entry ?? "src/server.ts"
-          ),
-        ]
-      : []),
+    ...functionFiles.map(({ filename }) => filename),
   ];
-  // Check both application entry points with the project compiler options.
+
+  // Check UI entries and every discovered function module with the project compiler options.
   const temporary = await mkdtemp(
-    path.join(loaded.root, ".tailorkit-typecheck-")
+    path.join(loaded.root, ".patchsmith-typecheck-")
   );
+
   try {
     const config = path.join(temporary, "tsconfig.json");
     await writeFile(
@@ -289,7 +312,9 @@ const typecheckAppEntries = async (
         stdout: z.string().optional(),
       })
       .safeParse(error);
+
     const failure = parsed.success ? parsed.data : {};
+
     return {
       command: `tsc --noEmit --project ${JSON.stringify(path.relative(loaded.root, baseTsconfig))} --pretty false (app entries: ${entryFiles.map((file) => JSON.stringify(path.relative(loaded.root, file))).join(", ")})`,
       exitCode: isNumberValue(failure.code) ? failure.code : null,
@@ -310,7 +335,7 @@ const typecheckAppEntries = async (
 export const runDeploy = async (
   options: DeployOptions
 ): Promise<DeployResult> => {
-  const loaded = await loadTailorKitConfig(options.configPath, options.cwd);
+  const loaded = await loadPatchsmithConfig(options.configPath, options.cwd);
   const agent = getAgentAuth();
   let appId = options.appId ?? loaded.config.appId ?? agent?.appId;
   let createdApp = false;
@@ -320,9 +345,11 @@ export const runDeploy = async (
       if (error instanceof NotLoggedInError && options.onLoginRequired) {
         return await options.onLoginRequired();
       }
+
       throw error;
     }
   );
+
   const storedAuth = await getDeployToken(auth.hostUrl);
 
   if (
@@ -333,12 +360,24 @@ export const runDeploy = async (
     )
   ) {
     throw new Error(
-      `Not logged in for ${auth.hostUrl}. Run tailorkit login after checking host in tailorkit.config.ts.`
+      `Not logged in for ${auth.hostUrl}. Run patchsmith login after checking host in patchsmith.config.ts.`
     );
   }
 
-  const { tailorkitUploadManifestSchema } =
-    await import("@tailorkit/vite/builder");
+  const {
+    patchsmithUploadManifestSchema,
+    discoverFunctionFiles,
+    generateFunctionTypes,
+  } = await import("@patchsmith/vite/builder");
+
+  // Refresh imports before the build and compiler run concurrently, including on a fresh checkout.
+  if (loaded.config.server) {
+    await generateFunctionTypes(
+      loaded.root,
+      await discoverFunctionFiles(loaded.root)
+    );
+  }
+
   const [buildResult, typecheckResult] = await Promise.allSettled([
     buildProject({ ...options, cwd: loaded.root }),
     typecheckAppEntries(loaded),
@@ -356,6 +395,7 @@ export const runDeploy = async (
     const shouldContinue = await options.onTypecheckFailed?.(
       typecheckResult.value
     );
+
     if (!(shouldContinue === true)) {
       throw new Error(
         [
@@ -368,35 +408,49 @@ export const runDeploy = async (
   }
 
   const { outDir } = buildResult.value;
+
   const manifest = await readUploadManifest(
     outDir,
-    tailorkitUploadManifestSchema
+    patchsmithUploadManifestSchema
   );
+
   const clientAssetPath = path.join(outDir, manifest.assets.client);
   const clientAsset = await readFile(clientAssetPath);
   const clientAssetGzip = await gzipAsync(clientAsset);
+
   const serverAsset = manifest.assets.server
     ? await readFile(path.join(outDir, manifest.assets.server))
     : undefined;
+
   const serverAssetGzip = serverAsset
     ? await gzipAsync(serverAsset)
     : undefined;
-  // SAFETY: The upload manifest validator permits only dark and light logo keys, with string asset paths; Object.entries loses those validated literal keys.
-  const logoEntries =
-    /* oxlint-disable typescript/no-unsafe-type-assertion -- The upload manifest validator permits only dark and light logo keys, with string asset paths; Object.entries loses those validated literal keys. */
-    Object.entries(manifest.assets.logos ?? {}) as ["dark" | "light", string][];
-  /* oxlint-enable typescript/no-unsafe-type-assertion */
+
+  const logoEntries = Object.entries(manifest.assets.logos ?? {}).flatMap<{
+    filename: string;
+    variant: "dark" | "light";
+  }>(([variant, filename]) => {
+    if (variant === "dark" || variant === "light") {
+      return [{ filename, variant }];
+    }
+
+    return [];
+  });
+
   const logoAssets = await Promise.all(
-    logoEntries.map(async ([variant, filename]) => {
+    logoEntries.map(async ({ variant, filename }) => {
       const content = await readFile(path.join(outDir, filename));
       const extension = path.extname(filename).slice(1);
       const contentType = logoContentTypeByExtension.get(extension);
+
       if (!contentType) {
         throw new Error(`Unsupported ${variant} logo format.`);
       }
+
       return { content, contentType, filename, variant };
     })
   );
+
   if (clientAsset.byteLength > maxDeploymentBytes) {
     throw new Error(
       `Combined client assets are ${clientAsset.byteLength} bytes and cannot exceed ${maxDeploymentBytes} bytes.`
@@ -406,6 +460,7 @@ export const runDeploy = async (
   if (serverAsset && serverAsset.byteLength > maxDeploymentBytes) {
     throw new Error(`Server asset exceeds ${maxDeploymentBytes} bytes.`);
   }
+
   if (
     clientAssetGzip.byteLength > maxDeploymentBytes ||
     (serverAssetGzip && serverAssetGzip.byteLength > maxDeploymentBytes)
@@ -430,7 +485,9 @@ export const runDeploy = async (
     ) {
       throw new Error("The requested deployment app was not found.");
     }
-    const appName = await readAppName(loaded.root);
+
+    const appName = loaded.config.name;
+
     const shouldCreateApp = await options.onMissingAppId?.({
       appName,
       configPath: loaded.filepath,
@@ -445,14 +502,16 @@ export const runDeploy = async (
     const app = unwrapRpcResult(
       appCreateSchema,
       await client.apps.create({
-        description: null,
+        description: loaded.config.description ?? null,
         name: appName,
+        slug: loaded.config.slug,
       })
     );
 
     appId = app.id;
     createdApp = true;
     await writeAppIdToConfig(loaded.filepath, appId);
+
     return appId;
   };
 
@@ -501,6 +560,7 @@ export const runDeploy = async (
     );
 
   let created: DeploymentCreateResult;
+
   try {
     created = await createDeployment(appId);
   } catch (error) {
@@ -517,11 +577,13 @@ export const runDeploy = async (
       "Deployment did not return an upload URL for the client asset."
     );
   }
+
   if (serverAsset && !created.server) {
     throw new Error(
       "Deployment did not return an upload URL for the server asset."
     );
   }
+
   await Promise.all([
     ...(serverAssetGzip && created.server
       ? [uploadAsset(created.server, serverAssetGzip, "gzip")]
@@ -529,14 +591,39 @@ export const runDeploy = async (
     uploadAsset(created.assets[0], clientAssetGzip, "gzip"),
     ...logoAssets.map(async (logo) => {
       const upload = created.logos?.[logo.variant];
+
       if (!upload) {
         throw new Error(
           `Deployment did not return an upload URL for the ${logo.variant} logo.`
         );
       }
+
       await uploadAsset(upload, logo.content);
     }),
   ]);
+
+  const { description, name } = loaded.config;
+
+  if (!createdApp) {
+    const app = unwrapRpcResult(
+      appDetailsSchema,
+      await client.apps.get({ appId })
+    );
+
+    const appDescription =
+      description === undefined ? app.description : description;
+
+    if (app.name !== name || app.description !== appDescription) {
+      unwrapRpcResult(
+        appCreateSchema,
+        await client.apps.update({
+          appId,
+          description: appDescription,
+          name,
+        })
+      );
+    }
+  }
 
   const published = unwrapRpcResult(
     deploymentPublishSchema,
@@ -549,6 +636,7 @@ export const runDeploy = async (
   const uploadedLogos = await Promise.all(
     logoAssets.map(async (asset) => {
       const compressed = await gzipAsync(asset.content);
+
       return {
         gzipSize: compressed.byteLength,
         path: asset.filename,
@@ -558,6 +646,7 @@ export const runDeploy = async (
   );
 
   const uploadedServer = [];
+
   if (serverAsset && serverAssetGzip && manifest.assets.server) {
     uploadedServer.push({
       gzipSize: serverAssetGzip.byteLength,

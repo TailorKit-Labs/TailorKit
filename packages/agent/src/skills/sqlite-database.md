@@ -1,70 +1,42 @@
-# SQLite and relational queries
+# App SQLite
 
-Drizzle powers TailorKit's database internally. App code gets a restricted synchronous `db` capability inside queries and mutations, not an unrestricted Drizzle connection. Do not create a driver, open SQLite files, use D1/Postgres clients, or reach into Durable Object storage.
+Use the installation's managed SQLite for app-owned persistent data. It can be shared by multiple users; enforce the feature's access rules in functions. Product-owned records stay behind product tools.
 
-Keep the scaffold's three database files:
+Use `patchsmith/db` for columns, tables, relations, database definitions, and filter/order helpers. Follow the scaffold's three files:
 
 ```ts
 // src/db/schema.ts
-import { table, text, boolean } from "tailorkit/server";
+import { table, text, boolean } from "patchsmith/db";
 
 export const todos = table("todos", {
   id: text().primaryKey(),
   title: text().notNull(),
   done: boolean().notNull().default(false),
 });
+```
 
+```ts
 // src/db/relations.ts
-import { defineRelations } from "drizzle-orm";
+import { defineRelations } from "patchsmith/db";
 
 import * as schema from "./schema";
 
 export const relations = defineRelations(schema);
+```
 
+```ts
 // src/db/index.ts
-import { defineDatabase } from "tailorkit/server";
+import { defineDatabase } from "patchsmith/db";
 
 import { relations } from "./relations";
 
 export const db = defineDatabase({ relations });
 ```
 
-Import column builders (`table`, `text`, `integer`, `real`, `boolean`) and supported filter/order helpers from `tailorkit/server`. `boolean()` stores SQLite integers. Generate IDs in mutations, for example with `crypto.randomUUID()`; a text primary key has no automatic ID. Use explicit nullability/defaults and foreign-key references where enforcement is required. Table names must start with a letter, contain only letters/digits/underscores, be at most 63 characters, and avoid `sqlite_` and `tailorkit_` prefixes.
+Generate text IDs explicitly, for example `crypto.randomUUID()` in a mutation. Choose columns and defaults for the actual feature. `$inferInsert` describes complete insert rows; a draft may need a smaller type. `.$type<T>()` narrows TypeScript, so validate input values too. Table names start with a letter, contain letters/digits/underscores, are at most 63 characters, and avoid `sqlite_`/`patchsmith_` prefixes.
 
-The scaffold uses Drizzle's `defineRelations` API, not the older `relations(table, ...)` API. Include all tables, even those without relationships. To link tables:
+Pass all tables to `defineRelations(schema)`. Add relation navigation only when used. `r.one.users({ from: r.notes.authorId, to: r.users.id })` defines navigation; foreign keys require column references.
 
-```ts
-// src/db/relations.ts
-import { defineRelations } from "drizzle-orm";
+Export `fn = createFunctions({ database: db })` from `src/db/index.ts`, importing `createFunctions` from `patchsmith/server`. Function modules import the shared `fn` from `#db` and receive typed `db` in their handlers. Relational reads end with `.sync()`, selects with `.all()`/`.get()`, and writes with `.run()` or `.returning(...).all()`/`.get()`. Apply access conditions to reads/updates/deletes. Filter and limit in the query as needed. The capability is synchronous and restricted; mutations already provide transactions, so no driver, raw connection, or nested transaction is needed.
 
-import * as schema from "./schema";
-
-export const relations = defineRelations(schema, (r) => ({
-  posts: {
-    author: r.one.users({ from: r.posts.authorId, to: r.users.id }),
-  },
-  users: {
-    posts: r.many.posts({ from: r.users.id, to: r.posts.authorId }),
-  },
-}));
-```
-
-`one`/`many` describe navigation and result shape; they do not create foreign-key constraints. Declare both navigation directions when needed, with columns that actually match. Follow the installed types for optional relations and multiple links between the same tables.
-
-Attach the exported definition with `fn.query.database(db)` or `fn.mutation.database(db)`. Prefer relational reads when fetching entities and their relationships:
-
-```ts
-db.query.users
-  .findMany({
-    where: { id: input.userId },
-    columns: { id: true },
-    with: { posts: true },
-  })
-  .sync();
-```
-
-Use `findFirst(...).sync()` for an optional single row and handle absence. Filter, order, and limit on the server; select only columns and relations the UI needs. Relational reads avoid per-row query loops and remain part of reactive read tracking. Use `db.select().from(table).where(...).all()` or `.get()` for projections, joins, and aggregates that fit the select builder better.
-
-Queries expose only `select`, `selectDistinct`, and `query`. Mutations add `insert`, `update`, and `delete`; execute writes with `.run()` or execute `.returning(...)` with `.all()`/`.get()`. Scope updates and deletes with `where`. Raw SQL execution, connection access, explicit transactions, and schema changes are outside the runtime capability; the mutation already owns its transaction. Never return an unexecuted builder or promise.
-
-For schema changes, enable `server: {}`, then run `pnpm run db:generate` (`tailorkit db generate` delegates to Drizzle Kit with SQLite and `src/db/schema.ts`). Keep the generated SQL and snapshots under `src/db/migrations/`, or the configured `server.migrations` directory. Inspect generated changes for data loss; generate migrations rather than hand-writing SQL unless necessary. Preserve applied history and append new migrations. The build checks schema drift, bundles migrations, and the runtime applies them before database handlers run; do not push schema directly to a live database.
+After schema changes, run `db:generate`. Inspect generated SQL and keep migrations/snapshots together under `src/db/migrations` or the configured directory. Append migrations without rewriting applied history. For existing rows, supply suitable defaults/backfills for new required fields. The build checks drift and deployment applies pending migrations. Preserve data; correct source and generate forward migrations instead of resetting the database or pushing live schema.

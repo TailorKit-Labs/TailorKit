@@ -1,5 +1,13 @@
 import { defineRelationsPart, sql } from "drizzle-orm";
-import { pgTable, text, timestamp, boolean, integer, uuid, index } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  timestamp,
+  boolean,
+  integer,
+  uuid,
+  index,
+} from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: uuid("id")
@@ -139,7 +147,7 @@ export const organization = pgTable("organization", {
   logo: text("logo"),
   createdAt: timestamp("created_at").notNull(),
   metadata: text("metadata"),
-  publicId: text("public_id").notNull().unique(),
+  shortId: text("short_id").notNull().unique(),
 });
 
 export const member = pgTable(

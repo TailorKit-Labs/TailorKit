@@ -1,10 +1,17 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "tailorkit-apps-worker",
+  "name": "patchsmith-apps-worker",
   "main": "src/index.ts",
   "build": {
-    "command": "pnpm exec turbo run build --filter=@tailorkit/api-utils... --filter=@tailorkit/app... --filter=@tailorkit/asset-delivery... && node scripts/build-bootstrap.mjs",
-    "watch_dir": ["src", "../../packages/asset-delivery/src"],
+    "command": "pnpm exec turbo run build --filter=@patchsmith/apps-worker^... && node scripts/build-bootstrap.mjs",
+    "watch_dir": [
+      "src",
+      "scripts",
+      "../../packages/api-utils/src",
+      "../../packages/app/src",
+      "../../packages/app-db/src",
+      "../../packages/asset-delivery/src",
+    ],
   },
   "compatibility_date": "2026-10-01",
   "rules": [
@@ -17,6 +24,9 @@
   "compatibility_flags": ["enable_request_signal"],
   "workers_dev": false,
   "preview_urls": false,
+  "placement": {
+    "region": "aws:us-east-1",
+  },
   "routes": [
     { "pattern": "*.tailorkit.app/*", "zone_name": "tailorkit.app" },
     { "pattern": "internal.tailorkit.app", "custom_domain": true },
@@ -29,19 +39,23 @@
   "r2_buckets": [
     {
       "binding": "BUNDLES",
-      "bucket_name": "tailorkit-app-assets-prod",
+      "bucket_name": "patchsmith-app-assets-prod",
     },
   ],
   "durable_objects": {
     "bindings": [
       {
         "name": "STORES",
-        "class_name": "AppInstallation",
+        "class_name": "PatchsmithAppInstallation",
       },
     ],
   },
   "exports": {
     "AppInstallation": {
+      "type": "durable-object",
+      "state": "deleted",
+    },
+    "PatchsmithAppInstallation": {
       "type": "durable-object",
       "storage": "sqlite",
     },
@@ -51,15 +65,15 @@
   },
   "vars": {
     "ASSET_DOMAIN": "tailorkit.app",
-    "PLATFORM_URL": "https://tailorkit.dev/api/platform",
+    "PLATFORM_URL": "https://patchsmith.io/api/platform",
     "APP_RUNTIME_PUBLIC_KEYS": {
       "keys": [
         {
           "kty": "EC",
-          "x": "qgJufcvDXWvETxxY9GW7a_5Pp2Ywm10wRRkNY69h200",
-          "y": "tqSG2ZTbYUQY5KaaTKxdgfSe_92Q4ai76b6wNfMpsDs",
+          "x": "mNmgu9uJ_4uRcvrwoxwqVRGKE5glJsoTz-GSDDYKqkI",
+          "y": "Snkr5Pv_fXPHV2qROt2heEK-EWWps-tIjtVnJMIZIgQ",
           "crv": "P-256",
-          "kid": "tailorkit-runtime-2026-10-02",
+          "kid": "patchsmith-runtime-2026-10-20",
           "alg": "ES256",
           "use": "sig",
         },
@@ -75,6 +89,7 @@
   "kv_namespaces": [
     {
       "binding": "DEPLOYMENTS",
+      // patchsmith-app-deployments; renaming the namespace preserves its ID.
       "id": "06b12b0c61164472887d9cf967f577b6",
     },
   ],

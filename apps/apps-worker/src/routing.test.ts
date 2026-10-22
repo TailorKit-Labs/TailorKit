@@ -1,4 +1,5 @@
-import { AppError } from "@tailorkit/app/server";
+import { AppError } from "@patchsmith/app/server";
+import { asyncFixture } from "@patchsmith/config/testing";
 import { Effect } from "effect";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import type { z } from "zod";
@@ -13,27 +14,28 @@ const require = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
 const projectId = "22222222-2222-4222-8222-222222222222";
 
-const publicTeamId = "abc123def45678";
+const projectShortId = "abc123def456";
 
-const appPublicId = "app000000001";
+const appShortId = "app000000001";
 
-const rpc = `https://${publicTeamId}.tailorkit.app/p/${projectId}/a/${appPublicId}/rpc`;
+const rpc = `https://${projectShortId}.tailorkit.app/a/${appShortId}/rpc`;
 
-const publication = `https://internal.tailorkit.app/p/${projectId}/a/${appPublicId}/new-deployment`;
+const publication = `https://internal.tailorkit.app/p/${projectId}/a/${appShortId}/new-deployment`;
 
 const secret = "s".repeat(32);
 
 const identity = {
   appId: "private-app",
-  appPublicId,
+  appShortId,
   installationId: "installation",
   projectId,
-  publicTeamId,
+  projectShortId,
 };
 
 const metadata = {
@@ -41,13 +43,12 @@ const metadata = {
   checksum: "a".repeat(64),
   contentLength: 100,
   deploymentId: "private-deployment",
-  objectKey: `teams/${publicTeamId}/projects/${projectId}/apps/${appPublicId}/deployments/deploy000001/server/server.js`,
+  objectKey: `projects/${projectShortId}/apps/${appShortId}/deployments/deploy000001/server/server.js`,
   projectId,
 };
 
 const fetchInstallation = vi.fn(
-  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-  async (_request: Request) => new Response("result")
+  asyncFixture((_request: Request) => new Response("result"))
 );
 
 const getByName = vi.fn(() => ({ fetch: fetchInstallation }));
@@ -98,6 +99,7 @@ it("forwards stable app RPC routes and body to the installation without caching"
   const response = await call(
     post(`${rpc}/mutations`, { json: { name: "add" } }, "session")
   );
+
   expect(response.status).toBe(200);
   expect(response.headers.get("cache-control")).toBe("no-store");
   const [request] = require(fetchInstallation.mock.calls[0]);
@@ -107,21 +109,17 @@ it("forwards stable app RPC routes and body to the installation without caching"
 });
 
 it.each([
-  rpc.replace(publicTeamId, "xyz123def45678"),
-  rpc.replace(projectId, "33333333-3333-4333-8333-333333333333"),
-  rpc.replace(appPublicId, "app000000002"),
-])(
-  "rejects a valid token used on another team, project or app: %s",
-  async (url) => {
-    const awaitedResult1 = await call(post(`${url}/queries`, {}, "session"));
-    expect(awaitedResult1.status).toBe(403);
-    expect(getByName).not.toHaveBeenCalled();
-  }
-);
+  rpc.replace(projectShortId, "xyz123def456"),
+  rpc.replace(appShortId, "app000000002"),
+])("rejects a valid token used on another project or app: %s", async (url) => {
+  const awaitedResult1 = await call(post(`${url}/queries`, {}, "session"));
+  expect(awaitedResult1.status).toBe(403);
+  expect(getByName).not.toHaveBeenCalled();
+});
 
 it("rejects sessions without a signed public app identifier", async () => {
   state.verify.mockReturnValue(
-    Effect.succeed({ ...identity, appPublicId: undefined })
+    Effect.succeed({ ...identity, appShortId: undefined })
   );
   const awaitedResult2 = await call(post(`${rpc}/queries`, {}, "session"));
   expect(awaitedResult2.status).toBe(403);
@@ -132,7 +130,7 @@ it("authenticates query WebSockets and preserves the protocol while normalizing 
   await call(
     new Request(`${rpc}/queries`, {
       headers: {
-        "sec-websocket-protocol": "tailorkit, jwt.session",
+        "sec-websocket-protocol": "patchsmith, jwt.session",
         upgrade: "websocket",
       },
     })
@@ -148,6 +146,7 @@ it("handles preflight without a token or installation lookup", async () => {
   const response = await call(
     new Request(`${rpc}/queries`, { method: "OPTIONS" })
   );
+
   expect(response.status).toBe(204);
   expect(response.headers.get("access-control-allow-headers")).toContain(
     "authorization"
@@ -165,16 +164,18 @@ it("accepts authenticated publication only on the internal hostname", async () =
     { expirationTtl: 300 }
   );
   put.mockClear();
+
   const awaitedResult4 = await call(
-    post(publication.replace("internal", publicTeamId))
+    post(publication.replace("internal", projectShortId))
   );
+
   expect(awaitedResult4.status).toBe(404);
   expect(put).not.toHaveBeenCalled();
 });
 
 it.each([
   { projectId: "other" },
-  { objectKey: metadata.objectKey.replace(appPublicId, "app000000002") },
+  { objectKey: metadata.objectKey.replace(appShortId, "app000000002") },
   {
     objectKey: metadata.objectKey.replace(
       "/server/server.js",
@@ -187,6 +188,7 @@ it.each([
     const awaitedResult5 = await call(
       post(publication, { ...metadata, ...override })
     );
+
     expect(awaitedResult5.status).toBe(400);
     expect(put).not.toHaveBeenCalled();
   }

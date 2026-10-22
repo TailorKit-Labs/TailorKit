@@ -1,7 +1,7 @@
 import dynamicIconImports from "lucide-react/dynamicIconImports.mjs";
 import { describe, expect, it } from "vite-plus/test";
 
-import { createTailorKitSchema } from "#schema/schema";
+import { createPatchsmithSchema } from "#schema/schema";
 
 import { Icon as arktypeIcon } from "./arktype";
 import { parseIconData } from "./definition";
@@ -21,12 +21,15 @@ describe("icon contracts", () => {
   })) {
     it(`validates equivalent ${name} icon props`, async () => {
       const component = define({ library: "lucide" });
+
       const valid = await component.fields["~standard"].validate({
         name: "arrow-right",
         size: 16,
       });
+
       expect(valid.issues).toBeUndefined();
       expect(component.children).toBe(false);
+
       const invalid = [
         {},
         { name: "../arrow-right" },
@@ -39,11 +42,13 @@ describe("icon contracts", () => {
         { label: "Continue", name: "arrow-right" },
         { href: "https://other.test", name: "arrow-right" },
       ];
+
       const results = await Promise.all(
         invalid.map(
           async (props) => await component.fields["~standard"].validate(props)
         )
       );
+
       for (const result of results) {
         expect(result.issues).toBeDefined();
       }
@@ -51,9 +56,10 @@ describe("icon contracts", () => {
   }
 
   it("serializes the helper under an arbitrary component name", () => {
-    const schema = createTailorKitSchema({
+    const schema = createPatchsmithSchema({
       components: { icon: zodIcon({ library: "lucide" }) },
     });
+
     const component = schema.serialize().components.icon;
     expect(component?.children).toBe(false);
     expect(component?.fields).toMatchObject({
@@ -69,6 +75,7 @@ describe("catalogue data validation", () => {
       nodes: [["circle", { cx: 12, cy: 12, fill: "currentColor", r: 2 }]],
       size: 24,
     };
+
     expect(parseIconData(data)).toEqual(data);
   });
 

@@ -15,7 +15,7 @@ import {
   SidebarPanelTrigger,
   SidebarPanels,
   SidebarSeparator,
-} from "@tailorkit/ui/sidebar";
+} from "@patchsmith/ui/sidebar";
 import {
   useParams,
   Outlet,
@@ -34,8 +34,10 @@ import { SidebarUserMenu } from "#components/sidebar/sidebar-user-menu";
 
 export const AppSidebar = ({ orgSlug }: AppSidebarProps) => {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+
   const isActive = (path: string) =>
     pathname === path || pathname.startsWith(`${path}/`);
+
   const orgBase = `/${orgSlug}/~`;
   const onSettingsPath = pathname.startsWith(`${orgBase}/settings`);
 

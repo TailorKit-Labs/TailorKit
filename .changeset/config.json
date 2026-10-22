@@ -4,15 +4,17 @@
   "commit": false,
   "fixed": [
     [
-      "tailorkit",
-      "@tailorkit/app",
-      "@tailorkit/cli",
-      "@tailorkit/client-core",
-      "@tailorkit/client-platform",
-      "@tailorkit/core",
-      "@tailorkit/react",
-      "@tailorkit/sandbox",
-      "@tailorkit/vite"
+      "patchsmith",
+      "@patchsmith/ai-sdk",
+      "@patchsmith/app",
+      "@patchsmith/app-db",
+      "@patchsmith/cli",
+      "@patchsmith/client-core",
+      "@patchsmith/client-platform",
+      "@patchsmith/core",
+      "@patchsmith/react",
+      "@patchsmith/sandbox",
+      "@patchsmith/vite"
     ]
   ],
   "linked": [],

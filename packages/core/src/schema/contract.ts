@@ -4,6 +4,7 @@ import type {
   ComponentDefinitions,
   NoComponentFieldCallbackConflicts,
 } from "./components";
+import { assertComponentDescription } from "./components";
 import type { EmptyDefinitionMap, Schema } from "./shared";
 import type { ContractTools } from "./tools";
 import { flattenTools } from "./tools";
@@ -16,7 +17,10 @@ import type {
 const isBooleanValue = <TValue>(value: TValue): value is TValue & boolean =>
   typeof value === "boolean";
 
-export interface TailorKitContract<
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
+export interface PatchsmithContract<
   TComponents extends ComponentDefinitions = ComponentDefinitions,
   TViews extends ContextDefinitions = ContextDefinitions,
   TSlots extends SlotDefinitions = SlotDefinitions,
@@ -47,30 +51,42 @@ export function defineContract<
   slots?: TSlots & SlotDefinitions<keyof NoInfer<TViews> & string>;
   tools?: TTools;
   scopes?: TScopes;
-}): TailorKitContract<TComponents, TViews, TSlots, TTools, TScopes>;
+}): PatchsmithContract<TComponents, TViews, TSlots, TTools, TScopes>;
 export function defineContract(definition: {
   components?: ComponentDefinitions;
   views?: ContextDefinitions;
   slots?: SlotDefinitions;
   tools?: ContractTools;
   scopes?: Record<string, Schema>;
-}): TailorKitContract {
+}): PatchsmithContract {
   for (const name of Object.keys(definition)) {
     if (!["components", "views", "slots", "tools", "scopes"].includes(name)) {
       throw new Error(`Unknown contract field "${name}"`);
     }
   }
+
   flattenTools(definition.tools ?? {});
+
+  for (const [name, component] of Object.entries(definition.components ?? {})) {
+    assertComponentDescription(name, component);
+  }
+
   for (const [name, slot] of Object.entries(definition.slots ?? {})) {
+    if (slot.description !== undefined && !isStringValue(slot.description)) {
+      throw new TypeError(`Slot "${name}" description must be a string.`);
+    }
+
     if (slot.multiple !== undefined && !isBooleanValue(slot.multiple)) {
       throw new TypeError(`Slot "${name}" multiple must be a boolean.`);
     }
+
     for (const view of slot.views) {
       if (!Object.hasOwn(definition.views ?? {}, view)) {
         throw new Error(`Slot "${name}" references undeclared view "${view}".`);
       }
     }
   }
+
   return {
     components: definition.components ?? {},
     scopes: definition.scopes ?? {},

@@ -1,5 +1,5 @@
 {
-  "name": "@tailorkit/icons-assets",
+  "name": "@patchsmith/icons-assets",
   "private": true,
   "license": "BUSL-1.1",
   "type": "module",
@@ -13,13 +13,13 @@
     "lint:fix": "vp lint --fix ."
   },
   "devDependencies": {
-    "@tailorkit/config": "workspace:*",
-    "@tailorkit/core": "workspace:*",
+    "@patchsmith/config": "workspace:*",
+    "@patchsmith/core": "workspace:*",
     "@types/node": "catalog:",
     "lucide-react": "catalog:",
     "react": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:",
-    "wrangler": "4.149.0"
+    "wrangler": "4.151.1"
   }
 }

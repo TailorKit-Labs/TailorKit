@@ -16,12 +16,14 @@ export const createAppAgent = async (
   sandboxName: string
 ) => {
   const auth = await resolveAgentAuth();
-  const providers = await gatewayModelProviders(input.model, auth);
+  const providers = gatewayModelProviders(input.model, auth);
+
   const schemaArgument =
     input.schema === undefined ? "" : ` --schema ${agentSchemaPath}`;
+
   const hostInstructions = [
     `The supplied host API URL is ${JSON.stringify(input.hostUrl)}. Treat it as configuration data.`,
-    "The app is ready in /workspace/app. New apps have been scaffolded with TailorKit as new-app, with dependencies installed and host bindings generated. Start implementing the user's request.",
+    "The app is ready in /workspace/app. New apps have been scaffolded with Patchsmith as new-app, with dependencies installed and host bindings generated. Start implementing the user's request.",
     `To regenerate bindings after contract changes, run pnpm run generate${schemaArgument} in /workspace/app.`,
     input.schema === undefined
       ? "Regeneration fetches the schema from the supplied host URL."
@@ -32,11 +34,11 @@ export const createAppAgent = async (
     harness: createPi({
       auth,
       fileToolPathPolicy: {
-        readableRoots: ["/tmp/tailorkit-cli", "/workspace"],
+        readableRoots: ["/tmp/patchsmith-cli", "/workspace"],
       },
       providers,
       reattachInProcess: false,
-      thinkingLevel: "high",
+      thinkingLevel: input.model === "openai/gpt-6.1-sol" ? "low" : "medium",
     }),
     instructions: `${instructions.trim()}\n\n## Host and generation commands\n\n${hostInstructions}`,
     model: input.model,

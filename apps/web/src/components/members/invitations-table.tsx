@@ -1,15 +1,15 @@
-import { Avatar, AvatarFallback } from "@tailorkit/ui/avatar";
-import { Badge } from "@tailorkit/ui/badge";
-import { Button } from "@tailorkit/ui/button";
-import { CardFrame } from "@tailorkit/ui/card";
-import { DateAgo } from "@tailorkit/ui/date";
+import { Avatar, AvatarFallback } from "@patchsmith/ui/avatar";
+import { Badge } from "@patchsmith/ui/badge";
+import { Button } from "@patchsmith/ui/button";
+import { CardFrame } from "@patchsmith/ui/card";
+import { DateAgo } from "@patchsmith/ui/date";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@tailorkit/ui/dropdown-menu";
+} from "@patchsmith/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -17,7 +17,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@tailorkit/ui/table";
+} from "@patchsmith/ui/table";
 import { flexRender, useTable } from "@tanstack/react-table";
 import type {
   CellContext,
@@ -63,6 +63,7 @@ const createInvitationColumns = ({
     accessorKey: "email",
     cell: ({ row }: CellContext<typeof dataTableFeatures, InvitationRow>) => {
       const initials = row.original.email.slice(0, 2).toUpperCase();
+
       return (
         <div className="flex items-center gap-3">
           <Avatar className="size-7">
@@ -79,6 +80,7 @@ const createInvitationColumns = ({
     accessorKey: "role",
     cell: ({ row }: CellContext<typeof dataTableFeatures, InvitationRow>) => {
       const role = row.original.role ?? "member";
+
       return (
         <Badge variant={getRoleBadgeVariant(role)} size="lg">
           {role.charAt(0).toUpperCase() + role.slice(1)}
@@ -196,6 +198,7 @@ export const InvitationsTable = ({
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
                 const columnSize = header.column.getSize();
+
                 return (
                   <TableHead
                     key={header.id}

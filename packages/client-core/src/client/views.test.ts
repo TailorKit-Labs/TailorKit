@@ -1,100 +1,64 @@
+import { asyncFixture } from "@patchsmith/config/testing";
+import { viewsInputSchema } from "@patchsmith/core/views";
+import * as v from "valibot";
 import { expect, it, vi } from "vite-plus/test";
 
-import { createSlotStore } from "#store/fetch/slot";
-import { createTailorKitStore } from "#store/store";
+import { createPatchsmithStore } from "#store/store";
 import { testContract } from "#test-contract";
 
-import { createTailorKitFetchClient } from "./fetch-client";
+import { createPatchsmithFetchClient } from "./fetch-client";
 import { refetchViews } from "./views";
 
-const deferredResponse = () => {
-  let resolve!: (response: Response) => void;
-  const promise = (async () => {
-    const {
-      promise: pendingPromise,
-      resolve: done,
-      reject: rejectPending,
-    } = Promise.withResolvers<Response>();
-    try {
-      resolve = done;
-    } catch (error) {
-      rejectPending(error);
-    }
-    return await pendingPromise;
-  })();
-  return { promise, resolve };
-};
+it("refreshes host discovery and instances with the latest context", async () => {
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockImplementation(
+      asyncFixture(() =>
+        Response.json({ data: [], status: "ready", warnings: [] })
+      )
+    );
 
-it("joins discovery and resolves single slots from the imported contract without metadata", async () => {
-  const discovery = deferredResponse();
-  const fetch = vi.fn<typeof globalThis.fetch>(
-    async () => await discovery.promise
-  );
-  const client = createTailorKitFetchClient({
-    baseUrl: "https://host.test",
+  const client = createPatchsmithFetchClient({
+    baseUrl: "https://host.test/",
     fetch,
   });
-  const contract = testContract();
-  const store = createTailorKitStore({
-    baseUrl: client.baseUrl,
-    client,
-    contract,
-  });
-  const app = { id: "app", views: [{ path: "/", slot: "page" }] };
-  const pending = refetchViews(store, { slot: "page" });
-  discovery.resolve(Response.json([app]));
-  await pending;
-  const result = createSlotStore(client, contract, {
-    activeView: null,
-    apps: [app],
-    slot: "page",
-  });
-  expect(result.getSnapshot()).toMatchObject({
-    data: [{ app }],
-    status: "ready",
-  });
-  expect(fetch).toHaveBeenCalledExactlyOnceWith(
-    new URL("https://host.test/apps"),
-    expect.anything()
-  );
-});
 
-it("refreshes instances using the current registered context without refreshing discovery", async () => {
-  const instanceFetch = vi
-    .fn<
-      ReturnType<
-        typeof createTailorKitFetchClient
-      >["endpoints"]["slotInstances"]
-    >()
-    .mockResolvedValue([{ data: {}, key: "overview", metadata: {} }]);
-  const client = createTailorKitFetchClient({
-    baseUrl: "https://host.test",
-    fetch: vi.fn(),
-  });
-  const app = {
-    id: "app",
-    views: [{ instances: true as const, path: "/", slot: "page" }],
-  };
-  const store = createTailorKitStore({
-    apps: [app],
+  const store = createPatchsmithStore({
     baseUrl: client.baseUrl,
     client,
     contract: testContract(true),
   });
-  const apps = vi.spyOn(store, "fetchApps");
-  vi.spyOn(client.endpoints, "slotInstances").mockImplementation(instanceFetch);
+
   const id = Symbol("view");
-  store.views.register({ context: { customer: "first" }, id, view: "/" });
-  await Promise.resolve();
-  await refetchViews(store, { slot: "page" });
-  store.views.register({ context: { customer: "second" }, id, view: "/" });
-  await Promise.resolve();
-  await refetchViews(store, { slot: "page" });
-  expect(instanceFetch.mock.calls.map(([, input]) => input.context)).toEqual([
-    { customer: "first" },
-    { customer: "second" },
-  ]);
-  expect(apps).not.toHaveBeenCalled();
+
+  for (const customer of ["first", "second"]) {
+    store.views.register({ context: { customer }, id, view: "/" });
+    // oxlint-disable-next-line no-await-in-loop -- Each refresh must observe the preceding context registration.
+    await Promise.resolve();
+    // oxlint-disable-next-line no-await-in-loop -- Verify sequential refreshes use the latest context.
+    await refetchViews(store, {
+      appIds: ["app"],
+      scopes: ["user"],
+      slot: "page",
+    });
+  }
+
+  expect(
+    await Promise.all(
+      fetch.mock.calls.map(async ([, init]) =>
+        v.parse(viewsInputSchema, await new Response(init?.body).json())
+      )
+    )
+  ).toEqual(
+    ["first", "second"].map((customer) => ({
+      activeView: {
+        layers: [{ context: { customer }, path: "/", status: "ready" }],
+        view: "/",
+      },
+      appIds: ["app"],
+      scopes: ["user"],
+      slot: "page",
+    }))
+  );
   store.views.unregister(id);
-  await Promise.resolve();
 });

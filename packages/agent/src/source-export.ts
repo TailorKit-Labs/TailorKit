@@ -15,11 +15,13 @@ export class AppAgentWorkspaceBusyError extends Error {
 
 const findAppDrive = async (appId: string) => {
   const name = `${drivePrefix}${appId}`;
+
   const { drives } = await Drive.list({
     limit: 1,
     namePrefix: name,
     sortBy: "name",
   });
+
   return drives.find((drive) => drive.name === name) ?? null;
 };
 
@@ -27,9 +29,11 @@ export const getAppAgentWorkspaceStatus = async (
   appId: string
 ): Promise<"missing" | "busy" | "available"> => {
   const drive = await findAppDrive(appId);
+
   if (!drive) {
     return "missing";
   }
+
   return drive.currentSandboxName !== undefined &&
     drive.currentSandboxName !== null &&
     drive.currentSandboxName !== ""
@@ -42,9 +46,11 @@ export const exportAppAgentWorkspace = async (
   appId: string
 ): Promise<Buffer | null> => {
   const drive = await findAppDrive(appId);
+
   if (!drive) {
     return null;
   }
+
   if (
     drive.currentSandboxName !== undefined &&
     drive.currentSandboxName !== null &&
@@ -67,7 +73,7 @@ export const exportAppAgentWorkspace = async (
       args: [
         "--exclude=node_modules",
         "--exclude=.git",
-        "--exclude=.tailorkit",
+        "--exclude=.patchsmith",
         "--exclude=.env",
         "--exclude=.env.*",
         "-czf",
@@ -87,9 +93,11 @@ export const exportAppAgentWorkspace = async (
     const archive = await sandbox.readFileToBuffer({
       path: "/tmp/app-source.tar.gz",
     });
+
     if (!archive) {
       throw new Error("The app-agent source archive could not be read.");
     }
+
     return archive;
   } finally {
     await sandbox

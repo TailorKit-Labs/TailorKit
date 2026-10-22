@@ -44,9 +44,11 @@ const authStateSchema = z.object({
 
 const readAuth = async (): Promise<DemoAuthState> => {
   const response = await fetch("/api/auth", { credentials: "same-origin" });
+
   if (!response.ok) {
     throw new Error("Could not load the local demo session");
   }
+
   return authStateSchema.parse(await response.json());
 };
 
@@ -59,6 +61,7 @@ export const useAuthSession = () => {
     void (async () => {
       try {
         const next = await readAuth();
+
         if (!cancelled) {
           setData(next);
         }
@@ -68,6 +71,7 @@ export const useAuthSession = () => {
         }
       }
     })();
+
     return () => {
       cancelled = true;
     };
@@ -87,9 +91,11 @@ export const signInDemoUser = async (userId: string, teamId: string) => {
     headers: { "Content-Type": "application/json" },
     method: "POST",
   });
+
   if (!response.ok) {
     throw new Error("Could not start the local demo session");
   }
+
   return authStateSchema.parse(await response.json());
 };
 
@@ -100,6 +106,7 @@ export const signOutDemoUser = async () => {
     headers: { "Content-Type": "application/json" },
     method: "POST",
   });
+
   if (!response.ok) {
     throw new Error("Could not end the local demo session");
   }

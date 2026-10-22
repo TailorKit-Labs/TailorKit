@@ -1,9 +1,9 @@
 import { ORPCError } from "@orpc/server";
-import { auth } from "@tailorkit/auth";
-import { db } from "@tailorkit/db";
-import { apikey } from "@tailorkit/db/schema/auth";
-import { project } from "@tailorkit/db/schema/project";
-import { validateProjectSlug } from "@tailorkit/db/validate-project-slug";
+import { auth } from "@patchsmith/auth";
+import { db } from "@patchsmith/db";
+import { apikey } from "@patchsmith/db/schema/auth";
+import { project } from "@patchsmith/db/schema/project";
+import { validateProjectSlug } from "@patchsmith/db/validate-project-slug";
 import { and, desc, eq, ne } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import { z } from "zod";
@@ -42,11 +42,13 @@ const toDate = (value: Date | string | null): Date | null => {
   if (value === null || value === "") {
     return null;
   }
+
   return value instanceof Date ? value : new Date(value);
 };
 
 const isKeyExpired = (key: { expiresAt: Date | string | null }) => {
   const expiresAt = toDate(key.expiresAt);
+
   return Boolean(expiresAt && expiresAt.getTime() <= Date.now());
 };
 
@@ -57,6 +59,7 @@ const parseProjectApiKeyMetadata = (
     const result = projectApiKeyMetadataSchema.safeParse(
       isStringValue(metadata) ? JSON.parse(metadata) : metadata
     );
+
     return result.success ? result.data : null;
   } catch {
     return null;
@@ -84,6 +87,7 @@ const listAllProjectApiKeys = async ({
   return result
     .map((key) => {
       const metadata = parseProjectApiKeyMetadata(key.metadata);
+
       if (!metadata || metadata.projectId !== projectId) {
         return null;
       }
@@ -115,6 +119,7 @@ const listProjectApiKeys = async ({
   const keys = await listAllProjectApiKeys({ organizationId, projectId });
 
   const active = keys.find((key) => key.enabled && !isKeyExpired(key));
+
   const previous = active
     ? keys.filter(
         (key) => key.id !== active.id && key.enabled && !isKeyExpired(key)
@@ -177,6 +182,7 @@ export const projectRouter = {
     .use(requireOrg({ project: ["create"] }))
     .handler(async ({ input, context, errors }) => {
       const slugResult = validateProjectSlug(input.slug);
+
       if (!slugResult.valid) {
         throw errors.BAD_REQUEST({ message: slugResult.reason });
       }
@@ -346,6 +352,7 @@ export const projectRouter = {
     .use(requireProject({ project: ["update"] }))
     .handler(async ({ input, context, errors }) => {
       const slugResult = validateProjectSlug(input.slug);
+
       if (!slugResult.valid) {
         throw errors.BAD_REQUEST({ message: slugResult.reason });
       }

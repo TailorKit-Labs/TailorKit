@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@tailorkit/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@patchsmith/ui/avatar";
 import { AppWindowIcon } from "lucide-react";
 
 import { useTheme } from "#lib/theme";
@@ -14,6 +14,7 @@ interface AppLogoProps {
 
 export const AppLogo = ({ className, logoPaths, name }: AppLogoProps) => {
   const { resolvedTheme } = useTheme();
+
   const logoPath =
     resolvedTheme === "dark"
       ? (logoPaths?.dark ?? logoPaths?.light)

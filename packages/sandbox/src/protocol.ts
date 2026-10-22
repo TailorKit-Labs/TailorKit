@@ -1,3 +1,4 @@
+import { sessionSchema } from "@patchsmith/app/protocol";
 import * as v from "valibot";
 
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
@@ -8,16 +9,19 @@ const ObjectInput = v.custom<object>(
   (input) => input !== null && isObjectValue(input) && !Array.isArray(input),
   "Expected an object"
 );
+
 export const RemotePropsSchema = v.pipe(
   ObjectInput,
   v.record(v.string(), v.unknown())
 );
+
 const strictObject = <const TEntries extends v.ObjectEntries>(
   entries: TEntries
 ) => v.pipe(ObjectInput, v.strictObject(entries));
 
 const FiniteNumber = v.pipe(v.number(), v.finite());
 const SessionId = v.pipe(v.string(), v.minLength(1), v.maxLength(128));
+
 // Preserve WHATWG URL validation, including non-HTTP absolute URLs.
 const SessionUrl = v.pipe(
   v.string(),
@@ -97,6 +101,32 @@ const HostToIframePayloadSchema = v.pipe(
   v.variant("type", [
     v.strictObject({
       data: strictObject({
+        generation: v.nullable(SessionId),
+        name: SessionId,
+      }),
+      type: v.literal("canvasAvailability"),
+    }),
+    v.strictObject({
+      data: strictObject({
+        error: v.optional(v.string()),
+        height: v.optional(
+          v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(4096))
+        ),
+        id: SessionId,
+        port: v.optional(
+          v.custom<MessagePort>(
+            (value) =>
+              typeof MessagePort !== "undefined" && value instanceof MessagePort
+          )
+        ),
+        width: v.optional(
+          v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(4096))
+        ),
+      }),
+      type: v.literal("canvasResult"),
+    }),
+    v.strictObject({
+      data: strictObject({
         error: v.optional(v.string()),
         id: SessionId,
         output: v.optional(v.unknown()),
@@ -123,9 +153,7 @@ const HostToIframePayloadSchema = v.pipe(
         id: SessionId,
         session: v.optional(
           strictObject({
-            expiresAt: FiniteNumber,
-            subjectId: v.optional(v.string()),
-            token: v.pipe(v.string(), v.maxLength(8192)),
+            ...sessionSchema.entries,
             url: SessionUrl,
           })
         ),
@@ -144,6 +172,7 @@ const HostToIframePayloadSchema = v.pipe(
       data: strictObject({
         args: v.optional(v.array(v.unknown())),
         event: v.string(),
+        id: SessionId,
         nodeId: v.string(),
       }),
       type: v.literal("dispatchCallback"),
@@ -154,6 +183,7 @@ const HostToIframePayloadSchema = v.pipe(
     }),
   ])
 );
+
 export type HostToIframePayload = v.InferOutput<
   typeof HostToIframePayloadSchema
 >;
@@ -165,6 +195,7 @@ const RemoteCallbackBindingSchema = strictObject({
 });
 
 type RemoteNodeSchemaType = v.GenericSchema<unknown, RemoteNode>;
+
 const RemoteNodeSchema: RemoteNodeSchemaType = v.lazy(() =>
   v.pipe(
     ObjectInput,
@@ -233,6 +264,23 @@ const IframeToHostPayloadSchema = v.pipe(
   v.variant("type", [
     v.strictObject({
       data: strictObject({
+        generation: v.optional(SessionId),
+        id: SessionId,
+        input: v.optional(v.boolean()),
+        name: SessionId,
+      }),
+      type: v.literal("canvasRequest"),
+    }),
+    v.strictObject({
+      data: strictObject({
+        error: v.optional(v.string()),
+        id: SessionId,
+        output: v.optional(v.unknown()),
+      }),
+      type: v.literal("callbackResult"),
+    }),
+    v.strictObject({
+      data: strictObject({
         id: SessionId,
         input: v.optional(v.unknown()),
         kind: v.picklist(["client", "server"]),
@@ -271,9 +319,15 @@ const IframeToHostPayloadSchema = v.pipe(
     }),
   ])
 );
+
 export type IframeToHostPayload = v.InferOutput<
   typeof IframeToHostPayloadSchema
 >;
+
+export type CallbackResult = Extract<
+  IframeToHostPayload,
+  { type: "callbackResult" }
+>["data"];
 
 export { HostToIframePayloadSchema as HostToIframePayload };
 

@@ -2,12 +2,13 @@ import { copyFile, mkdir, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 
-import { lucideVersion, parseIconData } from "@tailorkit/core/icons";
+import { lucideVersion, parseIconData } from "@patchsmith/core/icons";
 import dynamicIconImports from "lucide-react/dynamicIconImports.mjs";
 import manifest from "lucide-react/package.json" with { type: "json" };
 
 const require = createRequire(import.meta.url);
 const packageRoot = path.dirname(require.resolve("lucide-react/package.json"));
+
 if (manifest.version !== lucideVersion) {
   throw new Error(
     "The Lucide asset version must match the SDK catalogue version"
@@ -19,7 +20,9 @@ const output = path.resolve(
   "../dist/lucide",
   lucideVersion
 );
+
 await mkdir(output, { recursive: true });
+
 await Promise.all(
   Object.entries(dynamicIconImports).map(async ([name, load]) => {
     const { __iconData: data } = await load();
@@ -27,6 +30,7 @@ await Promise.all(
     await writeFile(path.join(output, `${name}.json`), JSON.stringify(icon));
   })
 );
+
 // Retain the upstream ISC and Feather MIT notices beside the redistributed data.
 await copyFile(
   path.join(packageRoot, "LICENSE"),

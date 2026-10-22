@@ -19,10 +19,13 @@ export type JsonValue =
   | null
   | JsonValue[]
   | JsonObject;
+
 export interface JsonObject {
   [key: string]: JsonValue;
 }
+
 export type ScopeValue = JsonObject;
+
 export interface Scope {
   name: string;
   value: ScopeValue;
@@ -39,10 +42,12 @@ const maxSerializedBytes = 16 * 1024;
 export const scopeNameSchema = z
   .string()
   .regex(/^[A-Za-z][A-Za-z0-9_-]{0,63}$/u);
+
 export const scopeKeySchema = z.string().regex(/^[a-f0-9]{32}$/u);
 
 const quotedByteLength = (value: string) => {
   const json = JSON.stringify(value);
+
   return json ? new TextEncoder().encode(json).byteLength : 0;
 };
 
@@ -64,37 +69,50 @@ const preflightScopeValue = (value: unknown): string | null => {
   let bytes = 2;
   let valid = true;
   let issue: string | null = null;
+
   const fail = (message: string) => {
     valid = false;
     issue ??= message;
   };
+
   const active = new WeakSet<object>();
+
   const addBytes = (amount: number) => {
     bytes += amount;
+
     if (bytes > maxSerializedBytes) {
       fail("Scope value exceeds 16 KiB of JSON.");
     }
   };
+
   // oxlint-disable-next-line complexity, anti-slop/no-unknown-parameters -- This bounded preflight parser rejects invalid raw scope values, getters and cycles before Zod traversal.
   const visit = (current: unknown, depth: number): number => {
     nodes += 1;
+
     if (nodes > maxNodes) {
       fail("Scope value exceeds 512 JSON values.");
+
       return 0;
     }
+
     if (current === null) {
       return 4;
     }
+
     if (isBooleanValue(current)) {
       return current ? 4 : 5;
     }
+
     if (isStringValue(current)) {
       if (current.length > maxStringLength) {
         fail("Scope strings cannot exceed 255 characters.");
+
         return 0;
       }
+
       return quotedByteLength(current);
     }
+
     if (isNumberValue(current)) {
       if (
         !Number.isFinite(current) ||
@@ -103,17 +121,21 @@ const preflightScopeValue = (value: unknown): string | null => {
       ) {
         fail("Scope numbers must be finite, safe integers, and cannot be -0.");
       }
+
       return JSON.stringify(current).length;
     }
+
     if (!isObjectValue(current) || depth > maxDepth || active.has(current)) {
       fail(
         "Scope value exceeds the allowed depth, contains a cycle, or is not JSON."
       );
+
       return 0;
     }
 
     active.add(current);
     let currentBytes = 2;
+
     if (Array.isArray(current)) {
       if (
         Object.getPrototypeOf(current) !== Array.prototype ||
@@ -121,7 +143,9 @@ const preflightScopeValue = (value: unknown): string | null => {
       ) {
         fail("Scope arrays must be standard arrays with at most 100 entries.");
       }
+
       const keys = Reflect.ownKeys(current);
+
       if (keys.length !== current.length + 1 || !keys.includes("length")) {
         fail("Scope arrays must be dense and contain no extra properties.");
       }
@@ -130,10 +154,12 @@ const preflightScopeValue = (value: unknown): string | null => {
         if (!valid) {
           break;
         }
+
         const descriptor = Object.getOwnPropertyDescriptor(
           current,
           String(index)
         );
+
         if (
           !descriptor ||
           !("value" in descriptor) ||
@@ -142,17 +168,22 @@ const preflightScopeValue = (value: unknown): string | null => {
           fail("Scope arrays must contain enumerable data properties.");
           break;
         }
+
         if (index > 0) {
           currentBytes += 1;
         }
+
         currentBytes += visit(descriptor.value, depth + 1);
       }
     } else {
       const prototype: unknown = Object.getPrototypeOf(current);
+
       if (prototype !== Object.prototype && prototype !== null) {
         fail("Scope values must contain only plain objects.");
       }
+
       const keys = Reflect.ownKeys(current);
+
       if (keys.length > maxObjectEntries) {
         fail("Scope objects cannot exceed 32 entries.");
       }
@@ -161,7 +192,9 @@ const preflightScopeValue = (value: unknown): string | null => {
         if (!valid) {
           break;
         }
+
         const key = keys[index];
+
         if (
           !isStringValue(key) ||
           key === "__proto__" ||
@@ -173,7 +206,9 @@ const preflightScopeValue = (value: unknown): string | null => {
           );
           break;
         }
+
         const descriptor = Object.getOwnPropertyDescriptor(current, key);
+
         if (
           !descriptor ||
           !("value" in descriptor) ||
@@ -182,18 +217,23 @@ const preflightScopeValue = (value: unknown): string | null => {
           fail("Scope objects must contain enumerable data properties.");
           break;
         }
+
         if (index > 0) {
           currentBytes += 1;
         }
+
         currentBytes +=
           quotedByteLength(key) + 1 + visit(descriptor.value, depth + 1);
       }
     }
+
     active.delete(current);
+
     return currentBytes;
   };
 
   const rootKeys = Reflect.ownKeys(value);
+
   if (rootKeys.length === 0 || rootKeys.length > maxObjectEntries) {
     return "Scope value must contain 1–32 entries.";
   }
@@ -202,7 +242,9 @@ const preflightScopeValue = (value: unknown): string | null => {
     if (!valid) {
       break;
     }
+
     const key = rootKeys[index];
+
     if (
       !isStringValue(key) ||
       key === "__proto__" ||
@@ -211,7 +253,9 @@ const preflightScopeValue = (value: unknown): string | null => {
     ) {
       return "Scope keys must contain 1–64 characters and cannot be __proto__.";
     }
+
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
+
     if (
       !descriptor ||
       !("value" in descriptor) ||
@@ -219,11 +263,14 @@ const preflightScopeValue = (value: unknown): string | null => {
     ) {
       return "Scope objects must contain enumerable data properties.";
     }
+
     if (index > 0) {
       addBytes(1);
     }
+
     addBytes(quotedByteLength(key) + 1 + visit(descriptor.value, 1));
   }
+
   return valid ? null : (issue ?? "Invalid scope value.");
 };
 
@@ -254,9 +301,11 @@ const scopeObjectSchema = z.record(
 
 export const scopeValueSchema = z.preprocess((value, context) => {
   const issue = preflightScopeValue(value);
+
   if (issue !== undefined && issue !== null && issue !== "") {
     context.addIssue({ code: "custom", message: issue });
   }
+
   return value;
 }, scopeObjectSchema);
 
@@ -276,5 +325,6 @@ export const scopesSchema = z.preprocess((value, context) => {
   ) {
     context.addIssue({ code: "custom", message: "Select 1–32 named scopes." });
   }
+
   return value;
 }, z.array(scopeSchema).min(1).max(maxObjectEntries));

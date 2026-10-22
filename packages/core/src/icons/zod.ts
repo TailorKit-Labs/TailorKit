@@ -7,6 +7,7 @@ import { lucideIconNames } from "./lucide-names.generated";
 /** Define one icon component, registered under the name of your choice. */
 export const Icon = (options: IconOptions) => {
   validateIconOptions(options);
+
   return {
     children: false as const,
     fields: z.strictObject({

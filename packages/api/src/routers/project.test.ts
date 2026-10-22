@@ -1,8 +1,8 @@
 import type { ORPCError } from "@orpc/server";
 import { call } from "@orpc/server";
-import { auth } from "@tailorkit/auth";
-import { organization, member, user } from "@tailorkit/db/schema/auth";
-import { project } from "@tailorkit/db/schema/project";
+import { auth } from "@patchsmith/auth";
+import { organization, member, user } from "@patchsmith/db/schema/auth";
+import { project } from "@patchsmith/db/schema/project";
 import {
   afterEach,
   beforeEach,
@@ -20,7 +20,7 @@ const testState = vi.hoisted(() => ({
   db: undefined as unknown,
 }));
 
-vi.mock("@tailorkit/db", () => ({
+vi.mock("@patchsmith/db", () => ({
   createDb: () => testState.db,
   get db() {
     return testState.db;
@@ -28,7 +28,7 @@ vi.mock("@tailorkit/db", () => ({
   isOrgSlugReserved: () => false,
 }));
 
-vi.mock("@tailorkit/auth", () => ({
+vi.mock("@patchsmith/auth", () => ({
   auth: {
     api: {
       createApiKey: vi.fn().mockResolvedValue({
@@ -101,14 +101,14 @@ describe("projectRouter", () => {
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
         id: orgId,
         name: "Analytical Engines",
-        publicId: "team0000000001",
+        shortId: "team00000001",
         slug: "analytical-engines",
       },
       {
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
         id: otherOrgId,
         name: "Compilers Inc",
-        publicId: "team0000000002",
+        shortId: "team00000002",
         slug: "compilers-inc",
       },
     ]);
@@ -201,6 +201,7 @@ describe("projectRouter", () => {
       configId: "project-host",
       userId,
     });
+
     expect(auth.api.createApiKey).toHaveBeenCalledWith({
       body: expectedBodyMatcher1,
     });
@@ -219,6 +220,7 @@ describe("projectRouter", () => {
       rateLimitMax: 1000,
       rateLimitTimeWindow: 1000,
     });
+
     expect(auth.api.createApiKey).toHaveBeenCalledWith({
       body: expectedBodyMatcher2,
     });
@@ -238,6 +240,7 @@ describe("projectRouter", () => {
     const expectedBodyMatcher3: unknown = expect.objectContaining({
       name: "Project host key",
     });
+
     expect(auth.api.createApiKey).toHaveBeenCalledWith({
       body: expectedBodyMatcher3,
     });

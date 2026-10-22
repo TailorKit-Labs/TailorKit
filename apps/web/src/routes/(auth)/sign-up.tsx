@@ -1,7 +1,7 @@
 "use client";
 
-import { cn } from "@tailorkit/ui";
-import { Button } from "@tailorkit/ui/button";
+import { cn } from "@patchsmith/ui";
+import { Button } from "@patchsmith/ui/button";
 import {
   Card,
   CardFooter,
@@ -10,9 +10,9 @@ import {
   CardHeader,
   CardPanel,
   CardTitle,
-} from "@tailorkit/ui/card";
-import { useAppForm } from "@tailorkit/ui/form";
-import { Logo } from "@tailorkit/ui/logo";
+} from "@patchsmith/ui/card";
+import { useAppForm } from "@patchsmith/ui/form";
+import { Logo } from "@patchsmith/ui/logo";
 import { useQuery } from "@tanstack/react-query";
 import {
   useNavigate,
@@ -53,18 +53,23 @@ const RouteComponent = () => {
     error_description,
     return_to,
   } = useSearch({ from: "/(auth)/sign-up" });
+
   const navigate = useNavigate({ from: "/sign-up" });
+
   const socialProvidersQuery = useQuery(
     orpc.user.getSocialProviders.queryOptions()
   );
+
   const [step, setStep] = useState<Step>("email");
   const [visible, setVisible] = useState(true);
   const [email, setEmail] = useState(emailFromSearch ?? "");
   const [detailsError, setDetailsError] = useState<string | null>(null);
   const [socialError, setSocialError] = useState<string | null>(null);
+
   const [socialPending, setSocialPending] = useState<
     "github" | "google" | null
   >(null);
+
   const socialAuthPending = socialPending !== null;
 
   const transition = (nextStep: Step, nextEmail?: string) => {
@@ -74,6 +79,7 @@ const RouteComponent = () => {
       if (nextEmail !== undefined) {
         setEmail(nextEmail);
       }
+
       setStep(nextStep);
       setVisible(true);
     }, 150);
@@ -88,11 +94,13 @@ const RouteComponent = () => {
           resolve,
           reject: rejectPending,
         } = Promise.withResolvers();
+
         try {
           setTimeout(resolve, 300);
         } catch (error) {
           rejectPending(error);
         }
+
         return await pendingPromise;
       })();
       transition("details", value.email);
@@ -142,6 +150,7 @@ const RouteComponent = () => {
       const callbackURL =
         getSameOriginUrl(return_to, window.location.origin) ??
         window.location.origin;
+
       const result = await authClient.signIn.social({
         callbackURL,
         errorCallbackURL: getAuthErrorCallbackUrl(
@@ -175,10 +184,10 @@ const RouteComponent = () => {
       <div className="flex w-full max-w-sm flex-col items-center gap-4">
         <a
           className="flex items-center gap-2"
-          href="https://tailorkit.dev/home"
+          href="https://patchsmith.io/home"
         >
           <Logo className="size-6" />
-          <span className="text-lg font-semibold">TailorKit</span>
+          <span className="text-lg font-semibold">Patchsmith</span>
         </a>
         <CardFrame className="w-full">
           <Card>

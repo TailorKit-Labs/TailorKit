@@ -1,19 +1,19 @@
-import { Badge } from "@tailorkit/ui/badge";
-import { Button } from "@tailorkit/ui/button";
+import { Badge } from "@patchsmith/ui/badge";
+import { Button } from "@patchsmith/ui/button";
 import {
   CardFrame,
   CardFrameDescription,
   CardFrameHeader,
   CardFrameTitle,
-} from "@tailorkit/ui/card";
-import { DateAgo } from "@tailorkit/ui/date";
+} from "@patchsmith/ui/card";
+import { DateAgo } from "@patchsmith/ui/date";
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@tailorkit/ui/empty";
+} from "@patchsmith/ui/empty";
 import {
   Table,
   TableBody,
@@ -21,8 +21,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@tailorkit/ui/table";
-import { toastManager } from "@tailorkit/ui/toast";
+} from "@patchsmith/ui/table";
+import { toastManager } from "@patchsmith/ui/toast";
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 /* oxlint-disable react/no-unstable-nested-components */
 import { Link, createFileRoute, useParams } from "@tanstack/react-router";
@@ -31,6 +31,7 @@ import type { ColumnDef, SortingState } from "@tanstack/react-table";
 import { ArrowLeftIcon, DownloadIcon, RocketIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { AppInstallations } from "#components/apps/app-installations";
 import { AppLogo } from "#components/apps/app-logo";
 import { renderSortableHeader } from "#components/members/member-table-utils";
 import { PageLayout } from "#components/page-layout";
@@ -43,12 +44,15 @@ const getDeploymentStatusVariant = (
   if (status === "published") {
     return "success";
   }
+
   if (status === "deploying" || status === "verifying") {
     return "warning";
   }
+
   if (status === "uploading") {
     return "info";
   }
+
   return "outline";
 };
 
@@ -70,7 +74,7 @@ const DeploymentsTable = ({
         cell: ({ row }) => (
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">
-              {row.original.publicId}
+              {row.original.shortId}
             </p>
             {row.original.id === currentDeploymentId ? (
               <p className="text-xs text-muted-foreground">
@@ -160,10 +164,13 @@ const AppPage = () => {
   const { appId, orgSlug, projectSlug } = useParams({
     from: "/(app)/$orgSlug/$projectSlug/apps/$appId",
   });
+
   const sourceExportInput = { appId, orgSlug, projectSlug };
+
   const { data: sourceExportStatus } = useQuery(
     orpc.apps.sourceExportStatus.queryOptions({ input: sourceExportInput })
   );
+
   const sourceExportMutation = useMutation({
     mutationFn: async () => await client.apps.exportSource(sourceExportInput),
     onError: (cause: unknown) => {
@@ -188,6 +195,7 @@ const AppPage = () => {
       toastManager.add({ title: "Source export downloaded", type: "success" });
     },
   });
+
   const { data: app } = useSuspenseQuery(
     orpc.apps.get.queryOptions({ input: { appId, orgSlug, projectSlug } })
   );
@@ -198,6 +206,7 @@ const AppPage = () => {
         <div className="flex items-center gap-2">
           {sourceExportStatus === "available" ? (
             <Button
+              type="button"
               disabled={sourceExportMutation.isPending}
               onClick={() => {
                 sourceExportMutation.mutate();
@@ -214,19 +223,27 @@ const AppPage = () => {
           <Button
             render={
               <Link
-                params={{ orgSlug, projectSlug }}
-                to="/$orgSlug/$projectSlug/apps"
+                params={{
+                  orgSlug,
+                  projectSlug,
+                  appId: app.sourceApp?.shortId ?? app.shortId,
+                }}
+                to={
+                  app.sourceApp
+                    ? "/$orgSlug/$projectSlug/apps/$appId"
+                    : "/$orgSlug/$projectSlug/apps"
+                }
               />
             }
             size="sm"
             variant="outline"
           >
             <ArrowLeftIcon />
-            Back to apps
+            {app.sourceApp ? `Back to ${app.sourceApp.name}` : "Back to apps"}
           </Button>
         </div>
       }
-      description={app.description ?? "App and deployment details."}
+      description={app.description ?? "App installations and deployments."}
       title={
         <span className="flex items-center gap-3">
           <AppLogo
@@ -241,20 +258,26 @@ const AppPage = () => {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <CardFrame>
           <CardFrameHeader>
-            <CardFrameTitle>Installation scope</CardFrameTitle>
+            <CardFrameTitle>
+              {app.sourceApp ? "Installation scope" : "Installs"}
+            </CardFrameTitle>
             <CardFrameDescription className="w-full min-w-0">
-              <div className="grid w-full min-w-0 gap-2">
-                <Badge
-                  className="max-w-full min-w-0 break-all whitespace-normal"
-                  size="sm"
-                  variant="outline"
-                >
-                  {app.scope.name}
-                </Badge>
-                <pre className="max-h-64 max-w-full overflow-auto rounded-md border bg-muted/40 p-3 font-mono text-xs text-foreground">
-                  {JSON.stringify(app.scope.value, null, 2)}
-                </pre>
-              </div>
+              {app.sourceApp ? (
+                <div className="grid w-full min-w-0 gap-2">
+                  <Badge
+                    className="max-w-full min-w-0 break-all whitespace-normal"
+                    size="sm"
+                    variant="outline"
+                  >
+                    {app.scope.name}
+                  </Badge>
+                  <pre className="max-h-64 max-w-full overflow-auto rounded-md border bg-muted/40 p-3 font-mono text-xs text-foreground">
+                    {JSON.stringify(app.scope.value, null, 2)}
+                  </pre>
+                </div>
+              ) : (
+                app.installationCount
+              )}
             </CardFrameDescription>
           </CardFrameHeader>
         </CardFrame>
@@ -263,7 +286,7 @@ const AppPage = () => {
             <CardFrameTitle>Current deployment</CardFrameTitle>
             <CardFrameDescription>
               {app.currentDeployment
-                ? app.currentDeployment.publicId
+                ? app.currentDeployment.shortId
                 : "No deployment published"}
             </CardFrameDescription>
           </CardFrameHeader>
@@ -286,24 +309,48 @@ const AppPage = () => {
         </CardFrame>
       </div>
 
-      {app.deployments.length === 0 ? (
-        <Empty className="mx-auto w-full">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <RocketIcon />
-            </EmptyMedia>
-            <EmptyTitle>No deployments</EmptyTitle>
-            <EmptyDescription>
-              Deployments uploaded for this app will appear here.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      ) : (
-        <DeploymentsTable
-          currentDeploymentId={app.currentDeploymentId}
-          deployments={app.deployments}
-        />
+      {app.sourceApp ? null : (
+        <section aria-labelledby="installations-heading" className="space-y-3">
+          <h2 className="text-lg font-semibold" id="installations-heading">
+            Installations
+          </h2>
+          <AppInstallations
+            appId={app.shortId}
+            orgSlug={orgSlug}
+            projectSlug={projectSlug}
+          />
+        </section>
       )}
+
+      <section aria-labelledby="deployments-heading" className="space-y-3">
+        <h2 className="text-lg font-semibold" id="deployments-heading">
+          Deployments
+        </h2>
+        {app.deployments.length === 0 ? (
+          <Empty className="mx-auto w-full">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <RocketIcon />
+              </EmptyMedia>
+              <EmptyTitle>
+                {app.sourceApp
+                  ? "No deployments uploaded to this installation"
+                  : "No deployments"}
+              </EmptyTitle>
+              <EmptyDescription>
+                {app.sourceApp
+                  ? "This installation uses a deployment from its source app."
+                  : "Deployments uploaded for this app will appear here."}
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <DeploymentsTable
+            currentDeploymentId={app.currentDeploymentId}
+            deployments={app.deployments}
+          />
+        )}
+      </section>
     </PageLayout>
   );
 };
@@ -326,7 +373,7 @@ export const Route = createFileRoute(
 
 interface DeploymentRow {
   id: string;
-  publicId: string;
+  shortId: string;
   status: string;
   createdAt: Date | string;
   updatedAt: Date | string;

@@ -1,13 +1,17 @@
 import { readFile } from "node:fs/promises";
 
+import { readChangesets } from "@changesets/read";
+
 import {
   parsePackageManifest,
   parsePrereleaseState,
 } from "./package-manifest.mjs";
 
 const publishablePackages = [
-  "packages/tailorkit/package.json",
+  "packages/patchsmith/package.json",
+  "packages/ai-sdk/package.json",
   "packages/app/package.json",
+  "packages/app-db/package.json",
   "packages/cli/package.json",
   "packages/client-core/package.json",
   "packages/client-platform/package.json",
@@ -17,13 +21,16 @@ const publishablePackages = [
   "packages/vite/package.json",
 ];
 
-const allowedPrerelease = /-(?:alpha|beta)(?:\.|$)/u;
+const allowedPrerelease =
+  /^0\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)-(?:alpha|beta)\.(?:0|[1-9]\d*)$/u;
 
 const releaseRepository =
   // oxlint-disable-next-line no-restricted-properties -- The standalone release script reads GitHub Actions metadata.
-  process.env.GITHUB_REPOSITORY ?? "tailorkit-labs/TailorKit";
+  process.env.GITHUB_REPOSITORY ?? "patchsmith-io/patchsmith";
+
 const expectedRepositoryUrl = `git+https://github.com/${releaseRepository}.git`;
 const errors = [];
+
 const manifests = await Promise.all(
   publishablePackages.map(async (manifestPath) =>
     parsePackageManifest(await readFile(manifestPath, "utf-8"))
@@ -37,7 +44,7 @@ for (const manifest of manifests) {
 
   if (!allowedPrerelease.test(manifest.version)) {
     errors.push(
-      `${manifest.name}@${manifest.version} is not an alpha or beta prerelease`
+      `${manifest.name}@${manifest.version} must be a 0.x alpha or beta prerelease`
     );
   }
 
@@ -45,7 +52,10 @@ for (const manifest of manifests) {
     errors.push(`${manifest.name} does not publish with public access`);
   }
 
-  if (manifest.repository?.url !== expectedRepositoryUrl) {
+  if (
+    manifest.repository?.url.toLowerCase() !==
+    expectedRepositoryUrl.toLowerCase()
+  ) {
     errors.push(
       `${manifest.name} repository.url must be ${expectedRepositoryUrl} for trusted publishing`
     );
@@ -83,11 +93,23 @@ if (preState.mode !== "pre" || !["alpha", "beta"].includes(preState.tag)) {
   errors.push("Changesets must remain in alpha or beta prerelease mode");
 }
 
+for (const changeset of await readChangesets(process.cwd())) {
+  for (const release of changeset.releases) {
+    if (release.type === "major") {
+      errors.push(
+        `.changeset/${changeset.id}.md requests a major bump for ${release.name}; use minor for breaking changes while Patchsmith remains on 0.x`
+      );
+    }
+  }
+}
+
 if (errors.length > 0) {
   console.error("Prerelease safety check failed:");
+
   for (const error of errors) {
     console.error(`- ${error}`);
   }
+
   process.exitCode = 1;
 } else {
   console.log(`Prerelease safety check passed (${preState.tag} channel).`);

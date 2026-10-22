@@ -13,12 +13,14 @@ export const withTimeout = async <T>(
   }
 
   let timer: ReturnType<typeof setTimeout> | undefined;
+
   const timeoutPromise = (async () => {
     const {
       promise: pendingPromise,
       resolve: _,
       reject,
     } = Promise.withResolvers<never>();
+
     try {
       timer = setTimeout(() => {
         reject(new Error(`KV get timed out after ${timeout}ms.`));
@@ -26,6 +28,7 @@ export const withTimeout = async <T>(
     } catch (error) {
       reject(error);
     }
+
     return await pendingPromise;
   })();
 

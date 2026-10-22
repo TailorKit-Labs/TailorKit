@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   index,
   integer,
   jsonb,
@@ -15,6 +16,8 @@ import {
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { createSelectSchema } from "drizzle-orm/zod";
 import { z } from "zod";
+
+import { createShortId } from "#short-id";
 
 import { project } from "./project";
 import { scopeKeySchema, scopeSchema } from "./scope";
@@ -38,29 +41,51 @@ export const app = pgTable(
     projectId: uuid("project_id")
       .notNull()
       .references(() => project.id, { onDelete: "cascade" }),
-    publicId: varchar("public_id", { length: 12 }).notNull(),
     scope: jsonb("scope_json").$type<Scope>().notNull(),
     scopeKey: text("scope_key").notNull(),
+    shortId: varchar("short_id", { length: 12 })
+      .notNull()
+      .$defaultFn(createShortId),
+    slug: varchar("slug", { length: 32 })
+      .notNull()
+      .default(
+        sql`('app-' || substr(replace(pg_catalog.gen_random_uuid()::text, '-', ''), 1, 28))`
+      ),
     updatedAt: timestamp("updated_at")
       .defaultNow()
       .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [
+    check("app_short_id_format", sql`${table.shortId} ~ '^[a-z0-9]{12}$'`),
+    check("app_slug_format", sql`${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$'`),
+    uniqueIndex("app_project_id_slug_unique").on(table.projectId, table.slug),
     index("app_project_scope_key_idx").on(table.projectId, table.scopeKey),
-    uniqueIndex("app_project_id_public_id_unique").on(
+    uniqueIndex("app_project_id_short_id_unique").on(
       table.projectId,
-      table.publicId
+      table.shortId
     ),
   ]
 );
+
+export const appSlugSchema = z
+  .string()
+  .min(1)
+  .max(32)
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u)
+  .describe(
+    "Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens."
+  );
 
 const AppSchema = createSelectSchema(app, {
   description: z.string().max(255).nullable(),
   name: z.string().max(127),
   scope: scopeSchema,
   scopeKey: scopeKeySchema,
+  shortId: z.string().regex(/^[a-z0-9]{12}$/u),
+  slug: appSlugSchema,
 });
+
 export type App = z.output<typeof AppSchema>;
 
 /** Independent conversations for an app; their snapshots retain Pi journals. */
@@ -130,7 +155,9 @@ export const appDeployment = pgTable(
       { onDelete: "restrict" }
     ),
     logoLightPath: text("logo_light_path"),
-    publicId: varchar("public_id", { length: 12 }).notNull(),
+    shortId: varchar("short_id", { length: 12 })
+      .notNull()
+      .$defaultFn(createShortId),
     status: appDeploymentStatus("status").default("deploying").notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -144,14 +171,19 @@ export const appDeployment = pgTable(
       .default([]),
   },
   (table) => [
-    uniqueIndex("app_deployment_app_id_public_id_unique").on(
+    check(
+      "app_deployment_short_id_format",
+      sql`${table.shortId} ~ '^[a-z0-9]{12}$'`
+    ),
+    uniqueIndex("app_deployment_app_id_short_id_unique").on(
       table.appId,
-      table.publicId
+      table.shortId
     ),
   ]
 );
 
 const AppDeploymentSchema = createSelectSchema(appDeployment, {
+  shortId: z.string().regex(/^[a-z0-9]{12}$/u),
   views: z
     .array(
       z.object({
@@ -163,6 +195,7 @@ const AppDeploymentSchema = createSelectSchema(appDeployment, {
     )
     .max(1000),
 });
+
 export type AppDeployment = z.output<typeof AppDeploymentSchema>;
 
 export const appDeploymentFileContentType = pgEnum(
@@ -220,6 +253,7 @@ const AppDeploymentFileSchema = createSelectSchema(appDeploymentFile, {
       "Must be a valid object key like assets/client.js"
     ),
 });
+
 export type AppDeploymentFile = z.output<typeof AppDeploymentFileSchema>;
 
 export { AppSchema as App };

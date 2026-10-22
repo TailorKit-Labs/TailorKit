@@ -1,4 +1,4 @@
-import { lucideVersion, parseIconData } from "@tailorkit/core/icons";
+import { lucideVersion, parseIconData } from "@patchsmith/core/icons";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { createTestHarness } from "wrangler";
 
@@ -15,12 +15,14 @@ const server = createTestHarness({
     },
   ],
 });
+
 const origin = "https://icons.tailorkit.app";
 const catalogue = `/lucide/${lucideVersion}`;
 
 beforeAll(async () => {
   await server.listen();
 }, 30_000);
+
 afterAll(async () => {
   await server.close();
 }, 30_000);
@@ -56,6 +58,7 @@ describe("icon static assets", () => {
     const response = await server.fetch(`${catalogue}/check.json`, {
       method: "HEAD",
     });
+
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toContain("immutable");
     expect(await response.text()).toBe("");
@@ -72,7 +75,7 @@ describe("icon static assets", () => {
   });
 
   it.each([
-    "/lucide/1.55.0/missing.json",
+    "/lucide/1.59.0/missing.json",
     "/lucide/0.0.0/check.json",
     "/unknown",
   ])("keeps misses out of the immutable cache: %s", async (pathname) => {
@@ -86,11 +89,14 @@ describe("icon static assets", () => {
     const preflight = await server.fetch(`${catalogue}/check.json`, {
       method: "OPTIONS",
     });
+
     expect(preflight.status).toBe(405);
     expect(preflight.headers.get("Access-Control-Allow-Origin")).toBe("*");
+
     const write = await server.fetch(`${catalogue}/check.json`, {
       method: "POST",
     });
+
     expect(write.status).toBe(405);
   });
 });

@@ -5,6 +5,7 @@ import {
   writeFile,
   rm,
   readdir,
+  rename,
   mkdtemp,
   mkdir,
 } from "node:fs/promises";
@@ -13,30 +14,34 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 import type {
-  TailorKitClientWithMeta,
+  PatchsmithClientWithMeta,
   ViewDefinition,
   ViewInstance,
-} from "@tailorkit/app/client";
+} from "@patchsmith/app/client";
 import type {
   ApplicationModule,
   FunctionDefinition,
-} from "@tailorkit/app/server";
+} from "@patchsmith/app/server";
 import { Window } from "happy-dom";
 import type { VNode } from "preact";
+import * as v from "valibot";
 import { build } from "vite";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vite-plus/test";
-import type { z } from "zod";
 
-import { tailorkit } from "#index";
+import { patchsmith } from "#index";
 import { linkTestDependencies, createDatabaseTestApp } from "#test-utils";
 
 import { readClientManifest } from "./client-views";
 import { runtimeManifest } from "./server";
 
+// These integration cases run real builds, schema checks, and browser evaluation.
+vi.setConfig({ testTimeout: 30_000 });
+
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -53,107 +58,292 @@ const buildFixture = async (options: {
     },
     configFile: false,
     plugins: [
-      tailorkit({
+      patchsmith({
         configPath: path.resolve(
           options.cwd,
-          options.configPath ?? "tailorkit.config.mjs"
+          options.configPath ?? "patchsmith.config.mjs"
         ),
       }),
     ],
     root: options.cwd,
   });
+
   if ("on" in result) {
     const initialBuild = Promise.withResolvers<ReturnType<() => void>>();
     result.on("event", (event) => {
       if (event.code === "END") {
         initialBuild.resolve();
       }
+
       if (event.code === "ERROR") {
         initialBuild.reject(event.error);
       }
     });
     await initialBuild.promise;
   }
+
   return result;
 };
 
-declare module "@tailorkit/app/client" {
-  interface TailorKitViews {
+declare module "@patchsmith/app/client" {
+  interface PatchsmithViews {
     "/": { context: { workspaceId: string } };
   }
 }
 
-it("builds file routes with a configured server and blocks server imports from the browser", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-custom-entries-"));
+const router = (
+  keys: string
+) => `import { defineRouter, fn } from "patchsmith/server";
+      const read = fn.query.handler(() => { throw new Error("HANDLERS_MUST_NOT_RUN_DURING_BUILDS"); });
+      export default defineRouter({ ${keys} });`;
+
+it.each([
+  {
+    error: undefined,
+    first: "get: { children: read }",
+    second: "parents: read",
+  },
+  {
+    error: "Duplicate function: api.family.get.children",
+    first: "get: { children: read }",
+    second: "children: read",
+  },
+  {
+    error: "Function/namespace conflict: api.family.get",
+    first: "get: read",
+    second: "parents: read",
+  },
+])(
+  "validates merged routers when loading the bundle: $first / $second",
+  async ({ first, second, error }) => {
+    const root = await mkdtemp(
+      path.join(tmpdir(), "patchsmith-function-build-")
+    );
+
+    try {
+      await linkTestDependencies(root);
+      await mkdir(path.join(root, "src/functions/family"), { recursive: true });
+      await writeFile(path.join(root, "package.json"), '{"type":"module"}');
+      await writeFile(
+        path.join(root, "patchsmith.config.mjs"),
+        'export default { name: "Test App", slug: "test-app", host: "https://host.test", server: {} };'
+      );
+      await writeFile(
+        path.join(root, "src/root.tsx"),
+        'import { defineRoute } from "patchsmith/client"; export default defineRoute({ shellComponent: () => "client" });'
+      );
+
+      await writeFile(
+        path.join(root, "src/functions/family.fn.ts"),
+        router(first)
+      );
+      await writeFile(
+        path.join(root, "src/functions/family/get.fn.ts"),
+        router(second)
+      );
+
+      await buildFixture({ cwd: root });
+
+      const loaded = import(
+        pathToFileURL(path.join(root, ".patchsmith/server/server.js")).href
+      );
+
+      if (error !== undefined) {
+        await expect(loaded).rejects.toThrow(error);
+        await expect(loaded).rejects.toThrow("src/functions/family.fn.ts");
+        await expect(loaded).rejects.toThrow("src/functions/family/get.fn.ts");
+
+        return;
+      }
+
+      const application: ApplicationModule = await loaded;
+
+      expect(application.default.functions).toMatchObject({
+        family: {
+          get: { children: { kind: "query" }, parents: { kind: "query" } },
+        },
+      });
+      expect(
+        await readFile(path.join(root, ".patchsmith/client/client.js"), "utf-8")
+      ).not.toContain("HANDLERS_MUST_NOT_RUN");
+
+      const watcher = await buildFixture({ cwd: root, watch: true });
+
+      if (!("close" in watcher)) {
+        throw new Error("Expected a build watcher");
+      }
+
+      const artifact = path.join(root, ".patchsmith/server/server.js");
+      const types = path.join(root, "src/patchsmith.functions.gen.ts");
+
+      try {
+        const extra = path.join(root, "src/functions/extra.fn.ts");
+        await writeFile(extra, router("added: read"));
+        await expect
+          .poll(async () => await readFile(artifact, "utf-8"), {
+            timeout: 5000,
+          })
+          .toContain("src/functions/extra.fn.ts");
+        await expect
+          .poll(async () => await readFile(types, "utf-8"))
+          .toContain("./functions/extra.fn");
+        await rename(extra, path.join(root, "src/functions/renamed.fn.ts"));
+        await expect
+          .poll(async () => await readFile(artifact, "utf-8"), {
+            timeout: 5000,
+          })
+          .toContain("src/functions/renamed.fn.ts");
+        await rm(path.join(root, "src/functions/renamed.fn.ts"));
+        await expect
+          .poll(async () => await readFile(artifact, "utf-8"), {
+            timeout: 5000,
+          })
+          .not.toContain("src/functions/renamed.fn.ts");
+        await expect
+          .poll(async () => await readFile(types, "utf-8"))
+          .not.toContain("renamed.fn");
+      } finally {
+        await watcher.close();
+      }
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  }
+);
+
+it.each([
+  {
+    marker: "SERVER_MODULE_SCOPE_EXECUTED",
+    source: 'throw new Error("SERVER_MODULE_SCOPE_EXECUTED");',
+  },
+  {
+    marker: "WebSocketPair",
+    source: "globalThis.workerSockets = new WebSocketPair();",
+  },
+])(
+  "builds without evaluating backend module-scope code: $marker",
+  async ({ marker, source }) => {
+    const root = await mkdtemp(path.join(tmpdir(), "patchsmith-server-scope-"));
+
+    try {
+      await linkTestDependencies(root);
+      await mkdir(path.join(root, "src/functions"), { recursive: true });
+      await writeFile(path.join(root, "package.json"), '{"type":"module"}');
+      await writeFile(
+        path.join(root, "patchsmith.config.mjs"),
+        'export default { name: "Test App", slug: "test-app", host: "https://host.test", server: {} };'
+      );
+      await writeFile(
+        path.join(root, "src/root.tsx"),
+        'import { defineRoute } from "patchsmith/client"; export default defineRoute({ shellComponent: () => "client" });'
+      );
+      await writeFile(
+        path.join(root, "src/functions/example.fn.ts"),
+        `${source}\n${router("read")}`
+      );
+
+      await buildFixture({ cwd: root });
+
+      const server = await readFile(
+        path.join(root, ".patchsmith/server/server.js"),
+        "utf-8"
+      );
+
+      expect(server).toContain(marker);
+      expect(
+        await readFile(path.join(root, ".patchsmith/client/client.js"), "utf-8")
+      ).not.toContain(marker);
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  }
+);
+
+it("builds file routes with discovered functions and blocks server imports from the browser", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "patchsmith-custom-entries-"));
+
   try {
     await linkTestDependencies(root);
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(
-      path.join(root, "tailorkit.config.mjs"),
-      'export default { host: "https://host.example.com", server: { entry: "./backend/api.ts" } };'
+      path.join(root, "patchsmith.config.mjs"),
+      'export default { appId: "configured-app", name: "Test App", slug: "test-app", host: "https://host.example.com", server: {} };'
     );
     await Promise.all(
-      ["src", "backend"].map(async (directory) => {
-        await mkdir(path.join(root, directory));
+      ["src/functions"].map(async (directory) => {
+        await mkdir(path.join(root, directory), { recursive: true });
       })
     );
-    await writeFile(
-      path.join(root, "src/client.ts"),
-      'throw new Error("Unused default client");'
-    );
-    await writeFile(
-      path.join(root, "src/server.ts"),
-      'throw new Error("Unused default server");'
-    );
+
     const client =
-      'import { defineRoute } from "tailorkit/client"; export default defineRoute({ shellComponent: () => "Configured client loaded" });';
+      'import { defineRoute } from "patchsmith/client"; export default defineRoute({ shellComponent: () => "Configured client loaded" });';
+
     await writeFile(path.join(root, "src/root.tsx"), client);
     await writeFile(
-      path.join(root, "backend/api.ts"),
-      'import { defineServer, fn } from "tailorkit/server";\nconst app = defineServer({ configured: fn.query.handler(() => "Configured server loaded") });\nexport default app;'
-    );
-    await writeFile(
-      path.join(root, "backend/helper.ts"),
+      path.join(root, "src/functions/helper.ts"),
       'export const value = "Lazy server helper";'
     );
     await writeFile(
-      path.join(root, "backend/api.ts"),
-      'import { defineServer, fn } from "tailorkit/server"; export default defineServer({ configured: fn.query.handler(() => "Configured server loaded"), lazy: fn.action.handler(async () => (await import("./helper")).value) });'
+      path.join(root, "src/functions/example.fn.ts"),
+      'import { defineRouter, fn } from "patchsmith/server"; export default defineRouter({ configured: fn.query.handler(() => "Configured server loaded"), lazy: fn.action.handler(async () => (await import("./helper")).value) });'
     );
     await buildFixture({ cwd: root });
-    expect(await readdir(path.join(root, ".tailorkit/server"))).toEqual([
+    expect(await readdir(path.join(root, ".patchsmith/server"))).toEqual([
       "server.js",
     ]);
-    expect(await readdir(path.join(root, ".tailorkit/tmp"))).toEqual([]);
+    expect(await readdir(path.join(root, ".patchsmith/tmp"))).toEqual([]);
+
     const browser = await readFile(
-      path.join(root, ".tailorkit/client/client.js"),
+      path.join(root, ".patchsmith/client/client.js"),
       "utf-8"
     );
+
     const server = await readFile(
-      path.join(root, ".tailorkit/server/server.js"),
+      path.join(root, ".patchsmith/server/server.js"),
       "utf-8"
     );
+
     expect(browser).toContain("Configured client loaded");
     expect(server).toContain("Configured server loaded");
     expect(server).toContain("Lazy server helper");
     expect(server).not.toContain("./assets/");
+
     const application: ApplicationModule = await import(
-      pathToFileURL(path.join(root, ".tailorkit/server/server.js")).href
+      pathToFileURL(path.join(root, ".patchsmith/server/server.js")).href
     );
+
     expect(application.runtimeManifest).toEqual(runtimeManifest);
-    expect(application.default.functions.configured?.kind).toBe("query");
+    expect(application.default.functions).toMatchObject({
+      example: { configured: { kind: "query" } },
+    });
     expect(application.migrations).toEqual([]);
     expect(browser).not.toContain("Configured server loaded");
-    expect(browser).not.toContain("Unused default client");
-    expect(server).not.toContain("Unused default server");
+    // The host deployment tool must build beneath the app so the generated
+    // temporary server entry can resolve patchsmith/server from node_modules.
+    const deploymentOutput = path.join(root, ".patchsmith/agent-deployment");
+    await buildFixture({ cwd: root, outDir: deploymentOutput });
+    expect(
+      await readFile(path.join(deploymentOutput, "server/server.js"), "utf-8")
+    ).toContain("Configured server loaded");
+    expect(
+      JSON.parse(
+        await readFile(
+          path.join(deploymentOutput, "patchsmith-upload.json"),
+          "utf-8"
+        )
+      )
+    ).toMatchObject({
+      appId: "configured-app",
+      assets: { client: "client/client.js", server: "server/server.js" },
+    });
     await writeFile(
       path.join(root, "src/root.tsx"),
-      `import type app from "../backend/api";\n${client}`
+      `import type app from "./functions/example.fn";\n${client}`
     );
     await expect(buildFixture({ cwd: root })).resolves.toBeDefined();
     await writeFile(
       path.join(root, "src/root.tsx"),
-      `import "../backend/api";\n${client}`
+      `import "./functions/example.fn";\n${client}`
     );
     await expect(buildFixture({ cwd: root })).rejects.toThrow(
       "cannot be imported into a browser bundle"
@@ -168,7 +358,7 @@ describe("database app builds", () => {
 
   beforeAll(async () => {
     template = await mkdtemp(
-      path.join(tmpdir(), "tailorkit-database-template-")
+      path.join(tmpdir(), "patchsmith-database-template-")
     );
     await createDatabaseTestApp(template);
   });
@@ -180,11 +370,12 @@ describe("database app builds", () => {
 
   const withDatabaseApp = async (check: (root: string) => Promise<void>) => {
     const source = requireValue(template);
-    const root = await mkdtemp(path.join(tmpdir(), "tailorkit-server-build-"));
+    const root = await mkdtemp(path.join(tmpdir(), "patchsmith-server-build-"));
+
     try {
       // Generate migrations once, then give each build its own sources and outputs.
       await Promise.all(
-        ["package.json", "tailorkit.config.mjs", "src"].map(
+        ["package.json", "patchsmith.config.mjs", "src"].map(
           async (filename) => {
             await cp(path.join(source, filename), path.join(root, filename), {
               recursive: true,
@@ -204,51 +395,58 @@ describe("database app builds", () => {
       const sourceFiles = await readdir(path.join(root, "src"), {
         recursive: true,
       });
+
       await buildFixture({ cwd: root });
+
       const browser = await readFile(
-        path.join(root, ".tailorkit/client/client.js"),
+        path.join(root, ".patchsmith/client/client.js"),
         "utf-8"
       );
+
       const server = await readFile(
-        path.join(root, ".tailorkit/server/server.js"),
+        path.join(root, ".patchsmith/server/server.js"),
         "utf-8"
       );
+
       // Keep a small app below this budget, including its schemas and ORM.
       expect(Buffer.byteLength(server)).toBeLessThan(150_000);
-      expect(server).not.toContain("tailorkit_receipts");
+      expect(server).not.toContain("patchsmith_receipts");
       expect(server).not.toContain("cloudflare:workers");
       expect(server).not.toContain("node:async_hooks");
       expect(server).not.toContain(
-        "CREATE TABLE IF NOT EXISTS tailorkit_migrations"
+        "CREATE TABLE IF NOT EXISTS patchsmith_migrations"
       );
       expect(server).toContain("CREATE TABLE `todos`");
-      expect(browser).not.toContain("tailorkit_migrations");
+      expect(browser).not.toContain("patchsmith_migrations");
       expect(browser).not.toContain("CREATE TABLE `todos`");
-      expect(browser).not.toContain("tailorkit_receipts");
+      expect(browser).not.toContain("patchsmith_receipts");
       expect(browser).not.toContain("PRIVATE_DATABASE_TEST");
       expect(browser).not.toContain("cloudflare:workers");
       expect(browser).not.toContain("jwtVerify");
       expect(browser).not.toContain("SignJWT");
       expect(
         await readdir(path.join(root, "src"), { recursive: true })
-      ).toEqual(sourceFiles);
-      expect(sourceFiles).not.toContain("server.gen.ts");
+      ).toEqual(
+        expect.arrayContaining([...sourceFiles, "patchsmith.functions.gen.ts"])
+      );
       expect(
         JSON.parse(
           await readFile(
-            path.join(root, ".tailorkit/tailorkit-upload.json"),
+            path.join(root, ".patchsmith/patchsmith-upload.json"),
             "utf-8"
           )
         ).assets
       ).toEqual({ client: "client/client.js", server: "server/server.js" });
+
       const migrationFiles = await readdir(
         path.join(root, "src/db/migrations"),
         {
           recursive: true,
         }
       );
+
       expect(
-        await readdir(path.join(root, ".tailorkit/migrations"), {
+        await readdir(path.join(root, ".patchsmith/migrations"), {
           recursive: true,
         })
       ).toEqual(migrationFiles);
@@ -258,7 +456,7 @@ describe("database app builds", () => {
           .map(async (file) => {
             expect(
               await readFile(
-                path.join(root, ".tailorkit/migrations", file),
+                path.join(root, ".patchsmith/migrations", file),
                 "utf-8"
               )
             ).toBe(
@@ -275,55 +473,63 @@ describe("database app builds", () => {
   it("preserves the client bundle and migrations with custom output", async () => {
     await withDatabaseApp(async (root) => {
       await buildFixture({ cwd: root });
+
       const browser = await readFile(
-        path.join(root, ".tailorkit/client/client.js"),
+        path.join(root, ".patchsmith/client/client.js"),
         "utf-8"
       );
+
       const migrationFiles = await readdir(
         path.join(root, "src/db/migrations"),
         {
           recursive: true,
         }
       );
-      await buildFixture({ cwd: root, outDir: ".tailorkit/custom" });
+
+      await buildFixture({ cwd: root, outDir: ".patchsmith/custom" });
       expect(
         await readFile(
-          path.join(root, ".tailorkit/custom/client/client.js"),
+          path.join(root, ".patchsmith/custom/client/client.js"),
           "utf-8"
         )
       ).toBe(browser);
+
       const customServer = await readFile(
-        path.join(root, ".tailorkit/custom/server/server.js"),
+        path.join(root, ".patchsmith/custom/server/server.js"),
         "utf-8"
       );
+
       expect(customServer).not.toContain(
-        "CREATE TABLE IF NOT EXISTS tailorkit_migrations"
+        "CREATE TABLE IF NOT EXISTS patchsmith_migrations"
       );
       expect(customServer).toContain("CREATE TABLE `todos`");
       expect(
-        await readdir(path.join(root, ".tailorkit/custom/migrations"), {
+        await readdir(path.join(root, ".patchsmith/custom/migrations"), {
           recursive: true,
         })
       ).toEqual(migrationFiles);
     });
   });
 
-  it.each(["./server", "tailorkit/server", "effect"])(
-    "rejects the browser's accidental import of %s",
-    async (specifier) => {
-      await withDatabaseApp(async (root) => {
-        const clientPath = path.join(root, "src/root.tsx");
-        const client = await readFile(clientPath, "utf-8");
-        await writeFile(
-          clientPath,
-          `import ${JSON.stringify(specifier)};\n${client}`
-        );
-        await expect(buildFixture({ cwd: root })).rejects.toThrow(
-          "cannot be imported into a browser bundle"
-        );
-      });
-    }
-  );
+  it.each([
+    "./functions/todos.fn",
+    "patchsmith/server",
+    "patchsmith/db",
+    "@patchsmith/app-db",
+    "effect",
+  ])("rejects the browser's accidental import of %s", async (specifier) => {
+    await withDatabaseApp(async (root) => {
+      const clientPath = path.join(root, "src/root.tsx");
+      const client = await readFile(clientPath, "utf-8");
+      await writeFile(
+        clientPath,
+        `import ${JSON.stringify(specifier)};\n${client}`
+      );
+      await expect(buildFixture({ cwd: root })).rejects.toThrow(
+        "cannot be imported into a browser bundle"
+      );
+    });
+  });
 
   it("rejects build output overlapping the migration source", async () => {
     await withDatabaseApp(async (root) => {
@@ -335,33 +541,38 @@ describe("database app builds", () => {
 });
 
 it("builds colocated instance resolvers as query-only server actions", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-instances-build-"));
+  const root = await mkdtemp(
+    path.join(tmpdir(), "patchsmith-instances-build-")
+  );
+
   try {
     await linkTestDependencies(root);
     await mkdir(path.join(root, "src/slots/page"), { recursive: true });
     await mkdir(path.join(root, "src/slots/panel.links"), { recursive: true });
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(
-      path.join(root, "tailorkit.config.mjs"),
-      'export default { host: "https://host.example.com", server: {} };'
+      path.join(root, "patchsmith.config.mjs"),
+      'export default { name: "Test App", slug: "test-app", host: "https://host.example.com", server: {} };'
     );
+    await mkdir(path.join(root, "src/functions"), { recursive: true });
     await writeFile(
-      path.join(root, "src/server.ts"),
+      path.join(root, "src/functions/reports.fn.ts"),
       `
-      import { defineServer, fn } from "tailorkit/server";
-      export default defineServer({ reports: {
+      import { defineRouter, fn } from "patchsmith/server";
+      export default defineRouter({
         list: fn.query.handler(() => [{ id: "report_123" }]),
         write: fn.mutation.handler(() => "never"),
         external: fn.action.handler(() => Promise.resolve("never")),
-      } });
+      });
     `
     );
     await writeFile(
       path.join(root, "src/private.ts"),
       'export function title(id: string) { return "PRIVATE_SERVER_ONLY:" + id; }'
     );
+
     const viewSource = `
-      import { defineView } from "tailorkit/client";
+      import { defineView } from "patchsmith/client";
       import { z } from "zod";
       import { title } from "../../private";
       const privatePrefix = (() => "PRIVATE_INITIALIZER")();
@@ -379,6 +590,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       });
       export default view;
     `;
+
     await writeFile(
       path.join(root, "src/slots/page/index.view.tsx"),
       viewSource
@@ -388,43 +600,51 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       'import view from "../page/index.view"; export default { ...view, slot: "panel.links" };'
     );
     await buildFixture({ cwd: root });
+
     const browser = await readFile(
-      path.join(root, ".tailorkit/client/client.js"),
+      path.join(root, ".patchsmith/client/client.js"),
       "utf-8"
     );
+
     const server = await readFile(
-      path.join(root, ".tailorkit/server/server.js"),
+      path.join(root, ".patchsmith/server/server.js"),
       "utf-8"
     );
+
     expect(browser).not.toContain("PRIVATE_SERVER_ONLY");
     expect(browser).not.toContain("PRIVATE_INITIALIZER");
     expect(browser).not.toContain("Unexpected resolver capabilities");
     expect(browser).toContain("BROWSER_COMPONENT_MUST_NOT_RUN");
     expect(server).toContain("PRIVATE_SERVER_ONLY");
     expect(server).not.toContain("BROWSER_COMPONENT_MUST_NOT_RUN");
+
     const application: ApplicationModule = await import(
-      pathToFileURL(path.join(root, ".tailorkit/server/server.js")).href
+      pathToFileURL(path.join(root, ".patchsmith/server/server.js")).href
     );
+
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    const internal = application.default.functions._tailorkit as Record<
+    const internal = application.default.functions._patchsmith as Record<
       string,
       Record<
         string,
         FunctionDefinition<
           "action",
-          z.ZodType,
-          z.output<z.ZodType>,
+          v.GenericSchema,
+          v.InferOutput<v.GenericSchema>,
           ApplicationModule["default"]["functions"]
         > & { functions: ApplicationModule["default"]["functions"] }
       >
     >;
+
     const manifest = await readClientManifest(
-      path.join(root, ".tailorkit/client/client.js")
+      path.join(root, ".patchsmith/client/client.js")
     );
+
     const names = [
       ...new Set(manifest.instanceResolvers.map((entry) => entry.resolver)),
     ];
+
     expect(names).toHaveLength(1);
     expect(Object.keys(requireValue(internal.instances))).toEqual(["resolve"]);
     expect(manifest.views).toEqual([
@@ -434,15 +654,13 @@ it("builds colocated instance resolvers as query-only server actions", async () 
     const fn = requireValue(requireValue(internal.instances).resolve);
     expect(fn.kind).toBe("action");
     expect(browser).toContain(requireValue(names[0]));
-    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    expect(Object.keys(fn.functions.reports as object)).toEqual(["list"]);
+    expect(Object.keys(requireValue(fn.functions.reports))).toEqual(["list"]);
     // SAFETY: This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input.
 
     const resolved = await fn.handler(
       /* oxlint-disable typescript/no-unsafe-type-assertion -- This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input. */
       {
-        args: fn.args.parse({
+        args: v.parse(fn.args, {
           context: { userId: "user_123" },
           path: "/",
           slot: "page",
@@ -456,6 +674,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       } as never
       /* oxlint-enable typescript/no-unsafe-type-assertion */
     );
+
     expect(resolved).toEqual([
       {
         data: { id: "REPORT_123" },
@@ -468,7 +687,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
     const shared = await fn.handler(
       /* oxlint-disable typescript/no-unsafe-type-assertion -- This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input. */
       {
-        args: fn.args.parse({
+        args: v.parse(fn.args, {
           context: { userId: "user_123" },
           path: "/",
           slot: "panel.links",
@@ -481,6 +700,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       } as never
       /* oxlint-enable typescript/no-unsafe-type-assertion */
     );
+
     expect(shared).toEqual(resolved);
     const window = new Window();
     const previousDocument = globalThis.document;
@@ -488,24 +708,31 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       configurable: true,
       value: window.document,
     });
+
     try {
       const module = await import(
         `data:text/javascript;base64,${Buffer.from(browser).toString("base64")}`
       );
+
       // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
       const client =
         /* oxlint-disable typescript/no-unsafe-type-assertion -- The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below. */
-        module.default as TailorKitClientWithMeta;
+        module.default as PatchsmithClientWithMeta;
+
       /* oxlint-enable typescript/no-unsafe-type-assertion */
       // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
       const component = (
         client.slots as Record<string, Record<string, ViewDefinition>>
       ).page?.["/"];
+
       expect(component).toBeTruthy();
+
       if (!component) {
         throw new Error("Missing compiled view");
       }
-      const container = window.document.createElement("div");
+
+      const container = document.createElement("div");
+
       // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
       const show = (instance: ViewInstance) => {
         client.$runtime.render(
@@ -518,14 +745,22 @@ it("builds colocated instance resolvers as query-only server actions", async () 
             view: "/",
           }) as VNode,
           /* oxlint-enable typescript/no-unsafe-type-assertion */
-          // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-          // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-          container as unknown as Element
+          container
         );
       };
-      // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-      show(requireValue((resolved as ViewInstance[])[0]));
+
+      const instances = v.parse(
+        v.array(
+          v.object({
+            data: v.unknown(),
+            key: v.string(),
+            metadata: v.record(v.string(), v.unknown()),
+          })
+        ),
+        resolved
+      );
+
+      show(requireValue(instances[0]));
       expect(container.textContent).toBe(
         "BROWSER_COMPONENT_MUST_NOT_RUN:REPORT_123"
       );
@@ -541,14 +776,10 @@ it("builds colocated instance resolvers as query-only server actions", async () 
           view: "/",
         }) as VNode,
         /* oxlint-enable typescript/no-unsafe-type-assertion */
-        // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-        // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-        container as unknown as Element
+        container
       );
       expect(container.textContent).toBe("");
-      // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-      // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-      client.$runtime.render(null, container as unknown as Element);
+      client.$runtime.render(null, container);
     } finally {
       if (previousDocument === undefined) {
         Reflect.deleteProperty(globalThis, "document");
@@ -558,31 +789,33 @@ it("builds colocated instance resolvers as query-only server actions", async () 
           value: previousDocument,
         });
       }
+
       await window.happyDOM.close();
     }
-    await buildFixture({ cwd: root, outDir: ".tailorkit/custom" });
+
+    await buildFixture({ cwd: root, outDir: ".patchsmith/custom" });
     expect(
       await readFile(
-        path.join(root, ".tailorkit/custom/client/client.js"),
+        path.join(root, ".patchsmith/custom/client/client.js"),
         "utf-8"
       )
     ).toBe(browser);
-    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 
-    const watcher =
-      /* oxlint-disable typescript/no-unsafe-type-assertion -- The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below. */
-      (await buildFixture({
-        cwd: root,
-        outDir: ".tailorkit/watched",
-        watch: true,
-      })) as {
-        close: () => Promise<void>;
-      };
-    /* oxlint-enable typescript/no-unsafe-type-assertion */
+    const watcher = await buildFixture({
+      cwd: root,
+      outDir: ".patchsmith/watched",
+      watch: true,
+    });
+
+    if (!("close" in watcher)) {
+      throw new TypeError("Expected a Vite watcher");
+    }
+
     const watchedServer = path.join(
       root,
-      ".tailorkit/watched/server/server.js"
+      ".patchsmith/watched/server/server.js"
     );
+
     try {
       expect(await readFile(watchedServer, "utf-8")).toContain(
         "PRIVATE_SERVER_ONLY"
@@ -594,6 +827,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       await expect
         .poll(async () => {
           const awaitedResult1 = await readFile(watchedServer, "utf-8");
+
           return awaitedResult1.includes("PRIVATE_UPDATED");
         })
         .toBe(true);
@@ -606,6 +840,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
           const awaitedResult2 = await readFile(watchedServer, "utf-8").catch(
             () => ""
           );
+
           return awaitedResult2.includes("RESOLVER_UPDATED");
         })
         .toBe(true);
@@ -615,7 +850,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
         .poll(
           async () =>
             await readFile(
-              path.join(root, ".tailorkit/watched/client/client.js"),
+              path.join(root, ".patchsmith/watched/client/client.js"),
               "utf-8"
             ).catch(() => "")
         )
@@ -625,25 +860,29 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       await expect
         .poll(async () => {
           const output = await readFile(watchedServer, "utf-8").catch(() => "");
+
           return !!output && !output.includes("RESOLVER_UPDATED");
         })
         .toBe(true);
+
       const withoutInstances: ApplicationModule = await import(
         `${pathToFileURL(watchedServer).href}?instances-removed`
       );
+
       expect(
-        Object.hasOwn(withoutInstances.default.functions, "_tailorkit")
+        Object.hasOwn(withoutInstances.default.functions, "_patchsmith")
       ).toBe(false);
     } finally {
       await watcher.close();
     }
+
     await writeFile(
       path.join(root, "src/slots/page/index.view.tsx"),
       viewSource
     );
     await writeFile(
       path.join(root, "no-server.config.mjs"),
-      'export default { host: "https://host.example.com" };'
+      'export default { name: "Test App", slug: "test-app", host: "https://host.example.com" };'
     );
     await expect(
       buildFixture({ configPath: "no-server.config.mjs", cwd: root })

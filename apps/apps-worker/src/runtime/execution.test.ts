@@ -6,14 +6,19 @@ import {
   text,
   boolean,
   eq,
-  defineServer,
   defineDatabase,
+  defineRelations,
+} from "@patchsmith/app-db";
+import {
+  createFunctions,
+  defineRouter,
   query,
   mutation,
   fn,
   AppError,
-} from "@tailorkit/app/server";
-import { defineRelations, sql } from "drizzle-orm";
+} from "@patchsmith/app/server";
+import { asyncFixture } from "@patchsmith/config/testing";
+import { sql } from "drizzle-orm";
 import { sqliteView } from "drizzle-orm/sqlite-core";
 import { Effect } from "effect";
 import { afterEach, expect, it, vi } from "vite-plus/test";
@@ -28,15 +33,18 @@ const todos = table("todos", {
   id: text().primaryKey(),
   title: text().notNull(),
 });
+
 const users = table("users", {
   id: text().primaryKey(),
   title: text().notNull(),
 });
+
 const viewColumns = () => ({
   done: boolean().notNull(),
   id: text().primaryKey(),
   title: text().notNull(),
 });
+
 const identity = {
   appId: "app",
   deploymentId: "deployment",
@@ -45,15 +53,19 @@ const identity = {
   projectId: "project",
   scope: { name: "org", value: { id: "tenant" } },
   subjectId: "user",
-  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
 };
+
 const connections: DatabaseSync[] = [];
+
 afterEach(() => {
   for (const db of connections) {
     db.close();
   }
+
   connections.length = 0;
 });
+
 const fixture = () => {
   const sqlite = new DatabaseSync(":memory:");
   connections.push(sqlite);
@@ -61,12 +73,14 @@ const fixture = () => {
   sqlite.exec(
     "CREATE TABLE todos (id TEXT PRIMARY KEY, title TEXT NOT NULL, done INTEGER NOT NULL DEFAULT 0); CREATE TABLE users (id TEXT PRIMARY KEY, title TEXT NOT NULL)"
   );
+
   const persistence: Persistence = {
     execute(sqlValue, params) {
       const statement = sqlite.prepare(sqlValue);
       statement.setReturnArrays(true);
       // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
       let rows: unknown[][] = [];
+
       if (statement.columns().length) {
         // SAFETY: setReturnArrays(true) forces positional rows; Node's declarations still describe records.
         // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- Node's SQLite declaration does not reflect setReturnArrays. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
@@ -76,6 +90,7 @@ const fixture = () => {
         // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
         statement.run(...(params as never[]));
       }
+
       return {
         changes: Number(sqlite.prepare("SELECT changes() AS n").get()?.n),
         columns: statement.columns().map((column) => column.name),
@@ -84,9 +99,11 @@ const fixture = () => {
     },
     transaction(run) {
       sqlite.exec("BEGIN");
+
       try {
         const result = run();
         sqlite.exec("COMMIT");
+
         return result;
       } catch (error) {
         sqlite.exec("ROLLBACK");
@@ -94,77 +111,88 @@ const fixture = () => {
       }
     },
   };
-  const app = defineServer({
-    add: mutation({
-      args: z.object({ id: z.string(), title: z.string() }),
-      handler: ({ db, args }) =>
-        db.insert(todos).values(args).returning().all(),
-    }),
-    fail: mutation({
-      args: z.object({}),
-      handler: ({ db }) => {
-        db.insert(todos).values({ id: "fail", title: "rollback" }).run();
-        throw new Error("failed");
-      },
-    }),
-    failedRead: query({
-      args: z.object({}),
-      handler: ({ db }) => {
-        db.select().from(todos).all();
-        throw new AppError("FORBIDDEN", "Read denied");
-      },
-    }),
-    invalidResult: fn.mutation
-      .output(z.object({ ok: z.literal(true) }))
-      .handler(({ input, db }) => {
-        expect(input).toBeUndefined();
-        db.insert(todos).values({ id: "invalid", title: "rollback" }).run();
-        // SAFETY: This negative test deliberately returns data outside its declared result schema to verify rejection.
-        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-        return { ok: false } as never;
+
+  const app = {
+    functions: defineRouter({
+      add: mutation({
+        args: z.object({ id: z.string(), title: z.string() }),
+        handler: ({ db, args }) =>
+          db.insert(todos).values(args).returning().all(),
       }),
-    joined: query({
-      args: z.object({}),
-      handler: ({ db }) =>
-        db.select().from(todos).leftJoin(users, eq(users.id, todos.id)).all(),
-    }),
-    list: query({
-      args: z.object({}),
-      handler: ({ db }) => db.select().from(todos).all(),
-    }),
-    noop: mutation({
-      args: z.object({}),
-      handler: ({ db }) =>
-        db.delete(todos).where(eq(todos.id, "missing")).run(),
-    }),
-    optionalArgs: mutation({
-      args: z.unknown().optional(),
-      handler: ({ args }) => args ?? null,
-    }),
-    oversized: mutation({
-      args: z.object({}),
-      handler: ({ db }) => {
-        db.insert(todos).values({ id: "large", title: "rollback" }).run();
-        return "🧵".repeat(300_000);
-      },
-    }),
-    unserializable: fn.mutation
-      .input(z.enum(["bigint", "cycle"]))
-      .handler(({ input, db }) => {
-        db.insert(todos).values({ id: input, title: "rollback" }).run();
-        if (input === "bigint") {
-          return 1n;
-        }
-        interface CyclicResult {
-          self?: CyclicResult;
-        }
-        const value: CyclicResult = {};
-        value.self = value;
-        return value;
+      fail: mutation({
+        args: z.object({}),
+        handler: ({ db }) => {
+          db.insert(todos).values({ id: "fail", title: "rollback" }).run();
+          throw new Error("failed");
+        },
       }),
-  });
+      failedRead: query({
+        args: z.object({}),
+        handler: ({ db }) => {
+          db.select().from(todos).all();
+          throw new AppError("FORBIDDEN", "Read denied");
+        },
+      }),
+      invalidResult: fn.mutation
+        .output(z.object({ ok: z.literal(true) }))
+        .handler(({ input, db }) => {
+          expect(input).toBeUndefined();
+          db.insert(todos).values({ id: "invalid", title: "rollback" }).run();
+
+          // SAFETY: This negative test deliberately returns data outside its declared result schema to verify rejection.
+          // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+          return { ok: false } as never;
+        }),
+      joined: query({
+        args: z.object({}),
+        handler: ({ db }) =>
+          db.select().from(todos).leftJoin(users, eq(users.id, todos.id)).all(),
+      }),
+      list: query({
+        args: z.object({}),
+        handler: ({ db }) => db.select().from(todos).all(),
+      }),
+      noop: mutation({
+        args: z.object({}),
+        handler: ({ db }) =>
+          db.delete(todos).where(eq(todos.id, "missing")).run(),
+      }),
+      optionalArgs: mutation({
+        args: z.unknown().optional(),
+        handler: ({ args }) => args ?? null,
+      }),
+      oversized: mutation({
+        args: z.object({}),
+        handler: ({ db }) => {
+          db.insert(todos).values({ id: "large", title: "rollback" }).run();
+
+          return "🧵".repeat(300_000);
+        },
+      }),
+      unserializable: fn.mutation
+        .input(z.enum(["bigint", "cycle"]))
+        .handler(({ input, db }) => {
+          db.insert(todos).values({ id: input, title: "rollback" }).run();
+
+          if (input === "bigint") {
+            return 1n;
+          }
+
+          interface CyclicResult {
+            self?: CyclicResult;
+          }
+
+          const value: CyclicResult = {};
+          value.self = value;
+
+          return value;
+        }),
+    }),
+  };
+
   return { execution: createExecution(app, persistence), persistence, sqlite };
 };
+
 it("distinguishes omitted and null mutation arguments when checking a replay receipt", () => {
   const { execution } = fixture();
   const requestId = crypto.randomUUID();
@@ -175,6 +203,7 @@ it("distinguishes omitted and null mutation arguments when checking a replay rec
     execution.mutate({ args: null, name: "optionalArgs", requestId }, identity)
   ).toThrow("Mutation ID was already used for different arguments or identity");
 });
+
 it("executes typed Drizzle operations and tracks read tables including empty joins", () => {
   const { execution } = fixture();
   expect(execution.query({ args: {}, name: "list" }, identity)).toEqual({
@@ -184,6 +213,7 @@ it("executes typed Drizzle operations and tracks read tables including empty joi
   expect(
     execution.query({ args: {}, name: "joined" }, identity).tables.toSorted()
   ).toEqual(["todos", "users"]);
+
   const accepted = execution.mutate(
     {
       args: { id: "1", title: "hello" },
@@ -192,6 +222,7 @@ it("executes typed Drizzle operations and tracks read tables including empty joi
     },
     identity
   );
+
   expect(accepted).toMatchObject({
     committed: true,
     tables: ["todos"],
@@ -201,6 +232,7 @@ it("executes typed Drizzle operations and tracks read tables including empty joi
     accepted.value
   );
 });
+
 it.each([
   {
     name: "query builder",
@@ -218,27 +250,34 @@ it.each([
     sqlite.exec(
       "CREATE VIEW todo_view AS SELECT * FROM todos; INSERT INTO users VALUES ('1', 'Author')"
     );
+
     const directDatabase = defineDatabase({
       relations: defineRelations({ view }),
     });
+
     const nestedDatabase = defineDatabase({
       relations: defineRelations({ users, view }, (r) => ({
         users: { todos: r.many.view({ from: r.users.id, to: r.view.id }) },
       })),
     });
+
+    const directFunctions = createFunctions({ database: directDatabase });
+    const nestedFunctions = createFunctions({ database: nestedDatabase });
+
     const execution = createExecution(
-      defineServer({
-        direct: fn.query
-          .database(directDatabase)
-          .handler(({ db }) => db.query.view.findMany().sync()),
-        nested: fn.query
-          .database(nestedDatabase)
-          .handler(({ db }) =>
+      {
+        functions: defineRouter({
+          direct: directFunctions.query.handler(({ db }) =>
+            db.query.view.findMany().sync()
+          ),
+          nested: nestedFunctions.query.handler(({ db }) =>
             db.query.users.findMany({ with: { todos: true } }).sync()
           ),
-      }),
+        }),
+      },
       persistence
     );
+
     expect(execution.query({ name: "direct" }, identity)).toEqual({
       tables: ["*"],
       value: [],
@@ -247,6 +286,7 @@ it.each([
       tables: ["users", "*"],
       value: [{ id: "1", title: "Author", todos: [] }],
     });
+
     const inserted = mutations.mutate(
       {
         args: { id: "1", title: "hello" },
@@ -255,6 +295,7 @@ it.each([
       },
       identity
     );
+
     expect(inserted.tables).toEqual(["todos"]);
     expect(execution.query({ name: "direct" }, identity).value).toEqual(
       inserted.value
@@ -264,8 +305,10 @@ it.each([
     ]);
   }
 );
+
 it("rolls back all writes and receipts when handlers or result validation fail", () => {
   const { execution, sqlite } = fixture();
+
   for (const name of ["fail", "invalidResult"]) {
     expect(() =>
       execution.mutate(
@@ -278,22 +321,26 @@ it("rolls back all writes and receipts when handlers or result validation fail",
       )
     ).toThrow();
   }
+
   expect(execution.query({ args: {}, name: "list" }, identity).value).toEqual(
     []
   );
   expect(
-    sqlite.prepare("SELECT count(*) AS n FROM tailorkit_receipts").get()
+    sqlite.prepare("SELECT count(*) AS n FROM patchsmith_receipts").get()
   ).toMatchObject({
     n: 0,
   });
 });
+
 it("deduplicates accepted writes and rejects reused IDs with different identity or arguments", () => {
   const { execution } = fixture();
+
   const input = {
     args: { id: "1", title: "hello" },
     name: "add",
     requestId: crypto.randomUUID(),
   };
+
   execution.mutate(input, identity);
   expect(execution.mutate(input, identity).committed).toBe(false);
   expect(() =>
@@ -309,6 +356,7 @@ it("deduplicates accepted writes and rejects reused IDs with different identity 
     execution.query({ args: {}, name: "list" }, identity).value
   ).toHaveLength(1);
 });
+
 it("validates input, function kind and expiry before execution", () => {
   const { execution } = fixture();
   expect(() => execution.query({ args: {}, name: "add" }, identity)).toThrow(
@@ -324,6 +372,7 @@ it("validates input, function kind and expiry before execution", () => {
     )
   ).toThrow("arguments");
 });
+
 it("does not invalidate a table for a mutation that changes no rows", () => {
   const { execution } = fixture();
   expect(
@@ -333,29 +382,41 @@ it("does not invalidate a table for a mutation that changes no rows", () => {
     ).tables
   ).toEqual([]);
 });
+
 it("rejects async handlers and revokes their database scope before continuations run", async () => {
   const { persistence, sqlite } = fixture();
   let lateError: unknown;
+
   const bad = createExecution(
-    defineServer({
-      bad: {
-        args: z.object({}),
-        handler: async (ctx: {
-          db: Parameters<Parameters<typeof mutation>[0]["handler"]>[0]["db"];
-        }) => {
-          ctx.db.insert(todos).values({ id: "early", title: "rollback" }).run();
-          await Promise.resolve();
-          try {
-            ctx.db.insert(todos).values({ id: "late", title: "outside" }).run();
-          } catch (error) {
-            lateError = error;
-          }
+    {
+      functions: defineRouter({
+        bad: {
+          args: z.object({}),
+          handler: async (ctx: {
+            db: Parameters<Parameters<typeof mutation>[0]["handler"]>[0]["db"];
+          }) => {
+            ctx.db
+              .insert(todos)
+              .values({ id: "early", title: "rollback" })
+              .run();
+            await Promise.resolve();
+
+            try {
+              ctx.db
+                .insert(todos)
+                .values({ id: "late", title: "outside" })
+                .run();
+            } catch (error) {
+              lateError = error;
+            }
+          },
+          kind: "mutation",
         },
-        kind: "mutation",
-      },
-    }),
+      }),
+    },
     persistence
   );
+
   expect(() =>
     bad.mutate(
       { args: {}, name: "bad", requestId: crypto.randomUUID() },
@@ -371,13 +432,15 @@ it("rejects async handlers and revokes their database scope before continuations
 
 it("allows large results without a custom transport limit", () => {
   const { execution, sqlite } = fixture();
+
   const result = execution.mutate(
     { args: {}, name: "oversized", requestId: crypto.randomUUID() },
     identity
   );
+
   expect(result.committed).toBe(true);
   expect(
-    sqlite.prepare("SELECT count(*) AS n FROM tailorkit_receipts").get()
+    sqlite.prepare("SELECT count(*) AS n FROM patchsmith_receipts").get()
   ).toMatchObject({
     n: 1,
   });
@@ -385,18 +448,22 @@ it("allows large results without a custom transport limit", () => {
 
 it("returns structured results and per-call table metadata on success and errors", () => {
   const { execution } = fixture();
+
   const read = Effect.runSync(
     execution.call("query", { args: {}, name: "list" }, identity)
   );
+
   expect(read).toMatchObject({
     committed: false,
     result: { ok: true },
     tables: ["todos"],
   });
   expect(read.result).toEqual({ ok: true, value: [] });
+
   const failedRead = Effect.runSync(
     execution.call("query", { args: {}, name: "failedRead" }, identity)
   );
+
   expect(failedRead).toMatchObject({
     committed: false,
     result: { error: { code: "FORBIDDEN" }, ok: false },
@@ -406,6 +473,7 @@ it("returns structured results and per-call table metadata on success and errors
     code: "FORBIDDEN",
     message: "Read denied",
   });
+
   const failedWrite = Effect.runSync(
     execution.call(
       "mutation",
@@ -413,6 +481,7 @@ it("returns structured results and per-call table metadata on success and errors
       identity
     )
   );
+
   expect(failedWrite).toMatchObject({
     committed: false,
     result: { error: { code: "INTERNAL_SERVER_ERROR" }, ok: false },
@@ -439,6 +508,7 @@ it.each(["bigint", "cycle"])(
   "rolls back writes and receipts before returning an unserializable %s",
   (args) => {
     const { execution, sqlite } = fixture();
+
     const outcome = Effect.runSync(
       execution.call(
         "mutation",
@@ -446,6 +516,7 @@ it.each(["bigint", "cycle"])(
         identity
       )
     );
+
     expect(outcome).toMatchObject({
       committed: false,
       result: { error: { code: "INTERNAL_SERVER_ERROR" }, ok: false },
@@ -455,7 +526,7 @@ it.each(["bigint", "cycle"])(
       []
     );
     expect(
-      sqlite.prepare("SELECT count(*) AS n FROM tailorkit_receipts").get()
+      sqlite.prepare("SELECT count(*) AS n FROM patchsmith_receipts").get()
     ).toMatchObject({
       n: 0,
     });
@@ -464,6 +535,7 @@ it.each(["bigint", "cycle"])(
 
 it("runs action database calls locally and notifies only committed writes before the action finishes", async () => {
   const { persistence, sqlite } = fixture();
+
   const records = {
     add: fn.mutation
       .input(z.object({ id: z.string(), title: z.string() }))
@@ -476,68 +548,86 @@ it("runs action database calls locally and notifies only committed writes before
     }),
     list: fn.query.handler(({ db }) => db.select().from(todos).all()),
   };
+
   let release!: () => void;
+
   const external = (async () => {
     const {
       promise: pendingPromise,
       resolve,
       reject: rejectPending,
     } = Promise.withResolvers<ReturnType<() => void>>();
+
     try {
       release = resolve;
     } catch (error) {
       rejectPending(error);
     }
+
     await pendingPromise;
   })();
+
   let ready!: () => void;
+
   const committed = (async () => {
     const {
       promise: pendingPromise,
       resolve,
       reject: rejectPending,
     } = Promise.withResolvers<ReturnType<() => void>>();
+
     try {
       ready = resolve;
     } catch (error) {
       rejectPending(error);
     }
+
     await pendingPromise;
   })();
+
   const requestId = crypto.randomUUID();
-  const app = defineServer({
-    records,
-    run: fn.action
-      .functions({ records })
-      .handler(async ({ queries, mutations }) => {
-        const input = { id: "committed", title: "local" };
-        await mutations.records.add(input, { requestId });
-        await mutations.records.add(input, { requestId });
-        await expect(mutations.records.fail()).rejects.toMatchObject({
-          code: "CONFLICT",
-        });
-        await Array.fromAsync(
-          Array.from({ length: 100 }, (_, i) => i),
-          async (_i) => {
-            await queries.records.list();
-          }
-        );
-        await external;
-        return await queries.records.list();
-      }),
-  });
+
+  const app = {
+    functions: defineRouter({
+      records,
+      run: fn.action
+        .functions({ records })
+        .handler(async ({ queries, mutations }) => {
+          const input = { id: "committed", title: "local" };
+          await mutations.records.add(input, { requestId });
+          await mutations.records.add(input, { requestId });
+          await expect(mutations.records.fail()).rejects.toMatchObject({
+            code: "CONFLICT",
+          });
+          await Array.fromAsync(
+            Array.from({ length: 100 }, (_, i) => i),
+            async (_i) => {
+              await queries.records.list();
+            }
+          );
+          await external;
+
+          return await queries.records.list();
+        }),
+    }),
+  };
+
   const execution = createExecution(app, persistence);
-  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-  const notify = vi.fn(async (tables: string[]) => {
-    expect(tables).toEqual(["todos"]);
-    expect(
-      sqlite.prepare("SELECT count(*) AS n FROM tailorkit_receipts").get()
-    ).toMatchObject({
-      n: 1,
-    });
-    ready();
-  });
+
+  const notify = vi.fn(
+    asyncFixture((tables: string[]) => {
+      expect(tables).toEqual(["todos"]);
+      expect(
+        sqlite.prepare("SELECT count(*) AS n FROM patchsmith_receipts").get()
+      ).toMatchObject({
+        n: 1,
+      });
+      ready();
+    })
+  );
+
   let finished = false;
+
   const running = Effect.runPromise(
     execution.action(
       { name: "run" },
@@ -547,8 +637,10 @@ it("runs action database calls locally and notifies only committed writes before
     )
   ).then((result) => {
     finished = true;
+
     return result;
   });
+
   await committed;
   expect(finished).toBe(false);
   expect(
@@ -565,66 +657,68 @@ it("runs action database calls locally and notifies only committed writes before
 
 it("runs nested relational queries and preserves scope, permissions and invalidation", () => {
   const { sqlite, persistence } = fixture();
+
   const relations = defineRelations({ todos, users }, (r) => ({
     todos: { user: r.one.users({ from: r.todos.id, to: r.users.id }) },
     users: { todos: r.many.todos({ from: r.users.id, to: r.todos.id }) },
   }));
+
   const database = defineDatabase({ relations });
-  const app = defineServer({
-    absent: fn.query
-      .database(database)
-      .handler(
-        ({ db }) =>
-          db.query.todos.findFirst({ where: { id: "missing" } }).sync() ?? null
-      ),
-    first: query({
-      args: z.undefined(),
-      database,
-      handler: ({ db }) =>
+  const dbFn = createFunctions({ database });
+
+  const records = defineRouter({
+    absent: dbFn.query.handler(
+      ({ db }) =>
+        db.query.todos.findFirst({ where: { id: "missing" } }).sync() ?? null
+    ),
+    first: dbFn.query.handler(
+      ({ db }) =>
         db.query.todos
           .findFirst({ where: { id: "one" }, with: { user: true } })
-          .sync() ?? null,
+          .sync() ?? null
+    ),
+    insert: dbFn.mutation.input(z.string()).handler(({ db, input }) => {
+      db.insert(todos)
+        .values({ done: true, id: input, title: "Nested todo" })
+        .run();
+
+      return db.query.todos
+        .findFirst({ where: { id: input }, with: { user: true } })
+        .sync();
     }),
-    insert: fn.mutation
-      .database(database)
-      .input(z.string())
-      .handler(({ db, input }) => {
-        db.insert(todos)
-          .values({ done: true, id: input, title: "Nested todo" })
-          .run();
-        return db.query.todos
-          .findFirst({ where: { id: input }, with: { user: true } })
-          .sync();
-      }),
-    list: fn.query
-      .database(database)
-      .handler(({ db }) =>
-        db.query.users
-          .findMany({ orderBy: { id: "asc" }, with: { todos: true } })
-          .sync()
-      ),
-    writeInQuery: fn.query.database(database).handler(({ db }) => {
+    list: dbFn.query.handler(({ db }) =>
+      db.query.users
+        .findMany({ orderBy: { id: "asc" }, with: { todos: true } })
+        .sync()
+    ),
+    writeInQuery: dbFn.query.handler(({ db }) => {
       // @ts-expect-error Verify runtime enforcement even if a caller bypasses the type restriction.
       db.insert(todos).values({ id: "forbidden", title: "No" }).run();
+
       return null;
     }),
   });
+
+  const app = { functions: defineRouter(records) };
   const execution = createExecution(app, persistence);
   expect(execution.query({ name: "list" }, identity)).toEqual({
     tables: ["todos", "users"],
     value: [],
   });
   sqlite.exec("INSERT INTO users VALUES ('one', 'Author')");
+
   const inserted = execution.mutate(
     { args: "one", name: "insert", requestId: crypto.randomUUID() },
     identity
   );
+
   const todo = {
     done: true,
     id: "one",
     title: "Nested todo",
     user: { id: "one", title: "Author" },
   };
+
   expect(inserted.value).toEqual(todo);
   expect(inserted.tables).toEqual(["todos"]);
   expect(execution.query({ name: "first" }, identity).value).toEqual(todo);
@@ -641,9 +735,11 @@ it("runs nested relational queries and preserves scope, permissions and invalida
   );
   const scope = databaseScope(persistence, false, relations);
   const usersQuery = scope.db.query.users;
+
   if (!(usersQuery !== undefined && usersQuery !== null)) {
     throw new Error("Missing users query");
   }
+
   const prepared = usersQuery.findMany().prepare();
   scope.close();
   expect(() => prepared.all()).toThrow("Database scope has ended");

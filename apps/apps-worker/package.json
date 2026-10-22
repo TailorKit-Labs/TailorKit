@@ -1,15 +1,15 @@
 {
-  "name": "@tailorkit/apps-worker",
+  "name": "@patchsmith/apps-worker",
   "private": true,
   "license": "BUSL-1.1",
   "type": "module",
   "scripts": {
-    "build": "node scripts/build-bootstrap.mjs && wrangler deploy --dry-run --outdir dist",
+    "build": "wrangler deploy --dry-run --outdir dist",
     "check-types": "tsc --noEmit",
     "types": "wrangler types src/worker-env.d.ts --env-interface Env --strict-vars=false",
-    "dev": "node scripts/build-bootstrap.mjs && wrangler dev --local --persist-to .tailorkit/state",
+    "dev": "wrangler dev --local --persist-to .patchsmith/state",
     "test": "vp test run",
-    "deploy": "node scripts/build-bootstrap.mjs && wrangler deploy",
+    "deploy": "wrangler deploy",
     "lint": "vp lint .",
     "lint:fix": "vp lint --fix ."
   },
@@ -18,20 +18,26 @@
     "@orpc/experimental-effect": "2.0.0-beta.40",
     "@orpc/hibernation": "2.0.0-beta.40",
     "@orpc/server": "catalog:",
-    "@standard-server/peer": "0.10.2",
-    "@tailorkit/api-utils": "workspace:*",
-    "@tailorkit/app": "workspace:*",
-    "@tailorkit/asset-delivery": "workspace:*",
+    "@patchsmith/api-utils": "workspace:*",
+    "@patchsmith/app": "workspace:*",
+    "@patchsmith/app-db": "workspace:*",
+    "@patchsmith/asset-delivery": "workspace:*",
+    "@standard-server/peer": "0.10.3",
     "drizzle-orm": "catalog:",
     "effect": "catalog:",
+    "valibot": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:",
-    "workerd": "1.20261010.1",
-    "wrangler": "4.149.0"
+    "workerd": "1.20261016.1",
+    "wrangler": "4.151.1"
+  },
+  "engines": {
+    "node": ">=24.11"
   }
 }

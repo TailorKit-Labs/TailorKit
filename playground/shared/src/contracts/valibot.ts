@@ -1,6 +1,6 @@
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
-import { tool, defineContract } from "tailorkit";
-import { primitives } from "tailorkit/valibot";
+import { experimental_canvas, tool, defineContract } from "patchsmith";
+import { primitives } from "patchsmith/valibot";
 import * as v from "valibot";
 
 import { theme } from "./theme";
@@ -10,11 +10,13 @@ const todo = v.object({
   id: v.string(),
   title: v.string(),
 });
+
 const json = <
   TSchema extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>,
 >(
   schema: TSchema
 ) => toStandardJsonSchema(schema);
+
 const primitiveComponents = Object.fromEntries(
   Object.entries(primitives(theme)).map(([name, component]) => [
     name,
@@ -32,6 +34,11 @@ const primitiveComponents = Object.fromEntries(
 
 export const contract = defineContract({
   components: {
+    experimental_Canvas: experimental_canvas({
+      input: { keyboard: ["ArrowLeft", "ArrowRight"], pointer: true },
+      maxFramesPerSecond: 60,
+      maxPixels: 1_048_576,
+    }),
     ...primitiveComponents,
     Button: {
       callbacks: { onClick: {} },
@@ -67,7 +74,7 @@ export const contract = defineContract({
     team: json(v.object({ teamId: v.pipe(v.string(), v.minLength(1)) })),
     user: json(v.object({ userId: v.pipe(v.string(), v.minLength(1)) })),
   },
-  slots: { panel: { views: ["/"] } },
+  slots: { canvas: { views: ["/"] }, panel: { views: ["/"] } },
   tools: {
     todos: {
       add: tool

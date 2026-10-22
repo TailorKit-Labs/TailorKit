@@ -25,25 +25,20 @@ import { appAgentSkills } from "./skills";
 
 const authentication = vi.hoisted(() => {
   const env: Record<string, string> = {};
+
   return { env };
 });
+
 vi.mock("#env", () => ({ env: authentication.env }));
 
 const { dirname, join } = nodePath;
+
 // oxlint-disable-next-line typescript/strict-void-return -- execFile also returns a ChildProcess; promisify consumes its completion callback, not that return value.
 const execute = promisify(execFile);
-const modelId = "openai/gpt-6-luna";
-const model = {
-  context_window: 1_050_000,
-  id: modelId,
-  max_tokens: 128_000,
-  modalities: { input: ["text", "image", "pdf"] },
-  name: "GPT-6 Luna",
-  pricing: { input: "0.0000001", output: "0.0000005" },
-  tags: ["reasoning", "tool-use", "vision"],
-};
+const modelId = "openai/gpt-6.1-sol";
 
 const bytes = async (path: string) => await readFile(path).catch(() => null);
+
 const write = async (path: string, content: Uint8Array | string) => {
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, content);
@@ -58,6 +53,7 @@ const localSession = (
   readBinaryFile: async ({ path }) => await bytes(path),
   readFile: async ({ path }) => {
     const content = await bytes(path);
+
     return content
       ? new ReadableStream({
           start(controller) {
@@ -69,17 +65,20 @@ const localSession = (
   },
   readTextFile: async ({ path }) => {
     const content = await bytes(path);
+
     return content?.toString("utf-8") ?? null;
   },
   run: async ({ command, env, workingDirectory, abortSignal }) => {
     if (command === 'printf "%s" "$HOME"') {
       return { exitCode: 0, stderr: "", stdout: sessionHome };
     }
+
     const { stdout, stderr } = await execute("bash", ["-c", command], {
       cwd: workingDirectory ?? workspace,
       env: { PATH: "/usr/bin:/bin", ...env },
       signal: abortSignal,
     });
+
     return { exitCode: 0, stderr, stdout };
   },
   spawn: () => {
@@ -92,9 +91,11 @@ const localSession = (
   },
   writeFile: async ({ path, content }) => {
     const chunks: Uint8Array[] = [];
+
     for await (const chunk of content) {
       chunks.push(chunk);
     }
+
     await write(path, Buffer.concat(chunks));
   },
   writeTextFile: async ({ path, content }) => {
@@ -104,6 +105,7 @@ const localSession = (
 
 const messageEvents = (call: number, text: string) => {
   const first = call === 1;
+
   const item = first
     ? {
         arguments: JSON.stringify({
@@ -121,6 +123,7 @@ const messageEvents = (call: number, text: string) => {
         role: "assistant",
         type: "message",
       };
+
   const events = [
     { response: { id: `resp_${call}` }, type: "response.created" },
     { item, output_index: 0, type: "response.output_item.added" },
@@ -153,6 +156,7 @@ const messageEvents = (call: number, text: string) => {
       type: "response.completed",
     },
   ];
+
   return events
     .map((event) => `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`)
     .join("");
@@ -164,14 +168,17 @@ it.each(["api-key", "runtime-oidc"])(
     authentication.env.AI_GATEWAY_BASE_URL = "https://gateway.test";
     delete authentication.env.AI_GATEWAY_API_KEY;
     delete authentication.env.VERCEL_OIDC_TOKEN;
+
     const token =
       mode === "api-key"
         ? "local-test-key"
         : `header.${Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })).toString("base64url")}.signature`;
+
     if (mode === "api-key") {
       authentication.env.AI_GATEWAY_API_KEY = token;
       authentication.env.VERCEL_OIDC_TOKEN = "unused-oidc-token";
     }
+
     // Production Vercel Functions expose OIDC through this request context.
     vi.stubGlobal(Symbol.for("@vercel/request-context"), {
       get: () => ({
@@ -179,20 +186,24 @@ it.each(["api-key", "runtime-oidc"])(
           mode === "runtime-oidc" ? { "x-vercel-oidc-token": token } : {},
       }),
     });
+
     const directory = await realpath(
-      await mkdtemp(join(tmpdir(), "tailorkit-pi-"))
+      await mkdtemp(join(tmpdir(), "patchsmith-pi-"))
     );
+
     const workspace = join(directory, "app");
     const sessionHome = join(directory, "home");
     const sessionId = randomUUID();
     const hostJournal = join(tmpdir(), "ai-sdk-harness", "pi", sessionId);
     const otherSessionId = randomUUID();
+
     const otherHostJournal = join(
       tmpdir(),
       "ai-sdk-harness",
       "pi",
       otherSessionId
     );
+
     await mkdir(workspace);
     await mkdir(sessionHome);
     const requests: string[] = [];
@@ -202,12 +213,6 @@ it.each(["api-key", "runtime-oidc"])(
       "fetch",
       vi.fn<typeof fetch>(async (url, options) => {
         const request = new Request(url, options);
-        if (request.url.endsWith("/v1/models")) {
-          if (request.headers.get("authorization") !== `Bearer ${token}`) {
-            return new Response("Unauthorized", { status: 401 });
-          }
-          return Response.json({ data: [model] });
-        }
         const endpoint = new URL(request.url);
         endpoints.push({
           authorization: request.headers.get("authorization"),
@@ -215,6 +220,7 @@ it.each(["api-key", "runtime-oidc"])(
         });
         requests.push(await request.text());
         modelCalls += 1;
+
         return new Response(
           messageEvents(
             modelCalls,
@@ -228,15 +234,18 @@ it.each(["api-key", "runtime-oidc"])(
         );
       })
     );
+
     const input = {
       agentToken: "private-token",
       appId: randomUUID(),
-      hostUrl: "https://host.test/api/tailorkit",
+      hostUrl: "https://host.test/api/patchsmith",
       messages: [],
       model: modelId,
       threadId: sessionId,
     };
+
     const sandboxSession = localSession(workspace, sessionHome);
+
     let session:
       | Awaited<
           ReturnType<
@@ -244,16 +253,20 @@ it.each(["api-key", "runtime-oidc"])(
           >
         >
       | undefined;
+
     try {
       const agent = await createAppAgent(input, "fixture");
       expect(agent.harnessId).toBe("pi");
+      expect(endpoints).toHaveLength(0);
       const chunks: HarnessWorkflowChunk[] = [];
+
       const writable = () =>
         new WritableStream<HarnessWorkflowChunk>({
           write(chunk) {
             chunks.push(chunk);
           },
         });
+
       let state = await runHarnessAgentStep({
         agent,
         sandboxSession,
@@ -263,6 +276,7 @@ it.each(["api-key", "runtime-oidc"])(
         }),
         writable: writable(),
       });
+
       expect(state.status).toBe("ready_for_next_step");
       expect(state.continueFrom).toBeDefined();
       // Pi can begin the next model call before its host receives the step boundary.
@@ -288,6 +302,7 @@ it.each(["api-key", "runtime-oidc"])(
       });
       expect(state.status).toBe("finished");
       expect(requests.length).toBeGreaterThanOrEqual(2);
+      expect(requests[0]).not.toContain("src/components/todo-editor.tsx");
       expect(requests.at(-1)?.match(/Build a file/gu)).toHaveLength(1);
       expect(chunks.filter((chunk) => chunk.type === "start")).toHaveLength(1);
       expect(chunks.filter((chunk) => chunk.type === "finish")).toHaveLength(1);
@@ -311,28 +326,34 @@ it.each(["api-key", "runtime-oidc"])(
         "First turn"
       );
       const { resumeFrom } = state;
+
       if (resumeFrom === undefined) {
         throw new Error("Missing semantic step resume state");
       }
+
       expect(resumeFrom.harnessId).toBe("pi");
       expect(JSON.stringify(resumeFrom.data)).toMatch(/\.jsonl/u);
       session = undefined;
       // A different workflow worker cannot rely on the previous worker's files.
       await rm(hostJournal, { force: true, recursive: true });
+
       const nextAgent = await createAppAgent(
         { ...input, agentToken: "fresh-token" },
         "fixture"
       );
+
       session = await nextAgent.createSession({
         resumeFrom,
         sandboxSession,
         sessionId,
       });
       const followupIndex = requests.length;
+
       const next = await nextAgent.generate({
         prompt: "Now update it",
         session,
       });
+
       expect(next.text).toBe("Updated");
       expect(requests).toHaveLength(followupIndex + 1);
       expect(endpoints).toEqual(
@@ -341,23 +362,27 @@ it.each(["api-key", "runtime-oidc"])(
           url: "https://gateway.test/v1/responses",
         }))
       );
+
       for (const request of requests) {
         expect(JSON.parse(request)).toMatchObject({
           model: modelId,
-          reasoning: { effort: "high" },
+          reasoning: { effort: "low" },
         });
         expect(request).not.toContain(token);
         expect(request).not.toContain("private-token");
       }
+
       expect(requests[followupIndex]).toContain("Build a file");
       expect(requests[followupIndex]).toContain("Built");
       expect(requests[followupIndex]).toContain("Now update it");
       const continuedResume = await session.detach();
       session = undefined;
+
       const otherAgent = await createAppAgent(
         { ...input, threadId: otherSessionId },
         "other-fixture"
       );
+
       session = await otherAgent.createSession({
         sandboxSession,
         sessionId: otherSessionId,

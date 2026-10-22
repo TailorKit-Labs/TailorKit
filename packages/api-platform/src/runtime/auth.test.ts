@@ -1,4 +1,4 @@
-import { APP_AUDIENCE, appTokenVerifier } from "@tailorkit/api-utils/app-auth";
+import { APP_AUDIENCE, appTokenVerifier } from "@patchsmith/api-utils/app-auth";
 import { expect, it, vi } from "vite-plus/test";
 
 import { appRuntimePublicKeys, issueAppRuntimeToken } from "./auth";
@@ -26,25 +26,29 @@ settings.APP_RUNTIME_SIGNING_KEY = JSON.stringify({
 it("publishes only public keys and issues platform-bound short-lived access", async () => {
   const publicKeys = appRuntimePublicKeys();
   expect(publicKeys.keys[0]).not.toHaveProperty("d");
+
   const identity = {
     appId: "app",
-    appPublicId: "app000000001",
+    appShortId: "app000000001",
     deploymentId: "deployment",
     installationId: "installation",
     projectId: "project",
-    publicTeamId: "abc123def45678",
+    projectShortId: "abc123def456",
     scope: { name: "org", value: { id: "tenant" } },
     subjectId: "service-principal",
-    toolUrl: "https://host.test/api/tailorkit/tools/execute",
+    toolUrl: "https://host.test/api/patchsmith/tools/execute",
   };
+
   const issuedAfter = Math.floor(Date.now() / 1000);
   const session = await issueAppRuntimeToken(identity);
   const issuedBefore = Math.floor(Date.now() / 1000);
+
   const verify = appTokenVerifier({
     audience: APP_AUDIENCE,
     issuer: settings.OPENAPI_SERVER_URL,
     publicKeys,
   });
+
   expect(await verify(session.token)).toMatchObject(identity);
   expect(session.expiresAt).toBeGreaterThanOrEqual((issuedAfter + 300) * 1000);
   expect(session.expiresAt).toBeLessThanOrEqual((issuedBefore + 300) * 1000);

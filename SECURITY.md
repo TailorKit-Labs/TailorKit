@@ -1,6 +1,6 @@
 # Security policy
 
-Report vulnerabilities through [GitHub’s private vulnerability reporting](https://github.com/TailorKit-Labs/TailorKit/security/advisories/new). Keep security reports out of public issues, discussions, and pull requests.
+Report vulnerabilities through [GitHub’s private vulnerability reporting](https://github.com/patchsmith-io/patchsmith/security/advisories/new). Keep security reports out of public issues, discussions, and pull requests.
 
 Include these details:
 

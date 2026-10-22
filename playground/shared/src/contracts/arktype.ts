@@ -1,6 +1,6 @@
 import { type } from "arktype";
-import { tool, defineContract } from "tailorkit";
-import { primitives } from "tailorkit/arktype";
+import { experimental_canvas, tool, defineContract } from "patchsmith";
+import { primitives } from "patchsmith/arktype";
 
 import { theme } from "./theme";
 
@@ -8,6 +8,11 @@ const todo = type({ done: "boolean", id: "string", title: "string" });
 
 export const contract = defineContract({
   components: {
+    experimental_Canvas: experimental_canvas({
+      input: { keyboard: ["ArrowLeft", "ArrowRight"], pointer: true },
+      maxFramesPerSecond: 60,
+      maxPixels: 1_048_576,
+    }),
     ...primitives(theme),
     Button: {
       callbacks: { onClick: {} },
@@ -28,7 +33,7 @@ export const contract = defineContract({
     team: type({ teamId: "string > 0" }),
     user: type({ userId: "string > 0" }),
   },
-  slots: { panel: { views: ["/"] } },
+  slots: { canvas: { views: ["/"] }, panel: { views: ["/"] } },
   tools: {
     todos: {
       add: tool

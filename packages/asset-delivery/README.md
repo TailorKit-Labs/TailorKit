@@ -1,3 +1,3 @@
-# TailorKit asset delivery
+# Patchsmith asset delivery
 
-`@tailorkit/asset-delivery` serves assets for TailorKit extensions.
+`@patchsmith/asset-delivery` serves assets for Patchsmith extensions.

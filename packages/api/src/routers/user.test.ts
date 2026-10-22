@@ -5,7 +5,7 @@ import {
   organization,
   member,
   invitation,
-} from "@tailorkit/db/schema/index";
+} from "@patchsmith/db/schema/index";
 import {
   afterEach,
   beforeEach,
@@ -30,7 +30,7 @@ const testState = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("@tailorkit/db", () => ({
+vi.mock("@patchsmith/db", () => ({
   createDb: () => testState.db,
   get db() {
     return testState.db;
@@ -38,7 +38,7 @@ vi.mock("@tailorkit/db", () => ({
   isOrgSlugReserved: () => false,
 }));
 
-vi.mock("@tailorkit/auth", () => ({
+vi.mock("@patchsmith/auth", () => ({
   auth: {
     api: {
       acceptInvitation: vi.fn(),
@@ -55,7 +55,7 @@ vi.mock("#env", () => ({
 
 const { userRouter } = await import("./user");
 const { orgRouter } = await import("./org");
-const { auth } = await import("@tailorkit/auth");
+const { auth } = await import("@patchsmith/auth");
 
 const userId = "11111111-1111-4111-8111-111111111111";
 const otherUserId = "22222222-2222-4222-8222-222222222222";
@@ -126,14 +126,14 @@ describe("userRouter", () => {
         createdAt: new Date("2026-01-02T00:00:00.000Z"),
         id: orgId,
         name: "Analytical Engines",
-        publicId: "team0000000001",
+        shortId: "team00000001",
         slug: "analytical-engines",
       },
       {
         createdAt: new Date("2026-01-02T00:00:00.000Z"),
         id: otherOrgId,
         name: "Compilers Inc",
-        publicId: "team0000000002",
+        shortId: "team00000002",
         slug: "compilers-inc",
       },
     ]);
@@ -266,7 +266,7 @@ describe("userRouter", () => {
       members: [],
       metadata: null,
       name: "New Org",
-      publicId: "team0000000003",
+      shortId: "team00000003",
       slug: "new-org",
     });
 

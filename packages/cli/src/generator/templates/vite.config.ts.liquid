@@ -1,12 +1,12 @@
 import { defineConfig{% if vitePlus %}, lazyPlugins{% endif %} } from "{% if vitePlus %}vite-plus{% else %}vite{% endif %}";
-import { tailorkit } from "tailorkit/vite";
+import { patchsmith } from "patchsmith/vite";
 
 export default defineConfig({
-  plugins: {% if vitePlus %}lazyPlugins(() => [tailorkit()]){% else %}[tailorkit()]{% endif %},{% if vitePlus %}
+  plugins: {% if vitePlus %}lazyPlugins(() => [patchsmith()]){% else %}[patchsmith()]{% endif %},{% if vitePlus %}
   lint: {
-    ignorePatterns: ["src/tailorkit.gen.ts", ".tailorkit/**"],
+    ignorePatterns: ["src/patchsmith.gen.ts", "src/patchsmith.functions.gen.ts", ".agents/skills/patchsmith-capabilities/**", ".patchsmith/**"],
   },
   fmt: {
-    ignorePatterns: ["src/tailorkit.gen.ts", ".tailorkit/**"],
+    ignorePatterns: ["src/patchsmith.gen.ts", "src/patchsmith.functions.gen.ts", ".agents/skills/patchsmith-capabilities/**", ".patchsmith/**"],
   },{% endif %}
 });

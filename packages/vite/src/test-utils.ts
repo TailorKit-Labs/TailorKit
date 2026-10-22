@@ -6,7 +6,7 @@ import { promisify } from "node:util";
 import { drizzleGenerateArguments } from "./builder/drizzle";
 import { getBuildEnvironment } from "./builder/env";
 
-export const testSchema = `import { boolean, table, text } from "tailorkit/server";
+export const testSchema = `import { boolean, table, text } from "patchsmith/db";
 export const todos = table("todos", {
   id: text().primaryKey(),
   text: text().notNull(),
@@ -30,8 +30,8 @@ export const linkTestDependencies = async (root: string): Promise<void> => {
     )
   );
   await symlink(
-    path.resolve(import.meta.dirname, "../../tailorkit"),
-    path.join(modules, "tailorkit"),
+    path.resolve(import.meta.dirname, "../../patchsmith"),
+    path.join(modules, "patchsmith"),
     "dir"
   );
 };
@@ -49,28 +49,33 @@ export const generateTestMigrations = async (root: string): Promise<string> => {
       timeout: 30_000,
     }
   );
+
   return directory;
 };
 
 /** Disposable database inputs for builder tests. */
 export const createDatabaseTestApp = async (root: string): Promise<void> => {
   await linkTestDependencies(root);
+
   const files = {
     "package.json": '{"type":"module"}',
+    "patchsmith.config.mjs":
+      'export default { name: "Test App", slug: "test-app", host: "https://host.test", server: {} };',
     "src/db/schema.ts": testSchema,
-    "src/root.tsx": `import { defineRoute } from "tailorkit/client";
-export default defineRoute({ shellComponent: () => "Database test client" });`,
-    "src/server.ts": `import { defineDatabase, defineServer, fn } from "tailorkit/server";
-import { defineRelations } from "drizzle-orm";
-import * as schema from "./db/schema";
+    "src/functions/todos.fn.ts": `import { createFunctions, defineRouter } from "patchsmith/server";
+import { defineDatabase, defineRelations } from "patchsmith/db";
+import * as schema from "../db/schema";
 const database = defineDatabase({ relations: defineRelations(schema) });
-export default defineServer({
-  list: fn.query.database(database).handler(({ db }) => db.query.todos.findMany().sync()),
+const fn = createFunctions({ database });
+const router = defineRouter({
+  list: fn.query.handler(({ db }) => db.query.todos.findMany().sync()),
   privateMarker: fn.query.handler(() => "PRIVATE_DATABASE_TEST"),
-});`,
-    "tailorkit.config.mjs":
-      'export default { host: "https://host.test", server: {} };',
+});
+export default router;`,
+    "src/root.tsx": `import { defineRoute } from "patchsmith/client";
+export default defineRoute({ shellComponent: () => "Database test client" });`,
   };
+
   await Promise.all(
     Object.entries(files).map(async ([filename, source]) => {
       const destination = path.join(root, filename);

@@ -1,7 +1,7 @@
 import {
   agentChunkSchema,
   agentRunCompleteChunkSchema,
-} from "@tailorkit/client-platform/agent";
+} from "@patchsmith/client-platform/agent";
 import {
   appsCreate,
   appsList,
@@ -14,16 +14,16 @@ import {
   deploymentsList,
   deploymentsGet,
   cliAuthVerifyToken,
-  previewStart,
-  previewStop,
   appAgentChat,
   appAgentCreate,
-} from "@tailorkit/client-platform/client";
-import { createClient } from "@tailorkit/client-platform/client/client/index";
-import { createTailorKitClient } from "@tailorkit/core/server";
-import type { TailorKitRouterClient } from "@tailorkit/core/server";
+} from "@patchsmith/client-platform/client";
+import { createClient } from "@patchsmith/client-platform/client/client/index";
+import { createPatchsmithClient } from "@patchsmith/core/server";
+import type { PatchsmithRouterClient } from "@patchsmith/core/server";
+import * as v from "valibot";
 
 import { getAgentAuth, validatePlatformUrl } from "./agent-auth";
+import { platformAppSelector } from "./platform-app-selector";
 
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
   typeof value === "object" && value !== null;
@@ -32,9 +32,9 @@ const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
 
 type Input<
-  Group extends keyof TailorKitRouterClient,
-  Method extends keyof TailorKitRouterClient[Group],
-> = TailorKitRouterClient[Group][Method] extends (
+  Group extends keyof PatchsmithRouterClient,
+  Method extends keyof PatchsmithRouterClient[Group],
+> = PatchsmithRouterClient[Group][Method] extends (
   ...args: infer Args
 ) => infer _Output
   ? Args[0]
@@ -48,6 +48,7 @@ const request = async <T>(operation: Promise<T>): Promise<T> => {
     if (error instanceof Error) {
       throw error;
     }
+
     if (
       isObjectValue(error) &&
       "message" in error &&
@@ -57,15 +58,16 @@ const request = async <T>(operation: Promise<T>): Promise<T> => {
         code: "code" in error ? error.code : undefined,
       });
     }
+
     throw new Error(String(error), { cause: error });
   }
 };
 
 export type CliClient = Pick<
-  TailorKitRouterClient,
-  "apps" | "deployments" | "preview" | "appAgent"
+  PatchsmithRouterClient,
+  "apps" | "deployments" | "appAgent"
 > & {
-  cliAuth: Pick<TailorKitRouterClient["cliAuth"], "verifyToken">;
+  cliAuth: Pick<PatchsmithRouterClient["cliAuth"], "verifyToken">;
 };
 
 /** All authenticated CLI commands share one credential selection and routing boundary. */
@@ -75,16 +77,20 @@ export const createCliClient = (options: {
   fetch?: typeof fetch;
 }): CliClient => {
   const agent = getAgentAuth();
+
   if (!agent) {
-    const clientOptions: Parameters<typeof createTailorKitClient>[0] = {
+    const clientOptions: Parameters<typeof createPatchsmithClient>[0] = {
       headers: { authorization: `Bearer ${options.token}` },
       url: options.url,
     };
+
     if (options.fetch) {
       clientOptions.fetch = options.fetch;
     }
-    return createTailorKitClient(clientOptions);
+
+    return createPatchsmithClient(clientOptions);
   }
+
   const client = createClient({
     baseUrl: validatePlatformUrl(agent.platformUrl),
     fetch: options.fetch,
@@ -93,11 +99,14 @@ export const createCliClient = (options: {
     responseStyle: "data",
     throwOnError: true,
   });
+
   const { scope } = agent;
+
   const scopes = (names?: string[]) => {
     if (names && (names.length !== 1 || names[0] !== scope.name)) {
       throw new Error("Requested scope is not authorized by the agent token.");
     }
+
     return [scope];
   };
   // These map the host RPC shapes to existing OpenAPI routes. Both return compact bodies.
@@ -111,11 +120,17 @@ export const createCliClient = (options: {
           input: Input<"appAgent", "chat">,
           optionsValue: { signal?: AbortSignal }
         ) {
+          const { appId, ...turn } = input;
           let streamError: unknown;
           let streamFailed = false;
           let done = false;
+
           const { stream } = await appAgentChat({
-            body: { ...input, deployToken: agent.token },
+            body: {
+              ...turn,
+              app: platformAppSelector(appId),
+              deployToken: agent.token,
+            },
             client,
             onSseError: (error) => {
               streamError = error;
@@ -124,20 +139,26 @@ export const createCliClient = (options: {
             signal: optionsValue?.signal,
             sseMaxRetryAttempts: 1,
           });
+
           for await (const chunk of stream) {
-            const event = await agentChunkSchema.parseAsync(chunk);
+            const event = await v.parseAsync(agentChunkSchema, chunk);
+
             if (
-              agentRunCompleteChunkSchema.safeParse(event).success ||
+              v.safeParse(agentRunCompleteChunkSchema, event).success ||
               event.type === "error"
             ) {
               done = true;
             }
+
             yield event;
           }
+
           optionsValue?.signal?.throwIfAborted();
+
           if (!done && !streamFailed) {
             throw new Error("The agent stream ended unexpectedly. Try again.");
           }
+
           if (streamFailed) {
             throw new Error("The app agent stream failed. Try again.", {
               cause: streamError,
@@ -158,25 +179,29 @@ export const createCliClient = (options: {
         delete: async (input: Input<"apps", "delete">) =>
           await request(
             appsDelete({
-              body: { scope },
+              body: { app: platformAppSelector(input.appId), scope },
               client,
-              path: { appId: input.appId },
             })
           ),
         deploy: async (input: Input<"apps", "deploy">) =>
           await request(
             appsDeploy({
-              body: { deploymentId: input.deploymentId, scope },
+              body: {
+                app: platformAppSelector(input.appId),
+                deploymentId: input.deploymentId,
+                scope,
+              },
               client,
-              path: { appId: input.appId },
             })
           ),
         get: async (input: Input<"apps", "get">) =>
           await request(
             appsGet({
-              body: { scopes: scopes(input.scopes) },
+              body: {
+                app: platformAppSelector(input.appId),
+                scopes: scopes(input.scopes),
+              },
               client,
-              path: { appId: input.appId },
             })
           ),
         list: async (input?: Input<"apps", "list">) =>
@@ -193,9 +218,13 @@ export const createCliClient = (options: {
         update: async (input: Input<"apps", "update">) =>
           await request(
             appsUpdate({
-              body: { description: input.description, name: input.name, scope },
+              body: {
+                app: platformAppSelector(input.appId),
+                description: input.description,
+                name: input.name,
+                scope,
+              },
               client,
-              path: { appId: input.appId },
             })
           ),
       },
@@ -206,10 +235,16 @@ export const createCliClient = (options: {
           ),
       },
       deployments: {
-        create: async (input: Input<"deployments", "create">) =>
-          await request(
-            deploymentsCreate({ body: { ...input, scope }, client })
-          ),
+        create: async (input: Input<"deployments", "create">) => {
+          const { appId, ...deployment } = input;
+
+          return await request(
+            deploymentsCreate({
+              body: { ...deployment, app: platformAppSelector(appId), scope },
+              client,
+            })
+          );
+        },
         get: async (input: Input<"deployments", "get">) =>
           await request(
             deploymentsGet({
@@ -222,7 +257,7 @@ export const createCliClient = (options: {
           await request(
             deploymentsList({
               body: {
-                appId: input.appId,
+                app: platformAppSelector(input.appId),
                 page: input.page,
                 pageSize: input.pageSize,
                 scopes: scopes(input.scopes),
@@ -236,23 +271,6 @@ export const createCliClient = (options: {
               body: { rollout: input.rollout, scope },
               client,
               path: { deploymentId: input.deploymentId },
-            })
-          ),
-      },
-      preview: {
-        start: async (input: Input<"preview", "start">) =>
-          await request(
-            previewStart({
-              body: { ...input, deployToken: agent.token },
-              client,
-            })
-          ),
-        stop: async (input: Input<"preview", "stop">) =>
-          await request(
-            previewStop({
-              body: { deployToken: agent.token },
-              client,
-              path: { sessionId: input.sessionId },
             })
           ),
       },

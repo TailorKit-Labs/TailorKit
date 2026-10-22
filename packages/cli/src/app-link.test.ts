@@ -10,9 +10,10 @@ let root: string;
 let configPath: string;
 
 beforeEach(async () => {
-  root = await mkdtemp(path.join(tmpdir(), "tailorkit-app-link-"));
-  configPath = path.join(root, "tailorkit.config.ts");
+  root = await mkdtemp(path.join(tmpdir(), "patchsmith-app-link-"));
+  configPath = path.join(root, "patchsmith.config.ts");
 });
+
 afterEach(async () => {
   await rm(root, { force: true, recursive: true });
 });

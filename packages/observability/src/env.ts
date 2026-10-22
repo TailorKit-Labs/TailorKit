@@ -1,4 +1,4 @@
-import { createEnv } from "@tailorkit/env";
+import { createEnv } from "@patchsmith/env";
 import * as z from "zod";
 
 export const env = createEnv({
@@ -6,8 +6,8 @@ export const env = createEnv({
     NODE_ENV: z.enum(["development", "production", "test"]).optional(),
     OTEL_SERVICE_NAME: z.string().min(1).optional(),
     OTEL_TRACES_SAMPLER_ARG: z.string().min(1).optional(),
-    TAILORKIT_OTEL_DISABLED: z.stringbool().optional(),
-    TAILORKIT_OTEL_SAMPLE_RATE: z.string().min(1).optional(),
+    PATCHSMITH_OTEL_DISABLED: z.stringbool().optional(),
+    PATCHSMITH_OTEL_SAMPLE_RATE: z.string().min(1).optional(),
     VERCEL: z.stringbool().optional(),
     VERCEL_ENV: z.string().optional(),
     VERCEL_GIT_COMMIT_SHA: z.string().optional(),

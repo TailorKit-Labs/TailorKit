@@ -17,16 +17,16 @@ concurrency:
 jobs:
   migrate:
     name: Migrate production database
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     environment: production-platform
     if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout
-        uses: useblacksmith/checkout@v1
+        uses: actions/checkout@v7
 
       - name: Setup Vite+
-        uses: voidzero-dev/setup-vp@v1.21.1
+        uses: voidzero-dev/setup-vp@v1.21.2
         with:
           node-version: 24
           cache: true
@@ -52,4 +52,4 @@ jobs:
       - name: "notify vercel"
         uses: "vercel/repository-dispatch/actions/status@v1"
         with:
-          name: "Vercel - tailorkit-web: Database Migrations"
+          name: "Vercel - patchsmith-web: Database Migrations"

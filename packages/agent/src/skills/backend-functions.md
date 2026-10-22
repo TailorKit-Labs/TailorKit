@@ -1,80 +1,42 @@
-# Backend functions and reactive clients
+# App functions
 
-Enable `server: {}` in `tailorkit.config.ts`; the default entry is `src/server.ts`. Backend files are separate from the Preact iframe and run on the platform, not a Node.js app server. Do not add HTTP routes, a listener, a database driver, or a custom client transport.
+Enable `server: {}`. Queries read reactively, mutations write atomically, and actions await external work. Queries/mutations are synchronous; actions use `queries`, `mutations`, and exposed server `tools` instead of a direct `db`.
 
-## Locate public declarations when needed
+Chain `.input(schema)` and optional `.output(schema)` with synchronous Standard Schema v1-compatible validators. Builder handlers receive validated `input`. Return JSON-compatible values, using `null` for absence. Export each function module with `export default defineRouter({ list, add })`, save it under `src/functions/**/*.fn.ts`, and regenerate bindings. The file path supplies its API namespace; dots and directories are equivalent. Nested router objects add segments. Shared namespaces merge, while duplicate function paths and function/namespace conflicts fail the build. Each segment starts with a letter and contains at most 64 letters, digits, or underscores; `name` and `then` are reserved. `index` stays literal.
 
-Use the recipes below first. `tailorkit/server` re-exports `@tailorkit/app/server`; `tailorkit/client` re-exports `@tailorkit/app/client`. The umbrella declarations can therefore contain only re-exports. With pnpm, transitive packages need not exist in the app's top-level `node_modules/@tailorkit` directory.
+## Small example
 
-To locate the installed app SDK's declarations from `/workspace/app`, resolve through the umbrella package:
-
-```sh
-node --input-type=module -e 'import { findPackageJSON } from "node:module"; import { dirname, join } from "node:path"; console.log(join(dirname(findPackageJSON("@tailorkit/app", import.meta.resolve("tailorkit/server"))), "dist"));'
-```
-
-Read `server.d.ts` or `client.d.ts` in that directory and follow only the declaration imports needed for the uncovered API. Keep app imports on the public `tailorkit/server` and `tailorkit/client` entry points.
-
-## Define and register
-
-Use `fn.query`, `fn.mutation`, and `fn.action` from `tailorkit/server`. Chain `.input(zodSchema)` and optionally `.output(zodSchema)` before `.handler(...)`. Handlers receive validated `input`; without an input schema it is `undefined`. Return JSON-compatible values (use `null` for an absent record).
-
-For a `todos` table and database definition from the database skill:
+Import the shared `fn` from `#db`, configured once with `createFunctions({ database: db })` in `src/db/index.ts`. This uses the database skill's `todos` table, shared by the installation. For private records, add ownership from verified identity and enforce it in every read/write.
 
 ```ts
-// src/functions/todos.ts
-import { fn } from "tailorkit/server";
-import { z } from "zod";
+// src/functions/todos.fn.ts
+import { defineRouter } from "patchsmith/server";
+import * as v from "valibot";
 
-import { db as database } from "../db";
-import { todos } from "../db/schema";
+import { fn } from "#db";
+import { todos } from "#db/schema";
 
-export const list = fn.query
-  .database(database)
-  .handler(({ db }) => db.query.todos.findMany({ limit: 100 }).sync());
+const list = fn.query.handler(({ db }) =>
+  db.query.todos.findMany({ orderBy: { id: "asc" }, limit: 100 }).sync()
+);
 
-export const add = fn.mutation
-  .database(database)
-  .input(z.object({ title: z.string().trim().min(1).max(200) }))
+const add = fn.mutation
+  .input(v.object({ title: v.pipe(v.string(), v.trim(), v.minLength(1)) }))
   .handler(({ db, input }) => {
     const id = crypto.randomUUID();
     db.insert(todos).values({ id, title: input.title }).run();
     return { id };
   });
+
+export default defineRouter({ list, add });
 ```
 
-Register explicitly; files alone do not register functions:
+Under `ClientProvider`, use `useQuery(api.todos.list)` and `useMutation(api.todos.add)` from `patchsmith/client`. Render hook data/loading/error state directly; writes refresh affected queries. Use `mutate`/`execute` in ordinary callbacks, and their async variants when later work needs a result. Keep hooks unconditional; mount a record's query component when its required ID is available. For inputless queries with options, preserve the second argument: `useQuery(api.todos.list, undefined, { enabled: isOpen })`.
 
-```ts
-// src/server.ts
-import { defineServer } from "tailorkit/server";
+## Runtime details when needed
 
-import * as todos from "./functions/todos";
+Execute relational reads with `.sync()`, selects with `.all()`/`.get()`, and writes with `.run()` or `.returning(...).all()`/`.get()`. A mutation owns one transaction and rolls back on throw. Database handles are valid only during the handler.
 
-export default defineServer({ todos });
-```
+For actions calling app functions, import the router from `#functions/todos.fn`, declare `.functions({ todos })` and use `queries.todos.list()` or `mutations.todos.add(input)`. Public fetches use `signal`, status checks, and response validation. Product credentials remain behind exposed server tools. External effects and separate mutations do not form one transaction; choose retry behavior for the operation being implemented.
 
-Regenerate bindings to expose `api.todos.list` and `api.todos.add`. Nested objects define namespaces. Export only callable definitions from modules spread into `defineServer`. The alternative object-style `query`/`mutation`/`action` API uses `args` in place of builder `input`.
-
-## Runtime boundaries
-
-- Queries read through `db`; mutations read and write. Attach `.database(database)` for typed relations. Both handlers must finish synchronously: no `async`, promises, fetch, host tools, timers, or external side effects. Execute reads with `.sync()` or `.all()`/`.get()` and writes with `.run()`.
-- A mutation is atomic; thrown errors roll back its writes. Database handles expire when the handler returns.
-- Actions may await `fetch` and exposed server tools through context `tools`; they have no `db`. Declare `.functions({ todos })` using the same definitions and namespaces as `defineServer`, then await `queries.todos.list()` or `mutations.todos.add({ title })`. These helpers cannot call actions. Pass context `signal` to fetch, check response status, and validate external data with Zod.
-- Each action mutation commits separately. External work and multiple mutations are not one transaction; make retries safe for side effects. Persist external results with a mutation if reactive queries should update.
-- Handlers receive verified `identity`; actions also receive `scope`. SQLite is shared within an installation, not automatically isolated per user or context record. For private or record-specific data, validate access and filter reads/writes using trusted identity/context identifiers. `identity.subjectId` is optional; do not assume a signed-in user or trust a supplied subject ID.
-- For expected failures, throw `new AppError("NOT_FOUND", "Record no longer exists")` (import from `tailorkit/server`) or another supported code such as `FORBIDDEN` or `CONFLICT`. Unexpected errors become generic client failures. Never return secrets.
-
-## Use from Preact
-
-Keep the scaffold's stable `<ClientProvider><Route /></ClientProvider>` shell. Import hooks from `tailorkit/client` and `api` from `#tailorkit`:
-
-```ts
-const todos = useQuery(api.todos.list);
-const add = useMutation(api.todos.add, { onSuccess: () => setTitle("") });
-// In a generated host callback:
-add.mutate({ title });
-```
-
-- `useQuery(ref, input?, options?)` subscribes reactively; committed writes rerun affected queries. Use `data`, `error`, `isLoading`, and `isError`; pending data is `undefined`. Do not poll or manually refetch after writes.
-- Keep hooks unconditional. Defer with `{ enabled: false }` in the third argument; preserve `undefined` as the second argument for an inputless query with options. Disabled queries have `isLoading: false` and `isPending: true`.
-- Mutations expose `mutate`/`mutateAsync`; actions expose `execute`/`executeAsync`. The non-async variants return void and report failures through hook state and optional `onError`; await the async variants when later behavior needs a result or caught error. Both hooks expose `data`, `error`, `isPending`, and `reset`. Disable duplicate submissions while pending.
+`identity.subjectId` is the authenticated user or service principal supplied by the host and is always a nonempty string. Installation isolation is not user authorization; filter private records by that subject. Use `AppError` from `patchsmith/server` for expected failures. For uncovered APIs, inspect installed public declarations behind `patchsmith/server` or `patchsmith/client`.

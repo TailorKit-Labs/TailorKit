@@ -9,8 +9,9 @@ import { env } from "#env";
 const { dirname, resolve } = nodePath;
 
 const outputPath = resolve(process.cwd(), process.argv[2] ?? "openapi.json");
+
 const serverUrl =
-  env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform";
+  env.OPENAPI_SERVER_URL ?? "https://patchsmith.io/api/platform";
 
 const generator = new OpenAPIGenerator({
   converters: [new ZodToJsonSchemaConverter()],
@@ -21,7 +22,7 @@ const { platformRouter } = await import("../src/index");
 const spec = await generator.generate(platformRouter, {
   base: {
     info: {
-      title: "Tailorkit Platform API",
+      title: "Patchsmith Platform API",
       version: "0.0.0",
     },
     servers: [{ url: serverUrl }],
@@ -29,6 +30,7 @@ const spec = await generator.generate(platformRouter, {
 });
 
 await mkdir(dirname(outputPath), { recursive: true });
+
 await writeFile(outputPath, `${JSON.stringify(spec, null, 2)}\n`);
 
 console.log(`OpenAPI specification written to ${outputPath}`);

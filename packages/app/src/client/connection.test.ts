@@ -3,8 +3,20 @@ import { z } from "zod";
 
 import { createClient, reference } from "./connection";
 
+const identity = {
+  appId: "app",
+  deploymentId: "deployment",
+  expiresAt: Date.now() + 300_000,
+  installationId: "app",
+  projectId: "project",
+  scope: { name: "workspace", value: { id: "workspace" } },
+  subjectId: "principal",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
+};
+
 const session = {
   expiresAt: Date.now() + 60_000,
+  identity,
   token: "token",
   url: "https://runtime.test/rpc/",
 };
@@ -24,7 +36,9 @@ it("routes normal calls over authenticated HTTP without opening a WebSocket", as
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockResolvedValue(Response.json({ json: "ok" }));
+
   const connect = vi.fn();
+
   const client = createClient({
     connect,
     fetch,
@@ -32,7 +46,9 @@ it("routes normal calls over authenticated HTTP without opening a WebSocket", as
       .fn<() => Promise<typeof session>>()
       .mockResolvedValue(session),
   });
+
   const requestId = crypto.randomUUID();
+
   try {
     expect(
       await client.query(reference("todos.list", "query"), { filter: "open" })
@@ -95,12 +111,14 @@ it("preserves runtime errors without retrying actions", async () => {
       { status: 409 }
     )
   );
+
   const client = createClient({
     fetch,
     getSession: vi
       .fn<() => Promise<typeof session>>()
       .mockResolvedValue(session),
   });
+
   try {
     await expect(
       client.action(reference("import", "action"))
@@ -116,19 +134,23 @@ it("preserves runtime errors without retrying actions", async () => {
 
 it("aborts pending HTTP calls when closed", async () => {
   let started!: () => void;
+
   const ready = (async () => {
     const {
       promise: pendingPromise,
       resolve,
       reject: rejectPending,
     } = Promise.withResolvers<ReturnType<() => void>>();
+
     try {
       started = resolve;
     } catch (error) {
       rejectPending(error);
     }
+
     await pendingPromise;
   })();
+
   const fetch = vi.fn<typeof globalThis.fetch>(
     async (_url, init) =>
       await (async () => {
@@ -137,6 +159,7 @@ it("aborts pending HTTP calls when closed", async () => {
           resolve: _resolve,
           reject,
         } = Promise.withResolvers<Response>();
+
         try {
           init?.signal?.addEventListener(
             "abort",
@@ -149,15 +172,18 @@ it("aborts pending HTTP calls when closed", async () => {
         } catch (error) {
           reject(error);
         }
+
         return await pendingPromise;
       })()
   );
+
   const client = createClient({
     fetch,
     getSession: vi
       .fn<() => Promise<typeof session>>()
       .mockResolvedValue(session),
   });
+
   const call = client.action(reference("import", "action"));
   const assertion = expect(call).rejects.toMatchObject({ code: "UNAVAILABLE" });
   await ready;
@@ -173,9 +199,11 @@ it("retries a lost mutation response with the same ID and frozen arguments", asy
   const fetch = vi.fn<typeof globalThis.fetch>(async (_url, init) => {
     const { json } = await readMutationRequest(init);
     const prior = receipts.get(json.requestId);
+
     if (prior !== undefined && prior !== null && prior !== "") {
       return Response.json({ json: prior });
     }
+
     writes += 1;
     receipts.set(
       json.requestId,
@@ -183,12 +211,14 @@ it("retries a lost mutation response with the same ID and frozen arguments", asy
     );
     throw new TypeError("Response lost after committing");
   });
+
   const client = createClient({
     fetch,
     getSession: vi
       .fn<() => Promise<typeof session>>()
       .mockResolvedValue(session),
   });
+
   try {
     const args = { text: "original" };
     const result = client.mutate(reference("todos.add", "mutation"), args);
@@ -198,12 +228,15 @@ it("retries a lost mutation response with the same ID and frozen arguments", asy
     await vi.advanceTimersByTimeAsync(1000);
     expect(await result).toBe("original");
     expect(writes).toBe(1);
+
     const bodies = await Promise.all(
       fetch.mock.calls.map(async ([, init]) => {
         const request = await readMutationRequest(init);
+
         return request.json;
       })
     );
+
     expect(bodies).toHaveLength(2);
     expect(bodies[1]).toEqual(bodies[0]);
     expect(bodies[0]?.requestId).toMatch(/^[0-9a-f-]{36}$/u);
@@ -215,23 +248,28 @@ it("retries a lost mutation response with the same ID and frozen arguments", asy
 
 it("backs off transient mutation failures and preserves an explicit request ID", async () => {
   vi.useFakeTimers();
+
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(new Response("Gateway unavailable", { status: 502 }))
     .mockResolvedValueOnce(new Response("Service unavailable", { status: 503 }))
     .mockResolvedValueOnce(new Response("Gateway timeout", { status: 504 }))
     .mockResolvedValueOnce(Response.json({ json: "saved" }));
+
   const client = createClient({
     fetch,
     getSession: vi
       .fn<() => Promise<typeof session>>()
       .mockResolvedValue(session),
   });
+
   try {
     const requestId = crypto.randomUUID();
+
     const result = client.mutate(reference("save", "mutation"), undefined, {
       requestId,
     });
+
     await vi.advanceTimersByTimeAsync(1000);
     expect(fetch).toHaveBeenCalledTimes(2);
     await vi.advanceTimersByTimeAsync(1999);
@@ -240,12 +278,15 @@ it("backs off transient mutation failures and preserves an explicit request ID",
     expect(fetch).toHaveBeenCalledTimes(3);
     await vi.advanceTimersByTimeAsync(4000);
     expect(await result).toBe("saved");
+
     const requestIds = await Promise.all(
       fetch.mock.calls.map(async ([, init]) => {
         const request = await readMutationRequest(init);
+
         return request.json.requestId;
       })
     );
+
     expect(requestIds).toEqual([requestId, requestId, requestId, requestId]);
   } finally {
     client.close();
@@ -268,12 +309,14 @@ it.each([
         { status: 500 }
       )
     );
+
   const client = createClient({
     fetch,
     getSession: vi
       .fn<() => Promise<typeof session>>()
       .mockResolvedValue(session),
   });
+
   try {
     await expect(
       client.mutate(reference("save", "mutation"))
@@ -289,6 +332,7 @@ it("refreshes authentication once for a mutation without changing its request ID
     .fn<({ refresh }: { refresh: boolean }) => Promise<typeof session>>()
     .mockResolvedValueOnce({ ...session, token: "expired" })
     .mockResolvedValue({ ...session, token: "fresh" });
+
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(
@@ -298,16 +342,20 @@ it("refreshes authentication once for a mutation without changing its request ID
       )
     )
     .mockResolvedValueOnce(Response.json({ json: "saved" }));
+
   const client = createClient({ fetch, getSession });
+
   try {
     expect(await client.mutate(reference("save", "mutation"))).toBe("saved");
     expect(getSession.mock.calls).toEqual([
       [{ refresh: false }],
       [{ refresh: true }],
     ]);
+
     const headers = fetch.mock.calls.map(([, init]) =>
       new Headers(init?.headers).get("authorization")
     );
+
     expect(headers).toEqual(["Bearer expired", "Bearer fresh"]);
     expect(fetch.mock.calls[0]?.[1]?.body).toBe(fetch.mock.calls[1]?.[1]?.body);
   } finally {
@@ -320,16 +368,19 @@ it("stops when refreshed authentication is still rejected", async () => {
     { json: { code: "UNAUTHORIZED", defined: false, message: "Rejected" } },
     { status: 401 }
   );
+
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(rejected)
     .mockResolvedValueOnce(rejected.clone());
+
   const client = createClient({
     fetch,
     getSession: vi
       .fn<() => Promise<typeof session>>()
       .mockResolvedValue(session),
   });
+
   try {
     await expect(
       client.mutate(reference("save", "mutation"))
@@ -344,21 +395,25 @@ it("stops when refreshed authentication is still rejected", async () => {
 
 it("cancels a mutation waiting to retry when the client closes", async () => {
   vi.useFakeTimers();
+
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockRejectedValue(new TypeError("Offline"));
+
   const client = createClient({
     fetch,
     getSession: vi
       .fn<() => Promise<typeof session>>()
       .mockResolvedValue(session),
   });
+
   try {
     const assertion = expect(
       client.mutate(reference("save", "mutation"))
     ).rejects.toMatchObject({
       code: "UNAVAILABLE",
     });
+
     await vi.advanceTimersByTimeAsync(0);
     expect(vi.getTimerCount()).toBe(1);
     client.close();
@@ -378,17 +433,20 @@ it.each(["query", "action"] as const)(
     const fetch = vi
       .fn<typeof globalThis.fetch>()
       .mockRejectedValue(new TypeError("Offline"));
+
     const client = createClient({
       fetch,
       getSession: vi
         .fn<() => Promise<typeof session>>()
         .mockResolvedValue(session),
     });
+
     try {
       const result =
         kind === "query"
           ? client.query(reference("read", "query"))
           : client.action(reference("external", "action"));
+
       await expect(result).rejects.toMatchObject({ code: "UNAVAILABLE" });
       expect(fetch).toHaveBeenCalledOnce();
     } finally {
@@ -399,6 +457,7 @@ it.each(["query", "action"] as const)(
 
 it("retries when the connection drops while reading a mutation response body", async () => {
   vi.useFakeTimers();
+
   const brokenResponse = new Response(
     new ReadableStream({
       start(controller) {
@@ -407,16 +466,19 @@ it("retries when the connection drops while reading a mutation response body", a
     }),
     { headers: { "content-type": "application/json" } }
   );
+
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(brokenResponse)
     .mockResolvedValueOnce(Response.json({ json: "saved" }));
+
   const client = createClient({
     fetch,
     getSession: vi
       .fn<() => Promise<typeof session>>()
       .mockResolvedValue(session),
   });
+
   try {
     const result = client.mutate(reference("save", "mutation"));
     await vi.advanceTimersByTimeAsync(1000);
@@ -435,16 +497,20 @@ it("keeps reconnecting an active subscription beyond three failures", async () =
     readyState: 1,
     send: vi.fn(),
   });
+
   const connect =
     vi.fn<
       NonNullable<NonNullable<Parameters<typeof createClient>[0]>["connect"]>
     >();
+
   for (let attempt = 0; attempt < 5; attempt += 1) {
     connect.mockRejectedValueOnce(new Error("Offline"));
   }
+
   // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
   // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
   connect.mockResolvedValue(socket as unknown as WebSocket);
+
   const client = createClient({
     connect,
     getSession: vi
@@ -452,11 +518,13 @@ it("keeps reconnecting an active subscription beyond three failures", async () =
       .mockResolvedValue(session),
     retryDelayMs: 0,
   });
+
   const stop = client.subscribe(
     reference("todos.list", "query"),
     {},
     vi.fn<NonNullable<Parameters<typeof client.subscribe>[2]>>()
   );
+
   try {
     await vi.waitFor(() => {
       expect(connect).toHaveBeenCalledTimes(6);

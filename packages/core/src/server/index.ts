@@ -1,5 +1,9 @@
-export { createTailorKitClient } from "./client";
-export { createTailorKitServer } from "./handler";
+export { createPatchsmithClient } from "./client";
+
+export { createPatchsmithServer } from "./handler";
+
 export { createServer } from "./contract";
+
 export type { ToolImplementations, ContractScopes } from "./contract";
-export type { TailorKitRouter, TailorKitRouterClient } from "./router";
+
+export type { PatchsmithRouter, PatchsmithRouterClient } from "./router";

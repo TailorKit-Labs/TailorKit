@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 
 import { db, teamMembers, teams, users } from "./db";
 
-export const demoSessionCookie = "tailorkit_playground";
+export const demoSessionCookie = "patchsmith_playground";
 
 export type DemoUser = typeof users.$inferSelect;
 
@@ -32,10 +32,12 @@ export const listSignInChoices = () =>
 const getCookie = (cookieHeader: string | null, name: string) => {
   for (const part of cookieHeader?.split(";") ?? []) {
     const [key, ...value] = part.trim().split("=");
+
     if (key === name) {
       return decodeURIComponent(value.join("="));
     }
   }
+
   return null;
 };
 
@@ -43,11 +45,13 @@ export const getDemoSessionFromRequest = (
   request: Request
 ): DemoSession | null => {
   const value = getCookie(request.headers.get("cookie"), demoSessionCookie);
+
   if (!(value !== undefined && value !== null && value !== "")) {
     return null;
   }
 
   const [userId, teamId] = value.split(".");
+
   if (
     userId === undefined ||
     userId === "" ||

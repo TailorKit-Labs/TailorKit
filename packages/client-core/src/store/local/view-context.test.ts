@@ -49,6 +49,7 @@ describe("view context store", () => {
 
   it("preserves mount order when entries update and isolates registries", async () => {
     const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+
     try {
       const registry = createStore();
       const other = createStore();

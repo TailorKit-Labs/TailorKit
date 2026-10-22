@@ -1,40 +1,46 @@
 import type {
-  TailorKitContract,
+  PatchsmithContract,
   ToolImplementations,
-} from "@tailorkit/core/schema";
+} from "@patchsmith/core/schema";
+import type { ViewsInput } from "@patchsmith/core/views";
 
 import { createFetchCache } from "#store/fetch/cache";
 import type { FetchCacheOptions } from "#store/fetch/cache";
 
 import { createEndpointClient } from "./endpoints";
 
-export interface TailorKitCacheOptions extends FetchCacheOptions {
+export interface PatchsmithCacheOptions extends FetchCacheOptions {
   apps?: FetchCacheOptions;
   slot?: FetchCacheOptions;
 }
 
-export interface TailorKitFetchClientOptions {
-  contract?: TailorKitContract;
-  tools?: ToolImplementations<TailorKitContract["tools"], "client">;
+export interface PatchsmithFetchClientOptions {
+  contract?: PatchsmithContract;
+  tools?: ToolImplementations<PatchsmithContract["tools"], "client">;
   baseUrl: string | URL;
   fetch?: typeof fetch;
-  cache?: TailorKitCacheOptions;
+  cache?: PatchsmithCacheOptions;
 }
 
 /** Share this client between roots to share endpoint requests and cached responses. */
-export const createTailorKitFetchClient = (
-  options: TailorKitFetchClientOptions
+export const createPatchsmithFetchClient = (
+  options: PatchsmithFetchClientOptions
 ) => {
   const endpoints = createEndpointClient(options);
   const cache = createFetchCache(options.cache);
   const { baseUrl } = endpoints;
-  const prefix = ["tailorkit", baseUrl.toString()] as const;
+  const prefix = ["patchsmith", baseUrl.toString()] as const;
+
   return {
     apps: (settings: FetchCacheOptions = {}) =>
-      cache.getStore([...prefix, "apps"], endpoints.apps, {
-        ...options.cache?.apps,
-        ...settings,
-      }),
+      cache.getStore(
+        [...prefix, "apps"],
+        async (signal) => await endpoints.apps({ signal }),
+        {
+          ...options.cache?.apps,
+          ...settings,
+        }
+      ),
     baseUrl,
     cache,
     cacheOptions: options.cache,
@@ -43,9 +49,20 @@ export const createTailorKitFetchClient = (
       endpoints.clearSessions();
     },
     endpoints,
+    /** Can be fetched on the server with an authenticated fetch implementation. */
+    views: (input: ViewsInput, settings: FetchCacheOptions = {}) =>
+      cache.getStore(
+        [...prefix, "views", input],
+        async (signal) => await endpoints.views({ ...input, signal }),
+        {
+          ...options.cache?.slot,
+          ...settings,
+          abortOnUnsubscribe: true,
+        }
+      ),
   };
 };
 
-export type TailorKitFetchClient = ReturnType<
-  typeof createTailorKitFetchClient
+export type PatchsmithFetchClient = ReturnType<
+  typeof createPatchsmithFetchClient
 >;

@@ -1,13 +1,29 @@
+import { asyncFixture } from "@patchsmith/config/testing";
 import { expect, it, vi } from "vite-plus/test";
 
 import { testContract } from "#test-contract";
 
-import { createComponentRegistry, createTailorKitClientConfig } from "./config";
+import {
+  createComponentRegistry,
+  createPatchsmithClientConfig,
+} from "./config";
+
+const identity = {
+  appId: "app",
+  deploymentId: "deployment",
+  expiresAt: Date.now() + 300_000,
+  installationId: "app",
+  projectId: "project",
+  scope: { name: "workspace", value: { id: "workspace" } },
+  subjectId: "principal",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
+};
 
 const require = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -18,18 +34,20 @@ it("wraps each renderer once and shares it with remote component aliases", () =>
   Object.setPrototypeOf(renderers, { Inherited: renderer });
   const registry = createComponentRegistry(renderers, wrap);
   expect(wrap).toHaveBeenCalledOnce();
-  expect(registry.CustomerCard).toBe(registry["tailorkit-customer-card"]);
+  expect(registry.CustomerCard).toBe(registry["patchsmith-customer-card"]);
   expect(registry).not.toHaveProperty("Missing");
   expect(registry).not.toHaveProperty("Inherited");
 });
 
 it("builds reusable client configuration without initiating network requests", () => {
   const fetch = vi.fn<typeof globalThis.fetch>();
-  const config = createTailorKitClientConfig({
+
+  const config = createPatchsmithClientConfig({
     baseUrl: "https://host.test/api/",
     contract: testContract(),
     fetch,
   });
+
   expect(config.theme).toEqual({});
   expect(config.components).toEqual({});
   expect(config.fetchClient?.baseUrl.href).toBe("https://host.test/api/");
@@ -38,25 +56,28 @@ it("builds reusable client configuration without initiating network requests", (
 
 it("clears shared app data and sessions through clearCache", async () => {
   let user = "first";
-  const fetch = vi
-    .fn<typeof globalThis.fetch>()
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    .mockImplementation(async (input) =>
+
+  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(
+    asyncFixture((input) =>
       Response.json(
         (input instanceof Request ? input.url : String(input)).endsWith("/apps")
           ? [{ id: user }]
           : {
               expiresAt: Date.now() + 300_000,
+              identity,
               token: user,
               url: "https://runtime.test/rpc",
             }
       )
-    );
-  const config = createTailorKitClientConfig({
+    )
+  );
+
+  const config = createPatchsmithClientConfig({
     baseUrl: "https://host.test/api/",
     contract: testContract(),
     fetch,
   });
+
   const client = require(config.fetchClient);
   const apps = client.apps();
   const session = client.endpoints.getSessionProvider({ id: "app" });

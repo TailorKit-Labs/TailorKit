@@ -1,17 +1,45 @@
 import { oc, type } from "@orpc/contract";
 import type { ContractRouterClient } from "@orpc/contract";
-import { z } from "zod";
+import * as v from "valibot";
 
-export const invocationSchema = z.strictObject({
-  args: z.unknown().optional(),
-  name: z
-    .string()
-    .max(512)
-    .regex(
-      /^(?:[a-zA-Z][a-zA-Z0-9_]{0,63}|_tailorkit)(?:\.[a-zA-Z][a-zA-Z0-9_]{0,63})*$/u
-    ),
+import { jsonValueSchema } from "#validation";
+
+export type { JsonValue } from "#validation";
+
+export const sessionSchema = v.object({
+  expiresAt: v.pipe(v.number(), v.finite()),
+  identity: v.object({
+    appId: v.string(),
+    deploymentId: v.string(),
+    expiresAt: v.pipe(v.number(), v.finite()),
+    installationId: v.string(),
+    projectId: v.string(),
+    scope: v.object({
+      name: v.string(),
+      value: v.record(v.string(), jsonValueSchema),
+    }),
+    subjectId: v.pipe(v.string(), v.minLength(1), v.maxLength(256)),
+    toolUrl: v.string(),
+  }),
+  token: v.pipe(v.string(), v.maxLength(8192)),
+  url: v.string(),
 });
-export type Invocation = z.infer<typeof invocationSchema>;
+
+export type Session = v.InferOutput<typeof sessionSchema>;
+
+export const invocationSchema = v.strictObject({
+  args: v.optional(v.unknown()),
+  name: v.pipe(
+    v.string(),
+    v.maxLength(512),
+    v.regex(
+      /^(?:[a-zA-Z][a-zA-Z0-9_]{0,63}|_patchsmith)(?:\.[a-zA-Z][a-zA-Z0-9_]{0,63})*$/u
+    )
+  ),
+});
+
+export type Invocation = v.InferOutput<typeof invocationSchema>;
+
 export type MutationInvocation = Invocation & { requestId: string };
 
 const procedure = oc.errors({
@@ -30,7 +58,12 @@ export const appContract = {
   actions: procedure.input(invocationSchema).output(type<unknown>()),
 
   mutations: procedure
-    .input(invocationSchema.extend({ requestId: z.uuid() }))
+    .input(
+      v.strictObject({
+        ...invocationSchema.entries,
+        requestId: v.pipe(v.string(), v.uuid()),
+      })
+    )
     .output(type<unknown>()),
 
   queries: procedure.input(invocationSchema).output(type<unknown>()),
@@ -40,7 +73,9 @@ export const appContract = {
     .input(invocationSchema)
     .output(type<AsyncIterableIterator<unknown>>()),
 };
+
 export type PlatformClient = ContractRouterClient<typeof appContract>;
+
 export type SubscriptionClient = Pick<PlatformClient, "subscribe">;
 
 /** Drizzle-generated SQL exported by application bundles. */

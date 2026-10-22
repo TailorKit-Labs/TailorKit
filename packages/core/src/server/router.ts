@@ -1,18 +1,33 @@
 import type { RouterClient } from "@orpc/server";
 
 import { appAgentRouter } from "./routes/app-agent";
-import { appRouter } from "./routes/apps";
+import { appRouter, discoverApps } from "./routes/apps";
+import { backendSession } from "./routes/backend";
 import { cliAuthRouter } from "./routes/cli-auth";
+import { cliAuthPageRouter } from "./routes/cli-auth-page";
 import { deploymentRouter } from "./routes/deployments";
-import { previewRouter } from "./routes/preview";
+import { meta, schema } from "./routes/metadata";
+import { toolsRouter } from "./routes/tools";
+import { views } from "./routes/views";
 
-export const tailorkitRouter = {
+export const patchsmithRouter = {
   appAgent: appAgentRouter,
   apps: appRouter,
   cliAuth: cliAuthRouter,
   deployments: deploymentRouter,
-  preview: previewRouter,
 };
 
-export type TailorKitRouter = typeof tailorkitRouter;
-export type TailorKitRouterClient = RouterClient<TailorKitRouter>;
+export type PatchsmithRouter = typeof patchsmithRouter;
+
+export type PatchsmithRouterClient = RouterClient<PatchsmithRouter>;
+
+/** Existing plain HTTP URLs, served by oRPC's OpenAPI transport. */
+export const patchsmithHttpRouter = {
+  apps: discoverApps,
+  backend: { session: backendSession },
+  cliAuthPage: cliAuthPageRouter,
+  meta,
+  schema,
+  tools: toolsRouter,
+  views,
+};

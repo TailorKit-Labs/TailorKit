@@ -2,9 +2,9 @@ import { randomBytes, randomInt } from "node:crypto";
 
 import { openapi } from "@orpc/openapi";
 import { ORPCError } from "@orpc/server";
-import { hashSecret } from "@tailorkit/api-utils/hashing";
-import { db } from "@tailorkit/db";
-import { cliAuthSession, cliToken } from "@tailorkit/db/schema/cli-auth";
+import { hashSecret } from "@patchsmith/api-utils/hashing";
+import { db } from "@patchsmith/db";
+import { cliAuthSession, cliToken } from "@patchsmith/db/schema/cli-auth";
 import { and, eq, gt } from "drizzle-orm";
 import { z } from "zod";
 
@@ -17,8 +17,10 @@ const deviceCodeBytes = 32;
 const deployTokenBytes = 32;
 const userCodeLength = 9;
 const userCodeSections = 3;
+
 // 5 minutes
 const authExpiresInMilliseconds = 5 * 60 * 1000;
+
 // 12 hours
 const tokenExpiresInMilliseconds = 12 * 60 * 60 * 1000;
 
@@ -52,6 +54,7 @@ const generateUserCode = (): string => {
   const sectionLength = Math.floor(userCodeLength / userCodeSections);
 
   const sections = [];
+
   for (let i = 0; i < userCodeSections; i += 1) {
     sections.push(code.slice(i * sectionLength, (i + 1) * sectionLength));
   }
@@ -118,6 +121,7 @@ const approveCliAuth = protectedRouter
   .output(z.object({ body: z.object({ id: z.string() }) }))
   .handler(async ({ context, input }) => {
     const scope = canonicalizeScope(input.body.scope);
+
     const [session] = await db
       .update(cliAuthSession)
       .set({
@@ -207,6 +211,7 @@ const pollCliAuth = protectedRouter
   .handler(async ({ context, input }) => {
     const deviceCodeHash = hashCliSecret(input.body.deviceCode);
     const now = new Date();
+
     const session = await db.query.cliAuthSession.findFirst({
       where: {
         deviceCodeHash,
@@ -249,7 +254,9 @@ const pollCliAuth = protectedRouter
         message: "Approved CLI auth session is missing scope.",
       });
     }
+
     let sessionScope: ReturnType<typeof canonicalizeScope>;
+
     try {
       sessionScope = canonicalizeScope(session.scope);
     } catch {
@@ -257,6 +264,7 @@ const pollCliAuth = protectedRouter
         message: "Approved CLI auth session has an invalid scope.",
       });
     }
+
     if (sessionScope.scopeKey !== session.scopeKey) {
       throw new ORPCError("BAD_REQUEST", {
         message: "Approved CLI auth session has an invalid scope.",
@@ -264,6 +272,7 @@ const pollCliAuth = protectedRouter
     }
 
     const deployToken = generateSecret(deployTokenBytes);
+
     const deletedSession = await db.transaction(async (tx) => {
       const [consumedSession] = await tx
         .delete(cliAuthSession)
@@ -293,7 +302,9 @@ const pollCliAuth = protectedRouter
           message: "Approved CLI auth session is missing scope.",
         });
       }
+
       let consumedScope: ReturnType<typeof canonicalizeScope>;
+
       try {
         consumedScope = canonicalizeScope(consumedSession.scope);
       } catch {
@@ -301,6 +312,7 @@ const pollCliAuth = protectedRouter
           message: "Approved CLI auth session has an invalid scope.",
         });
       }
+
       if (consumedScope.scopeKey !== consumedSession.scopeKey) {
         throw new ORPCError("BAD_REQUEST", {
           message: "Approved CLI auth session has an invalid scope.",

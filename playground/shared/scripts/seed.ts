@@ -20,13 +20,16 @@ const seedUsers = [
     name: "Jules Park",
   },
 ];
+
 const seedTeams = [
   { id: "team-northstar", key: "NORTH", name: "Northstar" },
   { id: "team-studio", key: "STUDIO", name: "Studio" },
 ];
 
 db.insert(users).values(seedUsers).onConflictDoNothing().run();
+
 db.insert(teams).values(seedTeams).onConflictDoNothing().run();
+
 db.insert(teamMembers)
   .values([
     { role: "owner", teamId: "team-northstar", userId: "alex" },
@@ -79,6 +82,7 @@ const seedIssues = [
     title: "Plan the next design review",
   },
 ];
+
 db.insert(issues).values(seedIssues).onConflictDoNothing().run();
 
 process.stdout.write("Seeded the playground profiles, teams, and issues.\n");

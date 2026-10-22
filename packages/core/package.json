@@ -1,10 +1,10 @@
 {
-  "name": "@tailorkit/core",
-  "version": "0.1.0-beta.36",
+  "name": "@patchsmith/core",
+  "version": "0.1.0-beta.59",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TailorKit-Labs/TailorKit.git",
+    "url": "git+https://github.com/patchsmith-io/patchsmith.git",
     "directory": "packages/core"
   },
   "files": [
@@ -94,7 +94,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsup --entry.views src/views.ts --entry.server src/server/index.ts --entry.server-types src/server/types.ts --entry.schema src/schema/index.ts --entry.spec src/spec/index.ts --entry.primitives-theme src/primitives/theme.ts --entry.primitives-zod src/primitives/zod.ts --entry.primitives-valibot src/primitives/valibot.ts --entry.primitives-arktype src/primitives/arktype.ts --entry.icons-definition src/icons/definition.ts --entry.icons-zod src/icons/zod.ts --entry.icons-valibot src/icons/valibot.ts --entry.icons-arktype src/icons/arktype.ts --format esm --target node20 --clean && tsc -p tsconfig.build.json",
+    "build": "vp pack && tsc -p tsconfig.build.json",
     "check-types": "tsc --noEmit",
     "generate:native": "tsx scripts/generate-native-components/index.ts",
     "test": "vp test run --typecheck --exclude '**/*.test-d.ts'",
@@ -105,23 +105,26 @@
   "dependencies": {
     "@orpc/client": "catalog:",
     "@orpc/contract": "catalog:",
+    "@orpc/experimental-effect": "catalog:",
+    "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
+    "@patchsmith/app": "workspace:*",
+    "@patchsmith/client-platform": "workspace:*",
     "@standard-schema/spec": "^1.1.0",
-    "@tailorkit/client-platform": "workspace:*",
-    "zod": "^4.6.5"
+    "effect": "catalog:",
+    "valibot": "catalog:"
   },
   "devDependencies": {
-    "@orpc/openapi": "catalog:",
-    "@tailorkit/config": "workspace:*",
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "@valibot/to-json-schema": "^1.8.0",
     "ai": "catalog:",
     "arktype": "^2.2.8",
     "lucide-react": "catalog:",
-    "tsup": "^8.5.1",
     "tsx": "catalog:",
     "typescript": "catalog:",
-    "valibot": "^1.5.0"
+    "vite-plus": "catalog:",
+    "zod": "^4.6.7"
   },
   "peerDependencies": {
     "arktype": ">=2.1.0",
@@ -138,5 +141,8 @@
     "zod": {
       "optional": true
     }
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

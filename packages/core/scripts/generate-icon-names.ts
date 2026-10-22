@@ -10,6 +10,7 @@ if (manifest.version !== lucideVersion) {
 }
 
 const names = Object.keys(dynamicIconImports).toSorted();
+
 if (!names.every((name) => iconNamePattern.test(name))) {
   throw new Error("Lucide returned an unsupported icon name");
 }
@@ -18,11 +19,13 @@ const output = new URL(
   "../src/icons/lucide-names.generated.ts",
   import.meta.url
 );
+
 await mkdir(new URL(".", output), { recursive: true });
+
 await writeFile(
   output,
   [
-    `// Generated from lucide-react ${lucideVersion} by pnpm --filter @tailorkit/core generate:icons.`,
+    `// Generated from lucide-react ${lucideVersion} by pnpm --filter @patchsmith/core generate:icons.`,
     "// Names only; SVG geometry is delivered separately by the catalogue.",
     "export const lucideIconNames = [",
     ...names.map((name) => `  ${JSON.stringify(name)},`),

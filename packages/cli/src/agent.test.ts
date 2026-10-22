@@ -1,8 +1,10 @@
-/* oxlint-disable typescript/no-unsafe-member-access, typescript/no-unsafe-assignment, typescript/no-unsafe-call -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import { CANCEL_SYMBOL } from "@clack/prompts";
+import type { autocomplete, text } from "@clack/prompts";
+import type * as promptsModule from "@clack/prompts";
 import {
   afterEach,
   beforeEach,
@@ -12,15 +14,14 @@ import {
   vi,
 } from "vite-plus/test";
 
+import type { openAgentTui } from "./agent-tui";
 import type * as authModule from "./auth";
-
-const isSymbolValue = <TValue>(value: TValue): value is TValue & symbol =>
-  typeof value === "symbol";
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -32,44 +33,50 @@ const mocks = vi.hoisted(() => ({
   info: vi.fn(),
   list: vi.fn(),
   load: vi.fn(),
-  select: vi.fn(),
-  text: vi.fn(),
+  select: vi.fn<typeof autocomplete<string | null>>(),
+  text: vi.fn<typeof text>(),
   token: vi.fn(),
-  tui: vi.fn(),
+  tui: vi.fn<typeof openAgentTui>(),
   whoami: vi.fn(),
 }));
-vi.mock("@clack/prompts", () => ({
+
+vi.mock("@clack/prompts", async (importOriginal) => ({
+  ...(await importOriginal<typeof promptsModule>()),
   autocomplete: mocks.select,
   cancel: mocks.cancel,
-  isCancel: (value: unknown): value is symbol => isSymbolValue(value),
   log: { info: mocks.info },
   spinner: () => ({ start: vi.fn(), stop: vi.fn() }),
   text: mocks.text,
 }));
-vi.mock("@tailorkit/vite/config/loader", () => ({
-  loadTailorKitConfig: mocks.load,
+
+vi.mock("@patchsmith/vite/config/loader", () => ({
+  loadPatchsmithConfig: mocks.load,
 }));
+
 vi.mock("./auth", async (importOriginal) => ({
   ...(await importOriginal<typeof authModule>()),
   getDeployToken: mocks.token,
   runWhoami: mocks.whoami,
 }));
-vi.mock("@tailorkit/core/server", () => ({
-  createTailorKitClient: mocks.client,
+
+vi.mock("@patchsmith/core/server", () => ({
+  createPatchsmithClient: mocks.client,
 }));
+
 vi.mock("./agent-tui", () => ({ openAgentTui: mocks.tui }));
+
 const { runAgentCommand } = await import("./agent");
 const { NotLoggedInError } = await import("./auth");
 const stdinTty = Object.getOwnPropertyDescriptor(process.stdin, "isTTY");
 const stdoutTty = Object.getOwnPropertyDescriptor(process.stdout, "isTTY");
 let root: string;
 let configPath: string;
-const host = "https://host.test/api/tailorkit";
+const host = "https://host.test/api/patchsmith";
 
 beforeEach(async () => {
   vi.resetAllMocks();
-  root = await mkdtemp(path.join(tmpdir(), "tailorkit-agent-"));
-  configPath = path.join(root, "tailorkit.config.ts");
+  root = await mkdtemp(path.join(tmpdir(), "patchsmith-agent-"));
+  configPath = path.join(root, "patchsmith.config.ts");
   vi.spyOn(process, "cwd").mockReturnValue(root);
   await writeFile(
     path.join(root, "package.json"),
@@ -98,10 +105,12 @@ beforeEach(async () => {
   // oxlint-disable-next-line unicorn/no-useless-undefined -- Vitest requires the resolved value argument.
   mocks.tui.mockResolvedValue(undefined);
 });
+
 afterEach(async () => {
   expect(mocks.load).not.toHaveBeenCalled();
   await rm(root, { force: true, recursive: true });
   vi.restoreAllMocks();
+
   for (const [object, key, descriptor] of [
     [process.stdin, "isTTY", stdinTty],
     [process.stdout, "isTTY", stdoutTty],
@@ -137,7 +146,8 @@ describe("agent command", () => {
 
   it("ignores an existing config when choosing an app", async () => {
     const source =
-      'export default { host: "https://other.test", appId: "other-app" };\n';
+      'export default { name: "Test App", slug: "test-app", host: "https://other.test", appId: "other-app" };\n';
+
     await writeFile(configPath, source);
     mocks.select.mockResolvedValueOnce("selected-app");
     await runAgentCommand({ host });
@@ -147,7 +157,7 @@ describe("agent command", () => {
   it("requires --host even when a config exists", async () => {
     await writeFile(
       configPath,
-      'export default { host: "https://other.test" };\n'
+      'export default { name: "Test App", slug: "test-app", host: "https://other.test" };\n'
     );
     await expect(runAgentCommand({})).rejects.toThrow("--host <url>");
     expect(mocks.whoami).not.toHaveBeenCalled();
@@ -169,13 +179,13 @@ describe("agent command", () => {
             createdByAgent: false,
             id: "manual",
             name: "Manual app",
-            publicId: "manual",
+            shortId: "manual",
           },
           {
             createdByAgent: true,
             id: "app-one",
             name: "First app",
-            publicId: "one",
+            shortId: "one",
           },
         ],
         pagination: { hasMore: true },
@@ -186,7 +196,7 @@ describe("agent command", () => {
             createdByAgent: true,
             id: "app-two",
             name: "Second app",
-            publicId: "two",
+            shortId: "two",
           },
         ],
         pagination: { hasMore: false },
@@ -204,11 +214,19 @@ describe("agent command", () => {
       { hint: "two", label: "Second app", value: "app-two" },
       { label: "Create a new app", value: null },
     ]);
-    expect(prompt.filter("SECOND", prompt.options[1])).toBe(true);
-    expect(prompt.filter("two", prompt.options[1])).toBe(true);
-    expect(prompt.filter("app-two", prompt.options[1])).toBe(true);
-    expect(prompt.filter("missing", prompt.options[1])).toBe(false);
-    expect(prompt.filter("missing", prompt.options[2])).toBe(true);
+
+    if (!Array.isArray(prompt.options)) {
+      throw new TypeError("Expected static app options");
+    }
+
+    const filter = requireValue(prompt.filter);
+    const secondApp = requireValue(prompt.options[1]);
+    const createApp = requireValue(prompt.options[2]);
+    expect(filter("SECOND", secondApp)).toBe(true);
+    expect(filter("two", secondApp)).toBe(true);
+    expect(filter("app-two", secondApp)).toBe(true);
+    expect(filter("missing", secondApp)).toBe(false);
+    expect(filter("missing", createApp)).toBe(true);
     expect(mocks.create).not.toHaveBeenCalled();
     expect(requireValue(mocks.tui.mock.lastCall)[0].appId).toBe("app-two");
   });
@@ -218,7 +236,15 @@ describe("agent command", () => {
     expect(mocks.text).toHaveBeenCalledWith(
       expect.objectContaining({ initialValue: "My app" })
     );
-    const [{ validate }] = requireValue(mocks.text.mock.lastCall);
+
+    const validate = requireValue(
+      requireValue(mocks.text.mock.lastCall)[0].validate
+    );
+
+    if ("~standard" in validate) {
+      throw new TypeError("Expected an app name validation callback");
+    }
+
     expect(validate("  ")).toBe("Enter an app name.");
     expect(validate("New app")).toBeUndefined();
     expect(mocks.create).toHaveBeenCalledWith({
@@ -236,7 +262,7 @@ describe("agent command", () => {
           createdByAgent: true,
           id: "existing",
           name: "Existing app",
-          publicId: "existing-public",
+          shortId: "existing-public",
         },
       ],
       pagination: { hasMore: false },
@@ -252,7 +278,7 @@ describe("agent command", () => {
           createdByAgent: false,
           id: "manual",
           name: "Manual app",
-          publicId: "manual",
+          shortId: "manual",
         },
       ],
       pagination: { hasMore: false },
@@ -283,7 +309,7 @@ describe("agent command", () => {
   it.each(["select", "text"] as const)(
     "cancels at the %s prompt without creating an app",
     async (prompt) => {
-      mocks[prompt].mockResolvedValueOnce(Symbol("cancel"));
+      mocks[prompt].mockResolvedValueOnce(CANCEL_SYMBOL);
       await runAgentCommand({ host });
       expect(mocks.cancel).toHaveBeenCalledWith("Agent cancelled.");
       expect(mocks.create).not.toHaveBeenCalled();
@@ -307,15 +333,16 @@ describe("agent command", () => {
   it("starts login when necessary and verifies approval before opening the TUI", async () => {
     mocks.whoami.mockRejectedValueOnce(new NotLoggedInError("host"));
     const login = vi.fn().mockResolvedValue({});
-    // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-    mocks.list.mockImplementationOnce(async () => {
-      expect(login).toHaveBeenCalledOnce();
-      expect(mocks.whoami).toHaveBeenCalledTimes(2);
-      return { items: [], pagination: { hasMore: false } };
-    });
     await runAgentCommand({ host, onLoginRequired: login });
     expect(login).toHaveBeenCalledOnce();
     expect(mocks.whoami).toHaveBeenCalledTimes(2);
+    const listedAt = requireValue(mocks.list.mock.invocationCallOrder[0]);
+    expect(requireValue(login.mock.invocationCallOrder[0])).toBeLessThan(
+      listedAt
+    );
+    expect(requireValue(mocks.whoami.mock.invocationCallOrder[1])).toBeLessThan(
+      listedAt
+    );
     expect(mocks.whoami).toHaveBeenCalledWith(
       expect.objectContaining({ host })
     );

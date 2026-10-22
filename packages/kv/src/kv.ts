@@ -36,5 +36,6 @@ export const getKV = (): KVInstance => {
   }
 
   instance = createKV();
+
   return instance;
 };

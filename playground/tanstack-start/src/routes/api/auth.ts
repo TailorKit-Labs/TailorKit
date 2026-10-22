@@ -11,6 +11,7 @@ import { z } from "zod";
 const json = (data: unknown, init: ResponseInit = {}) => {
   const headers = new Headers(init.headers);
   headers.set("Content-Type", "application/json");
+
   return Response.json(data, { ...init, headers });
 };
 
@@ -25,6 +26,7 @@ const handle = async ({ request }: { request: Request }) => {
   if (request.method !== "POST") {
     return json({ error: "Method not allowed" }, { status: 405 });
   }
+
   const parsed = z
     .discriminatedUnion("action", [
       z.object({ action: z.literal("sign-out") }),
@@ -35,9 +37,11 @@ const handle = async ({ request }: { request: Request }) => {
       }),
     ])
     .safeParse(await request.json().catch(() => null));
+
   if (!parsed.success) {
     return json({ error: "Choose a profile and team" }, { status: 400 });
   }
+
   const body = parsed.data;
 
   if (body.action === "sign-out") {
@@ -50,6 +54,7 @@ const handle = async ({ request }: { request: Request }) => {
   const choice = listSignInChoices().find(
     (item) => item.userId === body.userId && item.teamId === body.teamId
   );
+
   if (!choice) {
     return json(
       { error: "That profile is not a member of this team" },

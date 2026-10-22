@@ -1,53 +1,63 @@
-import { z } from "zod";
+import * as v from "valibot";
 
-export const tailorkitUploadManifestSchema = z.object({
-  assets: z.object({
-    client: z.literal("client/client.js"),
-    logos: z
-      .object({
-        dark: z
-          .string()
-          .regex(/^client\/logo-dark\.(?:png|svg|webp)$/u)
-          .optional(),
-        light: z
-          .string()
-          .regex(/^client\/logo-light\.(?:png|svg|webp)$/u)
-          .optional(),
+export const patchsmithUploadManifestSchema = v.object({
+  appId: v.optional(v.pipe(v.string(), v.minLength(1))),
+  assets: v.object({
+    client: v.literal("client/client.js"),
+    logos: v.optional(
+      v.object({
+        dark: v.optional(
+          v.pipe(v.string(), v.regex(/^client\/logo-dark\.(?:png|svg|webp)$/u))
+        ),
+        light: v.optional(
+          v.pipe(v.string(), v.regex(/^client\/logo-light\.(?:png|svg|webp)$/u))
+        ),
       })
-      .optional(),
-    server: z.literal("server/server.js").optional(),
+    ),
+    server: v.optional(v.literal("server/server.js")),
   }),
-  version: z.literal(1),
-  views: z
-    .array(
-      z.object({
-        disabled: z.literal(true).optional(),
-        instances: z.literal(true).optional(),
-        path: z.string().startsWith("/").max(1024),
-        slot: z.string().min(1).max(255),
-      })
+  version: v.literal(1),
+  views: v.optional(
+    v.pipe(
+      v.array(
+        v.object({
+          disabled: v.optional(v.literal(true)),
+          instances: v.optional(v.literal(true)),
+          path: v.pipe(v.string(), v.startsWith("/"), v.maxLength(1024)),
+          slot: v.pipe(v.string(), v.minLength(1), v.maxLength(255)),
+        })
+      ),
+      v.maxLength(1000)
     )
-    .max(1000)
-    .optional(),
+  ),
 });
 
-export type TailorKitUploadManifest = z.output<
-  typeof tailorkitUploadManifestSchema
+export type PatchsmithUploadManifest = v.InferOutput<
+  typeof patchsmithUploadManifestSchema
 >;
 
-export const createTailorKitUploadManifest = (
-  logos?: TailorKitUploadManifest["assets"]["logos"],
+export const createPatchsmithUploadManifest = (
+  logos?: PatchsmithUploadManifest["assets"]["logos"],
   server = false,
-  views?: TailorKitUploadManifest["views"]
-): TailorKitUploadManifest => {
-  const assets: TailorKitUploadManifest["assets"] = {
+  views?: PatchsmithUploadManifest["views"],
+  appId?: string
+): PatchsmithUploadManifest => {
+  const assets: PatchsmithUploadManifest["assets"] = {
     client: "client/client.js",
   };
+
   if (server) {
     assets.server = "server/server.js";
   }
+
   if (logos && Object.keys(logos).length > 0) {
     assets.logos = logos;
   }
-  return tailorkitUploadManifestSchema.parse({ assets, version: 1, views });
+
+  return v.parse(patchsmithUploadManifestSchema, {
+    appId,
+    assets,
+    version: 1,
+    views,
+  });
 };

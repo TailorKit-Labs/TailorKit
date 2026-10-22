@@ -1,4 +1,4 @@
-import { Button } from "@tailorkit/ui/button";
+import { Button } from "@patchsmith/ui/button";
 import {
   Card,
   CardDescription,
@@ -7,8 +7,8 @@ import {
   CardHeader,
   CardPanel,
   CardTitle,
-} from "@tailorkit/ui/card";
-import { Checkbox } from "@tailorkit/ui/checkbox";
+} from "@patchsmith/ui/card";
+import { Checkbox } from "@patchsmith/ui/checkbox";
 import {
   Dialog,
   DialogClose,
@@ -18,18 +18,18 @@ import {
   DialogPanel,
   DialogPopup,
   DialogTitle,
-} from "@tailorkit/ui/dialog";
-import { Field, FieldLabel } from "@tailorkit/ui/field";
-import { Frame, FrameFooter, FramePanel } from "@tailorkit/ui/frame";
-import { Input } from "@tailorkit/ui/input";
+} from "@patchsmith/ui/dialog";
+import { Field, FieldLabel } from "@patchsmith/ui/field";
+import { Frame, FrameFooter, FramePanel } from "@patchsmith/ui/frame";
+import { Input } from "@patchsmith/ui/input";
 import {
   OTPField,
   OTPFieldInput,
   OTPFieldSeparator,
-} from "@tailorkit/ui/otp-field";
-import { Skeleton } from "@tailorkit/ui/skeleton";
-import { toastManager } from "@tailorkit/ui/toast";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "@tailorkit/ui/tooltip";
+} from "@patchsmith/ui/otp-field";
+import { Skeleton } from "@patchsmith/ui/skeleton";
+import { toastManager } from "@patchsmith/ui/toast";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "@patchsmith/ui/tooltip";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CopyIcon, DownloadIcon } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
@@ -103,6 +103,7 @@ const TwoFactorSetupDialog = ({
 }) => {
   let title = "Set up two-factor authentication";
   let description = "Confirm your password to begin.";
+
   let panelContent: ReactNode = (
     <Field>
       <FieldLabel>Password</FieldLabel>
@@ -116,6 +117,7 @@ const TwoFactorSetupDialog = ({
       />
     </Field>
   );
+
   let action: ReactNode = (
     <>
       <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
@@ -219,6 +221,7 @@ const TwoFactorSetupDialog = ({
           length={OTP_LENGTH}
           onValueChange={(value) => {
             setCode(value);
+
             if (value.length === OTP_LENGTH) {
               onVerify(value);
             }
@@ -544,6 +547,7 @@ export const TwoFactorSettings = ({
 
   const isEnabled = sessionUser?.twoFactorEnabled === true;
   const isReady = !isLoading && !sessionError;
+
   let description: ReactNode =
     "Use an authenticator app to add a second step whenever you sign in.";
 
@@ -575,6 +579,7 @@ export const TwoFactorSettings = ({
     onSuccess: (result) => {
       if (result.method !== "totp") {
         setError("Unable to start authenticator setup. Please try again.");
+
         return;
       }
 
@@ -676,6 +681,7 @@ export const TwoFactorSettings = ({
     }
 
     setSetupOpen(open);
+
     if (!open) {
       resetSetup();
     }
@@ -683,6 +689,7 @@ export const TwoFactorSettings = ({
 
   const handleDisableOpenChange = (open: boolean) => {
     setDisableOpen(open);
+
     if (!open) {
       setPassword("");
       setError(null);
@@ -691,6 +698,7 @@ export const TwoFactorSettings = ({
 
   const handleRegenerateOpenChange = (open: boolean) => {
     setRegenerateOpen(open);
+
     if (!open) {
       setRegeneratePassword("");
       setRegenerateError(null);
@@ -723,6 +731,7 @@ export const TwoFactorSettings = ({
     const downloadURL = URL.createObjectURL(
       new Blob([backupCodes.join("\n")], { type: "text/plain" })
     );
+
     const link = document.createElement("a");
     link.download = "recovery-codes.txt";
     link.href = downloadURL;

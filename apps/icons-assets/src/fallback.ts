@@ -8,8 +8,10 @@ export default {
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff",
     };
+
     const status =
       request.method === "GET" || request.method === "HEAD" ? 404 : 405;
+
     return new Response(null, { headers, status });
   },
 };

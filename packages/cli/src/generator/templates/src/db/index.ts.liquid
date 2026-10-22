@@ -1,6 +1,8 @@
-import { defineDatabase } from "tailorkit/server";
+import { defineDatabase } from "patchsmith/db";
+import { createFunctions } from "patchsmith/server";
 import { relations } from "./relations";
 
 export const db = defineDatabase({ relations });
+export const fn = createFunctions({ database: db });
 
 export * from "./schema";

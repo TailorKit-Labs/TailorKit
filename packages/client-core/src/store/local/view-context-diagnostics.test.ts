@@ -1,4 +1,4 @@
-import type { Schema } from "@tailorkit/core/schema";
+import type { Schema } from "@patchsmith/core/schema";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
@@ -8,21 +8,26 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
 const requiredContext = z.object({ customer: z.object({ id: z.string() }) });
+
 const setup = (schema: Schema = requiredContext) =>
   createViewContextStore({ views: { "/": schema } });
+
 afterEach(() => vi.restoreAllMocks());
 
 it("strips nested extra fields using the original schema without mutating the input", async () => {
   const error = vi.spyOn(console, "error").mockImplementation(() => {});
   const store = setup();
+
   const context = {
     customer: { email: "private@example.com", id: "c1" },
     extra: true,
   };
+
   store.register({ context, id: Symbol("identity"), view: "/" });
   await Promise.resolve();
   expect(store.state.get()?.layers).toEqual([
@@ -132,6 +137,7 @@ it("reports native issue paths and withholds invalid context", async () => {
 it("waits for asynchronous validation and ignores results for replaced or unmounted registrations", async () => {
   const pending: (() => void)[] = [];
   const base = z.object({ name: z.string() });
+
   const schema: Schema = {
     "~standard": {
       validate: async (input) => {
@@ -142,19 +148,23 @@ it("waits for asynchronous validation and ignores results for replaced or unmoun
             resolve,
             reject: rejectPending,
           } = Promise.withResolvers<ReturnType<() => void>>();
+
           try {
             pending.push(resolve);
           } catch (error) {
             rejectPending(error);
           }
+
           await pendingPromise;
         })();
+
         return { value: { name: value.name.toUpperCase() } };
       },
       vendor: "async-test",
       version: 1,
     },
   };
+
   const store = setup(schema);
   const id = Symbol("identity");
   store.register({ context: { name: "old" }, id, view: "/" });
@@ -195,6 +205,7 @@ it("handles rejected and thrown validators without leaking context", async () =>
           version: 1,
         },
       };
+
       const store = setup(schema);
       store.register({ context: {}, id: Symbol("identity"), view: "/" });
 

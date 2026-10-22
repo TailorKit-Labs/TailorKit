@@ -1,5 +1,5 @@
 {
-  "name": "@tailorkit/agent",
+  "name": "@patchsmith/agent",
   "version": "0.0.0",
   "private": true,
   "license": "BUSL-1.1",
@@ -46,30 +46,31 @@
     "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
-    "@ai-sdk/harness": "1.0.148",
-    "@ai-sdk/harness-pi": "1.0.150",
-    "@ai-sdk/sandbox-vercel": "1.0.148",
-    "@ai-sdk/workflow-harness": "1.0.148",
+    "@ai-sdk/harness": "1.0.154",
+    "@ai-sdk/harness-pi": "1.0.156",
+    "@ai-sdk/sandbox-vercel": "1.0.154",
+    "@ai-sdk/workflow-harness": "1.0.154",
     "@modelcontextprotocol/server": "2.3.1",
-    "@tailorkit/db": "workspace:*",
-    "@tailorkit/env": "workspace:*",
-    "@tailorkit/vite": "workspace:*",
-    "@vercel/oidc": "3.5.0",
-    "@vercel/sandbox": "3.6.1",
+    "@patchsmith/db": "workspace:*",
+    "@patchsmith/env": "workspace:*",
+    "@patchsmith/vite": "workspace:*",
+    "@vercel/oidc": "4.0.1",
+    "@vercel/sandbox": "3.8.0",
     "ai": "catalog:",
     "drizzle-orm": "catalog:",
-    "workflow": "5.2.0",
+    "valibot": "catalog:",
+    "workflow": "5.2.2",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "0.5.8",
+    "@electric-sql/pglite": "0.5.10",
     "@modelcontextprotocol/client": "2.3.1",
-    "@tailorkit/config": "workspace:*",
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=24.11"
   }
 }

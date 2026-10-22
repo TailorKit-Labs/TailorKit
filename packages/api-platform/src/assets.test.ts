@@ -1,8 +1,8 @@
 import { createServer } from "node:http";
 import { gzipSync } from "node:zlib";
 
-import { maxDeploymentBytes } from "@tailorkit/asset-delivery";
-import type { Storage } from "@tailorkit/storage";
+import { maxDeploymentBytes } from "@patchsmith/asset-delivery";
+import type { Storage } from "@patchsmith/storage";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { handleAssetRequest } from "./assets";
@@ -14,15 +14,15 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
-const teamId = "abc123def45678";
-const projectId = "22222222-2222-4222-8222-222222222222";
+const projectId = "proj00000001";
 const appId = "app000000001";
 const deploymentId = "deploy000001";
-const url = `http://localhost:3000/api/assets/t/${teamId}/p/${projectId}/a/${appId}/d/${deploymentId}/client/client.js`;
-const key = `teams/${teamId}/projects/${projectId}/apps/${appId}/deployments/${deploymentId}/client/client.js`;
+const url = `http://localhost:3000/api/assets/p/${projectId}/a/${appId}/d/${deploymentId}/client/client.js`;
+const key = `projects/${projectId}/apps/${appId}/deployments/${deploymentId}/client/client.js`;
 const bundle = "export default 'local asset';";
 
 const storage = (): Storage => ({
@@ -60,6 +60,7 @@ describe("Node asset delivery", () => {
               new Request(url.replace("client.js", suffix), { method }),
               backend
             );
+
             expect(response.status).toBe(404);
           })
         );
@@ -95,16 +96,20 @@ describe("Node asset delivery", () => {
   it("serves HEAD and OPTIONS without downloading the object", async () => {
     const backend = storage();
     const fetchMock = vi.spyOn(globalThis, "fetch");
+
     const head = await handleAssetRequest(
       new Request(url, { method: "HEAD" }),
       backend
     );
+
     expect(head.status).toBe(200);
     expect(await head.text()).toBe("");
+
     const options = await handleAssetRequest(
       new Request(url, { method: "OPTIONS" }),
       backend
     );
+
     expect(options.status).toBe(204);
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -147,6 +152,7 @@ it("maps rejected storage reads to a sanitized service-unavailable response", as
 
 it("serves Node fetch's decoded gzip body with consistent GET and HEAD metadata", async () => {
   const bytes = gzipSync(bundle);
+
   const origin = createServer((_request, response) => {
     response.writeHead(200, {
       "Content-Encoding": "gzip",
@@ -154,25 +160,31 @@ it("serves Node fetch's decoded gzip body with consistent GET and HEAD metadata"
     });
     response.end(bytes);
   });
+
   await (async () => {
     const {
       promise: pendingPromise,
       resolve,
       reject,
     } = Promise.withResolvers<ReturnType<() => void>>();
+
     try {
       origin.once("error", reject);
       origin.listen(0, "127.0.0.1", resolve);
     } catch (error) {
       reject(error);
     }
+
     await pendingPromise;
   })();
+
   try {
     const address = origin.address();
+
     if (!(address !== null && address !== "") || isStringValue(address)) {
       throw new Error("Missing test server address");
     }
+
     const backend = storage();
     vi.mocked(backend.head).mockResolvedValue({
       contentEncoding: "gzip",
@@ -190,10 +202,12 @@ it("serves Node fetch's decoded gzip body with consistent GET and HEAD metadata"
     expect(response.headers.get("Content-Encoding")).toBeNull();
     expect(response.headers.get("Content-Length")).toBeNull();
     expect(response.headers.get("ETag")).toBe('W/"gzip-etag"');
+
     const head = await handleAssetRequest(
       new Request(url, { method: "HEAD" }),
       backend
     );
+
     expect([...head.headers]).toEqual([...response.headers]);
     expect(await head.text()).toBe("");
   } finally {
@@ -203,6 +217,7 @@ it("serves Node fetch's decoded gzip body with consistent GET and HEAD metadata"
         resolve,
         reject,
       } = Promise.withResolvers<ReturnType<() => void>>();
+
       try {
         origin.close((error) => {
           if (error) {
@@ -214,6 +229,7 @@ it("serves Node fetch's decoded gzip body with consistent GET and HEAD metadata"
       } catch (error) {
         reject(error);
       }
+
       await pendingPromise;
     })();
   }

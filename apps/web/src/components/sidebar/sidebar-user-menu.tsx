@@ -1,5 +1,5 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@tailorkit/ui/avatar";
-import { Button } from "@tailorkit/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@patchsmith/ui/avatar";
+import { Button } from "@patchsmith/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,9 +8,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@tailorkit/ui/dropdown-menu";
-import { toastManager } from "@tailorkit/ui/toast";
-import { ToggleGroup, ToggleGroupItem } from "@tailorkit/ui/toggle-group";
+} from "@patchsmith/ui/dropdown-menu";
+import { toastManager } from "@patchsmith/ui/toast";
+import { ToggleGroup, ToggleGroupItem } from "@patchsmith/ui/toggle-group";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
@@ -37,6 +37,7 @@ export const SidebarUserMenu = () => {
   const email = session?.user?.email ?? "";
   const image = session?.user?.image ?? undefined;
   const selectedTheme = theme ?? getUserTheme(session?.user) ?? fallbackTheme;
+
   const initials = name
     .split(" ")
     .map((w) => w[0])
@@ -90,7 +91,7 @@ export const SidebarUserMenu = () => {
           <DropdownMenuItem
             render={
               <a
-                href="https://tailorkit.dev/home"
+                href="https://patchsmith.io/home"
                 rel="noopener noreferrer"
                 target="_blank"
               >
@@ -103,7 +104,7 @@ export const SidebarUserMenu = () => {
           <DropdownMenuItem
             render={
               <a
-                href="https://tailorkit.dev/docs"
+                href="https://patchsmith.io/docs"
                 rel="noopener noreferrer"
                 target="_blank"
               >
@@ -142,6 +143,7 @@ export const SidebarUserMenu = () => {
                         } as Parameters<typeof authClient.updateUser>[0]
                         /* oxlint-enable typescript/no-unsafe-type-assertion */
                       );
+
                       if (result.error) {
                         toastManager.add({
                           description:

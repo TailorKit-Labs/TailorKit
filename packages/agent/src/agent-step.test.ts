@@ -6,6 +6,7 @@ import { agentStep } from "./agent-step";
 import type { AppAgentInput } from "./input";
 
 const chunks: HarnessWorkflowChunk[] = [];
+
 const mocks = vi.hoisted(() => ({
   continueStream: vi.fn(),
   createSession: vi.fn(),
@@ -17,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   suspend: vi.fn(),
   unfinished: vi.fn(),
 }));
+
 vi.mock("./agent", () => ({
   createAppAgent: () => ({
     continueStream: mocks.continueStream,
@@ -24,12 +26,15 @@ vi.mock("./agent", () => ({
     stream: mocks.stream,
   }),
 }));
+
 vi.mock("./sandbox", () => ({
   getSandbox: vi.fn(),
   networkSession: vi.fn(),
   removeLegacyAgentToken: mocks.removeToken,
 }));
+
 vi.mock("./session-store", () => ({ renewSession: mocks.renew }));
+
 vi.mock("workflow", () => ({
   getWritable: () =>
     new WritableStream<HarnessWorkflowChunk>({
@@ -42,18 +47,21 @@ vi.mock("workflow", () => ({
 const input: AppAgentInput = {
   agentToken: "private-token",
   appId: "app-1",
-  hostUrl: "https://host.test/api/tailorkit",
+  hostUrl: "https://host.test/api/patchsmith",
   messages: [{ content: "Build", role: "user" }],
   model: "xiaomi/mimo-v2.6-pro",
   threadId: "thread-1",
 };
+
 const resumeFrom = {
   data: {},
   harnessId: "pi",
   specificationVersion: "harness-v1" as const,
   type: "resume-session" as const,
 };
+
 const continueFrom = { ...resumeFrom, type: "continue-turn" as const };
+
 const streamResult = (text: string) => ({
   finishReason: Promise.resolve("stop"),
   toUIMessageStream: () =>
@@ -68,6 +76,7 @@ const streamResult = (text: string) => ({
         ]) {
           controller.enqueue(chunk);
         }
+
         controller.close();
       },
     }),
@@ -100,6 +109,7 @@ describe("Pi step with the SDK workflow runner", () => {
       input,
       "run-1"
     );
+
     expect(mocks.stream).toHaveBeenCalledWith(
       expect.objectContaining({ messages: input.messages })
     );
@@ -121,6 +131,7 @@ describe("Pi step with the SDK workflow runner", () => {
       continueFrom,
       messages: undefined,
     };
+
     const result = await agentStep(state, input, "run-1");
     expect(mocks.createSession).toHaveBeenCalledWith(
       expect.objectContaining({ continueFrom, sessionId: input.threadId })
@@ -133,6 +144,7 @@ describe("Pi step with the SDK workflow runner", () => {
 
   it("suspends unfinished work and leaves the sandbox available for another step", async () => {
     mocks.unfinished.mockReturnValue(true);
+
     const result = await agentStep(
       createHarnessWorkflowState({
         messages: input.messages,
@@ -141,6 +153,7 @@ describe("Pi step with the SDK workflow runner", () => {
       input,
       "run-1"
     );
+
     expect(result).toMatchObject({
       continueFrom,
       status: "ready_for_next_step",

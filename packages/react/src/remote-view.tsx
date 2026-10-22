@@ -1,14 +1,19 @@
 import { useStore } from "@nanostores/react";
-import type { ToolBridge, Session } from "@tailorkit/app/client";
+import type { ToolBridge, Session } from "@patchsmith/app/client";
 import {
   createRemoteViewStore,
+  toComponentTagName,
   createRemoteElementProps,
-} from "@tailorkit/client-core";
-import type { RemoteViewStore } from "@tailorkit/client-core";
+} from "@patchsmith/client-core";
+import type { RemoteViewStore } from "@patchsmith/client-core";
+import type {
+  PatchsmithContract,
+  experimental_CanvasPolicy,
+} from "@patchsmith/core/schema";
 import type {
   RemoteProps,
   RemoteElementNode,
-} from "@tailorkit/sandbox/protocol";
+} from "@patchsmith/sandbox/protocol";
 import {
   Component,
   Fragment,
@@ -21,6 +26,8 @@ import {
   useState,
 } from "react";
 import type { ComponentType, ReactNode } from "react";
+
+import { CanvasPoliciesContext, CanvasNodeContext } from "./canvas-context";
 
 const RemoteUIContext = createContext<RemoteViewStore | null>(null);
 
@@ -48,7 +55,7 @@ class RemoteErrorBoundary extends Component<
   }
 
   static componentDidCatch(error: Error): void {
-    console.error("TailorKit remote app failed", error);
+    console.error("Patchsmith remote app failed", error);
   }
 
   render(): ReactNode {
@@ -62,7 +69,7 @@ class RemoteErrorBoundary extends Component<
 
 interface RemoteViewHostProps {
   appUrl: string | URL;
-  sourceText?: string;
+  contract?: PatchsmithContract;
   toolBridge?: ToolBridge;
   getBackendSession?: (options: { refresh: boolean }) => Promise<Session>;
   components: RemoteProps;
@@ -70,29 +77,144 @@ interface RemoteViewHostProps {
   props?: RemoteProps;
 }
 
+interface RemoteElementViewProps {
+  children: ReactNode[];
+  ctx: RemoteViewStore;
+  node: RemoteElementNode;
+}
+
+const RemoteElementViewComponent = ({
+  children,
+  ctx,
+  node,
+}: RemoteElementViewProps): ReactNode => {
+  const componentStore = useMemo(
+    () => ctx.selectComponent(node.type),
+    [ctx, node.type]
+  );
+
+  const component = useStore(componentStore);
+  const policies = useContext(CanvasPoliciesContext);
+  const policy = policies[node.type];
+
+  const canvasContext = useMemo(
+    () => ({ nodeId: node.id, policy, store: ctx }),
+    [ctx, node.id, policy]
+  );
+
+  if (component === undefined) {
+    throw new Error(`Patchsmith component "${node.type}" is not registered.`);
+  }
+
+  const props = createRemoteElementProps(node, ctx.dispatch.bind(ctx));
+
+  // SAFETY: The renderer was supplied through the typed component registry; React's createElement overload erases its heterogeneous props.
+  return (
+    <CanvasNodeContext.Provider value={canvasContext}>
+      {createElement(
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- The renderer was supplied through the typed component registry; React's createElement overload erases its heterogeneous props. */
+        component as string | ComponentType<RemoteProps>,
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
+        props,
+        ...children
+      )}
+    </CanvasNodeContext.Provider>
+  );
+};
+
+const RemoteElementView = memo(RemoteElementViewComponent);
+
+interface RemoteViewProps {
+  nodeId: string;
+}
+
+const RemoteNode = {
+  View: ({
+    ctx,
+    nodeId,
+  }: RemoteViewProps & { ctx: RemoteViewStore }): ReactNode => {
+    const nodeStore = useMemo(
+      () => ctx.nodes.selectNode(nodeId),
+      [ctx, nodeId]
+    );
+
+    const node = useStore(nodeStore);
+
+    if (node === null) {
+      return null;
+    }
+
+    if (node.kind === "text") {
+      return node.text;
+    }
+
+    const childElements = node.children.map((child) => (
+      <RemoteNode.View key={child.id} ctx={ctx} nodeId={child.id} />
+    ));
+
+    if (node.kind === "fragment") {
+      return createElement(Fragment, { key: node.id }, ...childElements);
+    }
+
+    return (
+      <RemoteElementView node={node} ctx={ctx}>
+        {childElements}
+      </RemoteElementView>
+    );
+  },
+};
+
+RemoteNode.View = memo(RemoteNode.View);
+
+const RemoteViewComponent = ({ nodeId }: RemoteViewProps): ReactNode => {
+  const ctx = useContext(RemoteUIContext);
+
+  return ctx === null ? null : <RemoteNode.View ctx={ctx} nodeId={nodeId} />;
+};
+
+export const RemoteView = memo(RemoteViewComponent);
+
 const RemoteRoot = ({ store }: { store: RemoteViewStore }): ReactNode => {
   const rootId = useStore(store.nodes.root);
-  // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
+
   return rootId === null ? null : <RemoteView nodeId={rootId} />;
 };
 
 export const RemoteViewHost = ({
   appUrl,
-  sourceText,
   toolBridge,
   getBackendSession,
   components,
+  contract,
   createIframe,
   props,
 }: RemoteViewHostProps): ReactNode => {
+  const policies = useMemo(() => {
+    const result: Record<string, experimental_CanvasPolicy> = {};
+
+    for (const [name, definition] of Object.entries(
+      contract?.components ?? {}
+    )) {
+      if (definition.experimental_canvas) {
+        result[name] = definition.experimental_canvas;
+        result[toComponentTagName(name)] = definition.experimental_canvas;
+      }
+    }
+
+    return result;
+  }, [contract]);
+
   const appKey = appUrl.toString();
+
   const [state, setState] = useState(() => ({
     appKey,
     store: createRemoteViewStore({ components, props }),
   }));
+
   if (state.appKey !== appKey) {
     setState({ appKey, store: createRemoteViewStore({ components, props }) });
   }
+
   const { store } = state;
   const snapshot = useStore(store.state);
 
@@ -110,10 +232,9 @@ export const RemoteViewHost = ({
         appUrl,
         createIframe,
         getBackendSession,
-        sourceText,
         toolBridge,
       }),
-    [appUrl, sourceText, toolBridge, getBackendSession, createIframe, store]
+    [appUrl, toolBridge, getBackendSession, createIframe, store]
   );
 
   if (snapshot.status === "error" && snapshot.error) {
@@ -121,82 +242,12 @@ export const RemoteViewHost = ({
   }
 
   return (
-    <RemoteUIContext.Provider value={store}>
-      <RemoteErrorBoundary key={`${appKey}:${snapshot.generation}`}>
-        <RemoteRoot store={store} />
-      </RemoteErrorBoundary>
-    </RemoteUIContext.Provider>
+    <CanvasPoliciesContext.Provider value={policies}>
+      <RemoteUIContext.Provider value={store}>
+        <RemoteErrorBoundary key={`${appKey}:${snapshot.generation}`}>
+          <RemoteRoot store={store} />
+        </RemoteErrorBoundary>
+      </RemoteUIContext.Provider>
+    </CanvasPoliciesContext.Provider>
   );
 };
-
-interface RemoteElementViewProps {
-  ctx: RemoteViewStore;
-  node: RemoteElementNode;
-}
-
-const RemoteElementViewComponent = ({
-  ctx,
-  node,
-}: RemoteElementViewProps): ReactNode => {
-  const componentStore = useMemo(
-    () => ctx.selectComponent(node.type),
-    [ctx, node.type]
-  );
-  const component = useStore(componentStore);
-  const children = node.children.map((child) => (
-    // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
-    <RemoteView key={child.id} nodeId={child.id} />
-  ));
-
-  if (component === undefined) {
-    throw new Error(`TailorKit component "${node.type}" is not registered.`);
-  }
-  const props = createRemoteElementProps(node, ctx.dispatch.bind(ctx));
-
-  // SAFETY: The renderer was supplied through the typed component registry; React's createElement overload erases its heterogeneous props.
-  return createElement(
-    /* oxlint-disable typescript/no-unsafe-type-assertion -- The renderer was supplied through the typed component registry; React's createElement overload erases its heterogeneous props. */
-    component as string | ComponentType<RemoteProps>,
-    /* oxlint-enable typescript/no-unsafe-type-assertion */
-    props,
-    ...children
-  );
-};
-const RemoteElementView = memo(RemoteElementViewComponent);
-
-interface RemoteViewProps {
-  nodeId: string;
-}
-
-const RemoteNodeView = ({
-  ctx,
-  nodeId,
-}: RemoteViewProps & { ctx: RemoteViewStore }): ReactNode => {
-  const nodeStore = useMemo(() => ctx.nodes.selectNode(nodeId), [ctx, nodeId]);
-  const node = useStore(nodeStore);
-  if (node === null) {
-    return null;
-  }
-
-  if (node.kind === "text") {
-    return node.text;
-  }
-
-  const childElements = node.children.map((child) => (
-    // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
-    <RemoteView key={child.id} nodeId={child.id} />
-  ));
-
-  if (node.kind === "fragment") {
-    return createElement(Fragment, { key: node.id }, ...childElements);
-  }
-
-  return <RemoteElementView node={node} ctx={ctx} />;
-};
-
-const RemoteViewComponent = ({ nodeId }: RemoteViewProps): ReactNode => {
-  const ctx = useContext(RemoteUIContext);
-  return ctx === null ? null : <RemoteNodeView ctx={ctx} nodeId={nodeId} />;
-};
-
-export const RemoteView = memo(RemoteViewComponent);

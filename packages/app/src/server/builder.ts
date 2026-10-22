@@ -1,8 +1,12 @@
-import type { AnyRelations, EmptyRelations } from "drizzle-orm/relations";
-import { z } from "zod";
-
-import type { DatabaseDefinition } from "#database/definition";
-import type { MutationDatabase, QueryDatabase } from "#database/types";
+import type {
+  DatabaseRelations,
+  EmptyDatabaseRelations,
+  DatabaseDefinition,
+  QueryDatabase,
+  MutationDatabase,
+} from "@patchsmith/app-db";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
+import * as v from "valibot";
 
 import type {
   ActionContext,
@@ -14,11 +18,11 @@ import type {
 
 type HandlerContext<
   K extends FunctionKind,
-  A extends z.ZodType,
+  A extends StandardSchemaV1,
   F extends Functions,
-  D extends AnyRelations,
+  D extends DatabaseRelations,
 > = {
-  input: z.output<A>;
+  input: StandardSchemaV1.InferOutput<A>;
 } & (K extends "action"
   ? ActionContext<F>
   : {
@@ -26,7 +30,10 @@ type HandlerContext<
       identity: Identity;
     });
 
-type OutputInput<R> = R extends z.ZodType ? z.input<R> : unknown;
+type OutputInput<R> = R extends StandardSchemaV1
+  ? StandardSchemaV1.InferInput<R>
+  : unknown;
+
 type HandlerOutput<K, O> = K extends "action"
   ? O | Promise<O>
   : O &
@@ -38,22 +45,24 @@ type HandlerOutput<K, O> = K extends "action"
 
 type BuiltFunction<
   K extends FunctionKind,
-  A extends z.ZodType,
+  A extends StandardSchemaV1,
   R,
   O,
   F extends Functions,
-  D extends AnyRelations,
+  D extends DatabaseRelations,
 > = {
   readonly kind: K;
   readonly args: A;
   readonly database?: DatabaseDefinition<D>;
   readonly handler: (
-    context: Omit<HandlerContext<K, A, F, D>, "input"> & { args: z.output<A> }
+    context: Omit<HandlerContext<K, A, F, D>, "input"> & {
+      args: StandardSchemaV1.InferOutput<A>;
+    }
   ) => HandlerOutput<K, O>;
-} & (R extends z.ZodType ? { readonly result: R } : unknown) &
+} & (R extends StandardSchemaV1 ? { readonly result: R } : unknown) &
   (K extends "action" ? { readonly functions: F } : unknown);
 
-interface FunctionMetadata<R, F, D extends AnyRelations> {
+interface FunctionMetadata<R, F, D extends DatabaseRelations> {
   database?: DatabaseDefinition<D>;
   result?: R;
   functions?: F;
@@ -62,10 +71,10 @@ interface FunctionMetadata<R, F, D extends AnyRelations> {
 /** Immutable builders preserve the validated input and wire output types at every step. */
 class FunctionBuilder<
   K extends FunctionKind,
-  A extends z.ZodType,
-  R extends z.ZodType | undefined = undefined,
+  A extends StandardSchemaV1,
+  R extends StandardSchemaV1 | undefined = undefined,
   F extends Functions = EmptyFunctions,
-  D extends AnyRelations = EmptyRelations,
+  D extends DatabaseRelations = EmptyDatabaseRelations,
 > {
   private readonly kind: K;
   private readonly args: A;
@@ -87,7 +96,7 @@ class FunctionBuilder<
     this.databaseDefinition = database;
   }
 
-  input<S extends z.ZodType>(schema: S) {
+  input<S extends StandardSchemaV1>(schema: S) {
     return new FunctionBuilder(
       this.kind,
       schema,
@@ -97,7 +106,7 @@ class FunctionBuilder<
     );
   }
 
-  output<S extends z.ZodType>(schema: S) {
+  output<S extends StandardSchemaV1>(schema: S) {
     return new FunctionBuilder(
       this.kind,
       this.args,
@@ -120,33 +129,23 @@ class FunctionBuilder<
     );
   }
 
-  database<const E extends AnyRelations>(
-    this: FunctionBuilder<K, A, R, F, D> &
-      (K extends "action" ? never : unknown),
-    database: DatabaseDefinition<E>
-  ) {
-    return new FunctionBuilder<K, A, R, F, E>(
-      this.kind,
-      this.args,
-      this.result,
-      this.calls,
-      database
-    );
-  }
-
   handler<O extends OutputInput<R>>(
     handler: (context: HandlerContext<K, A, F, D>) => HandlerOutput<K, O>
   ): BuiltFunction<K, A, R, O, F, D> {
     const metadata: FunctionMetadata<R, F, D> = {};
+
     if (this.databaseDefinition) {
       metadata.database = this.databaseDefinition;
     }
+
     if (this.result) {
       metadata.result = this.result;
     }
+
     if (this.kind === "action") {
       metadata.functions = this.calls;
     }
+
     // SAFETY: The builder preserves its kind, schemas, database, and call definitions; optional metadata is added only for the matching generic branches.
     return (
       /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This builder or fixture preserves the declared capabilities across an erased generic boundary. */
@@ -156,7 +155,7 @@ class FunctionBuilder<
 
         handler: (
           context: Omit<HandlerContext<K, A, F, D>, "input"> & {
-            args: z.output<A>;
+            args: StandardSchemaV1.InferOutput<A>;
           }
         ) =>
           // SAFETY: The adapter reconstructs the same runtime contract, but TypeScript cannot relate the erased generic parameters across this library boundary.
@@ -173,8 +172,28 @@ class FunctionBuilder<
   }
 }
 
-export const fn = Object.freeze({
-  action: new FunctionBuilder("action", z.undefined(), undefined, {}),
-  mutation: new FunctionBuilder("mutation", z.undefined(), undefined, {}),
-  query: new FunctionBuilder("query", z.undefined(), undefined, {}),
-});
+/** Bind the app database once; handlers receive a scoped capability at execution. */
+export const createFunctions = <
+  const D extends DatabaseRelations = EmptyDatabaseRelations,
+>(
+  options: { database?: DatabaseDefinition<D> } = {}
+) =>
+  Object.freeze({
+    action: new FunctionBuilder("action", v.undefined(), undefined, {}),
+    mutation: new FunctionBuilder(
+      "mutation",
+      v.undefined(),
+      undefined,
+      {},
+      options.database
+    ),
+    query: new FunctionBuilder(
+      "query",
+      v.undefined(),
+      undefined,
+      {},
+      options.database
+    ),
+  });
+
+export const fn = createFunctions();

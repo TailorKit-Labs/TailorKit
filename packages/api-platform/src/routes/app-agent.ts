@@ -4,12 +4,12 @@ import {
   ORPCError,
   streamToAsyncIteratorObject,
 } from "@orpc/server";
+import { appAgent } from "@patchsmith/agent-fx/workflows";
 import {
   AppAgentThreadError,
   resolveAppAgentThread,
-} from "@tailorkit/agent/threads";
-import { appAgent } from "@tailorkit/agent/workflows";
-import { issueAgentToken } from "@tailorkit/api-utils/agent-token";
+} from "@patchsmith/agent/threads";
+import { issueAgentToken } from "@patchsmith/api-utils/agent-token";
 import {
   asSchema,
   convertToModelMessages,
@@ -26,6 +26,7 @@ import {
   createAgentStreamToken,
   verifyAgentStreamToken,
 } from "#agent-stream-token";
+import { appSelectorSchema } from "#app-selector";
 import { authenticateCliRequest } from "#cli-token";
 import { env } from "#env";
 import { findAppInScopes, o, cliRouter } from "#procedures";
@@ -37,10 +38,11 @@ const require = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
-const APP_AGENT_MODEL = "openai/gpt-6-luna";
+const APP_AGENT_MODEL = "openai/gpt-6.1-sol";
 
 const chunkSchema = asSchema(uiMessageChunkSchema);
 
@@ -48,6 +50,7 @@ const chunkSchema = asSchema(uiMessageChunkSchema);
 const agentChunkSchema = z
   .custom<UIMessageChunk>(async (value) => {
     const awaitedResult1 = await chunkSchema.validate?.(value);
+
     return awaitedResult1?.success === true;
   })
   .describe("An AI SDK UIMessageChunk. Fields depend on the chunk type.");
@@ -65,8 +68,9 @@ const agentMessagesSchema = z
   .min(1);
 
 const agentTurnSchema = z.object({
-  appId: z.string().min(1),
+  app: appSelectorSchema,
   hostUrl: z.url({ protocol: /^https?$/u }),
+  instructions: z.string().max(32_000).optional(),
   messages: agentMessagesSchema,
   schema: z.record(z.string(), z.unknown()).optional(),
   threadId: z.uuid().optional(),
@@ -74,7 +78,7 @@ const agentTurnSchema = z.object({
 });
 
 const agentResumeSchema = z.object({
-  appId: z.string().min(1),
+  app: appSelectorSchema,
   runId: z.string().startsWith("wrun_"),
   startIndex: z.number().int().nonnegative(),
   threadId: z.uuid(),
@@ -87,13 +91,17 @@ const create = cliRouter
   .input(
     z.object({
       body: AppWithCurrentDeployment.pick({ description: true, name: true })
-        .extend({ deployToken: z.string().min(1) })
+        .extend({
+          deployToken: z.string().min(1),
+          slug: AppWithCurrentDeployment.shape.slug.optional(),
+        })
         .strict(),
     })
   )
   .output(z.object({ body: AppWithCurrentDeployment }))
   .handler(async ({ context, input }) => {
     const token = await authenticateCliRequest(context, input.body.deployToken);
+
     return {
       body: await createAppRecord(
         context,
@@ -101,6 +109,7 @@ const create = cliRouter
           description: input.body.description,
           name: input.body.name,
           scope: token.scope,
+          slug: input.body.slug,
         },
         true
       ),
@@ -120,19 +129,23 @@ const chat = cliRouter
   .output(eventIterator(agentChunkSchema))
   .handler(async ({ context, input, signal }) => {
     const token = await authenticateCliRequest(context, input.body.deployToken);
-    const app = await findAppInScopes(context.project.id, input.body.appId, [
+
+    const app = await findAppInScopes(context.project.id, input.body.app, [
       canonicalizeScope(token.scope),
     ]);
+
     if (!app.createdByAgent) {
       throw new ORPCError("FORBIDDEN", {
         message:
           "The agent can only edit apps created by AI. Create a new app to continue.",
       });
     }
+
     const { body } = input;
     let threadId: string;
     let run: Run<Awaited<ReturnType<typeof appAgent>>>;
     let startIndex = 0;
+
     if (body.type === "resume") {
       if (
         !verifyAgentStreamToken(app.id, body.threadId, body.runId, body.token)
@@ -141,10 +154,12 @@ const chat = cliRouter
           message: "Agent run not found for this app and thread.",
         });
       }
+
       ({ threadId, startIndex } = body);
       run = getRun(body.runId);
     } else {
       let messages;
+
       try {
         messages = await convertToModelMessages(
           await validateUIMessages({ messages: body.messages })
@@ -154,14 +169,17 @@ const chat = cliRouter
           message: "Invalid agent messages.",
         });
       }
+
       try {
         threadId = await resolveAppAgentThread(app.id, body.threadId);
       } catch (error) {
         if (error instanceof AppAgentThreadError) {
           throw new ORPCError("BAD_REQUEST", { message: error.message });
         }
+
         throw error;
       }
+
       // Reuse an agent credential across its authorized scope without extending its expiry.
       run = await start(appAgent, [
         {
@@ -175,10 +193,11 @@ const chat = cliRouter
                 scope: token.scope,
               },
               require(env.AUTH_SECRET),
-              env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform"
+              env.OPENAPI_SERVER_URL ?? "https://patchsmith.io/api/platform"
             )),
           appId: app.id,
           hostUrl: body.hostUrl,
+          instructions: body.instructions,
           messages,
           model: APP_AGENT_MODEL,
           schema: body.schema,
@@ -186,7 +205,9 @@ const chat = cliRouter
         },
       ]);
     }
+
     const streamToken = createAgentStreamToken(app.id, threadId, run.runId);
+
     return streamToAsyncIteratorObject(
       createUIMessageStream({
         execute: async ({ writer }) => {
@@ -218,6 +239,7 @@ const chat = cliRouter
                 }
               )
           );
+
           try {
             // Finish the response only after cleanup releases the app's Drive.
             await completed;

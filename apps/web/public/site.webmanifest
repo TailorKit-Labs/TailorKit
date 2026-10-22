@@ -1,5 +1,5 @@
 {
-  "name": "Tailorkit",
+  "name": "Patchsmith",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
@@ -12,7 +12,7 @@
       "type": "image/png"
     }
   ],
-  "theme_color": "#507200",
-  "background_color": "#f5f5f5",
+  "theme_color": "#111111",
+  "background_color": "#111111",
   "display": "standalone"
 }

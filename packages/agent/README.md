@@ -1,6 +1,6 @@
-# TailorKit agent
+# Patchsmith agent
 
-`@tailorkit/agent` runs a Pi-backed `HarnessAgent` to build and edit TailorKit extensions. The web host, platform chat routes, Model Context Protocol (MCP) routes, and app source export use this package.
+`@patchsmith/agent` runs a Pi-backed `HarnessAgent` to build and edit Patchsmith extensions. The web host, platform chat routes, Model Context Protocol (MCP) routes, and app source export use this package.
 
 ## Instructions and skills
 
@@ -13,17 +13,19 @@
 - Preact composition
 - Preact performance
 
-The harness makes these skills discoverable each turn; app workspaces do not need copies of this repository's `.agents` directory.
+The harness makes these skills discoverable each turn; app workspaces do not need copies of this repository's `.agents` directory. App-specific component, callback, styling, slot, and tool pages come from the CLI-generated `patchsmith-capabilities` skill.
+
+The frontend and composition skills bundle small form and state examples from `src/skills/references/` as on-demand files. The CLI's `agent-examples.test.ts` compiles complete marked recipes against public SDK declarations, and integration tests check that their bodies stay outside the initial model prompt.
 
 The skills document SDK patterns for use with the scaffold and generated contract declarations. The agent consults installed public types for missing details or version mismatches. Host component names, props, and tools always come from that app's generated bindings.
 
-The Preact skills adapt the applicable principles from the repository's `vercel-composition-patterns` and `vercel-react-best-practices` skills to generated host components and reactive TailorKit clients. React 19, Next.js, and DOM-specific APIs do not apply. Keep the app guidance aligned with the CLI scaffold, `packages/app/src` public APIs, `packages/vite/src/builder` routing/migrations, and the Durable Object runtime in `apps/apps-worker/src`.
+The guidance favors ordinary components, local state, and direct SDK calls. Add abstractions or performance work for a current need. Keep platform requirements aligned with the CLI scaffold and public SDK; use Preact APIs rather than React/Next.js-specific patterns.
 
 ## Durable turns
 
-`@tailorkit/agent/workflows` exports `appAgent(input)`. Start it with `start()` from `workflow/api`; the web host discovers it through `apps/web/workflows/app-agent.ts`. The workflow imports the agent dynamically from its step module. Node APIs, credentials, and sandbox objects stay inside steps.
+`@patchsmith/agent/workflows` exports `appAgent(input)`. Start it with `start()` from `workflow/api`; the web host discovers it through `apps/web/workflows/app-agent.ts`. The workflow imports the agent dynamically from its step module. Node APIs, credentials, and sandbox objects stay inside steps.
 
-Each turn runs in five-minute slices using `runHarnessAgentTimeSlice()`. Workflow records the returned `continueFrom` checkpoint and reconnects to the same unfinished turn without replaying the prompt.
+Each turn checkpoints at model-step boundaries using `runHarnessAgentStep()`. Workflow records the returned `continueFrom` checkpoint and reconnects to the same unfinished turn without replaying the prompt.
 
 Pi runs in the workflow step’s Node.js process and uses the Vercel sandbox for filesystem and shell tools. There is no sandbox bridge or exposed port. In-process reattachment is disabled: each slice restores Pi’s journal with the current tool context.
 
@@ -41,17 +43,17 @@ An abandoned lease expires after one hour. A new thread can reclaim it, invalida
 
 ## Prepare an app workspace
 
-Before the model starts, sandbox setup installs `tailorkit@beta` and its matching command-line interface (CLI) in `/tmp/tailorkit-cli`. For empty workspaces, setup scaffolds `new-app` in `/workspace/app`, installs dependencies, and generates host bindings. A setup marker lets interrupted installation or generation resume without overwriting the scaffold. Existing app source is preserved.
+Before the model starts, sandbox setup installs `patchsmith@beta` and its matching command-line interface (CLI) in `/tmp/patchsmith-cli`. For empty workspaces, setup scaffolds `new-app` in `/workspace/app`, installs dependencies, and generates host bindings. A setup marker lets interrupted installation or generation resume without overwriting the scaffold. Existing app source is preserved.
 
-CLI and new app installs enforce a three-day package release age. Only `tailorkit` and `@tailorkit/*` are immediately available. The agent receives a short readiness note and can begin implementation immediately.
+CLI and new app installs enforce a three-day package release age. Only `patchsmith` and `@patchsmith/*` are immediately available. The agent receives a short readiness note and can begin implementation immediately.
 
 ## Start or resume a conversation
 
-Every `tailorkit agent --host your_host_url` invocation starts a new conversation by default. Follow-up messages in that invocation reuse the thread ID announced by the platform in a transient `data-thread` UI chunk. The CLI prints the ID when the chat closes; use `tailorkit agent --host your_host_url --app your_app_id --thread your_thread_id` to continue it. The resumed terminal UI shows new messages while Pi retains the conversation’s prior context.
+Every `patchsmith agent --host your_host_url` invocation starts a new conversation by default. Follow-up messages in that invocation reuse the thread ID announced by the platform in a transient `data-thread` UI chunk. The CLI prints the ID when the chat closes; use `patchsmith agent --host your_host_url --app your_app_id --thread your_thread_id` to continue it. The resumed terminal UI shows new messages while Pi retains the conversation’s prior context.
 
-MCP `create_app` and `edit_app` create a new thread by default and return its ID in progress events and the terminal result. Pass `threadId` to `edit_app` for a related follow-up. After `create_app`, continue through `edit_app` with the returned app and thread IDs. The backend validates that the requested thread belongs to the authorized app before starting a run or issuing an MCP agent grant.
+MCP `create_app` and `edit_app` create a new thread by default and return its ID in the terminal result. Pass `threadId` to `edit_app` for a related follow-up. After `create_app`, continue through `edit_app` with the returned app and thread IDs. The backend validates that the requested thread belongs to the authorized app before starting a run or issuing an MCP agent grant.
 
-Direct workflow callers must first authorize the app and call `resolveAppAgentThread(appId, optionalThreadId)` from `@tailorkit/agent/threads`, then pass its result as `AppAgentInput.threadId`. Workflow slices continue the same unfinished turn; separate user-turn runs resume only their explicit thread.
+Direct workflow callers must first authorize the app and call `resolveAppAgentThread(appId, optionalThreadId)` from `@patchsmith/agent/threads`, then pass its result as `AppAgentInput.threadId`. Workflow slices continue the same unfinished turn; separate user-turn runs resume only their explicit thread.
 
 ## Configure the agent
 
@@ -63,11 +65,11 @@ Apply the generated `app-agent-sessions` and `agent-threads` migrations with `pn
 | OpenAI     | `OPENAI_API_KEY`                                       |
 | Anthropic  | `ANTHROPIC_API_KEY`, optionally `ANTHROPIC_AUTH_TOKEN` |
 
-Matching `*_BASE_URL` overrides are optional. Pi receives an isolated authentication record from `@tailorkit/env` and keeps model credentials in the host process.
+Matching `*_BASE_URL` overrides are optional. Pi receives an isolated authentication record from `@patchsmith/env` and keeps model credentials in the host process.
 
 Each execution resolves OpenID Connect (OIDC) credentials with `getVercelOidcToken()`. Vercel Functions supply these through the request context. Gateway credentials take precedence; the platform routes still supply the existing Gateway model. Using a direct provider also requires a matching model ID.
 
-The agent loads Gateway model definitions from its published catalog, including models absent from Pi’s bundled registry.
+The platform uses `openai/gpt-6.1-sol` with medium reasoning. Pi supplies the bundled model catalog. A fixed Sol model entry overrides its Gateway transport to OpenAI Responses so explicit reasoning effort is preserved. Agent initialization makes no model-catalog requests; model-call credentials are resolved afresh for each execution.
 
 ## Consume tool events
 
@@ -79,7 +81,7 @@ The host-executed `deploy` tool runs typechecks and builds in the sandbox withou
 
 ## MCP
 
-`@tailorkit/agent/mcp` exports `createAppAgentMcp(backend, scopeNames)`. The backend supplies authorized app operations; the package registers exactly three tools:
+`@patchsmith/agent/mcp` exports `createAppAgentMcp(backend, scopeNames)`. The backend supplies authorized app operations; the package registers exactly three tools:
 
 - `list_apps`: a paginated, read-only lookup across the caller's authorized scopes.
 - `create_app`: creates an app installation and launches an autonomous agent to build and deploy it. Takes `name`, optional `description`, the authorized scope name, and `prompt`.
@@ -89,7 +91,17 @@ The `create_app` and `edit_app` descriptions explain that their agents write cod
 
 The endpoint implements MCP 2026-07-28 using the official SDK v2. It rejects legacy initialization, HTTP+SSE, and protocol sessions. Responses use request-scoped Server-Sent Events (SSE) with keepalives.
 
-Clients requesting progress receive `notifications/progress`: `progress` is a monotonically increasing event count, and `message` contains JSON `{ runId, appId, threadId, status? , chunk? }`. `chunk` is an AI SDK UI message chunk. The terminal tool result contains `{ appId, threadId, runId, messages, sessionId, finishReason, usage? }`. The `create_app` schema advertises the authorized scope names as an enum.
+The web host gives `/api/platform/app-agent/mcp` its own Vercel Function with a 1,800-second maximum duration so the request can stream a full agent turn. This requires Vercel’s extended function durations on Pro or Enterprise. Other web routes retain their default duration.
+
+`create_app` and `edit_app` send standard `notifications/progress` when the request supplies `_meta.progressToken`. Each notification contains `progressToken`, `progress`, and a human-readable `message`, following the [MCP progress specification](https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/progress). `progress` is a monotonically increasing notification count. A message that generation has finished does not establish success: wait for the final result. Failed MCP tool calls have `isError: true`; a failed nested tool action may be repaired by the agent before the call completes. Clients that do not request progress still receive the final result. The `create_app` schema advertises the authorized scope names as an enum.
+
+Standard progress messages include cumulative assistant text, command previews such as `Bash: pnpm check`, file paths such as `Read: src/app.tsx`, and tool outcomes such as `failed: Bash: pnpm check`. Nonzero tool exit codes and `isError: true` tool results are reported as failed; preliminary results are omitted. Previews collapse whitespace, remove terminal control sequences, and stay within 320 characters; truncated previews use an ellipsis. Commands containing credential markers are hidden. Reasoning, raw tool arguments, file contents, tool outputs, and bookkeeping chunks are excluded from progress messages. Preview text remains agent-generated data, not a guarantee that arbitrary text is free of sensitive information.
+
+Unrecognized tools use their sanitized name, for example `Tool: browser_snapshot`. Their arbitrary arguments are not previewed. A blank name falls back to `Tool.`. Identical consecutive updates are omitted. Text updates are coalesced over 750 ms, with the latest pending text flushed at text-block boundaries, before significant activity changes, and before the final result. Tool and lifecycle changes are delivered immediately. During quiet work, the last message is repeated every 15 seconds to keep progress-aware client timeouts alive. Timers stop when the call completes, fails, or is cancelled.
+
+The backend returns an `AppAgentMcpResult` containing `{ appId, answer, threadId, runId, finishReason }`. All fields are required and advertised in the tools' output schema. The platform collects only assistant text from the workflow stream; it does not assemble a full UI message or return internal messages, reasoning, tool transcripts, session state, or usage. Text blocks are separated by blank lines. `answer` defaults to `App agent run ended.` when there is no text. `finishReason` reports why generation stopped; it does not guarantee deployment success. A streamed error or abort fails the call and triggers workflow cleanup.
+
+The final response contains one readable `content` text block with the answer. `structuredContent` contains the compact result, including the app/run/thread IDs for continuing with `edit_app`. The response has no additional serialized JSON text block. Render `progress.message` for live progress and read `structuredContent.answer` for the final answer. The backend's `onProgress` callback accepts internal `AppAgentMcpEvent` events, which the MCP adapter reduces before transmission.
 
 For example, connect an MCP client and render progress events while the agent edits an app:
 
@@ -99,7 +111,7 @@ import {
   StreamableHTTPClientTransport,
 } from "@modelcontextprotocol/client";
 
-const { url: platformMcpUrl, headers } = await tailorkit.mcp.transport({
+const { url: platformMcpUrl, headers } = await patchsmith.mcp.transport({
   scopes,
   subjectId,
 });
@@ -109,19 +121,26 @@ const client = new Client(
 );
 await client.connect(
   new StreamableHTTPClientTransport(new URL(platformMcpUrl), {
-    // URL and headers from await tailorkit.mcp.transport({ scopes, subjectId }).
+    // URL and headers from await patchsmith.mcp.transport({ scopes, subjectId }).
     requestInit: { headers },
   })
 );
 const result = await client.callTool(
   { name: "edit_app", arguments: { appId, prompt: "Add a calendar view" } },
   {
+    signal,
     timeout: 35 * 60_000,
     resetTimeoutOnProgress: true,
-    onprogress: ({ message }) => renderAgentEvent(JSON.parse(message!)),
+    onprogress: (progress) => {
+      if (progress.message !== undefined) {
+        renderAgentProgress(progress.message);
+      }
+    },
   }
 );
 ```
+
+The AI SDK MCP client currently does not expose `onprogress`; its standard tool adapter receives only the final result. Use an MCP client with progress support and forward updates into the host chat stream to display live builds. Keep the URL and headers returned by `mcp.transport` on the server.
 
 The [current transport specification](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http) does not support resumable SSE or `Last-Event-ID`. Closing a stream cancels the request. The platform attempts to stop the agent, delete its sandbox, and clear its resume state, then revokes its grant.
 

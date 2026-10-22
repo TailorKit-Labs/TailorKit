@@ -35,6 +35,7 @@ it("selects the matching Standard JSON Schema method and defaults to output", ()
   const outputSchema = { type: "number" };
   const input = vi.fn(() => inputSchema);
   const output = vi.fn(() => outputSchema);
+
   const schema: StandardSchemaV1 & StandardJSONSchemaV1 = {
     "~standard": {
       jsonSchema: { input, output },
@@ -43,6 +44,7 @@ it("selects the matching Standard JSON Schema method and defaults to output", ()
       version: 1,
     },
   };
+
   expect(serializeSchema(schema, jsonSchemaSerializer, "input")).toBe(
     inputSchema
   );
@@ -71,6 +73,7 @@ it("preserves plain JSON Schema serializers, including extension properties", ()
     type: "string",
     "~standard": { description: "Extension" },
   };
+
   expect(serializeSchema(v.string(), () => jsonSchema)).toBe(jsonSchema);
   expect(serializeSchema(v.string(), () => {})).toBeUndefined();
 });

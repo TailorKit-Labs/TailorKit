@@ -2,10 +2,22 @@ import { expect, it, vi } from "vite-plus/test";
 
 import { createIframeBackend } from "./backend";
 
+const identity = {
+  appId: "app",
+  deploymentId: "deployment",
+  expiresAt: Date.now() + 300_000,
+  installationId: "app",
+  projectId: "project",
+  scope: { name: "workspace", value: { id: "workspace" } },
+  subjectId: "principal",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
+};
+
 const require = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -18,11 +30,14 @@ it("correlates scoped JWT requests, forwards renewal and ignores unsolicited res
     false,
     true,
   ]);
+
   const session = {
     expiresAt: Date.now() + 120_000,
+    identity,
     token: "token",
     url: "https://runtime.test/rpc",
   };
+
   bridge.receive({ id: "unsolicited", session });
   bridge.receive({ id: send.mock.calls[1]?.[0].id ?? "missing", session });
   await expect(refresh).resolves.toEqual(session);
@@ -36,6 +51,7 @@ it("correlates scoped JWT requests, forwards renewal and ignores unsolicited res
   });
   bridge.close();
 });
+
 it("rejects pending JWT requests and further calls when the sandbox is destroyed", async () => {
   const bridge = createIframeBackend(() => {});
   const pending = bridge.getSession({ refresh: false });

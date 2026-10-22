@@ -3,8 +3,8 @@ import { createHmac, randomUUID } from "node:crypto";
 import { jwtVerify, SignJWT } from "jose";
 import { z } from "zod";
 
-const issuer = "tailorkit-agent";
-const audience = "tailorkit-platform-cli";
+const issuer = "patchsmith-agent";
+const audience = "patchsmith-platform-cli";
 const lifetimeSeconds = 60 * 60;
 
 const identitySchema = z.object({
@@ -16,6 +16,7 @@ const identitySchema = z.object({
     value: z.record(z.string(), z.json()),
   }),
 });
+
 const claimsSchema = identitySchema.extend({
   exp: z.number().int(),
   iat: z.number().int(),
@@ -28,14 +29,16 @@ const signingKey = (secret: string) => {
   if (secret.length < 32) {
     throw new Error("AUTH_SECRET is required for agent tokens.");
   }
+
   return createHmac("sha256", secret)
-    .update("tailorkit-agent-deploy-v1")
+    .update("patchsmith-agent-deploy-v1")
     .digest();
 };
 
 const normalizePlatformUrl = (value: string) => {
   const url = new URL(value);
   const loopback = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+
   if (
     (url.protocol !== "https:" && !(url.protocol === "http:" && loopback)) ||
     url.username ||
@@ -45,6 +48,7 @@ const normalizePlatformUrl = (value: string) => {
   ) {
     throw new Error("Invalid agent platform URL.");
   }
+
   return url.href.replace(/\/$/u, "");
 };
 
@@ -56,11 +60,12 @@ export const issueAgentToken = async (
 ) => {
   const authorized = identitySchema.parse(identity);
   const now = Math.floor(Date.now() / 1000);
+
   return await new SignJWT({
     ...authorized,
     platformUrl: normalizePlatformUrl(platformUrl),
   })
-    .setProtectedHeader({ alg: "HS256", typ: "tailorkit-agent+jwt" })
+    .setProtectedHeader({ alg: "HS256", typ: "patchsmith-agent+jwt" })
     .setIssuer(issuer)
     .setAudience(audience)
     // CLI approval currently records no user subject; identify its credential explicitly.
@@ -82,9 +87,11 @@ export const verifyAgentToken = async (
     issuer,
     maxTokenAge: lifetimeSeconds,
     requiredClaims: ["exp", "iat", "sub", "jti"],
-    typ: "tailorkit-agent+jwt",
+    typ: "patchsmith-agent+jwt",
   });
+
   const claims = claimsSchema.parse(payload);
+
   if (
     claims.exp <= claims.iat ||
     claims.exp - claims.iat > lifetimeSeconds ||
@@ -93,6 +100,7 @@ export const verifyAgentToken = async (
   ) {
     throw new Error("Invalid agent token claims.");
   }
+
   return claims;
 };
 

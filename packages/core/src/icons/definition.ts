@@ -14,7 +14,7 @@ export interface IconProps {
 }
 
 export const iconNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
-export const lucideVersion = "1.55.0";
+export const lucideVersion = "1.59.0";
 
 export const validateIconOptions = (options: IconOptions): void => {
   if (options.library !== "lucide") {
@@ -30,7 +30,9 @@ export type IconTag =
   | "polygon"
   | "polyline"
   | "rect";
+
 export type IconNode = [IconTag, Record<string, number | string>];
+
 export interface IconData {
   size: number;
   nodes: IconNode[];
@@ -45,6 +47,7 @@ const tags = new Set<string>([
   "polyline",
   "rect",
 ]);
+
 const attributes = new Set([
   "cx",
   "cy",
@@ -63,9 +66,11 @@ const attributes = new Set([
   "y1",
   "y2",
 ]);
+
 // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- This guard is used only while parsing untrusted catalogue JSON; every member is validated before use.
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
+
 const isIconTag = <TValue>(value: TValue): value is TValue & IconTag =>
   typeof value === "string" && tags.has(value);
 
@@ -87,7 +92,9 @@ export const parseIconData = (value: unknown): IconData => {
   ) {
     throw new Error("Invalid icon data");
   }
+
   const nodes: IconNode[] = [];
+
   for (const node of value.nodes) {
     if (
       !Array.isArray(node) ||
@@ -97,7 +104,9 @@ export const parseIconData = (value: unknown): IconData => {
     ) {
       throw new Error("Invalid icon node");
     }
+
     const props: Record<string, number | string> = {};
+
     for (const [name, attribute] of Object.entries(node[1])) {
       if (
         !(
@@ -108,10 +117,13 @@ export const parseIconData = (value: unknown): IconData => {
       ) {
         throw new Error("Invalid icon attribute");
       }
+
       props[name] = attribute;
     }
+
     nodes.push([node[0], props]);
   }
+
   return { nodes, size: value.size };
 };
 

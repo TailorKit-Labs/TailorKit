@@ -1,21 +1,38 @@
 export { createEndpointClient } from "./endpoints";
-export type { EndpointClient, SlotInstancesInput } from "./endpoints";
-export { createTailorKitFetchClient } from "./fetch-client";
+
 export type {
-  TailorKitFetchClient,
-  TailorKitFetchClientOptions,
-  TailorKitCacheOptions,
+  ApiRequestOptions,
+  EndpointClient,
+  PatchsmithClientApi,
+  ViewsRequestOptions,
+} from "./endpoints";
+
+export { createPatchsmithFetchClient } from "./fetch-client";
+
+export type {
+  PatchsmithFetchClient,
+  PatchsmithFetchClientOptions,
+  PatchsmithCacheOptions,
 } from "./fetch-client";
+
 export { toBaseUrl } from "./url";
+
 export { matchesApp } from "./apps";
+
 export { normalizeScopeSelection, appendScopeSelection } from "./scope-query";
-export { resolveSlotView, selectSlotView } from "./slot-view";
+
+export { resolveSlotView, selectSlotView } from "@patchsmith/core/views";
+
 export { refetchViews } from "./views";
+
 export type { ViewsQueryOptions } from "./views";
 
-// oxlint-disable-next-line oxc/no-barrel-file -- This file is a supported package or framework entry point; preserve its public exports.
 export * from "./config";
+
 export type * from "./slot-types";
+
 export { buildPrimitiveCss, buildThemeCss } from "./primitive-css";
+
 export type { PrimitiveProps } from "./primitive-css";
+
 export { createValueMemo } from "./value-memo";

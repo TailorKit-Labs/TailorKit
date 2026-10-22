@@ -1,22 +1,23 @@
-import type { ToolBridge, Session, ViewInstance } from "@tailorkit/app/client";
-import type { ViewStatus } from "@tailorkit/core/views";
-import type { RemoteProps } from "@tailorkit/sandbox/protocol";
+import type { ToolBridge, Session, ViewInstance } from "@patchsmith/app/client";
+import type { ViewStatus } from "@patchsmith/core/views";
+import { resolveSlotView, selectSlotView } from "@patchsmith/core/views";
+import type { RemoteProps } from "@patchsmith/sandbox/protocol";
 import { atom } from "nanostores";
 
 import type { RuntimeRenderSlotProps, SlotState } from "#client/slot-types";
-import { resolveSlotView, selectSlotView } from "#client/slot-view";
 import { toBaseUrl } from "#client/url";
 import { createValueMemo } from "#client/value-memo";
 import { serializeCacheKey } from "#store/fetch/cache";
 import type { SlotItem } from "#store/fetch/slot";
 import { createAppViewsQuery } from "#store/query";
 import { createSnapshotStore } from "#store/snapshot-store";
-import type { TailorKitStore } from "#store/store";
+import type { PatchsmithStore } from "#store/store";
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -39,7 +40,6 @@ export type SlotRuntimeSnapshot =
   | {
       status: "render";
       appUrl: string;
-      sourceText?: string;
       hostKey: string | number;
       props: RemoteProps;
       toolBridge: ToolBridge;
@@ -47,10 +47,12 @@ export type SlotRuntimeSnapshot =
     };
 
 const hidden: SlotRuntimeSnapshot = { status: "hidden" };
+
 const loading: SlotRuntimeSnapshot = {
   message: "Loading view…",
   status: "loading",
 };
+
 const failure = (message: string): SlotRuntimeSnapshot => ({
   error: new Error(message),
   status: "error",
@@ -58,80 +60,88 @@ const failure = (message: string): SlotRuntimeSnapshot => ({
 
 /** Resolve a managed or controlled slot; adapters only render its snapshot. */
 export const createSlotRuntime = (
-  store: TailorKitStore,
+  store: PatchsmithStore,
   initial: SlotRuntimeOptions
 ) => {
   const memoInput = createValueMemo<SlotRuntimeOptions>();
   const input = atom(memoInput(initial));
   let queryKey: string | undefined;
   let query: ReturnType<typeof createAppViewsQuery> | null = null;
-  let previewSession: string | undefined;
-  let preview: ReturnType<typeof store.previews.getStore>;
   let previousSnapshot: SlotRuntimeSnapshot;
   let snapshotKey: string | undefined;
 
   const getQuery = () => {
     const options = input.get();
+
     if (
       options.mode !== "managed" ||
       options.instanceKey === undefined ||
+      store.contract.slots[options.slot]?.multiple !== true ||
       store.views.state.get() === null
     ) {
       return null;
     }
+
     const key = serializeCacheKey([options.app, options.slot]);
+
     if (key !== queryKey) {
       queryKey = key;
       query = createAppViewsQuery(store, options.app, options.slot);
     }
+
     return query;
   };
-  const getPreview = () => {
-    const session = input.get().app.preview?.sessionId ?? "";
-    if (session !== previewSession) {
-      previewSession = session;
-      preview = store.previews.getStore(() => input.get().app);
-    }
-    return preview;
-  };
+
   // oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
   const resolve = (): SlotRuntimeSnapshot => {
     const options = input.get();
     const { app, slot } = options;
     const active = store.views.state.get();
     let viewState: SlotState;
+
     if (options.mode === "managed") {
       if (active === null) {
         return hidden;
       }
+
       viewState = active;
+
       if (options.instanceKey !== undefined) {
-        const instances = requireValue(getQuery()).state.get();
-        if (instances.isPending) {
-          return loading;
-        }
-        if (instances.error) {
-          return { error: instances.error, status: "error" };
-        }
         const schema = store.contract;
+
         if (schema.slots[slot]?.multiple !== true) {
           return failure(`Slot "${slot}" does not support instances.`);
         }
+
+        const instances = requireValue(getQuery()).state.get();
+
+        if (instances.isPending) {
+          return loading;
+        }
+
+        if (instances.error) {
+          return { error: instances.error, status: "error" };
+        }
+
         const instance = instances.data?.find(
           (item): item is SlotItem<true> =>
             "key" in item && item.key === options.instanceKey
         );
+
         if (!instance) {
           return failure(
             `View instance "${options.instanceKey}" is unavailable.`
           );
         }
+
         const resolved = instances.isSuccess
           ? resolveSlotView(app.views ?? [], slot, active, schema)
           : null;
+
         if (resolved?.status !== "ready") {
           return hidden;
         }
+
         viewState = {
           context: resolved.context,
           controlled: true,
@@ -151,9 +161,11 @@ export const createSlotRuntime = (
         status: options.status,
         view: options.view,
       };
+
       if (options.status === "ready" && options.instance) {
         viewState.instance = options.instance;
       }
+
       if (
         options.status === "ready" &&
         !options.instance &&
@@ -170,8 +182,9 @@ export const createSlotRuntime = (
         );
       }
     }
+
     const schema = store.contract;
-    const source = getPreview().get();
+
     const appUrl = (() => {
       if (
         app.clientPath !== undefined &&
@@ -180,6 +193,7 @@ export const createSlotRuntime = (
       ) {
         return new URL(app.clientPath, store.baseUrl);
       }
+
       if (
         store.assetsBaseUrl !== undefined &&
         store.assetsBaseUrl !== "" &&
@@ -195,22 +209,28 @@ export const createSlotRuntime = (
           toBaseUrl(store.assetsBaseUrl)
         );
       }
+
       return null;
     })();
-    if (appUrl === null && source.source === null) {
+
+    if (appUrl === null) {
       return hidden;
     }
+
     const multiple = schema.slots[slot]?.multiple === true;
+
     if ("controlled" in viewState && viewState.status === "ready") {
       if (multiple && !viewState.instance) {
         return failure(
           "A view instance is required. Pass instance to RenderSlot.Controlled."
         );
       }
+
       if (!multiple && viewState.instance) {
         return failure(`Slot "${slot}" does not support instances.`);
       }
     }
+
     if (!("controlled" in viewState)) {
       const selected = selectSlotView(
         app.views ?? [],
@@ -218,45 +238,42 @@ export const createSlotRuntime = (
         viewState.view,
         schema
       );
+
       if (selected?.instances && !multiple) {
         return failure(`Slot "${slot}" does not support instances.`);
       }
+
       if (multiple) {
         return failure(
           "A view instance key is required. Pass instanceKey to RenderSlot."
         );
       }
     }
+
     return {
-      appUrl: (
-        appUrl ??
-        new URL(
-          `preview/${app.preview?.sessionId ?? ""}/client.js`,
-          store.baseUrl
-        )
-      ).toString(),
+      appUrl: appUrl.toString(),
       getBackendSession: store.client.endpoints.getSessionProvider(app),
-      hostKey:
-        (source.revision || appUrl?.toString()) ??
-        `preview/${app.preview?.sessionId ?? ""}`,
+      hostKey: appUrl.toString(),
       props: {
         ...viewState,
         declaredViews: Object.keys(schema.views),
         slot,
         supportedViews: schema.slots[slot]?.views ?? [],
       },
-      sourceText: source.source ?? undefined,
       status: "render",
       toolBridge: store.client.endpoints.getToolBridge(app),
     };
   };
+
   const state = createSnapshotStore(
     () => {
       const snapshot = resolve();
+
       const key =
         snapshot.status === "error"
           ? JSON.stringify(["error", snapshot.error.message])
           : JSON.stringify(snapshot);
+
       if (
         key !== snapshotKey ||
         (snapshot.status === "render" &&
@@ -266,6 +283,7 @@ export const createSlotRuntime = (
         snapshotKey = key;
         previousSnapshot = snapshot;
       }
+
       return previousSnapshot;
     },
     (listener) => {
@@ -273,59 +291,57 @@ export const createSlotRuntime = (
       let updating = false;
       let queued = false;
       let observedQuery: typeof query = null;
-      let observedPreview: typeof preview | null = null;
       let stopQuery: (() => void) | undefined;
-      let stopPreview: (() => void) | undefined;
+
       const refresh = () => {
         if (!active) {
           return;
         }
+
         if (updating) {
           queued = true;
+
           return;
         }
+
         updating = true;
+
         while (true) {
           queued = false;
           const nextQuery = getQuery();
+
           if (nextQuery !== observedQuery) {
             const stopPrevious = stopQuery;
             observedQuery = nextQuery;
             stopQuery = nextQuery?.state.listen(refresh);
             stopPrevious?.();
           }
-          const hasView =
-            input.get().mode === "controlled" ||
-            store.views.state.get() !== null;
-          const nextPreview = hasView ? getPreview() : null;
-          if (nextPreview !== observedPreview) {
-            const stopPrevious = stopPreview;
-            observedPreview = nextPreview;
-            stopPreview = nextPreview?.listen(refresh);
-            stopPrevious?.();
-          }
+
           listener();
+
           if (!queued || !active) {
             break;
           }
         }
+
         updating = false;
       };
+
       const stopInput = input.listen(refresh);
       const stopView = store.views.state.listen(refresh);
       refresh();
+
       return () => {
         active = false;
         stopInput();
         stopView();
         stopQuery?.();
-        stopPreview?.();
       };
     }
   );
+
   return {
     setInput: (options: SlotRuntimeOptions) => {
-      store.previews.updateApp(options.app);
       input.set(memoInput(options));
     },
     state,

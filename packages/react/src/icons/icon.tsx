@@ -1,4 +1,4 @@
-import type { IconData, IconProps } from "@tailorkit/core/icons";
+import type { IconData, IconProps } from "@patchsmith/core/icons";
 import { createElement, useEffect, useState } from "react";
 
 import { createIconLoader } from "./loader";
@@ -15,12 +15,15 @@ const IconSvg = ({
     name: string;
     data: IconData | undefined;
   }>(() => ({ data: loader.peek(name), name }));
+
   const data = state.name === name ? state.data : loader.peek(name);
   useEffect(() => {
     let active = true;
+
     const load = async () => {
       try {
         const result = await loader.load(name);
+
         if (active) {
           setState({ data: result, name });
         }
@@ -30,7 +33,9 @@ const IconSvg = ({
         }
       }
     };
+
     void load();
+
     return () => {
       active = false;
     };
@@ -65,6 +70,7 @@ const IconSvg = ({
 /** Create once alongside the client; its loader is shared by all rendered apps. */
 export const Icon = (options: IconRendererOptions) => {
   const loader = createIconLoader(options);
+
   return function IconRenderer({ props }: { props: IconProps }) {
     return <IconSvg loader={loader} props={props} />;
   };

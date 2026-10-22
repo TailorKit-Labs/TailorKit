@@ -3,7 +3,7 @@ import {
   appRuntimeIssuer,
   appTokenVerifierEffect,
   parseAppPublicKeys,
-} from "@tailorkit/api-utils/app-auth";
+} from "@patchsmith/api-utils/app-auth";
 import { Effect } from "effect";
 
 import { AppError } from "../runtime/errors";
@@ -20,6 +20,7 @@ export const createAppRuntimeVerifierEffect = (
   options: RuntimeVerifierOptions
 ) => {
   let verify: ReturnType<typeof appTokenVerifierEffect>;
+
   try {
     verify = appTokenVerifierEffect({
       audience: APP_AUDIENCE,
@@ -36,6 +37,7 @@ export const createAppRuntimeVerifierEffect = (
         new AppError("UNAVAILABLE", "Invalid configured app public keys")
       );
   }
+
   return (token: string) => verify(token);
 };
 

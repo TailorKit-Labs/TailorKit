@@ -1,20 +1,23 @@
 import type { ESTree } from "vite";
 
 const clientImports = new Set([
-  "tailorkit/client",
-  "tailorkit/app",
-  "tailorkit/app/client",
-  "@tailorkit/app/client",
-  "@tailorkit/app",
+  "patchsmith/client",
+  "patchsmith/app",
+  "patchsmith/app/client",
+  "@patchsmith/app/client",
+  "@patchsmith/app",
 ]);
 
 type Binding = "view" | "namespace" | "local";
+
 interface Scope {
   parent?: Scope;
   functionScope: boolean;
   bindings: Map<string, Binding>;
 }
+
 type FunctionNode = ESTree.Function | ESTree.ArrowFunctionExpression;
+
 type ClassNode = Extract<
   ESTree.Node,
   { type: "ClassDeclaration" | "ClassExpression" }
@@ -30,35 +33,26 @@ const bindingNames = (node: ESTree.Node | null | undefined): string[] => {
   if (!node) {
     return [];
   }
-  /* oxlint-disable typescript/switch-exhaustiveness-check -- This syntax visitor handles selected node kinds; other kinds use its generic traversal or default branch. */
-  switch (node.type) {
-    case "Identifier": {
-      return [node.name];
-    }
-    case "RestElement": {
-      return bindingNames(node.argument);
-    }
-    case "AssignmentPattern": {
-      return bindingNames(node.left);
-    }
-    case "ArrayPattern": {
-      return node.elements.flatMap(bindingNames);
-    }
-    case "ObjectPattern": {
-      return node.properties.flatMap((property) =>
-        bindingNames(
-          property.type === "Property" ? property.value : property.argument
-        )
-      );
-    }
-    case "TSParameterProperty": {
-      return bindingNames(node.parameter);
-    }
-    default: {
-      return [];
-    }
+
+  if (node.type === "Identifier") {
+    return [node.name];
+  } else if (node.type === "RestElement") {
+    return bindingNames(node.argument);
+  } else if (node.type === "AssignmentPattern") {
+    return bindingNames(node.left);
+  } else if (node.type === "ArrayPattern") {
+    return node.elements.flatMap(bindingNames);
+  } else if (node.type === "ObjectPattern") {
+    return node.properties.flatMap((property) =>
+      bindingNames(
+        property.type === "Property" ? property.value : property.argument
+      )
+    );
+  } else if (node.type === "TSParameterProperty") {
+    return bindingNames(node.parameter);
   }
-  /* oxlint-enable typescript/switch-exhaustiveness-check */
+
+  return [];
 };
 
 const bind = (node: ESTree.Node | null | undefined, scope: Scope) => {
@@ -71,8 +65,10 @@ const classScope = (node: ClassNode, parent: Scope) => {
   if (node.type === "ClassDeclaration") {
     bind(node.id, parent);
   }
+
   const scope = createScope(parent);
   bind(node.id, scope);
+
   return scope;
 };
 
@@ -92,6 +88,7 @@ const resolve = (
 export const childNodes = (node: ESTree.Node): ESTree.Node[] =>
   Object.values(node).flatMap((value) => {
     const children = Array.isArray(value) ? value : [value];
+
     return children.filter(
       (child): child is ESTree.Node =>
         child !== undefined &&
@@ -109,8 +106,10 @@ export const childNodes = (node: ESTree.Node): ESTree.Node[] =>
 const bindImports = (node: ESTree.ImportDeclaration, scope: Scope) => {
   const sdk =
     node.importKind !== "type" && clientImports.has(node.source.value);
+
   for (const specifier of node.specifiers) {
     let binding: Binding = "local";
+
     if (sdk && specifier.type === "ImportNamespaceSpecifier") {
       binding = "namespace";
     } else if (
@@ -122,6 +121,7 @@ const bindImports = (node: ESTree.ImportDeclaration, scope: Scope) => {
     ) {
       binding = "view";
     }
+
     scope.bindings.set(specifier.local.name, binding);
   }
 };
@@ -132,11 +132,13 @@ const callScopes = (program: ESTree.Program) => {
 
   const bindVariables = (node: ESTree.VariableDeclaration, scope: Scope) => {
     let target = scope;
+
     if (node.kind === "var") {
       while (!target.functionScope && target.parent) {
         target = target.parent;
       }
     }
+
     for (const declaration of node.declarations) {
       bind(declaration.id, target);
     }
@@ -150,16 +152,21 @@ const callScopes = (program: ESTree.Program) => {
     if (node.type === "FunctionDeclaration") {
       bind(node.id, scope);
     }
+
     const parameters = createScope(scope, true);
+
     if (node.type !== "ArrowFunctionExpression") {
       bind(node.id, parameters);
     }
+
     for (const parameter of node.params) {
       bind(parameter, parameters);
     }
+
     for (const parameter of node.params) {
       visit(parameter, parameters);
     }
+
     // Body declarations do not shadow references in parameter defaults.
     if (node.body) {
       visit(node.body, createScope(parameters, true));
@@ -170,62 +177,54 @@ const callScopes = (program: ESTree.Program) => {
     let scope = initialScope;
 
     scopes.set(node, scope);
-    /* oxlint-disable typescript/switch-exhaustiveness-check -- This syntax visitor handles selected node kinds; other kinds use its generic traversal or default branch. */
-    switch (node.type) {
-      case "ImportDeclaration": {
-        bindImports(node, scope);
-        return;
+
+    if (node.type === "ImportDeclaration") {
+      bindImports(node, scope);
+
+      return;
+    } else if (node.type === "VariableDeclaration") {
+      bindVariables(node, scope);
+    } else if (
+      node.type === "FunctionDeclaration" ||
+      node.type === "FunctionExpression" ||
+      node.type === "ArrowFunctionExpression"
+    ) {
+      visitFunction(node, scope, visit);
+
+      return;
+    } else if (
+      node.type === "ClassDeclaration" ||
+      node.type === "ClassExpression"
+    ) {
+      scope = classScope(node, scope);
+    } else if (node.type === "CatchClause") {
+      scope = createScope(scope);
+      bind(node.param, scope);
+    } else if (node.type === "SwitchStatement") {
+      visit(node.discriminant, scope);
+      scope = createScope(scope);
+
+      for (const branch of node.cases) {
+        visit(branch, scope);
       }
-      case "VariableDeclaration": {
-        bindVariables(node, scope);
-        break;
-      }
-      case "FunctionDeclaration":
-      case "FunctionExpression":
-      case "ArrowFunctionExpression": {
-        visitFunction(node, scope, visit);
-        return;
-      }
-      case "ClassDeclaration":
-      case "ClassExpression": {
-        scope = classScope(node, scope);
-        break;
-      }
-      case "CatchClause": {
-        scope = createScope(scope);
-        bind(node.param, scope);
-        break;
-      }
-      case "SwitchStatement": {
-        visit(node.discriminant, scope);
-        scope = createScope(scope);
-        for (const branch of node.cases) {
-          visit(branch, scope);
-        }
-        return;
-      }
-      case "BlockStatement":
-      case "ForStatement":
-      case "ForInStatement":
-      case "ForOfStatement": {
-        scope = createScope(scope);
-        break;
-      }
-      case "StaticBlock":
-      case "TSModuleBlock": {
-        scope = createScope(scope, true);
-        break;
-      }
-      case "TSEnumDeclaration":
-      case "TSModuleDeclaration": {
-        bind(node.id, scope);
-        break;
-      }
-      default: {
-        break;
-      }
+
+      return;
+    } else if (
+      node.type === "BlockStatement" ||
+      node.type === "ForStatement" ||
+      node.type === "ForInStatement" ||
+      node.type === "ForOfStatement"
+    ) {
+      scope = createScope(scope);
+    } else if (node.type === "StaticBlock" || node.type === "TSModuleBlock") {
+      scope = createScope(scope, true);
+    } else if (
+      node.type === "TSEnumDeclaration" ||
+      node.type === "TSModuleDeclaration"
+    ) {
+      bind(node.id, scope);
     }
-    /* oxlint-enable typescript/switch-exhaustiveness-check */
+
     for (const child of childNodes(node)) {
       visit(child, scope);
     }
@@ -239,15 +238,19 @@ const callScopes = (program: ESTree.Program) => {
 /** Recognize the same SDK calls in route inference and instance extraction. */
 export const createDefineViewMatcher = (program: ESTree.Program) => {
   const scopes = callScopes(program);
+
   return (node: ESTree.Node): node is ESTree.CallExpression => {
     if (node.type !== "CallExpression") {
       return false;
     }
+
     const { callee } = node;
     const scope = scopes.get(node);
+
     if (callee.type === "Identifier") {
       return resolve(scope, callee.name) === "view";
     }
+
     if (
       callee.type !== "MemberExpression" ||
       callee.object.type !== "Identifier" ||
@@ -255,6 +258,7 @@ export const createDefineViewMatcher = (program: ESTree.Program) => {
     ) {
       return false;
     }
+
     return callee.computed
       ? callee.property.type === "Literal" &&
           callee.property.value === "defineView"

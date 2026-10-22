@@ -1,5 +1,6 @@
 /** Values produced by CAC's declared string and boolean command options. */
 export interface CliOptions {
+  bare?: boolean;
   thread?: string;
   app?: string;
   appId?: string;
@@ -15,7 +16,6 @@ export interface CliOptions {
   out?: string;
   outDir?: string;
   packageManager?: string;
-  replace?: boolean;
   schema?: string;
   timeout?: string | number;
   tooling?: string;

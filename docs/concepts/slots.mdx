@@ -16,8 +16,8 @@ Give each area a name in your contract. This defines the two slots in the pictur
 
 <Tab title="Zod">
 
-```ts title="tailorkit.ts"
-import { defineContract } from "tailorkit";
+```ts title="patchsmith.ts"
+import { defineContract } from "patchsmith";
 import { z } from "zod";
 
 export const contract = defineContract({
@@ -33,8 +33,8 @@ export const contract = defineContract({
 
 <Tab title="ArkType">
 
-```ts title="tailorkit.ts"
-import { defineContract } from "tailorkit";
+```ts title="patchsmith.ts"
+import { defineContract } from "patchsmith";
 import { type } from "arktype";
 
 export const contract = defineContract({
@@ -50,8 +50,8 @@ export const contract = defineContract({
 
 <Tab title="Valibot">
 
-```ts title="tailorkit.ts"
-import { defineContract } from "tailorkit";
+```ts title="patchsmith.ts"
+import { defineContract } from "patchsmith";
 import * as v from "valibot";
 
 export const contract = defineContract({
@@ -70,6 +70,30 @@ export const contract = defineContract({
 <Tip>
   Include `/` in a slot's [views](/concepts/views) so apps can provide default
   UI when no more specific view matches.
+</Tip>
+
+## Describe the space
+
+Use `description` to tell app authors and agents where a slot appears:
+
+```ts title="Inside your contract's slots"
+panel: {
+  views: ["/"],
+  description: "Right-hand side panel with independently scrolling content.",
+},
+page: {
+  views: ["/"],
+  description: "Main content area beside the host navigation.",
+},
+```
+
+Agents read descriptions in the generated slot documentation while building apps. Your host controls the actual layout and dimensions.
+
+<Tip>
+  Describe the slot’s usable width and height at each breakpoint, including any
+  padding or scrolling behavior. For example: “360 px wide on desktop, full
+  width below 768 px, with independent scrolling.” This helps agents choose
+  layouts that fit the available space.
 </Tip>
 
 ## Allow multiple slot instances
@@ -107,7 +131,7 @@ For example, two page instances could have this metadata:
 ]
 ```
 
-Metadata lets you decide how to arrange tiles or build links. TailorKit doesn't automatically position tiles or create routes from it.
+Metadata lets you decide how to arrange tiles or build links. Patchsmith doesn't automatically position tiles or create routes from it.
 
 ## Context chooses the view
 
@@ -122,12 +146,13 @@ Slots live in `defineContract({ slots })`, keyed by the names you choose.
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `views` | `readonly string[]` | Required. Context paths declared in the contract's `views`. |
+| `description` | `string` | Optional. Layout and sizing guidance for app authors and agents. Does not enforce dimensions. |
 | `multiple` | `boolean` | Defaults to `false`. Set to `true` to allow independent instances from one app. |
 
 ```ts
 export type SlotDefinitions<TPath extends string = string> = Record<
   string,
-  { views: readonly TPath[]; multiple?: boolean }
+  { views: readonly TPath[]; multiple?: boolean; description?: string }
 >;
 ```
 

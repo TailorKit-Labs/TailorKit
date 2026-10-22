@@ -10,15 +10,15 @@ const tree = {
       callbacks: [
         {
           callback: "onClick",
-          event: "tailorkitcallbackonclick",
+          event: "patchsmithcallbackonclick",
           inputCount: 0,
         },
       ],
       children: [{ id: "text", kind: "text", text: "Save" }],
-      id: "tailorkit-button",
+      id: "patchsmith-button",
       kind: "element",
       props: { disabled: false },
-      type: "tailorkit-button",
+      type: "patchsmith-button",
     },
   ],
   id: "root",
@@ -49,11 +49,11 @@ describe("createRemoteUiStore", () => {
           { nodeId: "text", op: "setText", text: "Saved" },
           {
             name: "disabled",
-            nodeId: "tailorkit-button",
+            nodeId: "patchsmith-button",
             op: "setProp",
             value: true,
           },
-          { callbacks: [], nodeId: "tailorkit-button", op: "setCallbacks" },
+          { callbacks: [], nodeId: "patchsmith-button", op: "setCallbacks" },
         ],
         revision: 2,
       },
@@ -81,7 +81,7 @@ describe("createRemoteUiStore", () => {
       {
         node: { id: "suffix", kind: "text", text: "!" },
         op: "insert",
-        parentId: "tailorkit-button",
+        parentId: "patchsmith-button",
       },
       {
         nodeId: "text",

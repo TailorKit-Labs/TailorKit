@@ -33,6 +33,7 @@ it("falls back to Preact 11 when the registry is unavailable", async () => {
   vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
   const awaitedResult2 = await resolveTemplatePackageVersions();
   expect(awaitedResult2.preact).toBe("11.0.0");
+  expect(awaitedResult2.valibot).toBe("1.5.0");
 });
 
 it("skips releases younger than three days", async () => {
@@ -52,9 +53,38 @@ it("skips releases younger than three days", async () => {
 
 it("scaffolds against the CLI's SDK version", async () => {
   vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+
   const { default: packageJson } = await import("#package.json", {
     with: { type: "json" },
   });
+
   const awaitedResult4 = await resolveTemplatePackageVersions();
-  expect(awaitedResult4.tailorkit).toBe(packageJson.version);
+  expect(awaitedResult4.patchsmith).toBe(packageJson.version);
+});
+
+it("selects stable Valibot 1 releases that satisfy the release-age policy", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
+        time: {
+          "1.5.0": "2026-01-01",
+          "1.6.0": "2026-01-02",
+          "1.7.0": new Date().toISOString(),
+          "1.8.0-beta.1": "2026-01-03",
+          "2.0.0": "2026-01-03",
+        },
+        versions: {
+          "1.5.0": {},
+          "1.6.0": {},
+          "1.7.0": {},
+          "1.8.0-beta.1": {},
+          "2.0.0": {},
+        },
+      }),
+      ok: true,
+    })
+  );
+  const versions = await resolveTemplatePackageVersions();
+  expect(versions.valibot).toBe("1.6.0");
 });

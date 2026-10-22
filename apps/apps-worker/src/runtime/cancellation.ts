@@ -8,11 +8,14 @@ export const abortable = async <T>(
       resolve,
       reject,
     } = Promise.withResolvers<T>();
+
     try {
       const abort = () => {
         reject(signal.reason);
       };
+
       signal.addEventListener("abort", abort, { once: true });
+
       if (signal.aborted) {
         abort();
       }
@@ -20,6 +23,7 @@ export const abortable = async <T>(
       const cleanup = () => {
         signal.removeEventListener("abort", abort);
       };
+
       void (async () => {
         try {
           await (async () => {
@@ -35,6 +39,7 @@ export const abortable = async <T>(
     } catch (error) {
       reject(error);
     }
+
     return await pendingPromise;
   })();
 
@@ -43,6 +48,7 @@ export const abortable = async <T>(
 const noopCleanup = () => {
   /* No reader is active before stream initialization. */
 };
+
 export const cancellationStream = (signal: AbortSignal) => {
   let cleanup = noopCleanup;
 
@@ -55,10 +61,13 @@ export const cancellationStream = (signal: AbortSignal) => {
         cleanup();
         controller.close();
       };
+
       cleanup = () => {
         signal.removeEventListener("abort", abort);
       };
+
       signal.addEventListener("abort", abort, { once: true });
+
       if (signal.aborted) {
         abort();
       }

@@ -2,12 +2,13 @@ import { betterAuth } from "better-auth/minimal";
 import { describe, expect, it } from "vite-plus/test";
 
 describe("AUTH_TRUSTED_ORIGINS preview pattern", () => {
-  it("trusts only previews with the TailorKit project prefix", async () => {
+  it("trusts only previews with the configured project prefix", async () => {
     const auth = betterAuth({
-      baseURL: "https://tailorkit.dev",
+      baseURL: "https://patchsmith.io",
       secret: "test-secret-with-at-least-32-characters",
       trustedOrigins: ["https://tailorkit-*.vercel.app"],
     });
+
     const context = await auth.$context;
 
     expect(

@@ -1,4 +1,4 @@
-import { AnchoredToastProvider, ToastProvider } from "@tailorkit/ui/toast";
+import { AnchoredToastProvider, ToastProvider } from "@patchsmith/ui/toast";
 import { a11yDevtoolsPlugin } from "@tanstack/devtools-a11y/react";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { formDevtoolsPlugin } from "@tanstack/react-form-devtools";
@@ -11,6 +11,8 @@ import {
   createRootRouteWithContext,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import type { ReactNode } from "react";
 import { useEffect, useRef } from "react";
 
@@ -33,10 +35,13 @@ export interface RouterAppContext {
 
 const UserThemeSync = () => {
   const { setTheme, theme } = useTheme();
+
   const { data: session, isPending } = useQuery(
     orpc.user.getSession.queryOptions()
   );
+
   const lastSyncedTheme = useRef<string | null>(null);
+
   const userTheme = session
     ? (getUserTheme(session.user) ?? fallbackTheme)
     : fallbackTheme;
@@ -93,6 +98,8 @@ const RootDocument = ({ children }: { children: ReactNode }) => (
           a11yDevtoolsPlugin(),
         ]}
       />
+      <Analytics />
+      <SpeedInsights />
       <Scripts />
     </body>
   </html>
@@ -104,11 +111,6 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
       {
         href: appCss,
         rel: "stylesheet",
-      },
-      {
-        href: "/favicon.svg",
-        rel: "icon",
-        type: "image/svg+xml",
       },
       {
         href: "/apple-touch-icon.png",
@@ -128,6 +130,12 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
         type: "image/png",
       },
       {
+        href: "/favicon.svg",
+        rel: "icon",
+        sizes: "any",
+        type: "image/svg+xml",
+      },
+      {
         href: "/site.webmanifest",
         rel: "manifest",
       },
@@ -141,7 +149,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
         name: "viewport",
       },
       {
-        title: "TailorKit",
+        title: "Patchsmith",
       },
     ],
   }),

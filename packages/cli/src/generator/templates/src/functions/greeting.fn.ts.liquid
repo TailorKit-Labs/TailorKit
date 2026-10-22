@@ -1,0 +1,10 @@
+import { defineRouter } from "patchsmith/server";
+import * as v from "valibot";
+
+import { fn } from "#db";
+
+const getGreeting = fn.query
+  .input(v.object({ name: v.string() }))
+  .handler(({ input }) => `Hello, ${input.name}!`);
+
+export default defineRouter({ getGreeting });

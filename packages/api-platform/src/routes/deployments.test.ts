@@ -2,14 +2,15 @@ import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 
 import { call } from "@orpc/server";
-import { maxDeploymentBytes } from "@tailorkit/asset-delivery";
+import { maxDeploymentBytes } from "@patchsmith/asset-delivery";
+import { asyncFixture } from "@patchsmith/config/testing";
 import {
   app as appTable,
   appDeployment,
   appDeploymentFile,
-} from "@tailorkit/db/schema/apps";
-import { organization } from "@tailorkit/db/schema/auth";
-import { project as projectTable } from "@tailorkit/db/schema/project";
+} from "@patchsmith/db/schema/apps";
+import { organization } from "@patchsmith/db/schema/auth";
+import { project as projectTable } from "@patchsmith/db/schema/project";
 import { eq } from "drizzle-orm";
 import {
   afterEach,
@@ -27,15 +28,16 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
-vi.mock("@tailorkit/kv", () => ({ getKV: () => null }));
+vi.mock("@patchsmith/kv", () => ({ getKV: () => null }));
 
 // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const testState = vi.hoisted(() => ({ db: undefined as unknown }));
 
-vi.mock("@tailorkit/db", () => ({
+vi.mock("@patchsmith/db", () => ({
   createDb: () => testState.db,
   get db() {
     return testState.db;
@@ -44,12 +46,14 @@ vi.mock("@tailorkit/db", () => ({
 
 const { deploymentRouter, mapReturnedFilesByAssetPath } =
   await import("./deployments");
+
 const { canonicalizeScope } = await import("#scope");
 
 const organizationId = "11111111-1111-4111-8111-111111111111";
 const projectId = "22222222-2222-4222-8222-222222222222";
 const logoChecksum = "b".repeat(64);
 const logoChecksumBase64 = Buffer.from(logoChecksum, "hex").toString("base64");
+
 const productionScope = {
   name: "environment",
   value: { environment: "production" },
@@ -62,7 +66,7 @@ const publishContextImplementation = (downloadUrl: string): Context => ({
     logo: null,
     metadata: null,
     name: "Analytical Engines",
-    publicId: "team0000000001",
+    shortId: "team00000001",
     slug: "analytical-engines",
   },
   project: {
@@ -70,6 +74,7 @@ const publishContextImplementation = (downloadUrl: string): Context => ({
     id: projectId,
     name: "Compiler",
     organizationId,
+    shortId: "proj00000001",
     slug: "compiler",
     updatedAt: new Date(),
   },
@@ -100,7 +105,7 @@ describe("platform deployment uploads", () => {
       createdAt: new Date(),
       id: organizationId,
       name: "Analytical Engines",
-      publicId: "team0000000001",
+      shortId: "team00000001",
       slug: "analytical-engines",
     });
     await db.insert(projectTable).values({
@@ -114,7 +119,7 @@ describe("platform deployment uploads", () => {
     await db.insert(appTable).values({
       name: "Inbox",
       projectId,
-      publicId: "app000000001",
+      shortId: "app000000001",
       ...canonicalizeScope(productionScope),
     });
   });
@@ -128,28 +133,33 @@ describe("platform deployment uploads", () => {
 
   const createLogoDeployment = async () => {
     const currentApp = await db.query.app.findFirst();
+
     if (!currentApp) {
       throw new Error("Test app was not created.");
     }
+
     const [deployment] = await db
       .insert(appDeployment)
       .values({
         appId: currentApp.id,
-        publicId: "dep000000001",
+        shortId: "dep000000001",
         status: "uploading",
       })
       .returning();
+
     if (!deployment) {
       throw new Error("Test deployment was not created.");
     }
+
     await db.insert(appDeploymentFile).values({
       appDeploymentId: deployment.id,
       checksum: logoChecksum,
       contentLength: 11,
       contentType: "image/svg+xml",
       encoding: null,
-      objectKey: "teams/team0000000001/logo-dark.svg",
+      objectKey: "projects/proj00000001/apps/app000000001/logos/legacy.svg",
     });
+
     return deployment;
   };
 
@@ -212,27 +222,33 @@ describe("platform deployment uploads", () => {
     "uploads and verifies %s client and private server code",
     async (encoding) => {
       const context = publishContext("https://private.example/server");
-      // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-      const uploads = vi.fn(async ({ key }: { key: string }) => ({
-        key,
-        uploadUrl: `https://uploads.example/${key}`,
-      }));
+
+      const uploads = vi.fn(
+        asyncFixture(({ key }: { key: string }) => ({
+          key,
+          uploadUrl: `https://uploads.example/${key}`,
+        }))
+      );
+
       context.storage.createUploadUrl = uploads;
       const currentApp = await db.query.app.findFirst();
+
       if (!currentApp) {
         throw new Error("Missing app");
       }
+
       const metadata = {
         checksum: logoChecksum,
         contentLength: 11,
         contentType: "application/javascript" as const,
         encoding,
       };
+
       const created = await call(
         deploymentRouter.create,
         {
           body: {
-            appId: currentApp.id,
+            app: { id: currentApp.id },
             assets: [{ ...metadata, objectKey: "client.js" }],
             scope: productionScope,
             server: { ...metadata, objectKey: "server.js" },
@@ -244,6 +260,7 @@ describe("platform deployment uploads", () => {
         },
         { context }
       );
+
       expect(created.body.assets[0]?.file.objectKey).toMatch(
         /\/client\/client\.js$/u
       );
@@ -267,14 +284,10 @@ describe("platform deployment uploads", () => {
           key: created.body.server?.file.objectKey,
         })
       );
-      const lookup = {
-        body: { scope: productionScope },
-        params: { appId: currentApp.id },
-      };
       await expect(
         call(
           deploymentRouter.runtime,
-          { body: {}, params: lookup.params },
+          { body: {}, params: { appId: currentApp.id } },
           { context: { ...context, runtimeService: true } }
         )
       ).rejects.toMatchObject({ code: "NOT_FOUND" });
@@ -285,6 +298,7 @@ describe("platform deployment uploads", () => {
         contentLength: 11,
         contentType: "application/javascript",
       });
+
       if (encoding === "gzip") {
         vi.mocked(context.storage.head).mockResolvedValueOnce({
           checksumSha256: logoChecksumBase64,
@@ -305,9 +319,11 @@ describe("platform deployment uploads", () => {
           "Uploaded file content encoding does not match deployment record."
         );
       }
+
       const fetchMock = vi
         .spyOn(globalThis, "fetch")
         .mockResolvedValue(new Response("client-code"));
+
       await call(
         deploymentRouter.publish,
         {
@@ -319,19 +335,21 @@ describe("platform deployment uploads", () => {
       await expect(
         call(
           deploymentRouter.runtime,
-          { body: {}, params: lookup.params },
+          { body: {}, params: { appId: currentApp.id } },
           { context }
         )
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
+
       const runtime = await call(
         deploymentRouter.runtime,
-        { body: {}, params: lookup.params },
+        { body: {}, params: { appId: currentApp.id } },
         { context: { ...context, runtimeService: true } }
       );
+
       await expect(
         call(
           deploymentRouter.runtime,
-          { body: {}, params: lookup.params },
+          { body: {}, params: { appId: currentApp.id } },
           {
             context: {
               ...context,
@@ -364,6 +382,7 @@ describe("platform deployment uploads", () => {
               projectId: context.project.id,
             }
       );
+
       if (encoding === "gzip") {
         expect(
           context.storage.createDownloadUrl
@@ -376,9 +395,11 @@ describe("platform deployment uploads", () => {
         expect(context.storage.createDownloadUrl).not.toHaveBeenCalled();
         expect(fetchMock).not.toHaveBeenCalled();
       }
+
       const files = await db.query.appDeploymentFile.findMany({
         where: { appDeploymentId: created.body.deployment.id },
       });
+
       expect(files).toHaveLength(2);
       expect(files.every((file) => file.status === "verified")).toBe(true);
     }
@@ -391,31 +412,31 @@ describe("platform deployment uploads", () => {
     context.storage.createUploadUrl = vi.fn<
       typeof context.storage.createUploadUrl
     >(
-      // oxlint-disable-next-line eslint/require-await -- The storage fixture implements the asynchronous upload API.
-      async ({ key }) => ({
+      asyncFixture(({ key }) => ({
         key,
         uploadUrl: `https://uploads.example/${key}`,
-      })
+      }))
     );
     context.storage.head = vi.fn<typeof context.storage.head>(
-      // oxlint-disable-next-line eslint/require-await -- The storage fixture implements the asynchronous metadata API.
-      async ({ key }) => ({
+      asyncFixture(({ key }) => ({
         checksumSha256: Buffer.from(checksum, "hex").toString("base64"),
         contentEncoding: "gzip",
         contentLength: bytes.byteLength,
         contentType: "application/javascript",
         key,
-      })
+      }))
     );
     const currentApp = await db.query.app.findFirst();
+
     if (!currentApp) {
       throw new Error("Missing app");
     }
+
     const created = await call(
       deploymentRouter.create,
       {
         body: {
-          appId: currentApp.id,
+          app: { id: currentApp.id },
           assets: [
             {
               checksum,
@@ -430,6 +451,7 @@ describe("platform deployment uploads", () => {
       },
       { context }
     );
+
     return { context, created };
   };
 
@@ -438,11 +460,13 @@ describe("platform deployment uploads", () => {
     const { context, created } = await createGzipClientDeployment(decoded);
     const cancel = vi.fn();
     let position = 0;
+
     const chunks = [
       decoded.subarray(0, maxDeploymentBytes),
       decoded.subarray(maxDeploymentBytes),
       new Uint8Array(1),
     ];
+
     const body = new ReadableStream<Uint8Array>(
       {
         cancel,
@@ -452,6 +476,7 @@ describe("platform deployment uploads", () => {
       },
       { highWaterMark: 0 }
     );
+
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(
@@ -480,12 +505,15 @@ describe("platform deployment uploads", () => {
         signal: expectedSignalMatcher1,
       })
     );
+
     const deployment = await db.query.appDeployment.findFirst({
       where: { id: created.body.deployment.id },
     });
+
     const file = await db.query.appDeploymentFile.findFirst({
       where: { appDeploymentId: created.body.deployment.id },
     });
+
     const currentApp = await db.query.app.findFirst();
     expect(deployment?.status).toBe("uploading");
     expect(file?.status).toBe("failed");
@@ -498,6 +526,7 @@ describe("platform deployment uploads", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(decoded, { headers: { "Content-Encoding": "gzip" } })
     );
+
     const published = await call(
       deploymentRouter.publish,
       {
@@ -506,10 +535,13 @@ describe("platform deployment uploads", () => {
       },
       { context }
     );
+
     expect(published.body.status).toBe("published");
+
     const file = await db.query.appDeploymentFile.findFirst({
       where: { appDeploymentId: created.body.deployment.id },
     });
+
     expect(file?.status).toBe("verified");
     const currentApp = await db.query.app.findFirst();
     expect(currentApp?.currentDeploymentId).toBe(published.body.id);
@@ -521,17 +553,20 @@ describe("platform deployment uploads", () => {
       const { context, created } = await createGzipClientDeployment(
         new TextEncoder().encode("client-code")
       );
+
       const body = new ReadableStream<Uint8Array>({
         start(controller) {
           controller.error(new Error("Invalid gzip"));
         },
       });
+
       const response =
         failure === "stream-error"
           ? new Response(body)
           : new Response(null, {
               status: failure === "upstream-failure" ? 503 : 200,
             });
+
       vi.spyOn(globalThis, "fetch").mockResolvedValue(response);
       await expect(
         call(
@@ -543,9 +578,11 @@ describe("platform deployment uploads", () => {
           { context }
         )
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+
       const file = await db.query.appDeploymentFile.findFirst({
         where: { appDeploymentId: created.body.deployment.id },
       });
+
       expect(file?.status).toBe("failed");
     }
   );
@@ -558,6 +595,7 @@ describe("platform deployment uploads", () => {
         fileId: "logo-file-id",
       },
     ];
+
     const returnedFiles = [
       { id: "logo-file-id", objectKey: "stored-logo" },
       { id: "client-file-id", objectKey: "stored-client" },
@@ -572,11 +610,13 @@ describe("platform deployment uploads", () => {
   });
 
   it("creates optional logo assets alongside the client bundle", async () => {
-    // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-    const createUploadUrl = vi.fn(async ({ key }: { key: string }) => ({
-      key,
-      uploadUrl: `https://uploads.example/${key}`,
-    }));
+    const createUploadUrl = vi.fn(
+      asyncFixture(({ key }: { key: string }) => ({
+        key,
+        uploadUrl: `https://uploads.example/${key}`,
+      }))
+    );
+
     const context = {
       organization: {
         createdAt: new Date(),
@@ -584,7 +624,7 @@ describe("platform deployment uploads", () => {
         logo: null,
         metadata: null,
         name: "Analytical Engines",
-        publicId: "team0000000001",
+        shortId: "team00000001",
         slug: "analytical-engines",
       },
       project: {
@@ -592,6 +632,7 @@ describe("platform deployment uploads", () => {
         id: projectId,
         name: "Compiler",
         organizationId,
+        shortId: "proj00000001",
         slug: "compiler",
         updatedAt: new Date(),
       },
@@ -605,6 +646,7 @@ describe("platform deployment uploads", () => {
     } satisfies Context;
 
     const app = await db.query.app.findFirst();
+
     if (!app) {
       throw new Error("Test app was not created.");
     }
@@ -613,7 +655,7 @@ describe("platform deployment uploads", () => {
       deploymentRouter.create,
       {
         body: {
-          appId: app.id,
+          app: { id: app.id },
           assets: [
             {
               checksum: "a".repeat(64),
@@ -660,11 +702,13 @@ describe("platform deployment uploads", () => {
   });
 
   it("reuses a matching app logo without creating another upload URL", async () => {
-    // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-    const createUploadUrl = vi.fn(async ({ key }: { key: string }) => ({
-      key,
-      uploadUrl: `https://uploads.example/${key}`,
-    }));
+    const createUploadUrl = vi.fn(
+      asyncFixture(({ key }: { key: string }) => ({
+        key,
+        uploadUrl: `https://uploads.example/${key}`,
+      }))
+    );
+
     const context = {
       organization: {
         createdAt: new Date(),
@@ -672,7 +716,7 @@ describe("platform deployment uploads", () => {
         logo: null,
         metadata: null,
         name: "Analytical Engines",
-        publicId: "team0000000001",
+        shortId: "team00000001",
         slug: "analytical-engines",
       },
       project: {
@@ -680,6 +724,7 @@ describe("platform deployment uploads", () => {
         id: projectId,
         name: "Compiler",
         organizationId,
+        shortId: "proj00000001",
         slug: "compiler",
         updatedAt: new Date(),
       },
@@ -695,7 +740,9 @@ describe("platform deployment uploads", () => {
         type: "s3",
       },
     } satisfies Context;
+
     const currentApp = await db.query.app.findFirst();
+
     if (!currentApp) {
       throw new Error("Test app was not created.");
     }
@@ -704,7 +751,7 @@ describe("platform deployment uploads", () => {
       deploymentRouter.create,
       {
         body: {
-          appId: currentApp.id,
+          app: { id: currentApp.id },
           assets: [
             {
               checksum: "a".repeat(64),
@@ -730,12 +777,13 @@ describe("platform deployment uploads", () => {
     expect(result.body.logos?.dark?.uploadUrl).toBeUndefined();
     expect(createUploadUrl).toHaveBeenCalledTimes(1);
     expect(context.storage.head).toHaveBeenCalledWith({
-      key: `teams/team0000000001/projects/${projectId}/apps/app000000001/logos/${logoChecksum}.svg`,
+      key: `projects/proj00000001/apps/app000000001/logos/${logoChecksum}.svg`,
     });
   });
 
   it("rejects the client assets array when it exceeds 3 MiB", async () => {
     const createUploadUrl = vi.fn();
+
     const context = {
       organization: {
         createdAt: new Date(),
@@ -743,7 +791,7 @@ describe("platform deployment uploads", () => {
         logo: null,
         metadata: null,
         name: "Analytical Engines",
-        publicId: "team0000000001",
+        shortId: "team00000001",
         slug: "analytical-engines",
       },
       project: {
@@ -751,6 +799,7 @@ describe("platform deployment uploads", () => {
         id: projectId,
         name: "Compiler",
         organizationId,
+        shortId: "proj00000001",
         slug: "compiler",
         updatedAt: new Date(),
       },
@@ -764,6 +813,7 @@ describe("platform deployment uploads", () => {
     } satisfies Context;
 
     const app = await db.query.app.findFirst();
+
     if (!app) {
       throw new Error("Test app was not created.");
     }
@@ -773,7 +823,7 @@ describe("platform deployment uploads", () => {
         deploymentRouter.create,
         {
           body: {
-            appId: app.id,
+            app: { id: app.id },
             assets: [
               {
                 checksum: "a".repeat(64),
@@ -815,26 +865,29 @@ describe("platform deployment uploads", () => {
     vi.useFakeTimers();
     vi.stubGlobal(
       "fetch",
-      // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-      vi.fn(async (_url: URL, init?: RequestInit) => ({
-        arrayBuffer: async () =>
-          await (async () => {
-            const {
-              promise: pendingPromise,
-              resolve: _resolve,
-              reject,
-            } = Promise.withResolvers<ArrayBuffer>();
-            try {
-              init?.signal?.addEventListener("abort", () => {
-                reject(new DOMException("Aborted", "AbortError"));
-              });
-            } catch (error) {
-              reject(error);
-            }
-            return await pendingPromise;
-          })(),
-        ok: true,
-      }))
+      vi.fn(
+        asyncFixture((_url: URL, init?: RequestInit) => ({
+          arrayBuffer: async () =>
+            await (async () => {
+              const {
+                promise: pendingPromise,
+                resolve: _resolve,
+                reject,
+              } = Promise.withResolvers<ArrayBuffer>();
+
+              try {
+                init?.signal?.addEventListener("abort", () => {
+                  reject(new DOMException("Aborted", "AbortError"));
+                });
+              } catch (error) {
+                reject(error);
+              }
+
+              return await pendingPromise;
+            })(),
+          ok: true,
+        }))
+      )
     );
 
     const publish = call(
@@ -845,6 +898,7 @@ describe("platform deployment uploads", () => {
       },
       { context: publishContext("https://uploads.example/logo-dark.svg") }
     );
+
     const advanceTimers = vi.advanceTimersByTimeAsync(10_000);
     await expect(publish).rejects.toThrow("Aborted");
     await advanceTimers;

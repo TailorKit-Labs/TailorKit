@@ -1,5 +1,5 @@
-import type { ToolBridge, TailorKitServerTools } from "@tailorkit/app/client";
-import type { AppDefinition, Identity } from "@tailorkit/app/server";
+import type { ToolBridge, PatchsmithServerTools } from "@patchsmith/app/client";
+import type { AppDefinition, Identity } from "@patchsmith/app/server";
 
 import { inExecutionContext } from "./context";
 import { AppError } from "./errors";
@@ -39,41 +39,53 @@ export const createActionExecution = (app: AppDefinition) => {
     args: Invocation["args"],
     options?: { requestId?: string }
   ) => ReturnType<ActionCalls["query"]>;
+
   interface Group {
     [name: string]: Group | Call;
   }
+
   const bindings = new Map<unknown, { queries: Group; mutations: Group }>();
+
   const compile = (functions: Functions, prefix = "") => {
     const queries: Group = {};
     Object.setPrototypeOf(queries, null);
     const mutations: Group = {};
     Object.setPrototypeOf(mutations, null);
+
     for (const [key, definition] of Object.entries(functions)) {
       const name = prefix ? `${prefix}.${key}` : key;
+
       if (!isFunction(definition)) {
         const nested = compile(definition, name);
+
         if (Object.keys(nested.queries).length) {
           queries[key] = nested.queries;
         }
+
         if (Object.keys(nested.mutations).length) {
           mutations[key] = nested.mutations;
         }
+
         continue;
       }
+
       if (definition.kind === "action") {
         continue;
       }
+
       if (resolveFunction(app.functions, name) !== definition) {
         throw new AppError(
           "NOT_FOUND",
           "Action function is not registered in this app"
         );
       }
+
       const { kind } = definition;
       (kind === "query" ? queries : mutations)[key] =
         // oxlint-disable-next-line typescript/promise-function-async -- These capability guards must throw synchronously before dispatching asynchronous work.
         (check, calls) => (args, options) => {
           check();
+
           return kind === "query"
             ? calls.query({ args, name })
             : calls.mutate({
@@ -83,13 +95,17 @@ export const createActionExecution = (app: AppDefinition) => {
               });
         };
     }
+
     return { mutations, queries };
   };
+
   const isCall = (entry: Group | Call): entry is Call =>
     typeof entry === "function";
+
   interface BoundGroup {
     [name: string]: BoundGroup | ReturnType<Call>;
   }
+
   const bind = (
     group: Group,
     check: () => void,
@@ -97,26 +113,33 @@ export const createActionExecution = (app: AppDefinition) => {
   ): BoundGroup => {
     const bound: BoundGroup = {};
     Object.setPrototypeOf(bound, null);
+
     for (const [key, entry] of Object.entries(group)) {
       bound[key] = isCall(entry)
         ? entry(check, calls)
         : bind(entry, check, calls);
     }
+
     return Object.freeze(bound);
   };
+
   const register = (functions: Functions) => {
     for (const definition of Object.values(functions)) {
       if (!isFunction(definition)) {
         register(definition);
         continue;
       }
+
       if (definition.kind !== "action") {
         continue;
       }
+
       bindings.set(definition, compile(definition.functions ?? {}));
     }
   };
+
   register(app.functions);
+
   return async (
     input: Invocation,
     identity: Identity,
@@ -129,15 +152,18 @@ export const createActionExecution = (app: AppDefinition) => {
       kind: "action" as const,
       signal,
     };
+
     const check = () => {
       if (!scope.active || signal.aborted) {
         throw new AppError("UNAVAILABLE", "Action has ended");
       }
+
       if (identity.expiresAt <= Date.now()) {
         throw new AppError("UNAUTHORIZED", "App token expired");
       }
     };
-    const createTools = (parts: string[] = []): TailorKitServerTools =>
+
+    const createTools = (parts: string[] = []): PatchsmithServerTools =>
       // SAFETY: The proxy handles calls through apply and every string property through get, recursively returning the same callable proxy contract.
       new Proxy(
         () => {
@@ -150,11 +176,14 @@ export const createActionExecution = (app: AppDefinition) => {
           // oxlint-disable-next-line typescript/promise-function-async -- These capability guards must throw synchronously before dispatching asynchronous work.
           apply: (_target, _this, args) => {
             check();
+
             if (!calls.tool) {
               throw new AppError("UNAVAILABLE", "Tool transport unavailable");
             }
+
             return calls.tool(parts.join("."), args[0]).then((value) => {
               check();
+
               return value;
             });
           },
@@ -163,19 +192,24 @@ export const createActionExecution = (app: AppDefinition) => {
               /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
               return undefined;
             }
+
             if (["__proto__", "constructor", "prototype"].includes(key)) {
               throw new AppError("BAD_REQUEST", "Invalid tool path");
             }
+
             return createTools([...parts, key]);
           },
         }
       );
+
     check();
     const { fn, args } = prepareFunction(app, input, identity, "action");
     const binding = bindings.get(fn);
+
     if (!binding) {
       throw new AppError("NOT_FOUND", "App action not found");
     }
+
     try {
       // SAFETY: prepareFunction validates args with this registered action schema, and compile binds only its declared query and mutation functions.
       const value = await inExecutionContext(scope, () =>
@@ -194,7 +228,9 @@ export const createActionExecution = (app: AppDefinition) => {
           /* oxlint-enable typescript/no-unsafe-type-assertion */
         )
       );
+
       check();
+
       return functionValue(fn, value);
     } finally {
       scope.active = false;

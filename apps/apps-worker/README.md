@@ -1,24 +1,36 @@
 # App runtime
 
-`tailorkit-apps-worker` runs app queries, mutations, actions, and subscriptions on Cloudflare. It also delivers public client assets and logos. This private runtime is licensed under BUSL-1.1.
+`patchsmith-apps-worker` runs app queries, mutations, actions, and subscriptions on Cloudflare. It also delivers public client assets and logos. This private runtime is licensed under BUSL-1.1.
+
+The Patchsmith command-line interface (CLI) uploads server bundles to the private blob bucket under `server/server.js`. Client code uses `client/client.js`. The worker’s asset allowlist excludes server bundles.
+
+## Store gzip and negotiate browser delivery
+
+The CLI compresses client and server bundles with gzip before uploading them to R2. Store one gzip representation per bundle; browser delivery formats do not require additional R2 objects.
+
+The public asset response preserves the stored gzip bytes with `Content-Encoding: gzip` and `encodeBody: "manual"`. This prevents workerd from compressing them again. Cloudflare's CDN can still negotiate the browser-facing format according to the visitor's capabilities and the zone's Compression Rules. The Worker-facing `Accept-Encoding` is normalized by Cloudflare; do not use `request.cf.clientAcceptEncoding` to select the stored representation. Direct/local requests retain an identity fallback.
+
+Internal edge-cache entries store opaque bytes with private encoding metadata and `Cache-Control: public, max-age=86400, no-transform`. Public responses remove the private metadata and use `Cache-Control: private, max-age=3600`, allowing CDN compression transformations. Keep `no-transform` off the public response when delegating negotiation to Cloudflare.
+
+Backend execution reads the private gzip object through the R2 binding and decompresses it in the trusted supervisor before passing source code to the dynamic loader. Browser format negotiation does not affect this path.
+
+Local Miniflare tests verify stored bytes, cache behavior, and public headers. Validate the deployed zone separately with `Accept-Encoding: br`, `gzip`, and `identity`; the selected delivery encoding depends on the zone configuration. See [Cloudflare's compression behavior](https://developers.cloudflare.com/speed/optimization/content/compression/).
 
 The public icon catalogue is deployed independently from [`apps/icons-assets`](../icons-assets/README.md).
 
-The TailorKit command-line interface (CLI) uploads server bundles to the private blob bucket under `server/server.js`. Client code uses `client/client.js`. The worker’s asset allowlist excludes server bundles.
-
 ## Authenticate app requests
 
-The host SDK uses its existing `authenticate` callback and calls `POST /apps/{appId}/runtime/session` with its project key, verified scopes, optional product-defined `subjectId`, and product tool URL. The platform checks the app belongs to that project and one of those scopes, resolves its published deployment, and issues a short-lived ES256 JSON Web Token (JWT).
+The host SDK uses its existing `authenticate` callback and calls `POST /apps/{appId}/runtime/session` with its project key, verified scopes, required product-defined `subjectId`, and product tool URL. The platform checks the app belongs to that project and one of those scopes, resolves its published deployment, and issues a short-lived ES256 JSON Web Token (JWT).
 
-The canonical app ID is the stable installation ID and JWT `sub`. Optional `subjectId` identifies any product-defined principal; calls without it are attributed to the installation. Apps cannot supply a verified subject.
+The canonical app ID is the stable installation ID and JWT `sub`. `subjectId` identifies the authenticated product user or service principal and is required on every session and signed token. Apps cannot supply a verified subject.
 
-The platform returns `https://<teamPublicId>.tailorkit.app/p/<projectId>/a/<appPublicId>/rpc`, deriving the hostname from `ASSET_DOMAIN` (default `tailorkit.app`). `APP_RUNTIME_URL` is an optional origin override for local development.
+The platform returns `https://<projectShortId>.tailorkit.app/a/<appShortId>/rpc`, deriving the hostname from `ASSET_DOMAIN` (default `tailorkit.app`). `APP_RUNTIME_URL` is an optional origin override for local development.
 
-The signed JWT binds the public team and app identifiers as well as the canonical project/app IDs; the gateway checks the hostname and path before routing to a trusted installation. Sandboxed apps obtain scoped JWTs through the host bridge and call the backend over authenticated HTTP, with a WebSocket for query subscriptions. Platform credentials remain in the host server.
+The signed JWT binds the project and app short IDs as well as the canonical project/app IDs; the gateway checks the hostname and path before routing to a trusted installation. Sandboxed apps obtain scoped JWTs through the host bridge and call the backend over authenticated HTTP, with a WebSocket for query subscriptions. Platform credentials remain in the host server.
 
 The installation ID stays the same across public/internal app IDs, scope-list ordering and published deployments.
 
-The runtime derives its issuer from `PLATFORM_URL` and verifies JWTs using `APP_RUNTIME_PUBLIC_KEYS`, a configured public JSON Web Key Set (JWKS). The runtime makes no public-key request. The shared app JWT audience is `tailorkit-app`. Calls allow browser origins and omit cookies; JWT authorization remains mandatory.
+The runtime derives its issuer from `PLATFORM_URL` and verifies JWTs using `APP_RUNTIME_PUBLIC_KEYS`, a configured public JSON Web Key Set (JWKS). The runtime makes no public-key request. The shared app JWT audience is `patchsmith-app`. Calls allow browser origins and omit cookies; JWT authorization remains mandatory.
 
 The worker authenticates and routes requests to the supervisor named `[issuer, projectId, appId, installationId]`. The supervisor verifies authentication again and resolves the currently published bundle from the `DEPLOYMENTS` KV namespace, falling back to the authenticated platform API on a miss. A different app/project is forbidden. Deployment claims do not pin execution: existing client code continues calling the latest published server.
 
@@ -63,7 +75,7 @@ The host returns the runtime's `/rpc` base URL. The client selects the route:
 | `/rpc/actions` | POST JSON | Shared dynamic facet, outbound HTTPS through a scoped capability |
 | `/rpc/queries` | GET WebSocket upgrade | Trusted Durable Object, query subscriptions |
 
-The table paths are relative to `/p/<projectId>/a/<appPublicId>`. HTTP requests and responses use the oRPC wire protocol. Procedure inputs contain `{ name, args }`; mutations also require a UUID `requestId`. oRPC preserves typed errors and their HTTP statuses. The URL determines the operation type, so bodies cannot override it. Nested names such as `todos.list` retain their full path. WebSockets expose subscriptions only.
+The table paths are relative to `/a/<appShortId>`. HTTP requests and responses use the oRPC wire protocol. Procedure inputs contain `{ name, args }`; mutations also require a UUID `requestId`. oRPC preserves typed errors and their HTTP statuses. The URL determines the operation type, so bodies cannot override it. Nested names such as `todos.list` retain their full path. WebSockets expose subscriptions only.
 
 The gateway authenticates and selects the trusted installation Durable Object. The installation verifies the published deployment with Effect, owns WebSockets and subscriptions, and calls the isolated SQLite facet directly over RPC.
 
@@ -89,20 +101,20 @@ Cancellation streams cross RPC boundaries because attached `AbortSignal` objects
 
 The public protocol and private runtime code live in these modules:
 
-- `@tailorkit/app/protocol`: public oRPC procedures, input/output types and migration inputs, with no server implementation.
+- `@patchsmith/app/protocol`: public oRPC procedures, input/output types and migration inputs, with no server implementation.
 - `src/runtime`: private execution, ALS, fetch guard, database transactions, receipts and migration application.
 - `src/transport.ts`: private implementation of the public contract, HTTP/WebSocket handlers and event encoding.
 - `src/supervisor`: four modules for authentication, deployment loading, action cancellation/egress and subscriptions.
 - `src/runtime/cancellation.ts`: cancellation streams shared by the facet and trusted worker.
 - `src/dynamic-workers/facet.ts`: Cloudflare bootstrap and SQLite adapter.
-- `@tailorkit/api-utils/app-auth`: private JWT helpers shared with the platform backend.
+- `@patchsmith/api-utils/app-auth`: private JWT helpers shared with the platform backend.
 
 ## Run and test locally
 
 Run typechecks and tests from the repository root. Turborepo builds their dependencies:
 
 ```sh
-pnpm exec turbo run check-types test --filter=@tailorkit/apps-worker
+pnpm exec turbo run check-types test --filter=@patchsmith/apps-worker
 ```
 
 The test command dry-builds with Wrangler and runs its bundled Miniflare/workerd locally with disposable R2 and Durable Object state. It substitutes only the trusted platform metadata HTTP response. The `backend-todo` integration test covers:
@@ -113,29 +125,65 @@ The test command dry-builds with Wrangler and runs its bundled Miniflare/workerd
 - HTTP queries, mutations, actions, and nested function dispatch
 - Query subscriptions, accepted-write deduplication, and realtime updates between two clients
 
-Server artifacts include Drizzle-generated migration SQL and checksums. Facet initialization applies pending migrations and records their history in `tailorkit_migrations`, in the same isolated SQLite database as the app tables. The integration test uses this production bootstrap and verifies upgrades, failed-migration rollback, cold recovery and fresh installations after an upgrade.
+Server artifacts include Drizzle-generated migration SQL and checksums. Facet initialization applies pending migrations and records their history in `patchsmith_migrations`, in the same isolated SQLite database as the app tables. The integration test uses this production bootstrap and verifies upgrades, failed-migration rollback, cold recovery and fresh installations after an upgrade.
 
 To run the gateway against a development platform, copy `.dev.vars.example` to `.dev.vars`, fill in the platform URL and private runtime service token, and set the R2 bucket in `wrangler.jsonc` to the same private bucket used by the platform blob provider.
 
-Upload and publish app bundles with `tailorkit deploy`. The CLI gzips client and optional server code, obtains private upload URLs from the platform, and uploads the compressed bytes with signed content-encoding and checksum headers. Client assets are served with `Content-Encoding: gzip` when accepted, with decoded delivery otherwise.
+Upload and publish app bundles with `patchsmith deploy`. The CLI gzips client and optional server code, obtains private upload URLs from the platform, and uploads the compressed bytes with signed content-encoding and checksum headers. Client assets are served with `Content-Encoding: gzip` when accepted, with decoded delivery otherwise.
 
 Before publication, the platform downloads gzip client bundles and rejects decoded code above 3 MiB. Worker and Node delivery also cap decoded streams at 3 MiB. The Node asset adapter serves the decoded stream supplied by Node fetch. When the platform blob provider uses R2, both files go into that R2 bucket. The runtime's `BUNDLES` binding must point to the same bucket.
 
-`wrangler dev --local` uses a separate local R2 store; ordinary TailorKit deployments do not populate it. Use `test` for the complete local runtime demonstration: its test fixtures populate disposable R2 directly, without a seed command.
+`wrangler dev --local` uses a separate local R2 store; ordinary Patchsmith deployments do not populate it. Use `test` for the complete local runtime demonstration: its test fixtures populate disposable R2 directly, without a seed command.
 
 Start the local worker from the repository root:
 
 ```sh
-pnpm --filter @tailorkit/apps-worker dev
+pnpm --filter @patchsmith/apps-worker dev
 ```
 
 Wrangler watches runtime/server changes. App code is rebuilt and uploaded through the existing app builder/CLI, then published through the existing deployment flow. Changing local runtime code does not publish an app deployment.
 
-Durable Object and R2 state lives in `apps/apps-worker/.tailorkit/state`, outside app builder output.
+Durable Object and R2 state lives in `apps/apps-worker/.patchsmith/state`, outside app builder output.
 
 Local compatibility uses the date supported by the repository's pinned workerd. No production deployment is performed by these commands.
 
 The runtime enforces the 3 MiB decoded bundle limit described above. It also verifies bundle content length and checksum for integrity.
+
+## Build and deploy
+
+Run these commands from the repository root:
+
+```sh
+pnpm --filter @patchsmith/apps-worker build
+pnpm --filter @patchsmith/apps-worker deploy
+```
+
+`build` runs `wrangler deploy --dry-run --outdir dist`; `deploy` runs `wrangler deploy`. Both use Wrangler's custom build hook to build workspace dependencies and generate `.generated/bootstrap.txt` from `src/dynamic-workers/facet.ts`. The bootstrap is separate source text for the isolated app loader. Wrangler bundles the trusted worker and includes that text module. Do not remove the bootstrap generation or deploy `dist/index.js` separately.
+
+Direct `pnpm exec wrangler dev` and `pnpm exec wrangler deploy` also work from `apps/apps-worker`. No manual dependency build is required. Wrangler watches the worker, bootstrap build script, and imported workspace sources during development. Turborepo caches both `dist` and `.generated`, so cached builds restore the files needed by tests.
+
+In the Cloudflare dashboard, open this Worker's **Settings > Builds > Build configuration** and set:
+
+- Root directory: `apps/apps-worker`
+- Production branch: `main`, with production builds enabled
+- Build command: `pnpm run build`
+- Deploy command: `npx wrangler deploy` (equivalent to `pnpm run deploy`)
+- Builds for Preview branches: disabled under **Previews Base**
+
+Preview branch builds are controlled in the dashboard. `preview_urls: false` in `wrangler.jsonc` only disables public version URLs; it does not disable branch builds. This worker deploys from `main`. Pull requests run GitHub CI, including the Wrangler dry build and local runtime tests. Enabling Cloudflare branch previews would require a separate `previews` configuration. See Cloudflare's [build configuration](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/).
+
+Set the build variables `NODE_VERSION=24` and `PNPM_VERSION=12.11.2` to match this workspace; let Cloudflare install dependencies from the root lockfile. See Cloudflare's [build image settings](https://developers.cloudflare.com/workers/ci-cd/builds/build-image/).
+
+The connected Cloudflare Worker must be named `patchsmith-apps-worker`, matching `wrangler.jsonc`. Set `RUNTIME_SERVICE_TOKEN` as a runtime secret on that Worker; the platform must use the same value for `APP_RUNTIME_SERVICE_TOKEN`.
+
+The public routes and `ASSET_DOMAIN` remain `tailorkit.app`. Production resources use Patchsmith names:
+
+- `BUNDLES`: private R2 bucket `patchsmith-app-assets-prod`. Set the platform's `BLOB_BUCKET` to this same bucket and grant its S3 credentials access to it.
+- `DEPLOYMENTS`: KV namespace `patchsmith-app-deployments`. Its namespace ID is unchanged by the rename.
+- `STORES`: `PatchsmithAppInstallation`, which creates a fresh Durable Object namespace under `patchsmith-apps-worker`. The `AppInstallation` deletion tombstone retires the previous namespace and its data when this configuration deploys.
+- Signing key: `patchsmith-runtime-2026-10-20`. The platform's `APP_RUNTIME_SIGNING_KEY` must contain the matching private JWK; only its public key belongs in this repository.
+
+The rebrand deliberately starts with an empty asset bucket and installation databases. Old bundles and app data are not migrated. Republish apps after deploying the worker and platform. Stage the new public key on the running worker before the platform begins issuing tokens with it; keep the old public key accepted until existing tokens have expired. The committed configuration completes that rotation on the next worker deployment. Platform environment changes apply to its next deployment, so deploy both sides together and verify a fresh upload, publication, and app call.
 
 ## Current limits
 
@@ -153,11 +201,11 @@ Application bundles export a `runtimeManifest` alongside the default application
 
 The facet validates the exports, API version, and required features before touching SQLite. Unsupported bundles fail with `INCOMPATIBLE_VERSION`.
 
-Breaking handler/module changes increment `apiVersion`; additive capabilities can be named in `requires`. Bundles only require a runtime upgrade when their declared interface or required features are unsupported. The shared `ApplicationModule` and `RuntimeManifest` types are exported by `@tailorkit/app/server`.
+Breaking handler/module changes increment `apiVersion`; additive capabilities can be named in `requires`. Bundles only require a runtime upgrade when their declared interface or required features are unsupported. The shared `ApplicationModule` and `RuntimeManifest` types are exported by `@patchsmith/app/server`.
 
 ## Deployment metadata cache
 
-The platform sends `POST https://internal.tailorkit.app/p/<projectId>/a/<appPublicId>/new-deployment` after publication or a rollout. `APP_RUNTIME_INTERNAL_URL` optionally overrides that origin; by default it is `https://internal.<ASSET_DOMAIN>`. Only the reserved internal hostname accepts publication requests.
+The platform sends `POST https://internal.tailorkit.app/p/<projectId>/a/<appShortId>/new-deployment` after publication or a rollout. `APP_RUNTIME_INTERNAL_URL` optionally overrides that origin; by default it is `https://internal.<ASSET_DOMAIN>`. Only the reserved internal hostname accepts publication requests.
 
 The worker checks that the body project and private bundle path match the URL. The body contains `{ projectId, appId, deploymentId, objectKey, checksum, contentLength }`.
 
@@ -173,25 +221,27 @@ Sandbox iframes allow HTTP(S) and WebSocket connections. They retain an opaque `
 
 ## Shared app delivery
 
-One `tailorkit-apps-worker` deployment handles the wildcard `*.tailorkit.app/*` route and the `internal.tailorkit.app` custom domain. Keep the existing worker name and `STORES` binding to preserve installation databases. Configure wildcard proxied DNS for `*.tailorkit.app`; Wrangler provisions the internal custom domain. The platform's `ASSET_DOMAIN` must match this worker's value.
+One `patchsmith-apps-worker` deployment handles the wildcard `*.tailorkit.app/*` route and the `internal.tailorkit.app` custom domain. Keep this worker name and the `STORES` binding stable to preserve installation databases. Configure wildcard proxied DNS for `*.tailorkit.app`; Wrangler provisions the internal custom domain. The platform's `ASSET_DOMAIN` must match this worker's value.
 
-Tenant routes:
+Project routes:
 
-- `/p/<projectId>/a/<appPublicId>/d/<deploymentPublicId>/client/client.js`: immutable public client bundle.
-- `/p/<projectId>/a/<appPublicId>/d/<deploymentPublicId>/logos/<filename>`: logos. Content-addressed logos use shared R2 storage.
-- `/p/<projectId>/a/<appPublicId>/rpc/queries`, `/rpc/mutations`, `/rpc/actions`: HTTP backend calls; query subscriptions use WebSockets on the queries route.
+- `/a/<appShortId>/d/<deploymentShortId>/client/client.js`: immutable public client bundle.
+- `/a/<appShortId>/d/<deploymentShortId>/logos/<filename>`: logos. Content-addressed logos use shared R2 storage.
+- `/a/<appShortId>/rpc/queries`, `/rpc/mutations`, `/rpc/actions`: HTTP backend calls; query subscriptions use WebSockets on the queries route.
+
+R2 keys start at `projects/<projectShortId>/apps/<appShortId>/deployments/<deploymentShortId>/`. Content-addressed logos remain shared under the app prefix. Local asset URLs use `/api/assets/p/<projectShortId>/a/<appShortId>/d/<deploymentShortId>/` instead of a project subdomain.
 
 RPC URLs omit the deployment ID and run the latest published backend. Deployment claims never select a separate database or pin execution. Asset responses preserve their edge cache, bounded browser TTL and security headers. RPC responses are not cached.
 
-Shared asset admission, size checks, and sanitized error responses are Effect programs in `@tailorkit/asset-delivery`; the Cloudflare and Node adapters compose storage, fetch and cache operations with Effect and run them at the request boundary. Cache lookup/write failures do not prevent asset delivery.
+Shared asset admission, size checks, and sanitized error responses are Effect programs in `@patchsmith/asset-delivery`; the Cloudflare and Node adapters compose storage, fetch and cache operations with Effect and run them at the request boundary. Cache lookup/write failures do not prevent asset delivery.
 
-The platform needs `APP_RUNTIME_SIGNING_KEY` and `APP_RUNTIME_SERVICE_TOKEN`; no `APP_RUNTIME_URL` is needed for production's default team subdomains. Deploy the combined worker and platform, and delete the standalone `tailorkit-assets` Worker and its Workers Builds integration. Only the new URLs and signed routing claims are supported.
+The platform needs `APP_RUNTIME_SIGNING_KEY` and `APP_RUNTIME_SERVICE_TOKEN`; no `APP_RUNTIME_URL` is needed for production's default project subdomains. Deploy the combined worker and platform, and delete the standalone `patchsmith-assets` Worker and its Workers Builds integration. Only the new URLs and signed routing claims are supported.
 
 ## Product tools
 
 App backend actions call server tools through `ctx.tools`. The trusted supervisor sends the verified app execution JWT directly to the product tool destination signed into that JWT, preserving installation, scope, and optional subject.
 
-The same five-minute app credential authorizes the runtime and product tools with the `tailorkit-app` audience. There is no tool-specific JWT or credential exchange.
+The same five-minute app credential authorizes the runtime and product tools with the `patchsmith-app` audience. There is no tool-specific JWT or credential exchange.
 
 The product verifies the signature, issuer, audience, expiry, destination, scope, and active installation/deployment before validating input and output. Dynamic backend code receives no credentials.
 

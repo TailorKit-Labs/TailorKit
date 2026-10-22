@@ -1,10 +1,10 @@
 ---
-"tailorkit": minor
-"@tailorkit/app": minor
-"@tailorkit/core": minor
-"@tailorkit/react": minor
-"@tailorkit/sandbox": minor
-"@tailorkit/cli": minor
+"patchsmith": minor
+"@patchsmith/app": minor
+"@patchsmith/core": minor
+"@patchsmith/react": minor
+"@patchsmith/sandbox": minor
+"@patchsmith/cli": minor
 ---
 
 Add slot-specific app view selection and layered host views. Host contracts now declare `views` and `slots`; app clients register `slots[name][path]`. Each slot selects one matching view and composes context only from that view and its ancestors. Unsupported matches render nothing, and `false` entries stop fallback.

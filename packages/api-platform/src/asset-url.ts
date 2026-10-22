@@ -1,1 +1,1 @@
-export { withAppAssetUrl } from "@tailorkit/api-utils/app-asset-url";
+export { withAppAssetUrl } from "@patchsmith/api-utils/app-asset-url";

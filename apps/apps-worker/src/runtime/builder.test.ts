@@ -1,6 +1,8 @@
-import type { Invocation } from "@tailorkit/app/protocol";
-import { fn, defineServer } from "@tailorkit/app/server";
-import type { AppDefinition, Identity } from "@tailorkit/app/server";
+import type { Invocation } from "@patchsmith/app/protocol";
+import { fn, defineRouter } from "@patchsmith/app/server";
+import type { AppDefinition, Identity } from "@patchsmith/app/server";
+import { asyncFixture } from "@patchsmith/config/testing";
+import * as v from "valibot";
 import { expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
@@ -11,6 +13,7 @@ import { createExecution, invocationSchema } from "./execution";
 
 const actionRunner = (app: AppDefinition, calls: ActionCalls) => {
   const run = createActionExecution(app);
+
   return async (input: Invocation, identity: Identity, signal?: AbortSignal) =>
     await run(input, identity, calls, signal);
 };
@@ -23,7 +26,7 @@ const identity = {
   projectId: "p",
   scope: { name: "org", value: { id: "tenant" } },
   subjectId: "u",
-  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
 };
 
 const persistence: Persistence = {
@@ -32,22 +35,27 @@ const persistence: Persistence = {
 };
 
 it("validates and transforms fluent inputs and outputs through the real execution path", () => {
-  const app = defineServer({
-    empty: fn.query.handler(({ input }) => {
-      expect(input).toBeUndefined();
-      return { inferred: "no schema needed" };
-    }),
-    invalid: fn.query.output(z.number().min(10)).handler(() => 1),
-    nullable: fn.query.input(z.null()).handler(({ input }) => input),
-    transformed: fn.query
-      .input(z.object({ value: z.string().transform(Number) }))
-      .output(z.string().transform(Number))
-      .handler(({ input, identity: viewer }) => {
-        expect(viewer.subjectId).toBe("u");
-        expect(input.value).toBe(4);
-        return String(input.value + 1);
+  const app = {
+    functions: defineRouter({
+      empty: fn.query.handler(({ input }) => {
+        expect(input).toBeUndefined();
+
+        return { inferred: "no schema needed" };
       }),
-  });
+      invalid: fn.query.output(z.number().min(10)).handler(() => 1),
+      nullable: fn.query.input(z.null()).handler(({ input }) => input),
+      transformed: fn.query
+        .input(v.object({ value: v.pipe(v.string(), v.transform(Number)) }))
+        .output(v.pipe(v.string(), v.transform(Number)))
+        .handler(({ input, identity: viewer }) => {
+          expect(viewer.subjectId).toBe("u");
+          expect(input.value).toBe(4);
+
+          return String(input.value + 1);
+        }),
+    }),
+  };
+
   const execute = createExecution(app, persistence);
   expect(
     execute.query({ args: { value: "4" }, name: "transformed" }, identity).value
@@ -59,19 +67,23 @@ it("validates and transforms fluent inputs and outputs through the real executio
     inferred: "no schema needed",
   });
   expect(
-    execute.query(invocationSchema.parse({ name: "empty" }), identity).value
+    execute.query(v.parse(invocationSchema, { name: "empty" }), identity).value
   ).toEqual({
     inferred: "no schema needed",
   });
+
   for (const args of [{}, null, "unexpected"]) {
     expect(() => execute.query({ args, name: "empty" }, identity)).toThrow(
       "Invalid function arguments"
     );
   }
-  expect(invocationSchema.parse({ args: undefined, name: "empty" })).toEqual({
-    args: undefined,
-    name: "empty",
-  });
+
+  expect(v.parse(invocationSchema, { args: undefined, name: "empty" })).toEqual(
+    {
+      args: undefined,
+      name: "empty",
+    }
+  );
   expect(
     execute.query({ args: null, name: "nullable" }, identity).value
   ).toBeNull();
@@ -84,23 +96,32 @@ it("keeps builders immutable and provides typed action calls using registered fu
   const functions = {
     read: fn.query.output(z.string().transform(Number)).handler(() => "4"),
   };
+
   const base = fn.action.functions(functions).output(z.number());
+
   const save = base
     .input(z.number())
     .handler(async ({ input, queries, signal }) => {
       expect(signal.aborted).toBe(false);
+
       return input + (await queries.read());
     });
+
   const other = base.input(z.string()).handler(({ input }) => input.length);
   expect(save.args.safeParse(2).success).toBe(true);
   expect(save.args.safeParse("2").success).toBe(false);
   expect(other.args.safeParse("2").success).toBe(true);
 
   const query = vi.fn<() => Promise<number>>().mockResolvedValue(4);
-  const run = actionRunner(defineServer({ ...functions, save }), {
-    mutate: vi.fn(),
-    query,
-  });
+
+  const run = actionRunner(
+    { functions: defineRouter({ ...functions, save }) },
+    {
+      mutate: vi.fn(),
+      query,
+    }
+  );
+
   expect(await run({ args: 2, name: "save" }, identity)).toBe(6);
   expect(query).toHaveBeenCalledWith({ args: undefined, name: "read" });
 });
@@ -109,34 +130,44 @@ it("uses undefined input and infers returns for mutations and async actions with
   const functions = {
     read: fn.query.handler(({ input }) => {
       expect(input).toBeUndefined();
+
       return [1, 2];
     }),
     save: fn.mutation.handler(({ input }) => {
       expect(input).toBeUndefined();
+
       return { saved: true };
     }),
   };
+
   const perform = fn.action
     .functions(functions)
     .handler(async ({ input, queries, mutations }) => {
       expect(input).toBeUndefined();
+
       return { rows: await queries.read(), saved: await mutations.save() };
     });
-  const app = defineServer({ ...functions, perform });
+
+  const app = { functions: defineRouter({ ...functions, perform }) };
   expect(functions.read).not.toHaveProperty("result");
   expect(functions.save).not.toHaveProperty("result");
   expect(perform).not.toHaveProperty("result");
   const execute = createExecution(app, persistence);
+
   const query = vi.fn(
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    async (input: Parameters<typeof execute.query>[0]) =>
-      execute.query(input, identity).value
+    asyncFixture(
+      (input: Parameters<typeof execute.query>[0]) =>
+        execute.query(input, identity).value
+    )
   );
+
   const mutate = vi.fn(
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    async (input: Parameters<typeof execute.mutate>[0]) =>
-      execute.mutate(input, identity).value
+    asyncFixture(
+      (input: Parameters<typeof execute.mutate>[0]) =>
+        execute.mutate(input, identity).value
+    )
   );
+
   const run = actionRunner(app, { mutate, query });
   expect(await run({ name: "perform" }, identity)).toEqual({
     rows: [1, 2],
@@ -155,16 +186,19 @@ it("uses undefined input and infers returns for mutations and async actions with
 });
 
 it("validates optional output schemas for synchronous and async actions", async () => {
-  const app = defineServer({
-    invalid: fn.action.output(z.number().min(10)).handler(() => 1),
-    invalidAsync: fn.action
-      .output(z.number().min(10))
-      .handler(vi.fn<() => Promise<number>>().mockResolvedValue(1)),
-    transformed: fn.action
-      .output(z.string().transform(Number))
-      .handler(vi.fn<() => Promise<string>>().mockResolvedValue("4")),
-    valid: fn.action.output(z.number().min(10)).handler(() => 10),
-  });
+  const app = {
+    functions: defineRouter({
+      invalid: fn.action.output(z.number().min(10)).handler(() => 1),
+      invalidAsync: fn.action
+        .output(z.number().min(10))
+        .handler(vi.fn<() => Promise<number>>().mockResolvedValue(1)),
+      transformed: fn.action
+        .output(z.string().transform(Number))
+        .handler(vi.fn<() => Promise<string>>().mockResolvedValue("4")),
+      valid: fn.action.output(z.number().min(10)).handler(() => 10),
+    }),
+  };
+
   const run = actionRunner(app, { mutate: vi.fn(), query: vi.fn() });
   expect(await run({ name: "valid" }, identity)).toBe(10);
   expect(await run({ name: "transformed" }, identity)).toBe(4);

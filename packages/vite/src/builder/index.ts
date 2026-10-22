@@ -1,10 +1,19 @@
 export {
-  createTailorKitUploadManifest,
-  tailorkitUploadManifestSchema,
-  type TailorKitUploadManifest,
+  createPatchsmithUploadManifest,
+  patchsmithUploadManifestSchema,
+  type PatchsmithUploadManifest,
 } from "./upload-manifest";
+
 export {
   generateAppMigrations,
   type GenerateAppMigrationsOptions,
 } from "./generate-migrations";
+
 export { getClientSourceFiles } from "./file-routes";
+
+export {
+  discoverFunctionFiles,
+  generateFunctionTypes,
+  renderFunctionTypes,
+  type FunctionFile,
+} from "./file-functions";

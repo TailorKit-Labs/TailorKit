@@ -1,4 +1,4 @@
-import type { RemoteProps, RemoteNode } from "@tailorkit/sandbox/protocol";
+import type { RemoteProps, RemoteNode } from "@patchsmith/sandbox/protocol";
 import { describe, expect, it, vi } from "vite-plus/test";
 
 import { NodeStore } from "./node-store";
@@ -22,7 +22,7 @@ const elementWithCallback = (event: string, inputCount = 1): RemoteNode => ({
   id: "n",
   kind: "element",
   props: {},
-  type: "tailorkit-button",
+  type: "patchsmith-button",
 });
 
 describe("NodeStore", () => {
@@ -45,9 +45,11 @@ describe("NodeStore", () => {
     const store = new NodeStore();
     store.setSnapshot(elemNode("root", "div", {}, [textNode("child", "old")]));
     const values: (RemoteNode | null)[] = [];
+
     const stop = store.subscribe("child", () => {
       values.push(store.getNode("child"));
     });
+
     store.setSnapshot(elemNode("root", "div"));
     expect(values).toEqual([null]);
     store.setSnapshot(elemNode("root", "div", {}, [textNode("child", "new")]));
@@ -58,10 +60,12 @@ describe("NodeStore", () => {
   it("clears nodes and root atomically while keeping subscriptions usable", () => {
     const store = new NodeStore();
     store.setSnapshot(textNode("root", "old"));
+
     const snapshot = () => ({
       node: store.getNode("root"),
       rootId: store.getRootId(),
     });
+
     const nodeListener = vi.fn(snapshot);
     const rootListener = vi.fn(snapshot);
 
@@ -72,6 +76,7 @@ describe("NodeStore", () => {
     const stopRoot = store.subscribeRoot(() => {
       rootListener();
     });
+
     store.clear();
     expect(nodeListener).toHaveBeenCalledOnce();
     expect(rootListener).toHaveBeenCalledOnce();
@@ -108,9 +113,11 @@ describe("NodeStore", () => {
 
     it("flattens nested children", () => {
       const store = new NodeStore();
+
       const tree = elemNode("root", "div", {}, [
         elemNode("child", "span", {}, [textNode("text", "hi")]),
       ]);
+
       store.setSnapshot(tree);
 
       expect(store.getNode("text")).toMatchObject({ text: "hi" });
@@ -138,6 +145,7 @@ describe("NodeStore", () => {
 
       const listener =
         vi.fn<NonNullable<Parameters<typeof store.subscribe>[1]>>();
+
       store.subscribe("n1", listener);
 
       store.setSnapshot(textNode("n1", "updated"));
@@ -150,6 +158,7 @@ describe("NodeStore", () => {
 
       const listener =
         vi.fn<NonNullable<Parameters<typeof store.subscribe>[1]>>();
+
       store.subscribe("n1", listener);
 
       store.setSnapshot(textNode("n1", "same"));
@@ -186,6 +195,7 @@ describe("NodeStore", () => {
 
       const rootListener =
         vi.fn<NonNullable<Parameters<typeof store.subscribe>[1]>>();
+
       store.subscribe("root", rootListener);
 
       store.setSnapshot(
@@ -215,6 +225,7 @@ describe("NodeStore", () => {
 
       const listener =
         vi.fn<NonNullable<Parameters<typeof store.subscribe>[1]>>();
+
       const unsub = store.subscribe("n1", listener);
       unsub();
 
@@ -230,6 +241,7 @@ describe("NodeStore", () => {
 
       const listener =
         vi.fn<NonNullable<Parameters<typeof store.subscribeRoot>[0]>>();
+
       store.subscribeRoot(listener);
 
       store.setSnapshot(textNode("root2", "b"));
@@ -242,6 +254,7 @@ describe("NodeStore", () => {
 
       const listener =
         vi.fn<NonNullable<Parameters<typeof store.subscribeRoot>[0]>>();
+
       store.subscribeRoot(listener);
 
       store.setSnapshot(textNode("root", "b"));
@@ -254,6 +267,7 @@ describe("NodeStore", () => {
 
       const listener =
         vi.fn<NonNullable<Parameters<typeof store.subscribeRoot>[0]>>();
+
       const unsub = store.subscribeRoot(listener);
       unsub();
 
@@ -269,6 +283,7 @@ describe("NodeStore", () => {
 
       const listener =
         vi.fn<NonNullable<Parameters<typeof store.subscribe>[1]>>();
+
       store.subscribe("n", listener);
 
       store.setSnapshot(elemNode("n", "div", { color: "blue" }));
@@ -281,6 +296,7 @@ describe("NodeStore", () => {
 
       const listener =
         vi.fn<NonNullable<Parameters<typeof store.subscribe>[1]>>();
+
       store.subscribe("n", listener);
 
       store.setSnapshot(elemNode("n", "span"));
@@ -290,18 +306,20 @@ describe("NodeStore", () => {
     it("detects callback binding changes", () => {
       const store = new NodeStore();
 
-      store.setSnapshot(elementWithCallback("tailorkitcallbackonselect"));
+      store.setSnapshot(elementWithCallback("patchsmithcallbackonselect"));
+
       const listener =
         vi.fn<NonNullable<Parameters<typeof store.subscribe>[1]>>();
+
       store.subscribe("n", listener);
 
-      store.setSnapshot(elementWithCallback("tailorkitcallbackonchange"));
+      store.setSnapshot(elementWithCallback("patchsmithcallbackonchange"));
       expect(listener).toHaveBeenCalledTimes(1);
     });
 
     it("updates callback bindings when only the input count changes", () => {
       const store = new NodeStore();
-      const event = "tailorkitcallbackonselect";
+      const event = "patchsmithcallbackonselect";
       store.setSnapshot(elementWithCallback(event, 1));
       const previous = store.getNode("n");
       const listener = vi.fn<Parameters<typeof store.subscribe>[1]>();

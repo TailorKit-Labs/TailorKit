@@ -1,4 +1,13 @@
 export { tool, flattenTools, validateToolValue } from "./tools";
+
+export { experimental_canvas } from "./canvas";
+
+export type {
+  experimental_CanvasInputPolicy,
+  experimental_CanvasPolicy,
+  experimental_CanvasProps,
+} from "./canvas";
+
 export type {
   ContractTool,
   ContractTools,
@@ -9,6 +18,7 @@ export type {
   InferToolInput,
   InferToolOutput,
 } from "./tools";
+
 export {
   type CallbackMap,
   type Callback,
@@ -17,6 +27,7 @@ export {
   type InferCallback,
   type InferCallbacks,
 } from "./callbacks";
+
 export {
   type Component,
   type ComponentDefinitions,
@@ -27,6 +38,7 @@ export {
   type NoComponentFieldCallbackConflicts,
   type ResolvedComponentMetadata,
 } from "./components";
+
 export {
   type ContextDefinitions,
   type View,
@@ -37,6 +49,7 @@ export {
   type SlotDefinitions,
   type ResolvedViewMetadata,
 } from "./views";
+
 export {
   type EmptyDefinitionMap,
   type Schema,
@@ -44,11 +57,15 @@ export {
   type SchemaSerializerOptions,
   jsonSchemaSerializer,
 } from "./shared";
+
 export {
-  createTailorKitSchema,
-  type TailorKit,
-  type TailorKitSchema,
+  createPatchsmithSchema,
+  type Patchsmith,
+  type PatchsmithSchema,
 } from "./schema";
-export type { TailorKitTheme } from "#primitives/theme";
+
+export type { PatchsmithTheme } from "#primitives/theme";
+
 export { defineContract } from "./contract";
-export type { TailorKitContract } from "./contract";
+
+export type { PatchsmithContract } from "./contract";

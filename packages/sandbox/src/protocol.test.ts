@@ -4,8 +4,20 @@ import { describe, expect, it } from "vite-plus/test";
 import { HostToIframePayload, IframeToHostPayload } from "./protocol.js";
 import type { RemoteNode, RemotePatch } from "./protocol.js";
 
+const identity = {
+  appId: "app",
+  deploymentId: "deployment",
+  expiresAt: Date.now() + 300_000,
+  installationId: "app",
+  projectId: "project",
+  scope: { name: "workspace", value: { id: "workspace" } },
+  subjectId: "principal",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
+};
+
 const text = { id: "text", kind: "text", text: "Hello" } satisfies RemoteNode;
 const callback = { callback: "onClick", event: "click", inputCount: 1 };
+
 const tree = {
   children: [
     {
@@ -20,6 +32,7 @@ const tree = {
   id: "root",
   kind: "fragment",
 } satisfies RemoteNode;
+
 const patches = [
   { beforeId: "text", node: tree, op: "insert", parentId: "root" },
   { nodeId: "text", op: "remove" },
@@ -30,12 +43,32 @@ const patches = [
 ] satisfies RemotePatch[];
 
 describe("sandbox protocol", () => {
+  it.each([undefined, null, "", 123, "x".repeat(257)])(
+    "rejects backend sessions without a valid authenticated subject: %j",
+    (subjectId) => {
+      expect(
+        v.safeParse(HostToIframePayload, {
+          data: {
+            id: "session",
+            session: {
+              expiresAt: 123,
+              identity: { ...identity, subjectId },
+              token: "jwt",
+              url: "https://runtime.test/rpc",
+            },
+          },
+          type: "backendSessionResult",
+        }).success
+      ).toBe(false);
+    }
+  );
   it.each([
     {
       data: {
         id: "session",
         session: {
           expiresAt: 123,
+          identity,
           token: "jwt",
           url: "https://runtime.test/rpc",
         },
@@ -61,11 +94,15 @@ describe("sandbox protocol", () => {
       data: {
         args: [undefined, null, { custom: true }],
         event: "click",
+        id: "callback",
         nodeId: "button",
       },
       type: "dispatchCallback",
     },
-    { data: { event: "click", nodeId: "button" }, type: "dispatchCallback" },
+    {
+      data: { event: "click", id: "callback", nodeId: "button" },
+      type: "dispatchCallback",
+    },
     { data: { timestamp: 1.5 }, type: "animationFrame" },
   ] satisfies HostToIframePayload[])(
     "accepts host message $type",
@@ -75,8 +112,14 @@ describe("sandbox protocol", () => {
   );
 
   it.each([
+    { data: { id: "canvas", name: "plot" }, type: "canvasRequest" },
     { data: { id: "session", refresh: true }, type: "backendSessionRequest" },
     { type: "ready" },
+    {
+      data: { id: "callback", output: { saved: true } },
+      type: "callbackResult",
+    },
+    { data: { error: "Save failed", id: "callback" }, type: "callbackResult" },
     { data: { revision: 1, tree }, type: "snapshot" },
     { data: { patches, revision: 2 }, type: "patches" },
     { data: { message: "Failure" }, type: "error" },
@@ -90,6 +133,12 @@ describe("sandbox protocol", () => {
 
   it.each([
     { extra: true, type: "ready" },
+    { data: { id: "canvas", name: "" }, type: "canvasRequest" },
+    { data: { id: "canvas", name: "x".repeat(129) }, type: "canvasRequest" },
+    {
+      data: { appId: "another", id: "canvas", name: "plot" },
+      type: "canvasRequest",
+    },
     {
       data: { appId: "forged", id: "session", refresh: true },
       type: "backendSessionRequest",
@@ -204,6 +253,7 @@ describe("sandbox protocol", () => {
             id: "session",
             session: {
               expiresAt: value,
+              identity,
               token: "jwt",
               url: "https://runtime.test",
             },
@@ -253,13 +303,16 @@ describe("sandbox protocol", () => {
   it("enforces session token limits and strict session fields", () => {
     const session = {
       expiresAt: 123,
+      identity,
       token: "t".repeat(8192),
       url: "https://runtime.test",
     };
+
     const payload = {
       data: { id: "s".repeat(128), session },
       type: "backendSessionResult",
     };
+
     expect(v.safeParse(HostToIframePayload, payload).success).toBe(true);
     expect(
       v.safeParse(HostToIframePayload, {
@@ -294,9 +347,13 @@ describe("sandbox protocol", () => {
     "  https://run\ntime.test/rpc  ",
   ])("preserves absolute URL validation: %s", (url) => {
     const payload = {
-      data: { id: "session", session: { expiresAt: 123, token: "jwt", url } },
+      data: {
+        id: "session",
+        session: { expiresAt: 123, identity, token: "jwt", url },
+      },
       type: "backendSessionResult",
     };
+
     expect(v.parse(HostToIframePayload, payload)).toEqual({
       ...payload,
       data: {
@@ -316,7 +373,12 @@ describe("sandbox protocol", () => {
         v.safeParse(HostToIframePayload, {
           data: {
             id: "session",
-            session: { expiresAt: 123, token: "jwt", url },
+            session: {
+              expiresAt: 123,
+              identity,
+              token: "jwt",
+              url,
+            },
           },
           type: "backendSessionResult",
         }).success

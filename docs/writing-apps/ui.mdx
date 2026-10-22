@@ -9,7 +9,7 @@ An app supplies UI for the [slots](/concepts/slots) in its contract. A view defi
 These examples assume your app is configured to use that contract. Generate its bindings after adding or changing capabilities:
 
 ```sh
-npx tailorkit generate
+npx patchsmith generate
 ```
 
 ## Write a view
@@ -17,8 +17,8 @@ npx tailorkit generate
 Put view files in `src/slots/<slot>/` with a `.view.tsx` suffix. This view supplies default UI for the `panel` slot:
 
 ```tsx title="src/slots/panel/index.view.tsx"
-import "../../tailorkit.gen";
-import { defineView } from "tailorkit/client";
+import "../../patchsmith.gen";
+import { defineView } from "patchsmith/client";
 
 const view = defineView({
   slot: "panel",
@@ -40,8 +40,8 @@ The folder identifies the slot. The filename identifies the context: `index.view
 Add another view for `/members/detail`. With `Button` and `showToast` exposed in the contract, generated imports let you use them together:
 
 ```tsx title="src/slots/panel/members.detail.view.tsx"
-import { defineView } from "tailorkit/client";
-import { Button, tools } from "../../tailorkit.gen";
+import { defineView } from "patchsmith/client";
+import { Button, tools } from "../../patchsmith.gen";
 
 const view = defineView({
   slot: "panel",
@@ -65,15 +65,15 @@ function MemberDetails() {
 export default view;
 ```
 
-On a member's page, TailorKit selects this view and supplies the member context. Elsewhere, the panel can fall back to the overview. The button's click callback calls a client tool that shows a toast.
+On a member's page, Patchsmith selects this view and supplies the member context. Elsewhere, the panel can fall back to the overview. The button's click callback calls a client tool that shows a toast.
 
 ## Supply several instances
 
 For a `tile` slot declared with `multiple: true`, return an entry for each dashboard tile:
 
 ```tsx title="src/slots/tile/index.view.tsx"
-import "../../tailorkit.gen";
-import { defineView } from "tailorkit/client";
+import "../../patchsmith.gen";
+import { defineView } from "patchsmith/client";
 import { z } from "zod";
 
 const view = defineView({
@@ -111,7 +111,7 @@ For a repeatable page slot, use the same pattern with keys such as `reports` and
 
 ## SDK reference
 
-Import `defineView` from `tailorkit/client`. The build discovers `.view.tsx` files and extracts instance resolvers into the server bundle.
+Import `defineView` from `patchsmith/client`. The build discovers `.view.tsx` files and extracts instance resolvers into the server bundle.
 
 | Option | Meaning |
 | --- | --- |

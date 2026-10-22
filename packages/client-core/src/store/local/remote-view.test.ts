@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
-import { createRemoteUiStore } from "@tailorkit/sandbox/host";
+import { createRemoteUiStore } from "@patchsmith/sandbox/host";
 import type {
   IframeUiHost,
   IframeUiHostOptions,
-} from "@tailorkit/sandbox/host";
-import type { RemoteElementNode } from "@tailorkit/sandbox/protocol";
+} from "@patchsmith/sandbox/host";
+import type { RemoteElementNode } from "@patchsmith/sandbox/protocol";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
 import { createRemoteElementProps, createRemoteViewStore } from "./remote-view";
@@ -13,6 +13,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -27,7 +28,8 @@ const tree: RemoteElementNode = {
 
 const isCallback = <TValue>(
   value: TValue
-): value is TValue & ((...args: unknown[]) => void) =>
+): value is TValue &
+  ((...args: unknown[]) => ReturnType<IframeUiHost["dispatch"]>) =>
   typeof value === "function";
 
 const setup = () => {
@@ -36,34 +38,46 @@ const setup = () => {
     options: IframeUiHostOptions;
     listeners: (() => void)[];
   }[] = [];
+
   const createHost = vi.fn(
     (_url: string | URL, options: IframeUiHostOptions = {}) => {
       const source = createRemoteUiStore();
       const listeners: (() => void)[] = [];
+
       const host: IframeUiHost = {
         ...source,
 
         destroy: vi.fn<IframeUiHost["destroy"]>(),
 
         dispatch: vi.fn<IframeUiHost["dispatch"]>(),
+
+        experimental_registerCanvas:
+          vi.fn<IframeUiHost["experimental_registerCanvas"]>(),
+
         iframe: document.createElement("iframe"),
 
         mount: vi.fn<IframeUiHost["mount"]>(),
 
         setProps: vi.fn<IframeUiHost["setProps"]>(),
+
         subscribe: vi.fn(
           (listener: Parameters<IframeUiHost["subscribe"]>[0]) => {
             listeners.push(listener);
+
             return source.subscribe(listener);
           }
         ),
       };
+
       records.push({ host, listeners, options });
+
       return host;
     }
   );
+
   return { createHost, records };
 };
+
 afterEach(() => vi.restoreAllMocks());
 
 it("publishes host status and native node selectors together without a rendering framework", () => {
@@ -75,6 +89,7 @@ it("publishes host status and native node selectors together without a rendering
     status: "starting",
   });
   const stop = store.mount({ appUrl: "https://host.test/app.js" });
+
   const listener = vi.fn(() => ({
     root: store.nodes.root.get(),
     status: store.state.get().status,
@@ -83,6 +98,7 @@ it("publishes host status and native node selectors together without a rendering
   const stopRoot = store.nodes.root.listen(() => {
     listener();
   });
+
   requireValue(records[0]).host.setSnapshot(tree, 1);
   expect(listener).toHaveLastReturnedWith({ root: "root", status: "ready" });
   expect(store.nodes.selectNode("root").get()).toEqual(tree);
@@ -106,10 +122,12 @@ it("updates only changed component selectors without recreating the host", () =>
   const { createHost, records } = setup();
   const first = firstImplementation;
   const second = secondImplementation;
+
   const store = createRemoteViewStore(
     { components: { Button: first } },
     createHost
   );
+
   const stop = store.mount({ appUrl: "https://host.test/app.js" });
   requireValue(records[0]).host.setSnapshot(tree, 1);
   const snapshot = store.nodes.state.get();
@@ -127,18 +145,18 @@ it("updates only changed component selectors without recreating the host", () =>
   stop();
 });
 
-it("retains the latest props and shares callback payload construction", () => {
+it("retains the latest props and shares callback payload construction", async () => {
   const { createHost, records } = setup();
   const store = createRemoteViewStore({ props: { value: "old" } }, createHost);
   const latest = { value: "latest" };
   store.setProps(latest);
+
   const stop = store.mount({
     appUrl: "https://host.test/app.js",
-    sourceText: "source",
   });
+
   expect(requireValue(records[0]).options).toMatchObject({
     props: latest,
-    sourceText: "source",
   });
   store.setProps(undefined);
   expect(requireValue(records[0]).host.setProps).toHaveBeenCalledWith(
@@ -146,43 +164,63 @@ it("retains the latest props and shares callback payload construction", () => {
   );
   const props = createRemoteElementProps(tree, store.dispatch);
   const { onSelect } = props;
+
   if (!isCallback(onSelect)) {
     throw new Error("Expected an onSelect callback.");
   }
-  onSelect("selected value", {
+
+  await onSelect("selected value", {
     synthetic: "event",
   });
+
+  const [callback] = vi.mocked(requireValue(records[0]).host.dispatch).mock
+    .calls;
+
+  const callbackId =
+    callback?.[0].type === "dispatchCallback" ? callback[0].data.id : undefined;
+
+  expect(callbackId).toEqual(expect.any(String));
   expect(
     requireValue(records[0]).host.dispatch
   ).toHaveBeenCalledExactlyOnceWith({
-    data: { args: ["selected value"], event: "selected", nodeId: "root" },
+    data: {
+      args: ["selected value"],
+      event: "selected",
+      id: callbackId,
+      nodeId: "root",
+    },
     type: "dispatchCallback",
   });
   expect(tree.props).toEqual({ label: "Button" });
   stop();
-  onSelect("after stop");
+  await expect(onSelect("after stop")).rejects.toThrow("not mounted");
   expect(requireValue(records[0]).host.dispatch).toHaveBeenCalledOnce();
 });
 
-it("isolates dispatch, component registries, and trees between remote views", () => {
+it("isolates dispatch, component registries, and trees between remote views", async () => {
   const { createHost, records } = setup();
+
   const first = createRemoteViewStore(
     { components: { Button: "first" } },
     createHost
   );
+
   const second = createRemoteViewStore(
     { components: { Button: "second" } },
     createHost
   );
+
   const stopFirst = first.mount({ appUrl: "https://host.test/first.js" });
   const stopSecond = second.mount({ appUrl: "https://host.test/second.js" });
   requireValue(records[0]).host.setSnapshot(tree, 1);
   expect(second.nodes.root.get()).toBeNull();
   const operation = createRemoteElementProps(tree, second.dispatch).onSelect;
+
   if (!isCallback(operation)) {
     throw new Error("Expected an onSelect callback.");
   }
-  operation("second");
+
+  await operation("second");
   expect(requireValue(records[0]).host.dispatch).not.toHaveBeenCalled();
   expect(requireValue(records[1]).host.dispatch).toHaveBeenCalledOnce();
   expect(first.components.get()).toEqual({ Button: "first" });
@@ -221,27 +259,35 @@ it("reports startup failures, releases partial hosts, and recovers on the next m
   const failure = new Error("Failed to start");
   createHost.mockImplementationOnce((_url, options = {}) => {
     const source = createRemoteUiStore();
+
     const host: IframeUiHost = {
       ...source,
 
       destroy: vi.fn<IframeUiHost["destroy"]>(),
 
       dispatch: vi.fn<IframeUiHost["dispatch"]>(),
+
+      experimental_registerCanvas:
+        vi.fn<IframeUiHost["experimental_registerCanvas"]>(),
+
       iframe: document.createElement("iframe"),
+
       mount: () => {
         throw failure;
       },
 
       setProps: vi.fn<IframeUiHost["setProps"]>(),
     };
+
     records.push({ host, listeners: [], options });
+
     return host;
   });
   const store = createRemoteViewStore({}, createHost);
   store.mount({ appUrl: "https://host.test/first.js" });
   expect(store.state.get()).toMatchObject({ error: failure, status: "error" });
   expect(err2).toHaveBeenCalledExactlyOnceWith(
-    "TailorKit remote app failed",
+    "Patchsmith remote app failed",
     failure
   );
   expect(requireValue(records[0]).host.destroy).toHaveBeenCalledOnce();
@@ -249,4 +295,47 @@ it("reports startup failures, releases partial hosts, and recovers on the next m
   requireValue(records[1]).host.setSnapshot(tree, 1);
   expect(store.state.get()).toMatchObject({ error: null, status: "ready" });
   stop();
+});
+
+it("returns callback results through the remote view and rejects calls after unmount", async () => {
+  const { createHost, records } = setup();
+  const store = createRemoteViewStore({}, createHost);
+  const stop = store.mount({ appUrl: "https://host.test/app.js" });
+  const { host } = requireValue(records[0]);
+  vi.mocked(host.dispatch).mockReturnValue(Promise.resolve({ saved: true }));
+
+  const props = createRemoteElementProps(
+    {
+      ...tree,
+      callbacks: [{ callback: "onSave", event: "save", inputCount: 1 }],
+    },
+    store.dispatch
+  );
+
+  const { onSave: operation } = props;
+
+  if (!isCallback(operation)) {
+    throw new Error("Expected onSave callback");
+  }
+
+  await expect(operation("value", "not forwarded")).resolves.toEqual({
+    saved: true,
+  });
+  const [callback] = vi.mocked(host.dispatch).mock.calls;
+
+  const callbackId =
+    callback?.[0].type === "dispatchCallback" ? callback[0].data.id : undefined;
+
+  expect(callbackId).toEqual(expect.any(String));
+  expect(host.dispatch).toHaveBeenCalledWith({
+    data: {
+      args: ["value"],
+      event: "save",
+      id: callbackId,
+      nodeId: tree.id,
+    },
+    type: "dispatchCallback",
+  });
+  stop();
+  await expect(operation("value")).rejects.toThrow("not mounted");
 });

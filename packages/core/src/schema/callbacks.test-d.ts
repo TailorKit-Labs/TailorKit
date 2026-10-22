@@ -10,18 +10,23 @@ interface SaveCallback {
 }
 
 interface LoadCallback {
-  async: true;
   output: z.ZodObject<{ ready: z.ZodLiteral<true> }>;
 }
 
 expectTypeOf<InferCallback<SaveCallback>>().toEqualTypeOf<
-  (input: { title: string; version: number }) => { saved: boolean }
+  (input: {
+    title: string;
+    version: number;
+  }) => { saved: boolean } | Promise<{ saved: boolean }>
 >();
 
 expectTypeOf<InferCallback<LoadCallback>>().toEqualTypeOf<
-  () => Promise<{ ready: true }>
+  () => { ready: true } | Promise<{ ready: true }>
 >();
-expectTypeOf<InferCallback<EmptyDefinitionMap>>().toEqualTypeOf<() => void>();
+
+expectTypeOf<InferCallback<EmptyDefinitionMap>>().toEqualTypeOf<
+  () => void | Promise<void>
+>();
 
 expectTypeOf<
   InferCallbacks<{
@@ -30,6 +35,20 @@ expectTypeOf<
     omitted: undefined;
   }>
 >().toEqualTypeOf<{
-  onClose: () => void;
+  onClose: () => void | Promise<void>;
+  onLoad: () => { ready: true } | Promise<{ ready: true }>;
+}>();
+
+expectTypeOf<InferCallbacks<{ onSave: SaveCallback }, true>>().toEqualTypeOf<{
+  onSave: (input: {
+    title: string;
+    version: number;
+  }) => Promise<{ saved: boolean }>;
+}>();
+
+expectTypeOf<
+  InferCallbacks<{ onClose: EmptyDefinitionMap; onLoad: LoadCallback }, true>
+>().toEqualTypeOf<{
+  onClose: () => Promise<void>;
   onLoad: () => Promise<{ ready: true }>;
 }>();

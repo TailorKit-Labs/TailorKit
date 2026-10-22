@@ -1,4 +1,4 @@
-import type { RemoteNode } from "@tailorkit/sandbox/protocol";
+import type { RemoteNode } from "@patchsmith/sandbox/protocol";
 import { atom, computed } from "nanostores";
 
 type Listener = () => void;
@@ -10,24 +10,30 @@ const nodeSignature = (node: RemoteNode): string => {
   if (node.kind === "text") {
     return `text:${node.text}`;
   }
+
   if (node.kind === "fragment") {
     return `frag:${childIds(node.children)}`;
   }
+
   // For elements: type + child IDs + serialized props + callback bindings
   const propsStr = JSON.stringify(node.props);
+
   const callbacksStr = (node.callbacks ?? [])
     .map(
       (binding) => `${binding.callback}:${binding.event}:${binding.inputCount}`
     )
     .join(",");
+
   return `elem:${node.type}|${childIds(node.children)}|${propsStr}|${callbacksStr}`;
 };
 
 const flattenTree = (node: RemoteNode, out: Map<string, RemoteNode>): void => {
   out.set(node.id, node);
+
   if (node.kind === "text") {
     return;
   }
+
   for (const child of node.children) {
     flattenTree(child, out);
   }
@@ -52,12 +58,14 @@ export class NodeStore {
     const previous = this.state.get();
     const next = new Map<string, RemoteNode>();
     flattenTree(tree, next);
+
     let changed =
       previous.rootId !== tree.id || previous.nodes.size !== next.size;
 
     for (const [id, node] of next) {
       const signature = nodeSignature(node);
       const previousNode = previous.nodes.get(id);
+
       if (previousNode && this.signatures.get(id) === signature) {
         // Keep unchanged node snapshots stable for framework selectors.
         next.set(id, previousNode);
@@ -92,6 +100,7 @@ export class NodeStore {
 
   subscribe(id: string, listener: Listener): () => void {
     const node = this.selectNode(id);
+
     return node.listen(listener);
   }
 

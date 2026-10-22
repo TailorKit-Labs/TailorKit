@@ -1,13 +1,14 @@
-import { createIframeUiHost } from "@tailorkit/sandbox/host";
+import { createIframeUiHost } from "@patchsmith/sandbox/host";
 import type {
   IframeUiHost,
   IframeUiHostOptions,
-} from "@tailorkit/sandbox/host";
+  experimental_CanvasTargetOptions,
+} from "@patchsmith/sandbox/host";
 import type {
   RemoteProps,
   HostToIframePayload,
   RemoteElementNode,
-} from "@tailorkit/sandbox/protocol";
+} from "@patchsmith/sandbox/protocol";
 import { atom, batch, computed } from "nanostores";
 
 import { NodeStore } from "./node-store";
@@ -47,11 +48,13 @@ export const createRemoteViewStore = (
 ) => {
   const nodes = new NodeStore();
   const components = atom(options.components ?? {});
+
   const state = atom<RemoteViewSnapshot>({
     error: null,
     generation: 0,
     status: "starting",
   });
+
   let { props } = options;
   let current: RunningView | null = null;
 
@@ -59,10 +62,13 @@ export const createRemoteViewStore = (
     if (run.stopped) {
       return;
     }
+
     run.stopped = true;
+
     if (current === run) {
       current = null;
     }
+
     run.unsubscribe?.();
     run.host?.destroy();
   };
@@ -84,10 +90,35 @@ export const createRemoteViewStore = (
       if (current) {
         stop(current);
       }
+
       reset();
     },
-    dispatch: (payload: HostToIframePayload) => {
-      current?.host?.dispatch(payload);
+    dispatch: async (
+      payload: HostToIframePayload
+    ): ReturnType<IframeUiHost["dispatch"]> => {
+      if (!current?.host) {
+        throw new Error("Patchsmith remote view is not mounted.");
+      }
+
+      return await current.host.dispatch(payload);
+    },
+    experimental_registerCanvas: (
+      nodeId: string,
+      name: string,
+      canvas: HTMLCanvasElement,
+      policy: experimental_CanvasTargetOptions
+    ) => {
+      const node = nodes.selectNode(nodeId).get();
+
+      if (
+        !current?.host ||
+        node?.kind !== "element" ||
+        node.props.surface !== name
+      ) {
+        throw new Error("Canvas must belong to a mounted remote component.");
+      }
+
+      return current.host.experimental_registerCanvas(name, canvas, policy);
     },
     mount: ({
       appUrl,
@@ -96,40 +127,50 @@ export const createRemoteViewStore = (
       if (current) {
         stop(current);
       }
+
       const generation = state.get().generation + 1;
       batch(() => {
         nodes.clear();
         state.set({ error: null, generation, status: "starting" });
       });
+
       const run: RunningView = {
         host: null,
         stopped: false,
         unsubscribe: null,
       };
+
       current = run;
+
       const reportError = (error: Error) => {
         if (current !== run || run.stopped) {
           return;
         }
-        console.error("TailorKit remote app failed", error);
+
+        console.error("Patchsmith remote app failed", error);
         state.set({ error, generation, status: "error" });
       };
+
       try {
         const host = createHost(appUrl, {
           ...hostOptions,
           onError: reportError,
           props,
         });
+
         run.host = host;
         run.unsubscribe = host.subscribe(() => {
           if (current !== run || run.stopped) {
             return;
           }
+
           const tree = host.getSnapshot();
+
           if (tree !== null) {
             batch(() => {
               nodes.setSnapshot(tree);
               const previous = state.get();
+
               if (previous.status !== "ready") {
                 state.set({ error: null, generation, status: "ready" });
               }
@@ -141,10 +182,12 @@ export const createRemoteViewStore = (
         reportError(error instanceof Error ? error : new Error(String(error)));
         stop(run);
       }
+
       return () => {
         if (current !== run) {
           return;
         }
+
         stop(run);
         reset();
       };
@@ -171,17 +214,19 @@ export const createRemoteElementProps = (
   dispatch: RemoteViewStore["dispatch"]
 ): RemoteProps => {
   const props: RemoteProps = { ...node.props };
+
   for (const binding of node.callbacks ?? []) {
-    props[binding.callback] = (...args: unknown[]) => {
-      dispatch({
+    props[binding.callback] = async (...args: unknown[]) =>
+      await dispatch({
         data: {
           args: args.slice(0, binding.inputCount),
           event: binding.event,
+          id: crypto.randomUUID(),
           nodeId: node.id,
         },
         type: "dispatchCallback",
       });
-    };
   }
+
   return props;
 };

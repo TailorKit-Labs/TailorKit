@@ -4,12 +4,14 @@ import {
   agentCreateAppSchema,
   agentChunkSchema,
   agentRunCompleteChunkSchema,
-} from "@tailorkit/client-platform/agent";
+} from "@patchsmith/client-platform/agent";
 import {
   appAgentChat,
   appAgentCreate,
-} from "@tailorkit/client-platform/client";
+} from "@patchsmith/client-platform/client";
+import * as v from "valibot";
 
+import { platformAppSelector } from "#server/platform-app-selector";
 import {
   getCliDeployToken,
   o,
@@ -23,15 +25,28 @@ export const appAgentRouter = {
     .input(agentChatSchema)
     .output(eventIterator(agentChunkSchema))
     .handler(async function* chat({ context, input, signal: clientSignal }) {
+      const { appId, ...turn } = input;
       const controller = new AbortController();
+
       const signal = clientSignal
         ? AbortSignal.any([clientSignal, controller.signal])
         : controller.signal;
+
       try {
         let streamFailed = false;
         let done = false;
+
+        const platformTurn =
+          turn.type === "turn"
+            ? { ...turn, instructions: context.agentInstructions }
+            : turn;
+
         const { stream } = await appAgentChat({
-          body: { ...input, deployToken: getCliDeployToken(context.request) },
+          body: {
+            ...platformTurn,
+            app: platformAppSelector(appId),
+            deployToken: getCliDeployToken(context.request),
+          },
 
           client: context.platform,
 
@@ -46,22 +61,28 @@ export const appAgentRouter = {
           // Only the CLI can reconnect with the signed identity and exact cursor.
           sseMaxRetryAttempts: 1,
         });
+
         for await (const value of stream) {
-          const event = await agentChunkSchema.parseAsync(value);
+          const event = await v.parseAsync(agentChunkSchema, value);
+
           if (
             event.type === "error" ||
-            agentRunCompleteChunkSchema.safeParse(event).success
+            v.safeParse(agentRunCompleteChunkSchema, event).success
           ) {
             done = true;
           }
+
           yield event;
         }
+
         signal?.throwIfAborted();
+
         if (streamFailed) {
           throw new ORPCError("BAD_GATEWAY", {
             message: "The app agent stream failed. Try again.",
           });
         }
+
         if (!done) {
           throw new ORPCError("BAD_GATEWAY", {
             message: "The agent stream ended unexpectedly. Try again.",
@@ -83,6 +104,7 @@ export const appAgentRouter = {
         responseStyle: "fields",
         throwOnError: true,
       });
+
       return data;
     }),
 };

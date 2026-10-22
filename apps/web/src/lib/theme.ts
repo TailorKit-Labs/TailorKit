@@ -1,4 +1,4 @@
-import type { User } from "@tailorkit/auth";
+import type { User } from "@patchsmith/auth";
 import type { ReactNode } from "react";
 import {
   createContext,
@@ -28,6 +28,7 @@ export const getUserTheme = (
   }
 
   const { theme } = user;
+
   return isAppTheme(theme) ? theme : undefined;
 };
 
@@ -38,6 +39,7 @@ export const resolveTheme = (theme: AppTheme): "light" | "dark" => {
   if (theme === "system") {
     return prefersDark() ? "dark" : "light";
   }
+
   return theme;
 };
 
@@ -47,6 +49,7 @@ export const getStoredTheme = (): AppTheme => {
   }
 
   const storedTheme = localStorage.getItem(themeStorageKey);
+
   return isAppTheme(storedTheme) ? storedTheme : fallbackTheme;
 };
 
@@ -79,6 +82,7 @@ export const applyTheme = (
     options.disableTransitions === true
       ? disableTransitionOnChange()
       : undefined;
+
   const resolvedTheme = resolveTheme(theme);
 
   document.documentElement.classList.toggle("dark", resolvedTheme === "dark");
@@ -123,6 +127,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const query = window.matchMedia("(prefers-color-scheme: dark)");
+
     const handleChange = () => {
       const nextResolvedTheme = resolveTheme("system");
       setResolvedTheme(nextResolvedTheme);
@@ -130,6 +135,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     };
 
     query.addEventListener("change", handleChange);
+
     return () => {
       query.removeEventListener("change", handleChange);
     };

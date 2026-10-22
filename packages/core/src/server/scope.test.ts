@@ -5,26 +5,28 @@ import { describe, expect, it } from "vite-plus/test";
 import { z } from "zod";
 
 import {
-  normalizeTailorKitScope,
-  validateTailorKitScopeSchemas,
-  validateTailorKitScopes,
+  normalizePatchsmithScope,
+  validatePatchsmithScopeSchemas,
+  validatePatchsmithScopes,
 } from "./scope";
 
 interface CyclicScopeFixture {
   ok: boolean;
   self?: CyclicScopeFixture;
 }
+
 interface NestedScopeFixture {
   child: string | NestedScopeFixture;
 }
 
-describe("TailorKit named scope validation", () => {
+describe("Patchsmith named scope validation", () => {
   it("sorts object keys recursively while preserving array order", () => {
     const input = {
       orgs: [{ a: 2, z: 1 }, { b: { a: 4, z: 3 } }],
       userId: "user_1",
     };
-    const scope = normalizeTailorKitScope(input);
+
+    const scope = normalizePatchsmithScope(input);
 
     expect(Object.keys(scope)).toEqual(["orgs", "userId"]);
     expect(scope).toEqual({
@@ -48,7 +50,7 @@ describe("TailorKit named scope validation", () => {
     };
 
     await expect(
-      validateTailorKitScopes(scopes, {
+      validatePatchsmithScopes(scopes, {
         org: { tenant: "  org_1  " },
         user: { id: "user_1" },
       })
@@ -63,6 +65,7 @@ describe("TailorKit named scope validation", () => {
       "~standard": {
         validate: (value) => {
           const parsed = z.object({ workspaceId: z.string() }).safeParse(value);
+
           return parsed.success
             ? { value: parsed.data }
             : { issues: [{ message: "workspaceId is required" }] };
@@ -73,7 +76,7 @@ describe("TailorKit named scope validation", () => {
     };
 
     await expect(
-      validateTailorKitScopes(
+      validatePatchsmithScopes(
         { workspace: schema },
         { workspace: { workspaceId: "workspace_1" } }
       )
@@ -86,10 +89,11 @@ describe("TailorKit named scope validation", () => {
       valibot: v.object({ payload: v.unknown() }),
       zod: z.object({ payload: z.unknown() }),
     };
+
     const payload = [3, { a: 2, z: "last" }, 1];
 
     await expect(
-      validateTailorKitScopes(validators, {
+      validatePatchsmithScopes(validators, {
         arktype: { payload },
         valibot: { payload },
         zod: { payload },
@@ -108,26 +112,26 @@ describe("TailorKit named scope validation", () => {
     };
 
     await expect(
-      validateTailorKitScopes(validators, { org: { orgId: "org_1" } })
+      validatePatchsmithScopes(validators, { org: { orgId: "org_1" } })
     ).resolves.toEqual({ org: { orgId: "org_1" } });
   });
 
   it("requires at least one declared and authenticated scope", async () => {
-    expect(() => validateTailorKitScopeSchemas({})).toThrow(
+    expect(() => validatePatchsmithScopeSchemas({})).toThrow(
       /at least one named scope/u
     );
     expect(() =>
-      validateTailorKitScopeSchemas(
+      validatePatchsmithScopeSchemas(
         Object.fromEntries(
           Array.from({ length: 33 }, (_, index) => [`scope${index}`, z.any()])
         )
       )
     ).toThrow(/at most 32 named scopes/u);
     await expect(
-      validateTailorKitScopes({ org: z.object({ id: z.string() }) }, {})
+      validatePatchsmithScopes({ org: z.object({ id: z.string() }) }, {})
     ).rejects.toThrow(/at least one scope/u);
     await expect(
-      validateTailorKitScopes(
+      validatePatchsmithScopes(
         { org: z.object({ id: z.string() }) },
         { team: { id: "team_1" } }
       )
@@ -136,7 +140,7 @@ describe("TailorKit named scope validation", () => {
 
   it("accepts explicit JSON values, including empty nested arrays and objects", () => {
     expect(
-      normalizeTailorKitScope({
+      normalizePatchsmithScope({
         values: ["", null, true, false, 0, 1.25, [], {}],
       })
     ).toEqual({ values: ["", null, true, false, 0, 1.25, [], {}] });
@@ -144,24 +148,27 @@ describe("TailorKit named scope validation", () => {
 
   it("rejects __proto__ properties at every scope depth", () => {
     expect(() =>
-      normalizeTailorKitScope(JSON.parse('{"__proto__":"value"}'))
+      normalizePatchsmithScope(JSON.parse('{"__proto__":"value"}'))
     ).toThrow(/__proto__/u);
     expect(() =>
-      normalizeTailorKitScope(JSON.parse('{"nested":{"__proto__":"value"}}'))
+      normalizePatchsmithScope(JSON.parse('{"nested":{"__proto__":"value"}}'))
     ).toThrow(/__proto__/u);
   });
 
   it("rejects non-JSON values and non-plain objects", () => {
     const circular: CyclicScopeFixture = { ok: true };
     circular.self = circular;
+
     const withAccessor = Object.defineProperty({ ok: true }, "value", {
       enumerable: true,
       get: () => "not data",
     });
+
     const withSymbol = { ok: true, [Symbol("key")]: "not JSON" };
     const arrayWithHole: unknown[] = [];
     arrayWithHole.length = 1;
     const arrayWithExtra = Object.assign(["ok"], { extra: true });
+
     const withCustomPrototype: unknown = Object.assign(
       Object.create({ inherited: true }),
       { ok: true }
@@ -185,7 +192,7 @@ describe("TailorKit named scope validation", () => {
       { value: arrayWithExtra },
       withCustomPrototype,
     ]) {
-      expect(() => normalizeTailorKitScope(value)).toThrow();
+      expect(() => normalizePatchsmithScope(value)).toThrow();
     }
   });
 
@@ -193,20 +200,26 @@ describe("TailorKit named scope validation", () => {
     const tooManyKeys = Object.fromEntries(
       Array.from({ length: 33 }, (_, index) => [`field${index}`, index])
     );
+
     const tooManyArrayItems = {
       value: Array.from({ length: 101 }, (_, index) => index),
     };
+
     let deepValue: string | NestedScopeFixture = "leaf";
+
     for (let index = 0; index < 17; index += 1) {
       deepValue = { child: deepValue };
     }
+
     const tooDeep = { value: deepValue };
+
     const tooLarge = Object.fromEntries(
       Array.from({ length: 32 }, (_, index) => [
         `field${index}`,
         "é".repeat(255),
       ])
     );
+
     const withinNodeLimit = {
       extra: Array.from({ length: 4 }, () => 0),
       groups: Array.from({ length: 5 }, () =>
@@ -214,22 +227,23 @@ describe("TailorKit named scope validation", () => {
       ),
       // root + groups + five arrays + 500 items + extra + four items = 512
     };
+
     const beyondNodeLimit = { ...withinNodeLimit, extra: [0, 0, 0, 0, 0] };
 
-    expect(() => normalizeTailorKitScope(tooManyKeys)).toThrow(/at most 32/u);
-    expect(() => normalizeTailorKitScope({ ["k".repeat(65)]: 1 })).toThrow(
+    expect(() => normalizePatchsmithScope(tooManyKeys)).toThrow(/at most 32/u);
+    expect(() => normalizePatchsmithScope({ ["k".repeat(65)]: 1 })).toThrow(
       /1 to 64/u
     );
-    expect(() => normalizeTailorKitScope({ value: "x".repeat(256) })).toThrow(
+    expect(() => normalizePatchsmithScope({ value: "x".repeat(256) })).toThrow(
       /255 characters/u
     );
-    expect(() => normalizeTailorKitScope(tooManyArrayItems)).toThrow(
+    expect(() => normalizePatchsmithScope(tooManyArrayItems)).toThrow(
       /at most 100/u
     );
-    expect(() => normalizeTailorKitScope(tooDeep)).toThrow(/16 levels/u);
-    expect(() => normalizeTailorKitScope(tooLarge)).toThrow(/16384 bytes/u);
-    expect(() => normalizeTailorKitScope(withinNodeLimit)).not.toThrow();
-    expect(() => normalizeTailorKitScope(beyondNodeLimit)).toThrow(
+    expect(() => normalizePatchsmithScope(tooDeep)).toThrow(/16 levels/u);
+    expect(() => normalizePatchsmithScope(tooLarge)).toThrow(/16384 bytes/u);
+    expect(() => normalizePatchsmithScope(withinNodeLimit)).not.toThrow();
+    expect(() => normalizePatchsmithScope(beyondNodeLimit)).toThrow(
       /at most 512 JSON values/u
     );
   });

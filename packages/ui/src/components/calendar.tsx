@@ -88,7 +88,9 @@ export const Calendar = ({
     weekday:
       "size-(--cell-size) p-0 text-xs font-medium text-muted-foreground/72",
   };
+
   const mergedClassNames: typeof defaultClassNames = { ...defaultClassNames };
+
   /* oxlint-disable typescript/no-unsafe-type-assertion -- The public generic API establishes this relationship; its runtime registry erases the type parameters. */
   for (const key of Object.keys(
     defaultClassNames
@@ -102,6 +104,7 @@ export const Calendar = ({
         key as keyof typeof classNames
         /* oxlint-enable typescript/no-unsafe-type-assertion */
       ];
+
     const baseClass = defaultClassNames[key];
     mergedClassNames[key] =
       userClass !== undefined && userClass !== null && userClass !== ""

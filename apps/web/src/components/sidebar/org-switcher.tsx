@@ -1,5 +1,5 @@
-import { Avatar, AvatarFallback } from "@tailorkit/ui/avatar";
-import { Button } from "@tailorkit/ui/button";
+import { Avatar, AvatarFallback } from "@patchsmith/ui/avatar";
+import { Button } from "@patchsmith/ui/button";
 import {
   Combobox,
   ComboboxEmpty,
@@ -9,8 +9,8 @@ import {
   ComboboxPopup,
   ComboboxTrigger,
   ComboboxValue,
-} from "@tailorkit/ui/combobox";
-import { SidebarMenuButton } from "@tailorkit/ui/sidebar";
+} from "@patchsmith/ui/combobox";
+import { SidebarMenuButton } from "@patchsmith/ui/sidebar";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ChevronsUpDownIcon, PlusIcon, SearchIcon } from "lucide-react";

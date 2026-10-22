@@ -1,16 +1,16 @@
-import { Button } from "@tailorkit/ui/button";
+import { Button } from "@patchsmith/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@tailorkit/ui/card";
+} from "@patchsmith/ui/card";
 import { useState } from "react";
 
 import { signInDemoUser } from "#lib/auth-client";
 import type { SignInChoice } from "#lib/auth-client";
-import { tailor } from "#lib/tailorkit-client";
+import { patchsmith } from "#lib/patchsmith-client";
 
 export const AuthScreen = ({ choices }: { choices: SignInChoice[] }) => {
   const [pending, setPending] = useState<string>();
@@ -20,9 +20,10 @@ export const AuthScreen = ({ choices }: { choices: SignInChoice[] }) => {
     const key = `${choice.userId}-${choice.teamId}`;
     setPending(key);
     setOperationError(undefined);
+
     try {
       await signInDemoUser(choice.userId, choice.teamId);
-      tailor.clearCache();
+      patchsmith.clearCache();
       window.location.assign("/");
     } catch (error) {
       setOperationError(
@@ -44,6 +45,7 @@ export const AuthScreen = ({ choices }: { choices: SignInChoice[] }) => {
         <CardContent className="flex flex-col gap-2">
           {choices.map((choice) => {
             const key = `${choice.userId}-${choice.teamId}`;
+
             return (
               <Button
                 key={key}

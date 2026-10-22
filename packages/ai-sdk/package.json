@@ -1,0 +1,73 @@
+{
+  "name": "@patchsmith/ai-sdk",
+  "version": "0.1.0-beta.59",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/patchsmith-io/patchsmith.git",
+    "directory": "packages/ai-sdk"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "imports": {
+    "#*": {
+      "development": [
+        "./src/*",
+        "./src/*.ts",
+        "./src/*.tsx",
+        "./src/*/index.ts",
+        "./src/*/index.tsx"
+      ],
+      "types": [
+        "./dist/*",
+        "./dist/*.d.mts",
+        "./dist/*/index.d.mts"
+      ],
+      "default": [
+        "./src/*",
+        "./src/*.ts",
+        "./src/*.tsx",
+        "./src/*/index.ts",
+        "./src/*/index.tsx"
+      ]
+    }
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "vp pack src/index.ts --format esm --target node22 --dts --clean",
+    "check-types": "tsc --noEmit",
+    "test": "vp test run",
+    "lint": "vp lint .",
+    "lint:fix": "vp lint --fix ."
+  },
+  "dependencies": {
+    "@modelcontextprotocol/client": "2.3.1",
+    "@patchsmith/core": "workspace:*",
+    "@valibot/to-json-schema": "^1.8.0",
+    "valibot": "catalog:"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/server": "2.3.1",
+    "@patchsmith/config": "workspace:*",
+    "@types/node": "catalog:",
+    "ai": "catalog:",
+    "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "ai": "^7.0.137"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

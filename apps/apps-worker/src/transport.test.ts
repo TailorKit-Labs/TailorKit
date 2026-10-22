@@ -5,7 +5,7 @@ import {
   catchORPCErrorCode,
 } from "@orpc/experimental-effect";
 import { call, createRouterClient } from "@orpc/server";
-import type { PlatformClient } from "@tailorkit/app/protocol";
+import type { PlatformClient } from "@patchsmith/app/protocol";
 import { Effect } from "effect";
 import { expect, it, vi } from "vite-plus/test";
 
@@ -53,6 +53,7 @@ it("preserves procedure failures for Effect client recovery", async () => {
 
   operations.query = () =>
     Effect.fail({ code: "NOT_FOUND", message: "Missing query" });
+
   const client = createEffectClient(
     createRouterClient(
       {
@@ -63,6 +64,7 @@ it("preserves procedure failures for Effect client recovery", async () => {
       { context: { installation: operations } }
     )
   );
+
   const result = await Effect.runPromise(
     client
       .queries({ name: "list" })
@@ -72,25 +74,30 @@ it("preserves procedure failures for Effect client recovery", async () => {
         )
       )
   );
+
   expect(result).toBe("Missing query");
 });
 
 it("propagates cancellation through an Effect handler to the action", async () => {
   const controller = new AbortController();
   let started!: () => void;
+
   const ready = (async () => {
     const {
       promise: pendingPromise,
       resolve,
       reject: rejectPending,
     } = Promise.withResolvers<ReturnType<() => void>>();
+
     try {
       started = resolve;
     } catch (error) {
       rejectPending(error);
     }
+
     await pendingPromise;
   })();
+
   let actionSignal: AbortSignal | undefined;
   const finalized = vi.fn();
   const operations = installation();
@@ -98,8 +105,10 @@ it("propagates cancellation through an Effect handler to the action", async () =
     if (!signal) {
       throw new Error("Action signal required");
     }
+
     actionSignal = signal;
     started();
+
     // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context, effecttsgo/unknown-in-effect-catch -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
     return Effect.tryPromise({
       catch: (error) => error,
@@ -110,6 +119,7 @@ it("propagates cancellation through an Effect handler to the action", async () =
             resolve: _resolve,
             reject,
           } = Promise.withResolvers();
+
           try {
             signal.addEventListener(
               "abort",
@@ -123,10 +133,12 @@ it("propagates cancellation through an Effect handler to the action", async () =
           } catch (error) {
             reject(error);
           }
+
           return await pendingPromise;
         })(),
     }).pipe(Effect.ensuring(Effect.sync(finalized)));
   };
+
   const client = createRouterClient(
     {
       actions: router.actions,
@@ -135,10 +147,12 @@ it("propagates cancellation through an Effect handler to the action", async () =
     },
     { context: { installation: operations } }
   );
+
   const result = client.actions(
     { name: "import" },
     { signal: controller.signal }
   );
+
   const rejected = expect(result).rejects.toBeDefined();
   await ready;
   controller.abort();
@@ -150,6 +164,7 @@ it("propagates cancellation through an Effect handler to the action", async () =
 it("routes HTTP calls with shared client types, CORS and typed error statuses", async () => {
   const operations = installation();
   const handler = createInstallationHandler();
+
   const client = createORPCClient<PlatformClient>(
     new RPCLink({
       fetch: async (url, init) => {
@@ -157,30 +172,36 @@ it("routes HTTP calls with shared client types, CORS and typed error statuses", 
           context: { installation: operations },
           prefix: "/rpc",
         });
+
         expect(result.matched).toBe(true);
+
         if (!result.response) {
           throw new Error("Missing RPC response");
         }
+
         return result.response;
       },
       origin: "https://runtime.test",
       url: "/rpc",
     })
   );
+
   expect(await client.queries({ name: "nested.list" })).toBe("nested.list");
   const requestId = crypto.randomUUID();
   expect(await client.mutations({ name: "nested.add", requestId })).toBe(
     requestId
   );
   expect(await client.actions({ name: "import" })).toBe("action");
+
   const instances = {
     args: {
       context: { subjectId: "user" },
       path: "/reports/annual.summary",
       slot: "page.links",
     },
-    name: "_tailorkit.instances.resolve",
+    name: "_patchsmith.instances.resolve",
   };
+
   expect(await client.actions(instances)).toBe("action");
   expect(operations.action).toHaveBeenCalledWith(
     instances,
@@ -199,6 +220,7 @@ it("routes HTTP calls with shared client types, CORS and typed error statuses", 
     code: "INCOMPATIBLE_VERSION",
     message: "Reload",
   });
+
   const preflight = await handler.handle(
     new Request("https://runtime.test/rpc/queries", {
       headers: {
@@ -209,6 +231,7 @@ it("routes HTTP calls with shared client types, CORS and typed error statuses", 
     }),
     { context: { installation: operations }, prefix: "/rpc" }
   );
+
   expect(preflight.response?.headers.get("access-control-allow-origin")).toBe(
     "*"
   );
@@ -217,13 +240,16 @@ it("routes HTTP calls with shared client types, CORS and typed error statuses", 
 it("encodes gateway authentication errors in the oRPC format", async () => {
   const client = createORPCClient<PlatformClient>(
     new RPCLink({
-      // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-      fetch: async () =>
-        rpcErrorResponse({ code: "UNAUTHORIZED", message: "Expired" }),
+      fetch: vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(
+          rpcErrorResponse({ code: "UNAUTHORIZED", message: "Expired" })
+        ),
       origin: "https://runtime.test",
       url: "/rpc",
     })
   );
+
   await expect(client.queries({ name: "list" })).rejects.toMatchObject({
     code: "UNAUTHORIZED",
     message: "Expired",

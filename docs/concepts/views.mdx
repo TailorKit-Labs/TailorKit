@@ -12,8 +12,8 @@ A global side panel might show an overview on a members list, then details about
 
 Use paths to describe a hierarchy, from general to specific:
 
-```ts title="tailorkit.ts"
-import { defineContract } from "tailorkit";
+```ts title="patchsmith.ts"
+import { defineContract } from "patchsmith";
 import { z } from "zod";
 
 export const contract = defineContract({
@@ -34,39 +34,39 @@ export const contract = defineContract({
 
 ## Register the current context
 
-Call `useViewContext` inside your TailorKit provider. Register general contexts in layouts and specific contexts in pages:
+Call `useViewContext` inside your Patchsmith provider. Register general contexts in layouts and specific contexts in pages:
 
 <CodeGroup>
 
 ```tsx title="Root layout"
 import type { ReactNode } from "react";
-import { tailor } from "@/lib/tailorkit-client";
+import { patchsmith } from "@/lib/patchsmith-client";
 
 export function RootLayout({ children }: { children: ReactNode }) {
-  tailor.useViewContext("/", { context: {} });
+  patchsmith.useViewContext("/", { context: {} });
   return children;
 }
 ```
 
 ```tsx title="Members layout"
 import type { ReactNode } from "react";
-import { tailor } from "@/lib/tailorkit-client";
+import { patchsmith } from "@/lib/patchsmith-client";
 
 export function MembersLayout({ children }: { children: ReactNode }) {
-  tailor.useViewContext("/members", { context: {} });
+  patchsmith.useViewContext("/members", { context: {} });
   return children;
 }
 ```
 
 ```tsx title="Member page"
-import { tailor } from "@/lib/tailorkit-client";
+import { patchsmith } from "@/lib/patchsmith-client";
 
 export function MemberPage({
   member,
 }: {
   member: { id: string; name: string };
 }) {
-  tailor.useViewContext("/members/detail", { context: { member } });
+  patchsmith.useViewContext("/members/detail", { context: { member } });
   return <h1>{member.name}</h1>;
 }
 ```
@@ -77,7 +77,7 @@ The hook registers the context when mounted, validates its data, and updates it 
 
 ## Select the closest matching view
 
-TailorKit uses the deepest mounted context. For each slot, it checks that path, then its parents, selecting the first supported view supplied by the app:
+Patchsmith uses the deepest mounted context. For each slot, it checks that path, then its parents, selecting the first supported view supplied by the app:
 
 ```text
 /members/detail → /members → /
@@ -91,7 +91,7 @@ If no matching view is available, nothing renders for that app in the slot. To w
 
 `defineContract({ views })` maps paths starting with `/` to object schemas. Context fields from declared ancestors combine with the selected view’s fields. Child schemas cannot repeat ancestor field names. A fallback receives its own context and its ancestors’ context, excluding fields from deeper paths.
 
-Call `tailor.useViewContext(path, state)` on the client returned by `createClient`:
+Call `patchsmith.useViewContext(path, state)` on the client returned by `createClient`:
 
 | Argument | Meaning |
 | --- | --- |
@@ -111,7 +111,7 @@ export interface ViewContextState<TContext = unknown> {
 While member data loads, register the context with `loading: true`:
 
 ```tsx title="While member data loads"
-tailor.useViewContext("/members/detail", {
+patchsmith.useViewContext("/members/detail", {
   context: undefined,
   loading: true,
 });
@@ -122,7 +122,7 @@ tailor.useViewContext("/members/detail", {
 Register context from your pages and layouts. Slots and apps can each support a subset of contexts.
 
 <AccordionGroup>
-  <Accordion title="Does TailorKit watch my router automatically?">
+  <Accordion title="Does Patchsmith watch my router automatically?">
     Call `useViewContext` in each relevant page or layout. Its mount and unmount
     lifecycle supplies the active context, so it works with different routers.
   </Accordion>

@@ -1,5 +1,5 @@
 {
-  "name": "@tailorkit/config",
+  "name": "@patchsmith/config",
   "version": "0.0.0",
   "private": true,
   "license": "BUSL-1.1",
@@ -12,7 +12,19 @@
       "./src/*/index.tsx"
     ]
   },
+  "exports": {
+    "./testing": "./testing.ts",
+    "./*": "./*"
+  },
+  "scripts": {
+    "lint": "vp lint .",
+    "lint:fix": "vp lint --fix ."
+  },
   "devDependencies": {
-    "@types/node": "catalog:"
+    "@types/node": "catalog:",
+    "vite-plus": "catalog:"
+  },
+  "engines": {
+    "node": ">=24.11"
   }
 }

@@ -7,19 +7,23 @@ afterEach(() => vi.useRealTimers());
 
 const deferred = <T>() => {
   let resolve!: (value: T) => void;
+
   const promise = (async () => {
     const {
       promise: pendingPromise,
       resolve: done,
       reject: rejectPending,
     } = Promise.withResolvers<T>();
+
     try {
       resolve = done;
     } catch (error) {
       rejectPending(error);
     }
+
     return await pendingPromise;
   })();
+
   return { promise, resolve };
 };
 
@@ -30,8 +34,10 @@ describe("fetch cache", () => {
     const fetcher = vi.fn(async () => await response.promise);
     const first = cache.getStore(["apps", { a: 1, b: 2 }], fetcher);
     const second = cache.getStore(["apps", { a: 1, b: 2 }], fetcher);
+
     const listener =
       vi.fn<NonNullable<Parameters<typeof second.subscribe>[0]>>();
+
     const stop = second.subscribe(listener);
     const pending = first.fetch();
     expect(second.fetch()).toBe(pending);
@@ -74,14 +80,17 @@ describe("fetch cache", () => {
 
   it("keeps successful data available while revalidating", async () => {
     const response = deferred<string>();
+
     const fetcher = vi
       .fn()
       .mockResolvedValueOnce("old")
       .mockReturnValueOnce(response.promise);
+
     const store = createFetchCache({ gcTime: Infinity }).getStore(
       ["apps"],
       fetcher
     );
+
     await store.fetch();
     const pending = store.fetch({ force: true });
     expect(store.getSnapshot()).toMatchObject({
@@ -103,9 +112,11 @@ describe("fetch cache", () => {
     const cache = createFetchCache({ gcTime: 100, staleTime: Infinity });
     const fetcher = vi.fn().mockResolvedValue("data");
     const store = cache.getStore(["apps"], fetcher);
+
     const stop = store.subscribe(
       vi.fn<NonNullable<Parameters<typeof store.subscribe>[0]>>()
     );
+
     await store.fetch();
     vi.advanceTimersByTime(200);
     expect(store.getSnapshot().data).toBe("data");
@@ -122,20 +133,25 @@ describe("fetch cache", () => {
     const cache = createFetchCache({ gcTime: Infinity });
     const response = deferred<string>();
     let signal!: AbortSignal;
+
     const store = cache.getStore(
       ["instances"],
       async (input) => {
         signal = input;
+
         return await response.promise;
       },
       { abortOnUnsubscribe: true }
     );
+
     const stopFirst = store.subscribe(
       vi.fn<NonNullable<Parameters<typeof store.subscribe>[0]>>()
     );
+
     const stopLast = store.subscribe(
       vi.fn<NonNullable<Parameters<typeof store.subscribe>[0]>>()
     );
+
     const pending = store.fetch();
     await Promise.resolve();
     stopFirst();
@@ -155,10 +171,12 @@ describe("fetch cache", () => {
     vi.useFakeTimers();
     const timerLimit = 2_147_483_647;
     const gcTime = timerLimit + 1000;
+
     const store = createFetchCache({ gcTime, staleTime: Infinity }).getStore(
       ["apps"],
       vi.fn<() => Promise<string>>().mockResolvedValue("data")
     );
+
     await store.fetch();
     vi.advanceTimersByTime(timerLimit);
     expect(store.getSnapshot().data).toBe("data");
@@ -172,15 +190,19 @@ describe("fetch cache", () => {
     vi.useFakeTimers();
     const timerLimit = 2_147_483_647;
     const gcTime = timerLimit + 1000;
+
     const store = createFetchCache({ gcTime }).getStore(
       ["apps"],
       vi.fn<() => Promise<string>>().mockResolvedValue("data")
     );
+
     await store.fetch();
     vi.advanceTimersByTime(timerLimit);
+
     const stop = store.subscribe(
       vi.fn<NonNullable<Parameters<typeof store.subscribe>[0]>>()
     );
+
     vi.advanceTimersByTime(gcTime);
     expect(store.getSnapshot().data).toBe("data");
     stop();
@@ -193,14 +215,17 @@ describe("fetch cache", () => {
   it("forces a new request and discards the superseded response", async () => {
     const old = deferred<string>();
     const fresh = deferred<string>();
+
     const fetcher = vi
       .fn<(signal: AbortSignal) => Promise<string>>()
       .mockReturnValueOnce(old.promise)
       .mockReturnValueOnce(fresh.promise);
+
     const store = createFetchCache({ gcTime: Infinity }).getStore(
       ["apps"],
       fetcher
     );
+
     const first = store.fetch();
     await Promise.resolve();
     const second: Promise<void> | undefined = store.fetch({ force: true });
@@ -216,18 +241,22 @@ describe("fetch cache", () => {
 
   it("invalidates active stores and marks inactive data stale without fetching", async () => {
     const fetcher = vi.fn().mockResolvedValue("data");
+
     const store = createFetchCache({
       gcTime: Infinity,
       staleTime: Infinity,
     }).getStore(["apps"], fetcher);
+
     await store.fetch();
     await store.invalidate();
     expect(fetcher).toHaveBeenCalledOnce();
     await store.fetch();
     expect(fetcher).toHaveBeenCalledTimes(2);
+
     const stop = store.subscribe(
       vi.fn<NonNullable<Parameters<typeof store.subscribe>[0]>>()
     );
+
     await store.invalidate();
     expect(fetcher).toHaveBeenCalledTimes(3);
     stop();
@@ -240,15 +269,18 @@ describe("fetch cache", () => {
         throw new Error("offline");
       })
       .mockResolvedValue("data");
+
     const store = createFetchCache({ gcTime: Infinity }).getStore(
       ["apps"],
       fetcher
     );
+
     const stop = store.subscribe(() => {
       if (store.getSnapshot().isFetching) {
         void store.fetch();
       }
     });
+
     await store.fetch();
     expect(store.getSnapshot().error?.message).toBe("offline");
     await store.fetch();
@@ -265,13 +297,16 @@ describe("fetch cache", () => {
     const response = deferred<string>();
     const cache = createFetchCache({ gcTime: Infinity });
     const store = cache.getStore(["apps"], async () => await response.promise);
+
     const other = createFetchCache({ gcTime: Infinity }).getStore(
       ["apps"],
       vi.fn<() => Promise<string>>().mockResolvedValue("other")
     );
+
     const stop = store.subscribe(
       vi.fn<NonNullable<Parameters<typeof store.subscribe>[0]>>()
     );
+
     const pending = store.fetch();
     cache.clear();
     response.resolve("late");
@@ -283,18 +318,22 @@ describe("fetch cache", () => {
 
   it("tracks fetch settlement through Nano Stores tasks and publishes to framework readers", async () => {
     const response = deferred<string>();
+
     const store = createFetchCache({ gcTime: Infinity }).getStore(
       ["tasks"],
       async () => await response.promise
     );
+
     const listener = vi.fn<Parameters<typeof store.state.listen>[0]>();
     const stop = store.state.listen(listener);
     void store.fetch();
     expect(store.state.get().isFetching).toBe(true);
     let settled = false;
+
     const tasks = allTasks().then(() => {
       settled = true;
     });
+
     await Promise.resolve();
     expect(settled).toBe(false);
     response.resolve("loaded");
@@ -309,6 +348,7 @@ describe("fetch cache", () => {
 
   it("aborts when the last Nano Store reader leaves before a request starts", async () => {
     const fetcher = vi.fn().mockResolvedValue("unused");
+
     const store = createFetchCache({ gcTime: Infinity }).getStore(
       ["cancel"],
       fetcher,
@@ -316,9 +356,11 @@ describe("fetch cache", () => {
         abortOnUnsubscribe: true,
       }
     );
+
     const stop = store.state.listen(
       vi.fn<NonNullable<Parameters<typeof store.state.listen>[0]>>()
     );
+
     const pending = store.fetch();
     stop();
     await pending;
@@ -331,20 +373,25 @@ describe("fetch cache", () => {
 
   it("does not clear a request started by a settlement listener", async () => {
     const response = deferred<string>();
+
     const fetcher = vi
       .fn()
       .mockResolvedValueOnce("first")
       .mockReturnValueOnce(response.promise);
+
     const store = createFetchCache({ gcTime: Infinity }).getStore(
       ["reentrant"],
       fetcher
     );
+
     let second: Promise<void> | undefined;
+
     const stop = store.state.listen((snapshot) => {
       if (snapshot.data === "first" && !snapshot.isFetching) {
         second = store.fetch({ force: true });
       }
     });
+
     await store.fetch();
     expect(store.fetch()).toBe(second);
     response.resolve("second");
@@ -353,7 +400,7 @@ describe("fetch cache", () => {
     stop();
   });
 
-  it("keeps previews, deployments, and input arrays distinct", () => {
+  it("keeps deployments and input arrays distinct", () => {
     expect(serializeCacheKey(["a", { a: { a: 3, b: 2 }, z: 1 }])).toBe(
       serializeCacheKey(["a", { a: { a: 3, b: 2 }, z: 1 }])
     );

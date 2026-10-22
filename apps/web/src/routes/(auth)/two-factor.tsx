@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@tailorkit/ui/button";
+import { Button } from "@patchsmith/ui/button";
 import {
   Card,
   CardDescription,
@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardPanel,
   CardTitle,
-} from "@tailorkit/ui/card";
+} from "@patchsmith/ui/card";
 import {
   Dialog,
   DialogClose,
@@ -19,14 +19,14 @@ import {
   DialogPanel,
   DialogPopup,
   DialogTitle,
-} from "@tailorkit/ui/dialog";
-import { Field, FieldError, FieldLabel } from "@tailorkit/ui/field";
-import { Logo } from "@tailorkit/ui/logo";
+} from "@patchsmith/ui/dialog";
+import { Field, FieldError, FieldLabel } from "@patchsmith/ui/field";
+import { Logo } from "@patchsmith/ui/logo";
 import {
   OTPField,
   OTPFieldInput,
   OTPFieldSeparator,
-} from "@tailorkit/ui/otp-field";
+} from "@patchsmith/ui/otp-field";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { Fragment, useRef, useState } from "react";
@@ -68,11 +68,13 @@ const TwoFactorPage = () => {
 
   const navigateAfterVerification = async (destination: string) => {
     const currentLocation = window.location.href;
+
     try {
       await queryClient.invalidateQueries(orpc.user.getSession.queryOptions());
       await router.navigate({ href: destination });
     } catch {
       window.location.assign(destination);
+
       return;
     }
 
@@ -84,9 +86,11 @@ const TwoFactorPage = () => {
   // oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
   const verify = async (verificationCode: string, useBackupCode = false) => {
     const expectedLength = useBackupCode ? BACKUP_CODE_LENGTH : OTP_LENGTH;
+
     const verificationInProgressRef = useBackupCode
       ? backupCodeVerificationInProgressRef
       : totpVerificationInProgressRef;
+
     if (
       verificationCode.length !== expectedLength ||
       verificationInProgressRef.current
@@ -97,6 +101,7 @@ const TwoFactorPage = () => {
     verificationInProgressRef.current = true;
     const backupCodeDialogSession = backupCodeDialogSessionRef.current;
     let redirecting = false;
+
     if (useBackupCode) {
       setBackupCodeError(null);
       setIsBackupCodePending(true);
@@ -104,6 +109,7 @@ const TwoFactorPage = () => {
       setError(null);
       setIsTotpPending(true);
     }
+
     try {
       const result = useBackupCode
         ? await authClient.twoFactor.verifyBackupCode({
@@ -117,6 +123,7 @@ const TwoFactorPage = () => {
           (useBackupCode
             ? "That backup code is not valid."
             : "That verification code is not valid.");
+
         if (
           useBackupCode &&
           backupCodeDialogSessionRef.current === backupCodeDialogSession
@@ -125,15 +132,17 @@ const TwoFactorPage = () => {
         } else if (!useBackupCode) {
           setError(message);
         }
+
         return;
       }
 
       const returnPath = getSameOriginPath(
-        window.sessionStorage.getItem("tailorkit.two-factor-return-to") ??
+        window.sessionStorage.getItem("patchsmith.two-factor-return-to") ??
           undefined,
         window.location.origin
       );
-      window.sessionStorage.removeItem("tailorkit.two-factor-return-to");
+
+      window.sessionStorage.removeItem("patchsmith.two-factor-return-to");
       const destination = returnPath ?? "/";
       await navigateAfterVerification(destination);
       redirecting = true;
@@ -153,6 +162,7 @@ const TwoFactorPage = () => {
       // oxlint-disable-next-line react/todo -- Oxlint’s React compiler does not support try/finally; cleanup must also run after failures.
     } finally {
       verificationInProgressRef.current = false;
+
       if (!redirecting) {
         if (useBackupCode) {
           setIsBackupCodePending(false);
@@ -170,6 +180,7 @@ const TwoFactorPage = () => {
 
     backupCodeDialogSessionRef.current += 1;
     setBackupCodeOpen(open);
+
     if (!open) {
       setBackupCode("");
       setBackupCodeError(null);
@@ -181,10 +192,10 @@ const TwoFactorPage = () => {
       <div className="flex w-full max-w-sm flex-col items-center gap-4">
         <a
           className="flex items-center gap-2"
-          href="https://tailorkit.dev/home"
+          href="https://patchsmith.io/home"
         >
           <Logo className="size-6" />
-          <span className="text-lg font-semibold">TailorKit</span>
+          <span className="text-lg font-semibold">Patchsmith</span>
         </a>
         <CardFrame className="w-full">
           <Card>
@@ -208,6 +219,7 @@ const TwoFactorPage = () => {
                       onValueChange={(value) => {
                         setCode(value);
                         setError(null);
+
                         if (value.length === OTP_LENGTH) {
                           void verify(value);
                         }
@@ -299,6 +311,7 @@ const TwoFactorPage = () => {
                 onValueChange={(value) => {
                   setBackupCode(value);
                   setBackupCodeError(null);
+
                   if (value.length === BACKUP_CODE_LENGTH) {
                     void verify(value, true);
                   }

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 
-import { z } from "zod";
+import * as v from "valibot";
 
 import { appDatabasePaths } from "./database-paths";
 import { drizzleGenerateArguments } from "./drizzle";
@@ -29,31 +29,39 @@ const snapshot = async (directory: string): Promise<Snapshot | undefined> => {
       if (isMissingFile(error)) {
         return [];
       }
+
       throw error;
     }
   );
+
   const latest = entries
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
     .toSorted()
     .at(-1);
+
   if (!(latest !== undefined && latest !== null && latest !== "")) {
     return undefined;
   }
+
   const filename = path.join(directory, latest, "snapshot.json");
-  const parsed = z
-    .object({
-      ddl: z.array(z.unknown()),
-      dialect: z.literal("sqlite"),
-      version: z.literal("7"),
-    })
-    .safeParse(JSON.parse(await readFile(filename, "utf-8")));
+
+  const parsed = v.safeParse(
+    v.object({
+      ddl: v.array(v.unknown()),
+      dialect: v.literal("sqlite"),
+      version: v.literal("7"),
+    }),
+    JSON.parse(await readFile(filename, "utf-8"))
+  );
+
   if (!parsed.success) {
     throw new Error(
       `Unsupported app schema snapshot: ${filename}. Use Drizzle Kit v1 SQLite migrations.`
     );
   }
-  return parsed.data;
+
+  return parsed.output;
 };
 
 // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser, serializer, or runtime adapter handles arbitrary values before validating or encoding their domain representation.
@@ -61,12 +69,14 @@ const canonical = (value: unknown): string => {
   if (Array.isArray(value)) {
     return `[${value.map(canonical).join(",")}]`;
   }
+
   if (isObjectValue(value)) {
     return `{${Object.entries(value)
       .toSorted(([left], [right]) => left.localeCompare(right))
       .map(([key, item]) => `${JSON.stringify(key)}:${canonical(item)}`)
       .join(",")}}`;
   }
+
   return JSON.stringify(value);
 };
 
@@ -76,17 +86,21 @@ export const checkAppSchema = async (
   migrationsDirectory: string
 ) => {
   const { schema } = appDatabasePaths(root);
+
   try {
     await access(schema);
   } catch (error) {
     if (isMissingFile(error)) {
       return;
     }
+
     throw error;
   }
+
   const temporary = await mkdtemp(
-    path.join(tmpdir(), "tailorkit-schema-check-")
+    path.join(tmpdir(), "patchsmith-schema-check-")
   );
+
   try {
     const { stdout } = await run(
       process.execPath,
@@ -103,18 +117,22 @@ export const checkAppSchema = async (
         { cause: error }
       );
     });
+
     const current = await snapshot(temporary);
+
     if (!current && !stdout.includes("No schema changes")) {
       throw new Error(
-        `Drizzle Kit did not produce a schema snapshot. Check ${path.relative(root, schema)} and run tailorkit db generate.`
+        `Drizzle Kit did not produce a schema snapshot. Check ${path.relative(root, schema)} and run patchsmith db generate.`
       );
     }
+
     const saved = await snapshot(migrationsDirectory);
     const expected = (current?.ddl ?? []).map(canonical).toSorted();
     const actual = (saved?.ddl ?? []).map(canonical).toSorted();
+
     if (canonical(expected) !== canonical(actual)) {
       throw new Error(
-        `App database migrations are missing or out of sync with ${path.relative(root, schema)}. Run tailorkit db generate, commit the generated files in ${path.relative(root, migrationsDirectory)}, then build again.`
+        `App database migrations are missing or out of sync with ${path.relative(root, schema)}. Run patchsmith db generate, commit the generated files in ${path.relative(root, migrationsDirectory)}, then build again.`
       );
     }
   } finally {

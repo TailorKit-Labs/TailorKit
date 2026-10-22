@@ -1,6 +1,6 @@
 import { ORPCError } from "@orpc/server";
-import { hashSecret } from "@tailorkit/api-utils/hashing";
-import { db } from "@tailorkit/db";
+import { hashSecret } from "@patchsmith/api-utils/hashing";
+import { db } from "@patchsmith/db";
 
 import { env } from "#env";
 
@@ -15,6 +15,7 @@ export const authenticateCli = async (
   if (runtimeService === true) {
     throw new ORPCError("FORBIDDEN");
   }
+
   if (
     !(
       env.AUTH_SECRET !== undefined &&
@@ -24,15 +25,19 @@ export const authenticateCli = async (
   ) {
     throw new ORPCError("SERVICE_UNAVAILABLE");
   }
+
   const token = await db.query.cliToken.findFirst({
     where: { projectId, tokenHash: hashSecret(deployToken, env.AUTH_SECRET) },
   });
+
   if (!token || token.revokedAt || token.expiresAt.getTime() <= Date.now()) {
     throw new ORPCError("UNAUTHORIZED", {
       message: "Invalid CLI deploy token.",
     });
   }
+
   let scope: ReturnType<typeof canonicalizeScope>;
+
   try {
     scope = canonicalizeScope(token.scope);
   } catch {
@@ -40,11 +45,13 @@ export const authenticateCli = async (
       message: "Invalid CLI deploy token.",
     });
   }
+
   if (scope.scopeKey !== token.scopeKey) {
     throw new ORPCError("UNAUTHORIZED", {
       message: "Invalid CLI deploy token.",
     });
   }
+
   return { ...token, scope: scope.scope, scopeKey: scope.scopeKey };
 };
 
@@ -60,10 +67,13 @@ export const authenticateCliRequest = async (
       context.runtimeService
     );
   }
+
   const agent = context.agentToken;
+
   if (token !== agent.token || context.runtimeService === true) {
     throw new ORPCError("UNAUTHORIZED");
   }
+
   return {
     id: agent.cliTokenId,
     projectId: agent.projectId,

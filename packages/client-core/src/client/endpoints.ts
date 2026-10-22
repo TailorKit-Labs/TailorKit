@@ -1,65 +1,33 @@
-import type { ToolBridge, ViewInstance } from "@tailorkit/app/client";
-import {
-  createClient,
-  createSessionProvider,
-  reference,
-} from "@tailorkit/app/client/connection";
-import { previewMetadataSchema } from "@tailorkit/client-platform/preview";
+import type { ToolBridge } from "@patchsmith/app/client";
+import { createSessionProvider } from "@patchsmith/app/client/connection";
 import type {
-  TailorKitContract,
+  PatchsmithContract,
   ToolImplementations,
   ContractTools,
-} from "@tailorkit/core/schema";
-import { flattenTools, validateToolValue } from "@tailorkit/core/schema";
-import type { ViewContextValues } from "@tailorkit/core/views";
-import { z } from "zod";
+} from "@patchsmith/core/schema";
+import { flattenTools, validateToolValue } from "@patchsmith/core/schema";
+import { patchsmithAppSchema, viewsResultSchema } from "@patchsmith/core/views";
+import type { ViewsInput } from "@patchsmith/core/views";
+import * as v from "valibot";
 
-import type { TailorKitApp } from "#types";
+import type { PatchsmithApp } from "#types";
 
 import { toBaseUrl } from "./url";
 
 type ClientToolTree = ToolImplementations<ContractTools, "client">;
+
 const isToolHandler = (
   value: ClientToolTree[string]
 ): value is Exclude<ClientToolTree[string], ClientToolTree> =>
   typeof value === "function";
 
-const appListSchema = z.array(
-  z
-    .object({
-      clientPath: z.string().optional(),
-      currentDeployment: z
-        .object({ id: z.string() })
-        .loose()
-        .nullable()
-        .optional(),
-      description: z.string().nullable().optional(),
-      id: z.string(),
-      logoPaths: z
-        .object({ dark: z.string().optional(), light: z.string().optional() })
-        .optional(),
-      name: z.string().optional(),
-      preview: previewMetadataSchema.optional(),
-      projectId: z.string().optional(),
-      scope: z.object({ name: z.string() }).loose().optional(),
-      views: z
-        .array(
-          z
-            .object({
-              disabled: z.literal(true).optional(),
-              instances: z.literal(true).optional(),
-              path: z.string(),
-              slot: z.string(),
-            })
-            .loose()
-        )
-        .optional(),
-    })
-    .loose()
-);
+const appListSchema = v.array(patchsmithAppSchema);
 
-const isStringValue = <TValue>(value: TValue): value is TValue & string =>
-  typeof value === "string";
+export interface ApiRequestOptions {
+  signal?: AbortSignal;
+}
+
+export interface ViewsRequestOptions extends ViewsInput, ApiRequestOptions {}
 
 const isFunctionValue = <TValue>(
   value: TValue
@@ -69,127 +37,142 @@ const require = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
-
-export interface SlotInstancesInput {
-  slot: string;
-  path: string;
-  context: ViewContextValues;
-}
-
-const resolveInstances = reference<
-  "action",
-  SlotInstancesInput,
-  ViewInstance[]
->("_tailorkit.instances.resolve", "action");
 
 /** Endpoint transport owns no response stores. */
 export const createEndpointClient = (options: {
   baseUrl: string | URL;
   fetch?: typeof fetch;
-  contract?: TailorKitContract;
-  tools?: ToolImplementations<TailorKitContract["tools"], "client">;
+  contract?: PatchsmithContract;
+  tools?: ToolImplementations<PatchsmithContract["tools"], "client">;
 }) => {
   const baseUrl = toBaseUrl(options.baseUrl);
+
   const request: typeof fetch = async (input, init) =>
     await (options.fetch ?? globalThis.fetch)(input, init);
+
   type SessionProvider = ReturnType<typeof createSessionProvider>;
+
   interface SessionEntry {
     key: string | undefined;
     session: SessionProvider | undefined;
     provider: SessionProvider;
   }
+
   let generation = 0;
+
   const toolBridges = new Map<
     string,
-    { bridge: ToolBridge; app: TailorKitApp }
+    { bridge: ToolBridge; app: PatchsmithApp }
   >();
+
   const declarations = flattenTools(options.contract?.tools ?? {});
   const sessions = new Map<string, SessionEntry>();
+
   const clearSessions = () => {
     generation += 1;
+
     for (const entry of sessions.values()) {
       entry.session = undefined;
     }
+
     sessions.clear();
   };
+
   const createSessionEntry = (appId: string, key?: string): SessionEntry => ({
     key,
 
     // Mounted consumers keep this wrapper, so resolve the current provider on every call.
     provider: async (input) => {
       let current = sessions.get(appId);
+
       if (!current) {
         current = createSessionEntry(appId);
         sessions.set(appId, current);
       }
+
       const session = require(current.session);
       const value = await session(input);
+
       if (current.session !== session) {
         throw new DOMException("The app session was invalidated", "AbortError");
       }
+
       return value;
     },
 
     session: createSessionProvider({ appId, baseUrl, fetch: request }),
   });
-  const getSessionProvider = (app: TailorKitApp) => {
-    const key = JSON.stringify([
-      app.currentDeployment?.id,
-      app.preview?.sessionId,
-    ]);
+
+  const getSessionProvider = (app: PatchsmithApp) => {
+    const key = JSON.stringify([app.currentDeployment?.id]);
     let entry = sessions.get(app.id);
+
     if (entry && entry.key === undefined) {
       entry.key = key;
     }
+
     if (!entry || entry.key !== key) {
       if (entry) {
         entry.session = undefined;
       }
+
       entry = createSessionEntry(app.id, key);
       sessions.set(app.id, entry);
     }
+
     return entry.provider;
   };
-  const getToolBridge = (app: TailorKitApp): ToolBridge => {
+
+  const getToolBridge = (app: PatchsmithApp): ToolBridge => {
     const existing = toolBridges.get(app.id);
+
     if (existing) {
       existing.app = app;
+
       return existing.bridge;
     }
+
     const session = async (path: string) => {
       const admitted = generation;
+
       if (!declarations.has(path)) {
         throw new Error("Tool not declared");
       }
+
       const result = await getSessionProvider(
         toolBridges.get(app.id)?.app ?? app
       )({
         refresh: false,
       });
+
       if (admitted !== generation) {
         throw new Error("Tool identity changed");
       }
+
       if (
-        !isStringValue(result.token) ||
-        !isStringValue(result.toolUrl) ||
-        !Number.isFinite(result.expiresAt) ||
         result.expiresAt <= Date.now() ||
-        result.identity?.installationId !== app.id
+        result.identity.installationId !== app.id
       ) {
         throw new Error("Invalid tool session");
       }
-      return { ...result, identity: result.identity, url: result.toolUrl };
+
+      return { ...result, url: result.identity.toolUrl };
     };
+
     const bridge: ToolBridge = {
       client: async (path, input) => {
         const admitted = generation;
         const leaf = declarations.get(path);
+
         if (leaf?.kind !== "client") {
           throw new Error("Not a client tool");
         }
+
         let implementation: ClientToolTree[string] | undefined = options.tools;
+
         for (const part of path.split(".")) {
           if (
             !implementation ||
@@ -198,17 +181,22 @@ export const createEndpointClient = (options: {
           ) {
             throw new Error("Missing client tool");
           }
+
           implementation = implementation[part];
         }
+
         if (!isFunctionValue(implementation)) {
           throw new TypeError("Missing client tool");
         }
+
         const value = await validateToolValue(leaf.definition.input, input);
         const credential = await session(path);
+
         // SAFETY: The registered client path owns the schema that validated this input; its specific parameter type is erased by the shared tree.
         const toolInput =
           /* oxlint-disable typescript/no-unsafe-type-assertion -- The registered client path owns the schema that validated this input; its specific parameter type is erased by the shared tree. */
           value as never;
+
         /* oxlint-enable typescript/no-unsafe-type-assertion */
         const output = await implementation({
           context: Object.freeze({
@@ -218,75 +206,69 @@ export const createEndpointClient = (options: {
           }),
           input: toolInput,
         });
+
         const result = await validateToolValue(leaf.definition.output, output);
+
         if (admitted !== generation) {
           throw new Error("Tool identity changed");
         }
+
         return result;
       },
       session: async (path: string) => {
         if (declarations.get(path)?.kind !== "server") {
           throw new Error("Not a server tool");
         }
+
         return await session(path);
       },
     };
+
     toolBridges.set(app.id, { app, bridge });
+
     return bridge;
   };
+
   return {
-    apps: async (signal: AbortSignal): Promise<TailorKitApp[]> => {
+    apps: async ({ signal }: ApiRequestOptions = {}): Promise<
+      PatchsmithApp[]
+    > => {
       const response = await request(new URL("apps", baseUrl), {
         credentials: "same-origin",
         signal,
       });
+
       if (!response.ok) {
         throw new Error(
-          `Unable to fetch TailorKit apps from ${baseUrl.toString()}.`
+          `Unable to fetch Patchsmith apps from ${baseUrl.toString()}.`
         );
       }
-      return appListSchema.parse(await response.json());
+
+      return v.parse(appListSchema, await response.json());
     },
     baseUrl,
     clearSessions,
     getSessionProvider,
     getToolBridge,
-    previewMetadata: async (
-      sessionId: string
-    ): Promise<NonNullable<TailorKitApp["preview"]> | null> => {
-      const url = new URL("preview/metadata", baseUrl);
-      url.searchParams.set("sessionId", sessionId);
-      const response = await request(url, { credentials: "same-origin" });
-      if (response.status === 404) {
-        return null;
-      }
-      if (!response.ok) {
-        throw new Error("Unable to refresh TailorKit preview metadata.");
-      }
-      return previewMetadataSchema.parse(await response.json());
-    },
-    slotInstances: async (
-      app: TailorKitApp,
-      input: SlotInstancesInput,
-      signal: AbortSignal
-    ) => {
-      signal.throwIfAborted();
-      const backend = createClient({
-        fetch: request,
-        getSession: getSessionProvider(app),
+    views: async ({ signal, ...input }: ViewsRequestOptions) => {
+      const response = await request(new URL("views", baseUrl), {
+        body: JSON.stringify(input),
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        method: "POST",
+        signal,
       });
-      const abort = () => {
-        backend.close();
-      };
-      signal.addEventListener("abort", abort, { once: true });
-      try {
-        return await backend.action(resolveInstances, input);
-      } finally {
-        signal.removeEventListener("abort", abort);
-        backend.close();
+
+      if (!response.ok) {
+        throw new Error(await response.text());
       }
+
+      return v.parse(viewsResultSchema, await response.json());
     },
   };
 };
 
 export type EndpointClient = ReturnType<typeof createEndpointClient>;
+
+/** Validated host requests without response caching or UI lifecycle state. */
+export type PatchsmithClientApi = Pick<EndpointClient, "apps" | "views">;
