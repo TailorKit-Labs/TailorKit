@@ -11,6 +11,7 @@ import {
   createRootRouteWithContext,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import type { ReactNode } from "react";
 import { useEffect, useRef } from "react";
@@ -97,6 +98,7 @@ const RootDocument = ({ children }: { children: ReactNode }) => (
           a11yDevtoolsPlugin(),
         ]}
       />
+      <Analytics />
       <SpeedInsights />
       <Scripts />
     </body>
