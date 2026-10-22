@@ -33,7 +33,7 @@ The new platform and host handlers use oRPC's `handlerGen` integration. Effect h
 
 ## Rollout
 
-This is a breaking replacement of `/apps/runtime/discover` with `/apps/runtime/resolve`; the obsolete discovery-and-session endpoint and generated client operation are removed. Deploy the platform and upgrade host SDKs together. Hosts require the new endpoint, and ready responses require a `warnings` array.
+This is a breaking replacement of `/apps/runtime/discover` with `/apps/runtime/resolve`; the obsolete discovery-and-session endpoint and generated client operation are removed. Deploy the platform with `/apps/runtime/resolve` first, then upgrade host SDKs. New SDKs require the new endpoint and do not fall back to `/apps/runtime/discover`; upgrading a host before the endpoint is available causes its multiple-slot view requests to fail. Ready responses require a `warnings` array. Existing deployments are unsupported during this coordinated upgrade.
 
 Repeat the production benchmark after deployment, including a host outside US East. Keep cold and repeated samples separate.
 
