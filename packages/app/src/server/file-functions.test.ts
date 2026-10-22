@@ -14,9 +14,9 @@ describe("file function registration", () => {
     const family = defineRouter({ get: { children } });
 
     const app = createFileServer([
-      { filename: "family.fn.ts", functions: family, path: ["family"] },
+      { filename: "family.router.ts", functions: family, path: ["family"] },
       {
-        filename: "family/get.fn.ts",
+        filename: "family/get.router.ts",
         functions: defineRouter({ parents }),
         path: ["family", "get"],
       },
@@ -38,12 +38,12 @@ describe("file function registration", () => {
     (reverse) => {
       const modules: Parameters<typeof createFileServer>[0] = [
         {
-          filename: "family.fn.ts",
+          filename: "family.router.ts",
           functions: { get: { children } },
           path: ["family"],
         },
         {
-          filename: "family/get.fn.ts",
+          filename: "family/get.router.ts",
           functions: { children },
           path: ["family", "get"],
         },
@@ -53,8 +53,8 @@ describe("file function registration", () => {
         createFileServer(reverse ? modules.toReversed() : modules);
 
       expect(register).toThrow("Duplicate function: api.family.get.children");
-      expect(register).toThrow("family.fn.ts");
-      expect(register).toThrow("family/get.fn.ts");
+      expect(register).toThrow("family.router.ts");
+      expect(register).toThrow("family/get.router.ts");
     }
   );
 
@@ -63,12 +63,12 @@ describe("file function registration", () => {
     (reverse) => {
       const modules: Parameters<typeof createFileServer>[0] = [
         {
-          filename: "family.fn.ts",
+          filename: "family.router.ts",
           functions: { get: children },
           path: ["family"],
         },
         {
-          filename: "family/get.fn.ts",
+          filename: "family/get.router.ts",
           functions: { parents },
           path: ["family", "get"],
         },
@@ -99,7 +99,11 @@ it.each(["name", "then"])(
     );
     expect(() =>
       createFileServer([
-        { filename: `${name}.fn.ts`, functions: { children }, path: [name] },
+        {
+          filename: `${name}.router.ts`,
+          functions: { children },
+          path: [name],
+        },
       ])
     ).toThrow("Reserved function name");
   }

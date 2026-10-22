@@ -183,12 +183,12 @@ it("typechecks and bundles examples with scaffold imports and the public SDK", a
 
     expect(Object.keys(sources).length).toBeGreaterThanOrEqual(10);
     sources["src/examples/source-aliases.ts"] =
-      'export { NoteEditor } from "#components/note-editor";\nexport { Empty } from "#components/empty";\nexport { default as notes } from "#functions/notes.fn";';
+      'export { NoteEditor } from "#components/note-editor";\nexport { Empty } from "#components/empty";\nexport { default as notes } from "#functions/notes.router";';
     sources["src/components/empty/index.tsx"] =
       "export const Empty = () => null;";
     // Legacy form examples call api.todos; reuse the notes router under that namespace.
-    sources["src/functions/todos.fn.ts"] =
-      'export { default } from "#functions/notes.fn";';
+    sources["src/functions/todos.router.ts"] =
+      'export { default } from "#functions/notes.router";';
     sources["src/patchsmith.gen.ts"] = renderGeneratedTypes(schema, {
       functionsModule: "./patchsmith.functions.gen",
     });

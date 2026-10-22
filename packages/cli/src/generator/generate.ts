@@ -284,7 +284,7 @@ export const generateApp = async (
     },
     {
       condition: !bare,
-      dest: path.join("src", "functions", "greeting.fn.ts"),
+      dest: path.join("src", "functions", "greeting.router.ts"),
       template: greetingTemplate,
     },
   ];

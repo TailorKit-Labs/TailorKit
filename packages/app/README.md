@@ -141,7 +141,7 @@ export const fn = createFunctions({ database: db });
 Each function file exports its public router. Handlers receive the scoped database automatically, with read-only access in queries and write access in mutations:
 
 ```ts
-// src/functions/tasks.fn.ts
+// src/functions/tasks.router.ts
 import { defineRouter } from "patchsmith/server";
 
 import { fn } from "#db";
@@ -153,22 +153,22 @@ const listTasks = fn.query.handler(({ db }) =>
 export default defineRouter({ listTasks });
 ```
 
-Every app includes a private backend without additional configuration. The builder discovers `src/functions/**/*.fn.ts` and registers each default router automatically; no `src/server.ts` is needed. Other files remain ordinary helpers.
+Every app includes a private backend without additional configuration. The builder discovers `src/functions/**/*.router.ts` and registers each default router automatically; no `src/server.ts` is needed. Other files remain ordinary helpers.
 
-File paths prefix router keys. Both `billing.invoices.fn.ts` and `billing/invoices.fn.ts` expose `api.billing.invoices.*`; mixed dots and directories work too. `index.fn.ts` creates an `index` namespace. Router objects may nest, so `tasks.fn.ts` exporting `defineRouter({ get: { children, parents } })` exposes `api.tasks.get.children` and `api.tasks.get.parents`.
+File paths prefix router keys. Both `billing.invoices.router.ts` and `billing/invoices.router.ts` expose `api.billing.invoices.*`; mixed dots and directories work too. `index.router.ts` creates an `index` namespace. Router objects may nest, so `tasks.router.ts` exporting `defineRouter({ get: { children, parents } })` exposes `api.tasks.get.children` and `api.tasks.get.parents`.
 
 Shared namespaces merge across files. Duplicate callable paths and function/namespace conflicts throw when the server bundle loads, with the API path and both source files. Every namespace and function name must start with a letter and contain at most 64 letters, digits, or underscores. `name` and `then` are reserved because client references use them internally.
 
 Run `patchsmith generate` after adding, moving, or deleting function files. Generated `src/patchsmith.functions.gen.ts` imports routers only as types; `src/patchsmith.gen.ts` uses those types for client `api` references. Builds refresh the function registry, and build watch mode tracks new, renamed, and removed modules. Private implementations stay out of the browser bundle.
 
-Actions can import a router from `#functions/tasks.fn`, declare `.functions({ tasks })`, and call `queries.tasks.listTasks()`; they receive no direct database handle. Discovery does not grant additional action capabilities.
+Actions can import a router from `#functions/tasks.router`, declare `.functions({ tasks })`, and call `queries.tasks.listTasks()`; they receive no direct database handle. Discovery does not grant additional action capabilities.
 
 ## Internal functions
 
 Functions are public by default. Add `.internal()` before `.handler()` to restrict a query, mutation, or action to backend execution:
 
 ```ts
-// src/functions/tasks.fn.ts
+// src/functions/tasks.router.ts
 import { defineRouter } from "patchsmith/server";
 
 import { fn } from "#db";

@@ -136,7 +136,7 @@ describe("generateApp", () => {
     expect(manifest.dependencies).not.toHaveProperty("zod");
 
     const greeting = await readFile(
-      path.join(targetDirectory, "src/functions/greeting.fn.ts"),
+      path.join(targetDirectory, "src/functions/greeting.router.ts"),
       "utf-8"
     );
 
@@ -196,7 +196,7 @@ describe("generateApp", () => {
       path.join("src", "db", "schema.ts"),
       path.join("src", "db", "index.ts"),
       path.join("src", "db", "relations.ts"),
-      path.join("src", "functions", "greeting.fn.ts"),
+      path.join("src", "functions", "greeting.router.ts"),
     ];
 
     await Promise.all(
@@ -233,7 +233,7 @@ describe("generateApp", () => {
     expect(database).toContain("createFunctions({ database: db })");
 
     const functions = await readFile(
-      path.join(targetDirectory, "src/functions/greeting.fn.ts"),
+      path.join(targetDirectory, "src/functions/greeting.router.ts"),
       "utf-8"
     );
 

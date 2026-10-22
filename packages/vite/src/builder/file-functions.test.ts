@@ -17,22 +17,24 @@ import {
   renderFunctionTypes,
 } from "./file-functions";
 
-it("discovers dotted, directory and mixed namespaces while ignoring helpers", async () => {
+it("discovers router namespaces while ignoring helpers and legacy function files", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "patchsmith-functions-"));
 
   try {
     await mkdir(path.join(root, "src/functions/some/nested"), {
       recursive: true,
     });
-    await mkdir(path.join(root, "src/functions/ignored.fn.ts"));
+    await mkdir(path.join(root, "src/functions/ignored.router.ts"));
 
     await Promise.all(
       [
-        "some.nested.file.fn.ts",
-        "some/nested/file.fn.ts",
-        "some/nested.other.fn.ts",
+        "some.nested.file.router.ts",
+        "some/nested/file.router.ts",
+        "some/nested.other.router.ts",
         "helpers.ts",
-        "index.fn.ts",
+        "legacy.fn.ts",
+        "single.route.ts",
+        "index.router.ts",
       ].map(async (file) => {
         await writeFile(
           path.join(root, "src/functions", file),
@@ -53,7 +55,9 @@ it("discovers dotted, directory and mixed namespaces while ignoring helpers", as
       path.join(root, "src/patchsmith.functions.gen.ts")
     );
 
-    expect(types).toContain('import type module0 from "./functions/index.fn"');
+    expect(types).toContain(
+      'import type module0 from "./functions/index.router"'
+    );
     expect(types).toContain(
       '{ readonly "some": { readonly "nested": { readonly "file": typeof module1 } } }'
     );
@@ -74,7 +78,7 @@ it.each([
   const root = await mkdtemp(path.join(tmpdir(), "patchsmith-function-names-"));
 
   try {
-    const filename = path.join(root, "src/functions", `${name}.fn.ts`);
+    const filename = path.join(root, "src/functions", `${name}.router.ts`);
     await mkdir(path.dirname(filename), { recursive: true });
     await writeFile(filename, "export default {};");
     await expect(discoverFunctionFiles(root)).rejects.toThrow(filename);
@@ -97,26 +101,26 @@ it("refreshes the registry and type imports when modules are added, renamed and 
 
   try {
     await mkdir(path.join(root, "src/functions"));
-    const first = path.join(root, "src/functions/todos.fn.ts");
+    const first = path.join(root, "src/functions/todos.router.ts");
     await writeFile(first, "export default {};");
     await expect
       .poll(async () => await readFile(types, "utf-8"), { timeout: 5000 })
-      .toContain('"./functions/todos.fn"');
+      .toContain('"./functions/todos.router"');
     await expect
       .poll(async () => await readFile(registry.entry, "utf-8"), {
         timeout: 5000,
       })
       .toContain('path: ["todos"]');
-    await rename(first, path.join(root, "src/functions/tasks.fn.ts"));
+    await rename(first, path.join(root, "src/functions/tasks.router.ts"));
     await expect
       .poll(async () => await readFile(types, "utf-8"), { timeout: 5000 })
-      .toContain('"./functions/tasks.fn"');
+      .toContain('"./functions/tasks.router"');
     await expect
       .poll(async () => await readFile(registry.entry, "utf-8"), {
         timeout: 5000,
       })
       .not.toContain('path: ["todos"]');
-    await rm(path.join(root, "src/functions/tasks.fn.ts"));
+    await rm(path.join(root, "src/functions/tasks.router.ts"));
     await expect
       .poll(async () => await readFile(types, "utf-8"), { timeout: 5000 })
       .toContain("Record<never, never>");
