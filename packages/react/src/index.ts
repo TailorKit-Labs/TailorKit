@@ -40,6 +40,8 @@ export { Icon } from "#icons/icon";
 export type { IconRendererOptions } from "#icons/loader";
 
 export type {
+  IconLibrary,
+  IconName,
   IconOptions,
   IconProps,
   LucideIconName,

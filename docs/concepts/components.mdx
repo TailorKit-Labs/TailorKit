@@ -105,14 +105,37 @@ export function ContinueIcon() {
 
 | Prop | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `name` | Lucide name union | Required | A name from the pinned Lucide catalogue, such as `arrow-right`. |
+| `name` | `string` | Required | A Lucide name such as `arrow-right`; optional SDK types provide local suggestions. |
 | `size` | `number` | `24` | Width and height in pixels, from 1 to 256. |
 
-The generated `IconProps.name` type is a union of the supported Lucide names. Your editor offers autocomplete, and TypeScript rejects misspellings such as `arrow-rigth`. The contract also rejects unknown names at runtime. The catalogue name list is generated from the same pinned Lucide release as the assets.
+Generated bindings use `name: string`. The contract accepts string names, and the host loader checks their format and length before fetching. Neither checks a local list of known icons. An app can use a newer icon even when its host, platform, or generated bindings come from an older compatible SDK. Names must be lowercase kebab-case and at most 100 characters; paths, URLs, and arbitrary SVG markup are rejected.
+
+Apps can opt into names provided by their own SDK, independently of the host's SDK:
+
+```tsx
+import type { IconName, IconProps, LucideIconName } from "patchsmith";
+import { Icon } from "./patchsmith.gen";
+
+const library = "lucide";
+const name = "arrow-right" satisfies IconName<typeof library>;
+const props = { name, size: 16 } satisfies IconProps<typeof library>;
+
+<Icon {...props} />;
+
+// LucideIconName is also available as a direct library-specific type.
+const success: LucideIconName = "circle-check";
+<Icon name={success} />;
+```
+
+`IconName<"lucide">` and `IconProps<"lucide">` select the local Lucide name suggestions and catch misspellings. Plain `IconProps` accepts string names. A newer catalogue can add names before the SDK types are refreshed; apps may pass those names directly until their SDK adds suggestions. These optional TypeScript checks never become a runtime allowlist. Serialized contracts contain an ordinary string schema, so the platform does not need the icon list or a special icon-name schema.
 
 Icons inherit the surrounding text color, including colors set by primitives. They do not accept children and are decorative, hidden from assistive technology. Give icon-only controls an accessible name on the control itself.
 
-The host fetches individual JSON files from `https://icons.tailorkit.app/lucide/1.59.0/` and renders validated SVG geometry inline. Icon data stays out of SDK and app bundles. Concurrent requests for the same icon are deduplicated, and each renderer caches up to 512 icons. The first load reserves the icon's dimensions until its geometry arrives. Unknown names and failed requests leave an empty space of the same size; a later mount can retry. Icons load in the browser and are initially empty during server rendering.
+The host fetches individual JSON files from `https://icons.tailorkit.app/lucide/v1/` and renders validated SVG geometry inline. Icon data stays out of SDK and app bundles. Concurrent requests for the same icon are deduplicated, and each renderer caches up to 512 icons. The first load reserves the icon's dimensions until its geometry arrives. Missing catalogue entries and failed requests leave an empty space of the same size; a later mount can retry. Icons load in the browser and are initially empty during server rendering.
+
+The `v1` URL identifies Patchsmith's catalogue and geometry compatibility contract, not Lucide's npm major version. Updates add names while retaining existing names and geometry. Old and new SDKs use the same URLs and do not negotiate npm versions. Breaking geometry or naming changes require a new catalogue compatibility version. This applies to versions that support the Icon component and v1 format; hosts predating this API need an initial upgrade.
+
+Deploy catalogue additions before apps depend on them. An older catalogue may return 404 for a newer name; the host keeps the rest of the UI working and a later mount retries. Successful icons are cached; failed lookups are not permanently cached. Adding an entirely new library still requires a host renderer that supports that library.
 
 The standalone `Icon({ library: "lucide" })` helpers remain available for custom component names and overrides. To self-host, serve the same versioned catalogue directory and override the renderer after spreading the primitives:
 
@@ -128,7 +151,7 @@ const components = {
 };
 ```
 
-The renderer appends `lucide/1.59.0/<name>.json` to this URL and also accepts a `fetch` implementation. Cross-origin catalogues must allow your host origin through CORS. Allow the catalogue origin in your page's `connect-src` policy if you use one. See the dedicated assets project's [catalogue build instructions](https://github.com/patchsmith-io/patchsmith/tree/main/apps/icons-assets) for generating the files and retaining their license notices.
+The renderer appends `lucide/v1/<name>.json` to this URL and also accepts a `fetch` implementation. Cross-origin catalogues must allow your host origin through CORS. Allow the catalogue origin in your page's `connect-src` policy if you use one. See the dedicated assets project's [catalogue build instructions](https://github.com/patchsmith-io/patchsmith/tree/main/apps/icons-assets) for generating the files and retaining their license notices.
 
 ## Change a component schema
 

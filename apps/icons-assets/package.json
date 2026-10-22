@@ -16,9 +16,8 @@
     "@patchsmith/config": "workspace:*",
     "@patchsmith/core": "workspace:*",
     "@types/node": "catalog:",
-    "lucide-react": "catalog:",
-    "react": "catalog:",
     "typescript": "catalog:",
+    "valibot": "catalog:",
     "vite-plus": "catalog:",
     "wrangler": "4.151.1"
   }

@@ -2,19 +2,34 @@ import type { LucideIconName } from "./lucide-names.generated";
 
 export type { LucideIconName } from "./lucide-names.generated";
 
-export interface IconOptions {
-  library: "lucide";
+interface IconNamesByLibrary {
+  lucide: LucideIconName;
 }
 
-export interface IconProps {
-  /** Kebab-case icon name, for example `arrow-right`. */
-  name: LucideIconName;
+export type IconLibrary = keyof IconNamesByLibrary;
+
+/** Opt-in names from the app SDK's catalogue, selected by library. */
+export type IconName<TLibrary extends IconLibrary> =
+  IconNamesByLibrary[TLibrary];
+
+export interface IconOptions {
+  library: IconLibrary;
+}
+
+export interface IconProps<
+  TLibrary extends IconLibrary | undefined = undefined,
+> {
+  /** Runtime accepts new names; specify a library for local compile-time checks. */
+  name: TLibrary extends IconLibrary ? IconName<TLibrary> : string;
   /** Size in pixels. Defaults to 24. */
   size?: number;
 }
 
 export const iconNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
-export const lucideVersion = "1.59.0";
+export const maxIconNameLength = 100;
+
+/** Our geometry and catalogue compatibility version, independent of npm releases. */
+export const iconCatalogueVersion = "v1";
 
 export const validateIconOptions = (options: IconOptions): void => {
   if (options.library !== "lucide") {

@@ -1,5 +1,5 @@
-// Generated from lucide-react 1.59.0 by pnpm --filter @patchsmith/core generate:icons.
-// Names only; SVG geometry is delivered separately by the catalogue.
+// Generated from the additive Lucide v1 catalogue by pnpm --filter @patchsmith/core generate:icons.
+// Optional name suggestions only; runtime validators accept future names.
 export const lucideIconNames = [
   "a-arrow-down",
   "a-arrow-up",

@@ -24,10 +24,25 @@ describe("icon loader", () => {
     expect(fetchIcon).toHaveBeenCalledTimes(1);
     const [call] = fetchIcon.mock.calls;
     expect(call?.[0]).toEqual(
-      new URL("https://icons.tailorkit.app/lucide/1.59.0/arrow-right.json")
+      new URL("https://icons.tailorkit.app/lucide/v1/arrow-right.json")
     );
     expect(call?.[1]?.credentials).toBe("omit");
     expect(call?.[1]?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("loads newer names without a local catalogue or SDK version lookup", async () => {
+    const fetchIcon = vi.fn<typeof fetch>(
+      async () => await Promise.resolve(Response.json(icon))
+    );
+
+    const loader = createIconLoader({ fetch: fetchIcon, library: "lucide" });
+
+    expect(await loader.load("future-icon-from-newer-sdk")).toEqual(icon);
+    expect(fetchIcon.mock.calls[0]?.[0]).toEqual(
+      new URL(
+        "https://icons.tailorkit.app/lucide/v1/future-icon-from-newer-sdk.json"
+      )
+    );
   });
 
   it("supports a self-hosted catalogue directory", async () => {
@@ -43,7 +58,7 @@ describe("icon loader", () => {
 
     await loader.load("check");
     expect(fetchIcon.mock.calls[0]?.[0]).toEqual(
-      new URL("https://assets.test/icons/lucide/1.59.0/check.json")
+      new URL("https://assets.test/icons/lucide/v1/check.json")
     );
   });
 
@@ -60,6 +75,8 @@ describe("icon loader", () => {
   });
 
   it.each([
+    "",
+    "ArrowRight",
     "../check",
     "check.svg",
     "https://other.test/icon",

@@ -81,6 +81,27 @@ describe("icon renderer", () => {
     expect(view.container.querySelector("circle")).not.toBeNull();
   });
 
+  it("renders newer app names in an older host without an enum lookup", async () => {
+    const fetchIcon = vi.fn<typeof fetch>(
+      async () => await Promise.resolve(Response.json(arrow))
+    );
+
+    const Renderer = Icon({ fetch: fetchIcon, library: "lucide" });
+
+    const view = render(
+      <Renderer props={{ name: "future-icon-from-newer-sdk" }} />
+    );
+
+    await waitFor(() => {
+      expect(view.container.querySelector("path")).not.toBeNull();
+    });
+    expect(fetchIcon.mock.calls[0]?.[0]).toEqual(
+      new URL(
+        "https://icons.tailorkit.app/lucide/v1/future-icon-from-newer-sdk.json"
+      )
+    );
+  });
+
   it("keeps a failed icon empty without breaking its siblings", async () => {
     const Renderer = Icon({
       fetch: async () =>

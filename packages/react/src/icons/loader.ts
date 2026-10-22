@@ -1,6 +1,7 @@
 import {
   iconNamePattern,
-  lucideVersion,
+  iconCatalogueVersion,
+  maxIconNameLength,
   parseIconData,
   validateIconOptions,
 } from "@patchsmith/core/icons";
@@ -39,7 +40,7 @@ export const createIconLoader = (options: IconRendererOptions) => {
 
   const fetchIcon = async (name: string): Promise<IconData> => {
     const url = new URL(
-      `${options.library}/${lucideVersion}/${name}.json`,
+      `${options.library}/${iconCatalogueVersion}/${name}.json`,
       baseUrl
     );
 
@@ -63,7 +64,7 @@ export const createIconLoader = (options: IconRendererOptions) => {
 
   return {
     load: async (name: string): Promise<IconData> => {
-      if (name.length > 100 || !iconNamePattern.test(name)) {
+      if (name.length > maxIconNameLength || !iconNamePattern.test(name)) {
         throw new Error("Invalid icon name");
       }
 

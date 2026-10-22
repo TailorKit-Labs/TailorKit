@@ -38,8 +38,11 @@ describe("primitive schema components", () => {
     const { Icon } = define();
     expect(Icon.children).toBe(false);
     expect(isValid(Icon.fields, { name: "arrow-right", size: 16 })).toBe(true);
+    expect(
+      isValid(Icon.fields, { name: "future-lucide-icon-from-newer-sdk" })
+    ).toBe(true);
     expect(isValid(Icon.fields, {})).toBe(false);
-    expect(isValid(Icon.fields, { name: "../arrow-right" })).toBe(false);
+    expect(isValid(Icon.fields, { name: 123 })).toBe(false);
   });
 
   it("serializes Icon with the other primitives", () => {

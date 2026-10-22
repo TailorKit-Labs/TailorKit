@@ -11,7 +11,9 @@ import { Icon as zodIcon } from "./zod";
 
 describe("icon contracts", () => {
   it("keeps the generated name list aligned with the pinned Lucide dependency", () => {
-    expect(lucideIconNames).toEqual(Object.keys(dynamicIconImports).toSorted());
+    expect(lucideIconNames).toEqual(
+      expect.arrayContaining(Object.keys(dynamicIconImports))
+    );
   });
 
   for (const [name, define] of Object.entries({
@@ -30,12 +32,16 @@ describe("icon contracts", () => {
       expect(valid.issues).toBeUndefined();
       expect(component.children).toBe(false);
 
+      // An older host must accept a name introduced by a newer app SDK.
+      const future = await component.fields["~standard"].validate({
+        name: "future-lucide-icon-from-newer-sdk",
+      });
+
+      expect(future.issues).toBeUndefined();
+
       const invalid = [
         {},
-        { name: "../arrow-right" },
-        { name: "https://other.test/icon" },
-        { name: "ArrowRight" },
-        { name: "arrow-rigth" },
+        { name: 123 },
         { name: "arrow-right", size: 0 },
         { name: "arrow-right", size: Number.NaN },
         { name: "arrow-right", strokeWidth: 2 },
@@ -63,7 +69,7 @@ describe("icon contracts", () => {
     const component = schema.serialize().components.icon;
     expect(component?.children).toBe(false);
     expect(component?.fields).toMatchObject({
-      properties: { name: { enum: lucideIconNames, type: "string" } },
+      properties: { name: { type: "string" } },
       required: ["name"],
     });
   });

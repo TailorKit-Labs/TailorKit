@@ -1,3 +1,5 @@
+import type { IconName, IconProps, LucideIconName } from "patchsmith";
+
 import { Icon } from "#patchsmith";
 
 // Compile-only checks against the actual generated app bindings.
@@ -5,8 +7,19 @@ import { Icon } from "#patchsmith";
 
 <Icon name="circle-check" size={16} />;
 
-// @ts-expect-error Icon names come from the pinned Lucide catalogue.
-<Icon name="arrow-rigth" />;
+// Older generated bindings accept names introduced by a newer SDK or catalogue.
+<Icon name="future-lucide-icon-from-newer-sdk" />;
+
+const library = "lucide";
+const name = "arrow-right" satisfies IconName<typeof library>;
+const props = { name, size: 16 } satisfies IconProps<typeof library>;
+
+<Icon {...props} />;
+
+// @ts-expect-error Apps can opt into locally known Lucide names.
+const typo = "arrow-rigth" satisfies LucideIconName;
+
+void typo;
 
 // @ts-expect-error An icon name is required.
 <Icon />;

@@ -19,16 +19,15 @@ import { z } from "zod";
 
 import { generateTypes, readSchemaFile, renderGeneratedTypes } from "./types";
 
-it("generates the Lucide name union for an icon registered under any name", () => {
+it("generates forward-compatible string names for an icon registered under any name", () => {
   const schema = createPatchsmithSchema({
     components: { Glyph: iconContract({ library: "lucide" }) },
   }).serialize();
 
   const output = renderGeneratedTypes(v.parse(PatchsmithSchemaSpec, schema));
   expect(output).toContain("export interface GlyphProps");
-  expect(output).toContain('name: "a-arrow-down" |');
-  expect(output).toContain('"arrow-right"');
-  expect(output).not.toContain('"arrow-rigth"');
+  expect(output).toContain("name: string;");
+  expect(output).not.toContain('"a-arrow-down"');
   expect(output).not.toContain("strokeWidth");
   expect(output).not.toContain("label");
   expect(output).toContain("size?: number;");

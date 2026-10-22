@@ -1,4 +1,4 @@
-import { lucideVersion, parseIconData } from "@patchsmith/core/icons";
+import { iconCatalogueVersion, parseIconData } from "@patchsmith/core/icons";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { createTestHarness } from "wrangler";
 
@@ -17,7 +17,7 @@ const server = createTestHarness({
 });
 
 const origin = "https://icons.tailorkit.app";
-const catalogue = `/lucide/${lucideVersion}`;
+const catalogue = `/lucide/${iconCatalogueVersion}`;
 
 beforeAll(async () => {
   await server.listen();
@@ -74,16 +74,15 @@ describe("icon static assets", () => {
     expect(text).toContain("MIT License");
   });
 
-  it.each([
-    "/lucide/1.59.0/missing.json",
-    "/lucide/0.0.0/check.json",
-    "/unknown",
-  ])("keeps misses out of the immutable cache: %s", async (pathname) => {
-    const response = await server.fetch(pathname);
-    expect(response.status).toBe(404);
-    expect(response.headers.get("Cache-Control")).toBe("no-store");
-    expect(response.headers.get("Access-Control-Allow-Origin")).toBe("*");
-  });
+  it.each(["/lucide/v1/missing.json", "/lucide/0.0.0/check.json", "/unknown"])(
+    "keeps misses out of the immutable cache: %s",
+    async (pathname) => {
+      const response = await server.fetch(pathname);
+      expect(response.status).toBe(404);
+      expect(response.headers.get("Cache-Control")).toBe("no-store");
+      expect(response.headers.get("Access-Control-Allow-Origin")).toBe("*");
+    }
+  );
 
   it("rejects unsupported methods", async () => {
     const preflight = await server.fetch(`${catalogue}/check.json`, {

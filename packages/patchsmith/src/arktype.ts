@@ -1,6 +1,8 @@
 export { Icon } from "@patchsmith/core/icons/arktype";
 
 export type {
+  IconLibrary,
+  IconName,
   IconOptions,
   IconProps,
   LucideIconName,
