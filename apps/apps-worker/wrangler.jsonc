@@ -86,11 +86,5 @@
       "enabled": true,
     },
   },
-  "kv_namespaces": [
-    {
-      "binding": "DEPLOYMENTS",
-      // patchsmith-app-deployments; renaming the namespace preserves its ID.
-      "id": "06b12b0c61164472887d9cf967f577b6",
-    },
-  ],
+
 }

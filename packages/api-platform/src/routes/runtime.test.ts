@@ -2,12 +2,9 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { beforeEach, expect, it, vi } from "vite-plus/test";
 
 import type { Context } from "#context";
+import { warmRuntimeInstallation } from "#runtime/publication";
 
-import {
-  getRuntimeBundle,
-  handlePublicRuntimeRequest,
-  publishRuntimeMetadata,
-} from "./runtime";
+import { getRuntimeBundle, handlePublicRuntimeRequest } from "./runtime";
 
 const state = vi.hoisted(() => ({
   env: {
@@ -91,7 +88,7 @@ it("publishes deployment metadata to the worker with the service credential", as
     .mockResolvedValue(new Response(null, { status: 204 }));
 
   try {
-    await publishRuntimeMetadata(metadata, "app000000001");
+    await warmRuntimeInstallation(metadata, "app000000001");
     expect(fetch).toHaveBeenCalledWith(
       new URL(
         "https://internal.tailorkit.app/p/project/a/app000000001/new-deployment"
@@ -106,13 +103,10 @@ it("publishes deployment metadata to the worker with the service credential", as
         redirect: "error",
       })
     );
-    const log = vi.spyOn(console, "error").mockImplementation(() => {});
     fetch.mockRejectedValueOnce(new Error("Network unavailable"));
     await expect(
-      publishRuntimeMetadata(metadata, "app000000001")
-    ).resolves.toBeUndefined();
-    expect(log).toHaveBeenCalledOnce();
-    log.mockRestore();
+      warmRuntimeInstallation(metadata, "app000000001")
+    ).rejects.toThrow("Network unavailable");
   } finally {
     fetch.mockRestore();
   }

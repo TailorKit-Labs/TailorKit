@@ -405,6 +405,79 @@ describe("platform deployment uploads", () => {
     }
   );
 
+  it.each([true, false])(
+    "advances installations for client-only publication only with rollout enabled (%s)",
+    async (rollout) => {
+      const context = publishContext("https://uploads.example/client.js");
+      const source = requireValue(await db.query.app.findFirst());
+
+      const [previous, deployment] = await db
+        .insert(appDeployment)
+        .values([
+          { appId: source.id, status: "published" },
+          { appId: source.id, status: "uploading" },
+        ])
+        .returning();
+
+      if (!previous || !deployment) {
+        throw new Error("Expected rollout deployments");
+      }
+
+      await db
+        .update(appTable)
+        .set({ currentDeploymentId: previous.id })
+        .where(eq(appTable.id, source.id));
+
+      const [installation] = await db
+        .insert(appTable)
+        .values({
+          currentDeploymentId: previous.id,
+          name: "Installed Inbox",
+          projectId,
+          ...canonicalizeScope({
+            name: "environment",
+            value: { environment: "staging" },
+          }),
+        })
+        .returning();
+
+      if (!installation) {
+        throw new Error("Expected rollout installation");
+      }
+
+      await db.insert(appDeploymentFile).values({
+        appDeploymentId: deployment.id,
+        checksum: logoChecksum,
+        contentLength: 11,
+        contentType: "application/javascript",
+        objectKey: `projects/${context.project.shortId}/apps/${source.shortId}/deployments/${deployment.shortId}/client/client.js`,
+      });
+      context.storage.head = vi.fn().mockResolvedValue({
+        checksumSha256: logoChecksumBase64,
+        contentLength: 11,
+        contentType: "application/javascript",
+      });
+
+      await call(
+        deploymentRouter.publish,
+        {
+          body: { rollout, scope: productionScope },
+          params: { deploymentId: deployment.id },
+        },
+        { context }
+      );
+
+      const expected = rollout ? deployment.id : previous.id;
+
+      expect(
+        await db.query.app.findFirst({ where: { id: source.id } })
+      ).toMatchObject({ currentDeploymentId: expected });
+      expect(
+        await db.query.app.findFirst({ where: { id: installation.id } })
+      ).toMatchObject({ currentDeploymentId: expected });
+    }
+  );
+
   const createGzipClientDeployment = async (decoded: Uint8Array) => {
     const bytes = gzipSync(decoded);
     const checksum = createHash("sha256").update(bytes).digest("hex");

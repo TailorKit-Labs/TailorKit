@@ -1,12 +1,10 @@
-import {
-  appDeploymentMetadata,
-  deploymentMetadataKey,
-} from "@patchsmith/api-utils/app-auth";
+import { appDeploymentMetadata } from "@patchsmith/api-utils/app-auth";
 import type { AppDeploymentMetadata } from "@patchsmith/api-utils/app-auth";
 import { AppError } from "@patchsmith/app/server";
 import type { Identity } from "@patchsmith/app/server";
 import { maxDeploymentBytes } from "@patchsmith/asset-delivery";
-import { Effect } from "effect";
+import { Effect, Semaphore } from "effect";
+import { z } from "zod";
 
 import { appError } from "../runtime/errors";
 import { RuntimeTimings } from "../timing";
@@ -22,7 +20,10 @@ const requireValue = <T>(value: T | null | undefined): T => {
 export type ServerDeployment = AppDeploymentMetadata;
 
 /** Deployment selects code, never the database. Issuer also separates trusted hosts. */
-export const installationName = (identity: Identity, issuer: string) =>
+export const installationName = (
+  identity: Pick<Identity, "projectId" | "appId" | "installationId">,
+  issuer: string
+) =>
   JSON.stringify([
     issuer,
     identity.projectId,
@@ -30,17 +31,48 @@ export const installationName = (identity: Identity, issuer: string) =>
     identity.installationId,
   ]);
 
-export const metadataLifetimeSeconds = 300;
-export const warmMetadataLifetimeMs = 5000;
+export const metadataRevalidateMs = 60 * 60 * 1000;
 
-const runningDeploymentChanged = (
-  deployment: ServerDeployment,
-  runningDeploymentId?: string
-) =>
-  runningDeploymentId !== undefined &&
-  runningDeploymentId !== null &&
-  runningDeploymentId !== "" &&
-  deployment.deploymentId !== runningDeploymentId;
+export interface DeploymentStorage {
+  kv: {
+    get: (key: string) => string | undefined;
+    put: (key: string, value: string) => void;
+    delete: (key: string) => boolean;
+  };
+  transactionSync: (write: () => void) => void;
+}
+
+const metadataKey = "runtime:metadata";
+const bundleKey = "runtime:bundle";
+const chunkLength = 16_384;
+
+const storedMetadata = appDeploymentMetadata.extend({
+  checkedAt: z.number(),
+  tokenDeploymentId: z.string(),
+});
+
+const bundleManifest = z.object({
+  chunks: z.number().int().min(1).max(192),
+  version: z.string(),
+});
+
+const readStored = <T>(
+  storage: DeploymentStorage,
+  key: string,
+  schema: z.ZodType<T>
+) => {
+  const value = storage.kv.get(key);
+
+  if (value === undefined) {
+    return null;
+  }
+
+  try {
+    return schema.safeParse(JSON.parse(value)).data ?? null;
+  } catch {
+    return null;
+  }
+};
 
 /** Bound stored and inflated bytes before allocating or executing bundle code. */
 const readBundleBytes = async (
@@ -73,155 +105,32 @@ const readBundleBytes = async (
 /** Only this trusted service sees platform credentials or the private R2 binding. */
 export const deploymentSource = (
   env: Pick<Env, "PLATFORM_URL" | "RUNTIME_SERVICE_TOKEN"> & {
-    DEPLOYMENTS: {
-      get: (key: string, type: "json") => Promise<ServerDeployment | null>;
-      put: (
-        key: string,
-        value: string,
-        options: { expirationTtl: number }
-      ) => Promise<void>;
-    };
     BUNDLES: {
       get: (
         key: string
       ) => Promise<{ body: ReadableStream<Uint8Array> } | null>;
     };
-  }
+  },
+  storage: DeploymentStorage,
+  waitUntil: (task: Promise<void>) => void
 ) => {
   let cached: { version: string; code: string } | undefined;
 
-  let metadata:
-    | {
-        key: string;
-        deployment: ServerDeployment;
-        tokenDeploymentId: string;
-        expiresAt: number;
-      }
-    | undefined;
+  let background: Promise<void> | undefined;
+  const refreshQueue = Semaphore.makeUnsafe(1);
+  let retryAfter = 0;
 
-  const tokenChanged = (identity: Identity, key: string) =>
-    metadata?.key === key &&
-    identity.deploymentId !== metadata.tokenDeploymentId &&
-    identity.deploymentId !== metadata.deployment.deploymentId;
-
-  const warmDeployment = (
-    key: string,
-    runningDeploymentId?: string
-  ): ServerDeployment | undefined => {
-    const reusable =
-      metadata?.key === key &&
-      metadata.expiresAt > Date.now() &&
-      (runningDeploymentId === undefined ||
-        runningDeploymentId === "" ||
-        runningDeploymentId === metadata.deployment.deploymentId);
-
-    return reusable ? metadata?.deployment : undefined;
-  };
-
-  return {
-    code: (deployment: ServerDeployment) =>
-      Effect.tryPromise({
-        catch: appError,
-        try: async () => {
-          const version = `${deployment.deploymentId}:${deployment.checksum}:${deployment.contentEncoding ?? "utf-8"}`;
-
-          if (cached?.version === version) {
-            return cached.code;
-          }
-
-          const object = await env.BUNDLES.get(deployment.objectKey);
-
-          if (!object) {
-            throw new AppError("NOT_FOUND", "Server bundle missing");
-          }
-
-          const bytes = await readBundleBytes(object.body);
-
-          if (bytes.byteLength !== deployment.contentLength) {
-            throw new Error("Server bundle size mismatch");
-          }
-
-          const hash = new Uint8Array(
-            await crypto.subtle.digest("SHA-256", bytes)
-          );
-
-          const checksum = [...hash]
-            .map((byte) => byte.toString(16).padStart(2, "0"))
-            .join("");
-
-          if (checksum !== deployment.checksum) {
-            throw new Error("Server bundle checksum mismatch");
-          }
-
-          const decoded =
-            deployment.contentEncoding === "gzip"
-              ? await readBundleBytes(
-                  requireValue(new Response(bytes).body).pipeThrough(
-                    new DecompressionStream("gzip")
-                  )
-                )
-              : bytes;
-
-          const code = new TextDecoder("utf-8", { fatal: true }).decode(
-            decoded
-          );
-
-          cached = { code, version };
-
-          return code;
-        },
-      }).pipe(
-        Effect.tapError(() =>
-          Effect.sync(() => {
-            // A corrected publication must be observable immediately after a bad bundle.
-            metadata = undefined;
-          })
-        )
-      ),
-
-    current: (
-      identity: Identity,
-      runningDeploymentId?: string,
-      timings = new RuntimeTimings()
-    ) =>
-      Effect.tryPromise({
-        catch: appError,
-        try: async () => {
-          const key = deploymentMetadataKey(identity);
-          const now = Date.now();
-
-          if (identity.expiresAt <= now) {
-            throw new AppError("UNAUTHORIZED", "App token expired");
-          }
-
-          const deploymentHintChanged = tokenChanged(identity, key);
-
-          const warm = warmDeployment(key, runningDeploymentId);
-
-          if (warm && !deploymentHintChanged) {
-            return warm;
-          }
-
-          const cachedMetadata = appDeploymentMetadata.safeParse(
-            await timings.time(
-              "runtime_metadata_kv",
-              async () =>
-                await env.DEPLOYMENTS.get(key, "json").catch(() => null)
-            )
-          );
-
-          let deployment = cachedMetadata.success
-            ? cachedMetadata.data
-            : undefined;
-
-          // Confirm a changed pointer with the authority before switching schemas.
-          // This prevents a stale KV replica from switching an installation backwards.
-          if (
-            !deployment ||
-            deployment.deploymentId !== identity.deploymentId ||
-            deploymentHintChanged ||
-            runningDeploymentChanged(deployment, runningDeploymentId)
-          ) {
+  // Serialize authoritative lookups, including pushes, so an older response can
+  // never land after a newer confirmation in this installation.
+  const refresh = async (
+    identity: Pick<Identity, "appId" | "projectId" | "deploymentId">,
+    timings = new RuntimeTimings()
+  ) =>
+    await Effect.runPromise(
+      refreshQueue.withPermits(1)(
+        Effect.tryPromise({
+          catch: appError,
+          try: async () => {
             const base = new URL(
               env.PLATFORM_URL.endsWith("/")
                 ? env.PLATFORM_URL
@@ -261,7 +170,9 @@ export const deploymentSource = (
               );
             }
 
-            deployment = appDeploymentMetadata.parse(await response.json());
+            const deployment = appDeploymentMetadata.parse(
+              await response.json()
+            );
 
             if (
               deployment.projectId !== identity.projectId ||
@@ -270,30 +181,174 @@ export const deploymentSource = (
               throw new AppError("FORBIDDEN", "App or project mismatch");
             }
 
-            // Only publication writes the shared KV pointer. A delayed lookup
-            // must not overwrite a newer publication; cache this result locally.
+            storage.kv.put(
+              metadataKey,
+              JSON.stringify({
+                ...deployment,
+                checkedAt: Date.now(),
+                tokenDeploymentId: identity.deploymentId,
+              })
+            );
+
+            return deployment;
+          },
+        })
+      )
+    );
+
+  const revalidate = async (identity: Identity) => {
+    try {
+      await refresh(identity);
+    } catch (error) {
+      retryAfter = Date.now() + 60_000;
+      console.error("Could not revalidate app runtime metadata", error);
+    } finally {
+      background = undefined;
+    }
+  };
+
+  return {
+    code: (deployment: ServerDeployment) =>
+      Effect.tryPromise({
+        catch: appError,
+        try: async () => {
+          const version = `${deployment.deploymentId}:${deployment.checksum}:${deployment.contentEncoding ?? "utf-8"}`;
+
+          if (cached?.version === version) {
+            return cached.code;
           }
 
-          if (
-            deployment.projectId !== identity.projectId ||
-            deployment.appId !== identity.appId
-          ) {
-            throw new AppError("FORBIDDEN", "App or project mismatch");
+          const manifest = readStored(storage, bundleKey, bundleManifest);
+
+          if (manifest?.version === version) {
+            const chunks = Array.from({ length: manifest.chunks }, (_, index) =>
+              storage.kv.get(`${bundleKey}:${index}`)
+            );
+
+            const parsed = z.array(z.string()).safeParse(chunks);
+
+            if (parsed.success) {
+              const code = parsed.data.join("");
+              cached = { code, version };
+
+              return code;
+            }
           }
+
+          const object = await env.BUNDLES.get(deployment.objectKey);
+
+          if (!object) {
+            throw new AppError("NOT_FOUND", "Server bundle missing");
+          }
+
+          const bytes = await readBundleBytes(object.body);
+
+          if (bytes.byteLength !== deployment.contentLength) {
+            throw new Error("Server bundle size mismatch");
+          }
+
+          const hash = new Uint8Array(
+            await crypto.subtle.digest("SHA-256", bytes)
+          );
+
+          const checksum = [...hash]
+            .map((byte) => byte.toString(16).padStart(2, "0"))
+            .join("");
+
+          if (checksum !== deployment.checksum) {
+            throw new Error("Server bundle checksum mismatch");
+          }
+
+          const decoded =
+            deployment.contentEncoding === "gzip"
+              ? await readBundleBytes(
+                  requireValue(new Response(bytes).body).pipeThrough(
+                    new DecompressionStream("gzip")
+                  )
+                )
+              : bytes;
+
+          const code = new TextDecoder("utf-8", { fatal: true }).decode(
+            decoded
+          );
+
+          storage.transactionSync(() => {
+            const chunks = Math.max(1, Math.ceil(code.length / chunkLength));
+
+            for (let index = 0; index < chunks; index += 1) {
+              storage.kv.put(
+                `${bundleKey}:${index}`,
+                code.slice(index * chunkLength, (index + 1) * chunkLength)
+              );
+            }
+
+            for (
+              let index = chunks;
+              index < (manifest?.chunks ?? 0);
+              index += 1
+            ) {
+              storage.kv.delete(`${bundleKey}:${index}`);
+            }
+
+            storage.kv.put(bundleKey, JSON.stringify({ chunks, version }));
+          });
+          cached = { code, version };
+
+          return code;
+        },
+      }).pipe(
+        Effect.tapError(() =>
+          Effect.sync(() => {
+            // A corrected publication must be observable immediately after a bad bundle.
+            storage.kv.delete(metadataKey);
+          })
+        )
+      ),
+    current: (
+      identity: Identity,
+      _runningDeploymentId?: string,
+      timings = new RuntimeTimings()
+    ) =>
+      Effect.tryPromise({
+        catch: appError,
+        try: async () => {
+          if (identity.expiresAt <= Date.now()) {
+            throw new AppError("UNAUTHORIZED", "App token expired");
+          }
+
+          const stored = readStored(storage, metadataKey, storedMetadata);
+
+          const matches =
+            stored?.appId === identity.appId &&
+            stored.projectId === identity.projectId;
+
+          const hintChanged =
+            matches &&
+            identity.deploymentId !== stored.deploymentId &&
+            identity.deploymentId !== stored.tokenDeploymentId;
+
+          if (matches && !hintChanged) {
+            if (
+              Date.now() - stored.checkedAt >= metadataRevalidateMs &&
+              !background &&
+              Date.now() >= retryAfter
+            ) {
+              background = revalidate(identity);
+              waitUntil(background);
+            }
+
+            return appDeploymentMetadata.parse(stored);
+          }
+
+          const deployment = await refresh(identity, timings);
 
           if (identity.expiresAt <= Date.now()) {
             throw new AppError("UNAUTHORIZED", "App token expired");
           }
 
-          metadata = {
-            deployment,
-            expiresAt: now + warmMetadataLifetimeMs,
-            key,
-            tokenDeploymentId: identity.deploymentId,
-          };
-
           return deployment;
         },
       }),
+    refresh,
   };
 };

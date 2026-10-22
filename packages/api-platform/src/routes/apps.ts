@@ -364,35 +364,76 @@ const installApp = protectedRouter
       },
     });
 
-    const deployment = source?.currentDeployment;
+    const originDeployment = source?.currentDeployment;
 
-    if (!source || !deployment) {
+    if (!source || !originDeployment) {
       throw new ORPCError("NOT_FOUND", {
         message: "App has no published deployment.",
       });
     }
 
     const scope = canonicalizeScope(input.body.scope);
+    const shortId = await createUniqueAppShortId(context.project.id);
 
-    const [installed] = await db
-      .insert(app)
-      .values({
-        currentDeploymentId: deployment.id,
-        description: source.description,
-        name: source.name,
-        projectId: context.project.id,
-        scope: scope.scope,
-        scopeKey: scope.scopeKey,
-        shortId: await createUniqueAppShortId(context.project.id),
-        slug: input.body.slug,
-      })
-      .onConflictDoNothing({ target: [app.projectId, app.slug] })
-      .returning();
+    const { installed, deployment } = await db.transaction(async (tx) => {
+      // Use the same owner lock as rollout so an install cannot copy a version
+      // just before rollout and insert its stale pointer after the fan-out.
+      await tx
+        .select({ id: app.id })
+        .from(app)
+        .where(eq(app.id, originDeployment.appId))
+        .for("update");
+
+      const current = await tx.query.app.findFirst({
+        where: { id: source.id, projectId: context.project.id },
+        with: {
+          currentDeployment: {
+            where: { status: "published" },
+            with: { app: { columns: { shortId: true } } },
+          },
+        },
+      });
+
+      const selectedDeployment = current?.currentDeployment;
+
+      if (!selectedDeployment) {
+        throw new ORPCError("NOT_FOUND", {
+          message: "App has no published deployment.",
+        });
+      }
+
+      const [createdInstallation] = await tx
+        .insert(app)
+        .values({
+          currentDeploymentId: selectedDeployment.id,
+          description: source.description,
+          name: source.name,
+          projectId: context.project.id,
+          scope: scope.scope,
+          scopeKey: scope.scopeKey,
+          shortId,
+          slug: input.body.slug,
+        })
+        .onConflictDoNothing({ target: [app.projectId, app.slug] })
+        .returning();
+
+      return { deployment: selectedDeployment, installed: createdInstallation };
+    });
 
     if (!installed) {
       throw new ORPCError("CONFLICT", {
         message: "App slug is already in use in this project.",
       });
+    }
+
+    try {
+      const { warmRuntimeDeployment } =
+        await import("#runtime/deployment-steps");
+
+      await warmRuntimeDeployment(context.project.id, installed.id);
+    } catch (error) {
+      // A warm-up failure must not undo a successful installation.
+      console.error("Could not warm new app installation", error);
     }
 
     return {
@@ -557,7 +598,19 @@ const deploy = cliRouter
       throw new ORPCError("BAD_REQUEST", { message: "Failed to deploy app." });
     }
 
-    if (deployment.status === "published") {
+    const { selectRuntimeDeployment } =
+      await import("#runtime/deployment-steps");
+
+    const selected = await selectRuntimeDeployment(
+      {
+        appId: context.app.id,
+        deploymentId: deployment.id,
+        projectId: context.project.id,
+      },
+      db
+    );
+
+    if (selected && deployment.status === "published") {
       const server = await db.query.appDeploymentFile.findFirst({
         where: {
           appDeploymentId: deployment.id,
@@ -575,6 +628,7 @@ const deploy = cliRouter
           {
             appId: context.app.id,
             checksum: server.checksum,
+            contentEncoding: server.encoding === "gzip" ? "gzip" : undefined,
             contentLength: server.contentLength,
             deploymentId: deployment.id,
             objectKey: server.objectKey,

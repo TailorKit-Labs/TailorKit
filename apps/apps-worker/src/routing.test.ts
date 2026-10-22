@@ -51,9 +51,8 @@ const fetchInstallation = vi.fn(
   asyncFixture((_request: Request) => new Response("result"))
 );
 
-const getByName = vi.fn(() => ({ fetch: fetchInstallation }));
-
-const put = vi.fn<() => Promise<void>>().mockReturnValue(Promise.resolve());
+const warm = vi.fn(async (_metadata: typeof metadata) => {});
+const getByName = vi.fn(() => ({ fetch: fetchInstallation, warm }));
 
 // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
@@ -61,7 +60,6 @@ const env =
   /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
   {
     ASSET_DOMAIN: "tailorkit.app",
-    DEPLOYMENTS: { put },
     PLATFORM_URL: "https://platform.test/api/platform",
     RUNTIME_SERVICE_TOKEN: secret,
     STORES: { getByName },
@@ -158,24 +156,20 @@ it("handles preflight without a token or installation lookup", async () => {
 it("accepts authenticated publication only on the internal hostname", async () => {
   const awaitedResult3 = await call(post(publication));
   expect(awaitedResult3.status).toBe(204);
-  expect(put).toHaveBeenCalledWith(
-    JSON.stringify([projectId, metadata.appId]),
-    JSON.stringify(metadata),
-    { expirationTtl: 300 }
-  );
-  put.mockClear();
+  expect(warm).toHaveBeenCalledWith(metadata);
+  warm.mockClear();
 
   const awaitedResult4 = await call(
     post(publication.replace("internal", projectShortId))
   );
 
   expect(awaitedResult4.status).toBe(404);
-  expect(put).not.toHaveBeenCalled();
+  expect(warm).not.toHaveBeenCalled();
 });
 
 it.each([
   { projectId: "other" },
-  { objectKey: metadata.objectKey.replace(appShortId, "app000000002") },
+  { objectKey: metadata.objectKey.replace(appShortId, "invalid") },
   {
     objectKey: metadata.objectKey.replace(
       "/server/server.js",
@@ -190,7 +184,7 @@ it.each([
     );
 
     expect(awaitedResult5.status).toBe(400);
-    expect(put).not.toHaveBeenCalled();
+    expect(warm).not.toHaveBeenCalled();
   }
 );
 
@@ -199,7 +193,7 @@ it("rejects unauthorized publication and unsupported methods", async () => {
   expect(awaitedResult6.status).toBe(401);
   const awaitedResult7 = await call(new Request(publication));
   expect(awaitedResult7.status).toBe(405);
-  expect(put).not.toHaveBeenCalled();
+  expect(warm).not.toHaveBeenCalled();
 });
 
 it("returns verifier failures without selecting an installation", async () => {
@@ -212,4 +206,15 @@ it("returns verifier failures without selecting an installation", async () => {
     json: { code: "UNAUTHORIZED", message: "App token expired" },
   });
   expect(getByName).not.toHaveBeenCalled();
+});
+
+it("warms an installation using a bundle owned by its source app", async () => {
+  const sourceMetadata = {
+    ...metadata,
+    objectKey: metadata.objectKey.replace(appShortId, "app000000002"),
+  };
+
+  const response = await call(post(publication, sourceMetadata));
+  expect(response.status).toBe(204);
+  expect(warm).toHaveBeenCalledExactlyOnceWith(sourceMetadata);
 });

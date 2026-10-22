@@ -1497,6 +1497,70 @@ describe("platform appRouter", () => {
     }
   );
 
+  it.each(["missing", "unverified", "empty-checksum", "verified"] as const)(
+    "advances installations when selecting a deployment with a %s server bundle",
+    async (server) => {
+      const context = createContext();
+      const source = await seedRuntimeApp("rollout", []);
+
+      const [installation] = await db
+        .insert(appTable)
+        .values({
+          currentDeploymentId: source.deployment.id,
+          name: "Installed rollout",
+          projectId,
+          ...canonicalizeScope(stagingScope),
+        })
+        .returning();
+
+      const [deployment] = await db
+        .insert(appDeployment)
+        .values({
+          appId: source.app.id,
+          shortId: "next00000001",
+          status: "published",
+        })
+        .returning();
+
+      if (!installation || !deployment) {
+        throw new Error("Expected rollout fixtures");
+      }
+
+      if (server !== "missing") {
+        await db.insert(appDeploymentFile).values({
+          appDeploymentId: deployment.id,
+          checksum: server === "empty-checksum" ? "" : "0".repeat(64),
+          contentLength: 1,
+          contentType: "application/javascript",
+          objectKey: `projects/${context.project.shortId}/apps/${source.app.shortId}/deployments/${deployment.shortId}/server/server.js`,
+          status: server === "unverified" ? "uploading" : "verified",
+        });
+      }
+
+      await call(
+        appRouter.deploy,
+        {
+          body: {
+            app: { id: source.app.id },
+            deploymentId: deployment.id,
+            scope: productionScope,
+          },
+        },
+        { context }
+      );
+
+      expect(
+        await db.query.app.findFirst({ where: { id: installation.id } })
+      ).toMatchObject({ currentDeploymentId: deployment.id });
+
+      if (server === "verified") {
+        expect(testState.publishMetadata).toHaveBeenCalledOnce();
+      } else {
+        expect(testState.publishMetadata).not.toHaveBeenCalled();
+      }
+    }
+  );
+
   it("uses the JSON body scope for app mutations", async () => {
     const context = createContext();
 
