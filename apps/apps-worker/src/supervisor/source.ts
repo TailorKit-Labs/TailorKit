@@ -32,6 +32,15 @@ export const installationName = (identity: Identity, issuer: string) =>
 export const metadataLifetimeSeconds = 300;
 export const warmMetadataLifetimeMs = 5000;
 
+const runningDeploymentChanged = (
+  deployment: ServerDeployment,
+  runningDeploymentId?: string
+) =>
+  runningDeploymentId !== undefined &&
+  runningDeploymentId !== null &&
+  runningDeploymentId !== "" &&
+  deployment.deploymentId !== runningDeploymentId;
+
 /** Bound stored and inflated bytes before allocating or executing bundle code. */
 const readBundleBytes = async (
   stream: ReadableStream<Uint8Array>
@@ -202,10 +211,7 @@ export const deploymentSource = (
             !deployment ||
             deployment.deploymentId !== identity.deploymentId ||
             deploymentHintChanged ||
-            (runningDeploymentId !== undefined &&
-              runningDeploymentId !== null &&
-              runningDeploymentId !== "" &&
-              deployment.deploymentId !== runningDeploymentId)
+            runningDeploymentChanged(deployment, runningDeploymentId)
           ) {
             const base = new URL(
               env.PLATFORM_URL.endsWith("/")
@@ -251,12 +257,8 @@ export const deploymentSource = (
               throw new AppError("FORBIDDEN", "App or project mismatch");
             }
 
-            await env.DEPLOYMENTS.put(key, JSON.stringify(deployment), {
-              expirationTtl: metadataLifetimeSeconds,
-              // oxlint-disable-next-line anti-slop/no-unknown-parameters -- JavaScript may reject with arbitrary values; this boundary records or preserves the original failure.
-            }).catch((error: unknown) => {
-              console.error("Could not cache app deployment metadata", error);
-            });
+            // Only publication writes the shared KV pointer. A delayed lookup
+            // must not overwrite a newer publication; cache this result locally.
           }
 
           if (

@@ -95,6 +95,69 @@ it("resolves authorized metadata separately from R2 code and never follows redir
   expect(fetch).toHaveBeenCalledOnce();
 });
 
+it.each(["miss", "changed pointer"] as const)(
+  "does not overwrite a newer publication when a delayed lookup finishes (%s)",
+  async (scenario) => {
+    let pointer =
+      scenario === "miss" ? null : { ...deployment, deploymentId: "v0" };
+
+    const newer = { ...deployment, deploymentId: "v2" };
+    const started = Promise.withResolvers<boolean>();
+    const release = Promise.withResolvers<boolean>();
+
+    const fetch = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementationOnce(async () => {
+        started.resolve(true);
+        await release.promise;
+
+        return Response.json(deployment);
+      })
+      .mockImplementation(asyncFixture(() => Response.json(newer)));
+
+    const kv = {
+      get: asyncFixture(() => pointer),
+      put: vi.fn(
+        asyncFixture((_key: string, value: string) => {
+          pointer = appDeploymentMetadata.parse(JSON.parse(value));
+        })
+      ),
+    };
+
+    const source = deploymentSource({
+      BUNDLES: { get: vi.fn() },
+      DEPLOYMENTS: kv,
+      PLATFORM_URL: "https://platform.test",
+      RUNTIME_SERVICE_TOKEN: "private",
+    });
+
+    const pending = Effect.runPromise(source.current(identity));
+    await started.promise;
+    // The publication endpoint writes v2 while the v1 lookup is still pending.
+    await kv.put(
+      JSON.stringify([identity.projectId, identity.appId]),
+      JSON.stringify(newer)
+    );
+    release.resolve(true);
+
+    expect(await pending).toEqual(deployment);
+    expect(await Effect.runPromise(source.current(identity))).toEqual(
+      deployment
+    );
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(pointer).toEqual(newer);
+    expect(kv.put).toHaveBeenCalledOnce();
+
+    expect(
+      await Effect.runPromise(
+        source.current({ ...identity, deploymentId: "v2" }, "v1")
+      )
+    ).toEqual(newer);
+    expect(pointer).toEqual(newer);
+    expect(kv.put).toHaveBeenCalledOnce();
+  }
+);
+
 it.each([null, "tampered", `${code} extra`])(
   "rejects missing, corrupted and oversized R2 code: %s",
   async (contents) => {
@@ -123,7 +186,7 @@ it.each([302, 403, 404, 503])(
   }
 );
 
-it("serves KV hits to old clients and fills misses from the platform", async () => {
+it("serves KV hits to old clients and caches platform lookups locally", async () => {
   vi.useFakeTimers({ toFake: ["Date"] });
 
   const values = new Map<
@@ -159,7 +222,7 @@ it("serves KV hits to old clients and fills misses from the platform", async () 
 
   const awaitedResult3 = await Effect.runPromise(source.current(identity));
   expect(awaitedResult3.deploymentId).toBe("v2");
-  expect(put).toHaveBeenCalledOnce();
+  expect(put).not.toHaveBeenCalled();
 
   const awaitedResult4 = await Effect.runPromise(
     source.current(identity, "v2")
@@ -204,11 +267,7 @@ it.each([undefined, "v1"])(
       await Effect.runPromise(source.current(caller, runningDeploymentId))
     ).toEqual(current);
     expect(fetch).toHaveBeenCalledOnce();
-    expect(put).toHaveBeenCalledWith(
-      expect.any(String),
-      JSON.stringify(current),
-      expect.any(Object)
-    );
+    expect(put).not.toHaveBeenCalled();
     expect(await Effect.runPromise(source.current(caller, "v2"))).toEqual(
       current
     );
