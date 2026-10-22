@@ -33,6 +33,9 @@ const preactPackageJson = "preact/package.json";
 
 const preactPackageJsonModuleId = "\0patchsmith-preact-package-json";
 
+// Legacy function files remain server-only even though discovery ignores them.
+const serverModuleSuffix = /\.(?:router|fn)\.ts$/u;
+
 export interface PatchsmithPluginOptions {
   /** Config file path relative to vite.config.ts. Defaults to ./patchsmith.config.ts. */
   configPath?: string;
@@ -316,7 +319,7 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
           (importer !== undefined &&
             importer !== null &&
             importer !== "" &&
-            path.resolve(path.dirname(importer), id).endsWith(".router.ts"))
+            serverModuleSuffix.test(path.resolve(path.dirname(importer), id)))
         ) {
           throw new Error(
             "App server implementations cannot be imported into a browser bundle. Import api from #patchsmith and server types with import type."
@@ -326,7 +329,7 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
         if (importer !== undefined && importer !== null && importer !== "") {
           const result = await this.resolve(id, importer, { skipSelf: true });
 
-          if (result?.id.split("?")[0]?.endsWith(".router.ts") === true) {
+          if (serverModuleSuffix.test(result?.id.split("?")[0] ?? "")) {
             throw new Error(
               "App server implementations cannot be imported into a browser bundle. Import api from #patchsmith and server types with import type."
             );

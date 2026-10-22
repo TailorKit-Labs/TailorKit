@@ -359,6 +359,48 @@ it("builds file routes with discovered functions and blocks server imports from 
   }
 });
 
+it.each(
+  ["fn", "router"].flatMap((suffix) => [
+    { specifier: `./functions/private.${suffix}.ts`, suffix },
+    { specifier: `#functions/private.${suffix}`, suffix },
+  ])
+)(
+  "blocks browser imports of plain server modules through $specifier",
+  async ({ suffix, specifier }) => {
+    const root = await mkdtemp(path.join(tmpdir(), "patchsmith-server-only-"));
+
+    try {
+      await linkTestDependencies(root);
+      await writeFile(
+        path.join(root, "package.json"),
+        JSON.stringify({
+          imports: { "#functions/*": "./src/functions/*.ts" },
+          type: "module",
+        })
+      );
+      await writeFile(
+        path.join(root, "patchsmith.config.mjs"),
+        'export default { name: "Test App", slug: "test-app", host: "https://host.example.com" };'
+      );
+      await mkdir(path.join(root, "src/functions"), { recursive: true });
+      await writeFile(
+        path.join(root, `src/functions/private.${suffix}.ts`),
+        'export const secret = "Server-only literal";'
+      );
+
+      await writeFile(
+        path.join(root, "src/root.tsx"),
+        `import { defineRoute } from "patchsmith/client"; import { secret } from ${JSON.stringify(specifier)}; export default defineRoute({ shellComponent: () => secret });`
+      );
+      await expect(buildFixture({ cwd: root })).rejects.toThrow(
+        "cannot be imported into a browser bundle"
+      );
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  }
+);
+
 it("builds and declares an empty backend without server configuration", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "patchsmith-empty-backend-"));
 
