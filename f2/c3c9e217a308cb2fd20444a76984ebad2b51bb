@@ -1,0 +1,25 @@
+packages/api-platform/src/routes/apps.ts
+  s_4db27b78bdf702::t_3385c443d7b536 601-613
+packages/api-platform/src/routes/deployments.test.ts
+  s_4db27b78bdf702::t_788716af6ed807 408-480
+packages/api-platform/src/routes/deployments.ts
+  s_4db27b78bdf702::t_a56d2c8d7affa1 847-858,864
+packages/api-platform/src/routes/runtime.ts
+  s_4db27b78bdf702::t_14933e61679ac3 240,245
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f2c3c9e217a308cb2fd20444a76984ebad2b51bb",
+  "prompts": {},
+  "sessions": {
+    "s_4db27b78bdf702": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a165f1-6250-7f32-8922-4178f00a23c0",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
