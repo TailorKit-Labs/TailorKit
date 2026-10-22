@@ -1,0 +1,85 @@
+packages/cli/src/generator/templates/patchsmith.config.ts.liquid
+  s_38bf295efabfaa::t_58e89956bf8c31 10
+packages/cli/src/build.test.ts
+  s_38bf295efabfaa::t_58e89956bf8c31 27
+packages/cli/src/generator/references.ts
+  s_38bf295efabfaa::t_58e89956bf8c31 339,373,385
+packages/vite/src/builder/server.ts
+  s_38bf295efabfaa::t_58e89956bf8c31 45,82,150-166,179
+  s_38bf295efabfaa::t_89b54e0427a911 194-197
+packages/vite/src/builder/generate-migrations.ts
+  s_38bf295efabfaa::t_58e89956bf8c31 22
+packages/vite/src/test-utils.ts
+  s_38bf295efabfaa::t_58e89956bf8c31 63
+playground/apps/todo/.agents/skills/patchsmith-capabilities/references/index.md
+  s_38bf295efabfaa::t_e9e055d9c6aab6 9
+packages/cli/src/deploy.ts
+  s_38bf295efabfaa::t_58e89956bf8c31 275,372-375
+packages/cli/src/generator/types.ts
+  s_38bf295efabfaa::t_58e89956bf8c31 867,950-951,953-957,959
+packages/vite/src/config/config.ts
+  s_38bf295efabfaa::t_58e89956bf8c31 79-80
+packages/vite/src/builder/file-routes.test.ts
+  s_38bf295efabfaa::t_58e89956bf8c31 284
+  s_38bf295efabfaa::t_cc6d462b5d1146 457,483-485
+packages/vite/src/builder/server.test.ts
+  s_38bf295efabfaa::t_58e89956bf8c31 129,234,270,608
+  s_38bf295efabfaa::t_0a5f9165656417 389-400
+  s_38bf295efabfaa::t_2926933fe421ea 363-388,401-408
+packages/vite/src/index.ts
+  s_38bf295efabfaa::t_58e89956bf8c31 144,203,275-279,307
+  s_38bf295efabfaa::t_379d9a48ee4631 96
+packages/vite/src/config/loader.test.ts
+  s_38bf295efabfaa::t_58e89956bf8c31 65
+packages/cli/src/generator/types.test.ts
+  s_38bf295efabfaa::t_58e89956bf8c31 73,107,109,125-126,131
+  s_38bf295efabfaa::t_0a5f9165656417 127-130
+playground/apps/todo/src/patchsmith.functions.gen.ts
+  s_38bf295efabfaa::t_e9e055d9c6aab6 1-3
+playground/apps/todo/src/patchsmith.gen.ts
+  s_38bf295efabfaa::t_e9e055d9c6aab6 11-18
+packages/cli/src/generator/capabilities-skill.test.ts
+  s_38bf295efabfaa::t_58e89956bf8c31 81,339,388
+.changeset/always-build-app-backends.md
+  s_38bf295efabfaa::t_80b7c1d88e932f 1-8
+docs/writing-apps/overview.mdx
+  s_38bf295efabfaa::t_e94250a2139742 60
+packages/agent-fx/src/skills/functions.md
+  s_38bf295efabfaa::t_a54eb578ea582b 3
+packages/agent-fx/src/skills/views.md
+  s_38bf295efabfaa::t_f66f33aebde902 82
+packages/agent/src/instructions.md
+  s_38bf295efabfaa::t_25b4108cc467c6 19
+packages/agent/src/skills/backend-functions.md
+  s_38bf295efabfaa::t_15b01ecfd54de7 3
+packages/agent/src/skills/views-and-routing.md
+  s_38bf295efabfaa::t_1b36235d523a83 12
+packages/app/README.md
+  s_38bf295efabfaa::t_5aecc7bebbd6bb 156
+packages/cli/src/deploy-name.test.ts
+  s_38bf295efabfaa::t_055e36645d79b4 48-52,120
+packages/cli/src/generator/generate.test.ts
+  s_38bf295efabfaa::t_d173ccd598d780 81-85,97,118
+packages/vite/README.md
+  s_38bf295efabfaa::t_c6e169ac9eed30 26
+packages/vite/src/builder/generate-migrations.test.ts
+  s_38bf295efabfaa::t_14a2528654d9c9 24
+packages/cli/src/init.test.ts
+  s_38bf295efabfaa::t_1b254d2a251b1a 130-134
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3c23da7b1f0fb21ff78c18b2eb451e39d9a094b1",
+  "prompts": {},
+  "sessions": {
+    "s_38bf295efabfaa": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a161ce-6d51-7a73-8b0d-4ea77df5eb1f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
