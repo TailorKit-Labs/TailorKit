@@ -447,6 +447,7 @@ it("loads isolated code, passes only the verified identity and caches a warm dep
 
   expect(source.current).toHaveBeenCalledTimes(2);
   expect(source.code).toHaveBeenCalledOnce();
+  expect(fixtures.put).toHaveBeenCalledOnce();
   expect(fixtures.abort).not.toHaveBeenCalled();
   expect(globalThis.fetch).toHaveBeenCalledTimes(2);
 });
@@ -487,6 +488,7 @@ it("changes code on the same facet and accepts old client tokens without switchi
   expect(awaitedResult7.status).toBe(200);
   expect(source.code).toHaveBeenCalledTimes(loads);
   expect(fixtures.abort).toHaveBeenCalledOnce();
+  expect(fixtures.put).toHaveBeenCalledTimes(2);
 });
 
 it("keeps the running facet when replacement code fails verification", async () => {

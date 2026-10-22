@@ -241,7 +241,9 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
             this.ctx.facets.abort("app", "App deployment changed");
           }
 
-          this.ctx.storage.kv.put("version", version);
+          if (previous !== version) {
+            this.ctx.storage.kv.put("version", version);
+          }
 
           // SAFETY: This facet factory returns AppFacet for this installation. Its methods validate input and serialize output; Cloudflare RPC declaration types erase heterogeneous schema results.
           const facet = this.ctx.facets.get("app", () => {
