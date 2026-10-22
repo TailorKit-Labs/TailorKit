@@ -1,9 +1,11 @@
+import { handlerGen, middlewareGen } from "@orpc/experimental-effect";
 import { openapi } from "@orpc/openapi";
 import { ORPCError } from "@orpc/server";
 import { db } from "@patchsmith/db";
 import { App, app, AppDeployment } from "@patchsmith/db/schema/apps";
 import { createShortId } from "@patchsmith/db/short-id";
 import { eq } from "drizzle-orm";
+import { Clock, Effect } from "effect";
 import { z } from "zod";
 
 import { appSelectorSchema } from "#app-selector";
@@ -18,6 +20,11 @@ import {
   requireAppInScopes,
 } from "#procedures";
 import {
+  resolveRuntimeViews,
+  runtimeViewContexts,
+  runtimeViewWarning,
+} from "#runtime/view-resolution";
+import {
   canonicalizeScope,
   canonicalizeScopes,
   scopeSchema,
@@ -28,7 +35,6 @@ import {
   createRuntimeSession,
   publishRuntimeMetadata,
   runtimeSession,
-  runtimeSessionSchema,
   runtimeViewerSchema,
 } from "./runtime";
 
@@ -81,6 +87,7 @@ const discoverApps = async (
     offset: (page - 1) * pageSize,
     orderBy: {
       createdAt: "desc",
+      id: "desc",
     },
     where: {
       RAW: (fields, { and, eq: eqValue, or }) =>
@@ -135,64 +142,115 @@ const listApps = cliRouter
     };
   });
 
-/** Host-only discovery and runtime authorization share the same scoped database query. */
-const runtimeDiscover = protectedRouter
-  .meta(openapi({ method: "POST", path: "/apps/runtime/discover" }))
+/** Resolve all authorized installations near the app runtime, independently of host geography. */
+const runtimeResolve = protectedRouter
+  .meta(openapi({ method: "POST", path: "/apps/runtime/resolve" }))
+  .errors({ GATEWAY_TIMEOUT: { message: "View resolution timed out" } })
+  .use(
+    middlewareGen(function* requireHostResolution({ context, next }) {
+      if (context.runtimeService === true) {
+        return yield* Effect.fail(new ORPCError("FORBIDDEN"));
+      }
+
+      // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- oRPC middleware preserves downstream procedure errors unchanged.
+      return yield* next();
+    })
+  )
   .input(
     z.object({
-      body: paginationQuery.extend({
+      body: z.strictObject({
         ...runtimeViewerSchema.shape,
         appIds: z.array(z.string().min(1).max(256)).optional(),
+        contexts: runtimeViewContexts,
         scopes: scopesSchema,
-        slot: z.string().min(1),
-        viewPaths: z.array(z.string().min(1)),
+        slot: z.string().min(1).max(255),
       }),
     })
   )
   .output(
-    paginatedOutput(
-      z.object({
-        app: AppWithCurrentDeployment,
-        session: runtimeSessionSchema,
-      })
-    ).extend({ headers: z.object({ "cache-control": z.literal("no-store") }) })
+    z.object({
+      body: z.discriminatedUnion("status", [
+        z.object({ status: z.literal("loading") }),
+        z.object({
+          data: z.array(
+            z.object({
+              app: AppWithCurrentDeployment,
+              data: z.unknown(),
+              key: z.string(),
+              metadata: z.record(z.string(), z.unknown()),
+            })
+          ),
+          status: z.literal("ready"),
+          warnings: z.array(runtimeViewWarning),
+        }),
+      ]),
+      headers: z.object({
+        "cache-control": z.literal("no-store"),
+        "server-timing": z.string(),
+      }),
+    })
   )
-  .handler(async ({ context, input }) => {
-    const { page, pageSize, slot, viewPaths } = input.body;
-    const apps = await discoverApps(context.project.id, input.body);
+  .handler(
+    handlerGen(function* runtimeResolve({ context, input }) {
+      const discoveryStarted = yield* Clock.currentTimeMillis;
+      const apps = new Map<string, z.infer<typeof AppWithCurrentDeployment>>();
+      let page = 1;
+      const pageSize = 100;
 
-    const matching = apps
-      .slice(0, pageSize)
-      .map((installation) =>
-        withAppAssetUrl(installation, context.project.shortId)
-      )
-      .filter((installation) =>
-        installation.views.some(
-          (view) =>
-            view.slot === slot &&
-            view.instances === true &&
-            !view.disabled &&
-            viewPaths.includes(view.path)
-        )
+      for (;;) {
+        const currentPage = page;
+
+        const installations = yield* Effect.tryPromise({
+          catch: (cause) =>
+            new ORPCError("INTERNAL_SERVER_ERROR", {
+              cause,
+              message: "Unable to discover views",
+            }),
+          try: async () =>
+            await discoverApps(context.project.id, {
+              ...input.body,
+              page: currentPage,
+              pageSize,
+            }),
+        });
+
+        for (const appValue of installations.slice(0, pageSize)) {
+          apps.set(
+            appValue.id,
+            withAppAssetUrl(appValue, context.project.shortId)
+          );
+        }
+
+        if (installations.length <= pageSize) {
+          break;
+        }
+
+        page += 1;
+      }
+
+      const instancesStarted = yield* Clock.currentTimeMillis;
+      const discoveryMs = instancesStarted - discoveryStarted;
+
+      const result = yield* resolveRuntimeViews(
+        [...apps.values()],
+        input.body,
+        {
+          createSession: async (appValue) =>
+            await createRuntimeSession(context, appValue, input.body),
+        }
       );
 
-    return {
-      body: {
-        items: await Promise.all(
-          matching.map(async (installation) => ({
-            app: installation,
-            session: await createRuntimeSession(
-              context,
-              installation,
-              input.body
-            ),
-          }))
-        ),
-        pagination: { hasMore: apps.length > pageSize, page, pageSize },
-      },
-      headers: { "cache-control": "no-store" },
-    };
-  });
+      const instancesMs = (yield* Clock.currentTimeMillis) - instancesStarted;
+
+      return {
+        body: result,
+        headers: {
+          "cache-control": "no-store" as const,
+          "server-timing": `views_discovery;dur=${discoveryMs.toFixed(1)}, views_instances;dur=${instancesMs.toFixed(1)}`,
+        },
+      };
+    })
+  );
 
 const getApp = cliRouter
   .meta(
@@ -530,7 +588,7 @@ export const appRouter = o.router({
   get: getApp,
   install: installApp,
   list: listApps,
-  runtimeDiscover,
+  runtimeResolve,
   runtimeSession,
   update: updateApp,
 });

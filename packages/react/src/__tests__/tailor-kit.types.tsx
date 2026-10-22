@@ -28,15 +28,19 @@ type ExpectedResultKeys =
 
 type Assert<T extends true> = T;
 
-type HasExactResultKeys<T> = [keyof T] extends [ExpectedResultKeys]
-  ? [ExpectedResultKeys] extends [keyof T]
+type HasExactResultKeys<T, TKeys extends string = ExpectedResultKeys> = [
+  keyof T,
+] extends [TKeys]
+  ? [TKeys] extends [keyof T]
     ? true
     : false
   : false;
 
 type AppsResultKeys = Assert<HasExactResultKeys<UseAppsResult>>;
 
-type ViewsResultKeys = Assert<HasExactResultKeys<UseViewsResult>>;
+type ViewsResultKeys = Assert<
+  HasExactResultKeys<UseViewsResult, ExpectedResultKeys | "warnings">
+>;
 
 const resultKeys: [AppsResultKeys, ViewsResultKeys] = [true, true];
 

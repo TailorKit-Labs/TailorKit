@@ -24,6 +24,7 @@ export type {
   SlotItem,
   UseViewsOptions,
   UseViewsResult,
+  ViewResolutionWarning,
 } from "./hooks/use-views";
 
 export type {

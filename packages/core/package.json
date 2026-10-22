@@ -88,11 +88,13 @@
   "dependencies": {
     "@orpc/client": "catalog:",
     "@orpc/contract": "catalog:",
+    "@orpc/experimental-effect": "catalog:",
     "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
     "@patchsmith/app": "workspace:*",
     "@patchsmith/client-platform": "workspace:*",
     "@standard-schema/spec": "^1.1.0",
+    "effect": "catalog:",
     "valibot": "catalog:"
   },
   "devDependencies": {

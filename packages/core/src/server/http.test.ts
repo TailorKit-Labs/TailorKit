@@ -160,7 +160,11 @@ it("shares authentication between the transport guard and procedure middleware",
   );
 
   expect(response.status).toBe(200);
-  expect(await response.json()).toEqual({ data: [], status: "ready" });
+  expect(await response.json()).toEqual({
+    data: [],
+    status: "ready",
+    warnings: [],
+  });
   expect(response.headers.get("server-timing")).toMatch(
     /^views_auth;dur=\d+\.\d$/u
   );

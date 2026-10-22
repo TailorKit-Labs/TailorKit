@@ -13,7 +13,9 @@ it("refreshes host discovery and instances with the latest context", async () =>
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockImplementation(
-      asyncFixture(() => Response.json({ data: [], status: "ready" }))
+      asyncFixture(() =>
+        Response.json({ data: [], status: "ready", warnings: [] })
+      )
     );
 
   const client = createPatchsmithFetchClient({

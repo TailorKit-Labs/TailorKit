@@ -1,3 +1,4 @@
+import type { ViewResolutionWarning } from "@patchsmith/core/views";
 import { computed } from "nanostores";
 
 import { matchesApp } from "#client/apps";
@@ -34,7 +35,7 @@ export interface QueryResult<T> {
 
 export type ViewsQueryResult<TMultiple extends boolean = boolean> = QueryResult<
   SlotItem<TMultiple>[]
->;
+> & { warnings: ViewResolutionWarning[] };
 
 export const appsQueryKey = (options: AppsQueryOptions): string =>
   serializeCacheKey([
@@ -128,7 +129,10 @@ const viewsQuery = (store: PatchsmithStore, options: ViewsQueryOptions) => {
 
         if (current !== previous) {
           previous = current;
-          snapshot = result(current, refetch);
+          snapshot = {
+            ...result(current, refetch),
+            warnings: current.warnings,
+          };
         }
 
         return snapshot;

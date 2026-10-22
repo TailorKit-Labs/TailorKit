@@ -177,7 +177,7 @@ export const resolveSlotView = (
   };
 };
 
-/** The host owns discovery and resolution; callers supply only filters and view context. */
+/** The host authenticates and validates context; the platform resolves instances. */
 export interface ViewsInput {
   slot: string;
   scopes?: readonly string[];
@@ -236,6 +236,21 @@ export const patchsmithAppSchema: v.GenericSchema<PatchsmithApp> =
     ),
   });
 
+/** A non-fatal issue for an app omitted from a partial views response. */
+export interface ViewResolutionWarning {
+  appId: string;
+  code: "INSTANCE_RESOLUTION_TIMEOUT";
+  message: string;
+  path: string;
+}
+
+const viewResolutionWarningSchema = v.object({
+  appId: v.string(),
+  code: v.literal("INSTANCE_RESOLUTION_TIMEOUT"),
+  message: v.string(),
+  path: v.string(),
+});
+
 export const viewsResultSchema: v.GenericSchema<ViewsResult> = v.variant(
   "status",
   [
@@ -252,6 +267,7 @@ export const viewsResultSchema: v.GenericSchema<ViewsResult> = v.variant(
         ])
       ),
       status: v.literal("ready"),
+      warnings: v.array(viewResolutionWarningSchema),
     }),
     v.object({ status: v.picklist(["idle", "loading"]) }),
   ]
@@ -260,6 +276,7 @@ export const viewsResultSchema: v.GenericSchema<ViewsResult> = v.variant(
 export type ViewsResult =
   | {
       status: "ready";
+      warnings: ViewResolutionWarning[];
       data: (
         | { app: PatchsmithApp }
         | (ViewInstance & { app: PatchsmithApp })

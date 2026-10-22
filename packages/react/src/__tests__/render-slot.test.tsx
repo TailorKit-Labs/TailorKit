@@ -413,6 +413,7 @@ it("resolves the key and sends a complete controlled instance through the render
           app: instanceApp,
         })),
         status: "ready",
+        warnings: [],
       })
     );
   });

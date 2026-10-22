@@ -1,5 +1,5 @@
 import type { ViewInstance } from "@patchsmith/app/client";
-import type { ViewsInput } from "@patchsmith/core/views";
+import type { ViewResolutionWarning, ViewsInput } from "@patchsmith/core/views";
 
 import type { PatchsmithFetchClient } from "#client/fetch-client";
 import { createSnapshotStore } from "#store/snapshot-store";
@@ -17,6 +17,7 @@ export interface SlotSnapshot {
   error: Error | null;
   status: FetchSnapshot<unknown>["status"];
   isFetching: boolean;
+  warnings: ViewResolutionWarning[];
 }
 
 /** All discovery, matching and instance resolution is owned by the host endpoint. */
@@ -42,6 +43,7 @@ export const createSlotStore = (
           current.status === "ready"
             ? (current.data?.status ?? "idle")
             : current.status,
+        warnings: current.data?.status === "ready" ? current.data.warnings : [],
       };
     }
 

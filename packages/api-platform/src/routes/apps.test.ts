@@ -216,198 +216,400 @@ describe("platform appRouter", () => {
     return { app, deployment };
   };
 
-  it("discovers runtime sessions with one scoped query and no per-app lookups", async () => {
+  it("resolves only authorized installations on the platform without returning runtime credentials", async () => {
     const views = [{ instances: true as const, path: "/", slot: "page" }];
-    const first = await seedRuntimeApp("first", views);
-    const second = await seedRuntimeApp("second", views);
-    await seedRuntimeApp("staging", views, stagingScope);
+    const first = await seedRuntimeApp("firstresolve", views);
+    const second = await seedRuntimeApp("secondresolve", views);
+    await seedRuntimeApp("stageresolve", views, stagingScope);
     await seedRuntimeApp(
-      "foreign",
+      "foreignresolve",
       views,
       productionScope,
       createContext({
         project: { ...createContext().project, id: otherProjectId },
       })
     );
-    await seedRuntimeApp("disabled", [
-      { ...views[0], disabled: true, instances: true, path: "/", slot: "page" },
+    await seedRuntimeApp("disabledresolve", [
+      { disabled: true, instances: true, path: "/", slot: "page" },
     ]);
-    await seedRuntimeApp("single", [{ path: "/", slot: "page" }]);
-    await seedRuntimeApp("otherpath", [
-      { instances: true, path: "/elsewhere", slot: "page" },
-    ]);
-    await call(
-      appRouter.create,
-      {
-        body: {
-          description: null,
-          name: "Unpublished",
-          scope: productionScope,
-        },
-      },
-      { context: createContext() }
-    );
+    const requests: Request[] = [];
+
+    const runtimeFetch = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async (value, init) => {
+        const request =
+          value instanceof Request ? value : new Request(value, init);
+
+        requests.push(request);
+        await request.clone().json();
+
+        return Response.json({
+          json: [{ data: {}, key: "page", metadata: { label: "Page" } }],
+        });
+      });
 
     const findMany = vi.spyOn(db.query.app, "findMany");
     const findFirst = vi.spyOn(db.query.app, "findFirst");
-    testState.issueToken.mockClear();
 
     const body = {
-      page: 1,
-      pageSize: 100,
+      contexts: [
+        {
+          context: { workspace: "verified" },
+          path: "/",
+          status: "ready" as const,
+        },
+      ],
       scopes: [productionScope],
       slot: "page",
       subjectId: "principal",
       toolUrl: "https://host.test/api/patchsmith/tools/execute",
-      viewPaths: ["/"],
     };
 
-    const handler = new OpenAPIHandler({ apps: appRouter });
+    try {
+      const handler = new OpenAPIHandler({ apps: appRouter });
 
-    const response = await handler.handle(
-      new Request("https://platform.test/api/platform/apps/runtime/discover", {
-        body: JSON.stringify(body),
-        headers: { "content-type": "application/json" },
-        method: "POST",
-      }),
-      { context: createContext(), prefix: "/api/platform" }
-    );
+      const response = await handler.handle(
+        new Request("https://platform.test/api/platform/apps/runtime/resolve", {
+          body: JSON.stringify(body),
+          headers: { "content-type": "application/json" },
+          method: "POST",
+        }),
+        { context: createContext(), prefix: "/api/platform" }
+      );
 
-    expect(response.response?.status).toBe(200);
-    expect(response.response?.headers.get("cache-control")).toBe("no-store");
+      expect(response.response?.status).toBe(200);
+      expect(response.response?.headers.get("cache-control")).toBe("no-store");
+      expect(response.response?.headers.get("server-timing")).toMatch(
+        /^views_discovery;dur=\d+\.\d, views_instances;dur=\d+\.\d$/u
+      );
+      const text = await response.response?.text();
+      expect(text).not.toContain("platform-token");
 
-    const result = z
-      .object({
-        items: z.array(
-          z.object({
-            app: z.object({ id: z.string() }),
-            session: z.object({
-              identity: z.object({
-                appId: z.string(),
-                deploymentId: z.string(),
-                scope: z.unknown(),
-                subjectId: z.string(),
-                toolUrl: z.string(),
-              }),
-              token: z.string(),
-            }),
-          })
-        ),
-      })
-      .parse(await response.response?.json());
+      const result = z
+        .object({
+          data: z.array(
+            z.object({ app: z.object({ id: z.string() }), key: z.string() })
+          ),
+          status: z.literal("ready"),
+        })
+        .parse(JSON.parse(text ?? "null"));
 
-    expect(
-      result.items
-        .map(({ app }) => app.id)
-        .toSorted((a, b) => a.localeCompare(b))
-    ).toEqual(
-      [first.app.id, second.app.id].toSorted((a, b) => a.localeCompare(b))
-    );
+      expect(result.data.map(({ app }) => app.id).toSorted()).toEqual(
+        [first.app.id, second.app.id].toSorted()
+      );
+      expect(findMany).toHaveBeenCalledOnce();
+      expect(findFirst).not.toHaveBeenCalled();
+      expect(requests).toHaveLength(2);
 
-    for (const item of result.items) {
-      expect(item.session).toMatchObject({
-        identity: {
-          appId: item.app.id,
-          scope: productionScope,
-          subjectId: body.subjectId,
-          toolUrl: body.toolUrl,
-        },
-        token: "platform-token",
+      for (const request of requests) {
+        expect(request.headers.get("authorization")).toBe(
+          "Bearer platform-token"
+        );
+        // oxlint-disable-next-line no-await-in-loop -- Read each captured request once while checking its independent wire contract.
+        expect(await request.json()).toEqual({
+          json: {
+            args: {
+              context: { workspace: "verified" },
+              path: "/",
+              slot: "page",
+            },
+            name: "_patchsmith.instances.resolve",
+          },
+        });
+      }
+
+      const filtered = await call(
+        appRouter.runtimeResolve,
+        { body: { ...body, appIds: [first.app.id, "not-an-installation"] } },
+        { context: createContext() }
+      );
+
+      expect(filtered.body).toMatchObject({
+        data: [{ app: { id: first.app.id } }],
+        status: "ready",
       });
+      expect(requests).toHaveLength(3);
+      await expect(
+        call(
+          appRouter.runtimeResolve,
+          { body },
+          { context: createContext({ runtimeService: true }) }
+        )
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      expect(requests).toHaveLength(3);
+      await expect(
+        call(
+          appRouter.runtimeResolve,
+          { body },
+          {
+            context: createContext({
+              agentToken: {
+                appId: first.app.id,
+                cliTokenId: "cli-token",
+                exp: Math.floor(Date.now() / 1000) + 60,
+                iat: Math.floor(Date.now() / 1000),
+                jti: "test-agent",
+                platformUrl: "https://platform.test/api/platform",
+                projectId,
+                scope: productionScope,
+                sub: userId,
+                token: "agent-token",
+              },
+            }),
+          }
+        )
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      expect(requests).toHaveLength(3);
+    } finally {
+      runtimeFetch.mockRestore();
+      findMany.mockRestore();
+      findFirst.mockRestore();
     }
-
-    expect(findMany).toHaveBeenCalledTimes(1);
-    expect(findFirst).not.toHaveBeenCalled();
-    expect(testState.issueToken).toHaveBeenCalledTimes(2);
-    findMany.mockRestore();
-    findFirst.mockRestore();
-
-    const selected = await call(
-      appRouter.runtimeDiscover,
-      { body: { ...body, appIds: [first.app.id, "not-an-installation"] } },
-      { context: createContext() }
-    );
-
-    expect(selected.body.items.map(({ app }) => app.id)).toEqual([
-      first.app.id,
-    ]);
-
-    const empty = await call(
-      appRouter.runtimeDiscover,
-      { body: { ...body, appIds: [] } },
-      { context: createContext() }
-    );
-
-    expect(empty.body.items).toEqual([]);
-
-    const missing = await call(
-      appRouter.runtimeDiscover,
-      { body: { ...body, appIds: ["not-an-installation"] } },
-      { context: createContext() }
-    );
-
-    expect(missing.body.items).toEqual([]);
-
-    const claims = {
-      appId: first.app.id,
-      cliTokenId: "cli-token",
-      exp: Math.floor(Date.now() / 1000) + 60,
-      iat: Math.floor(Date.now() / 1000),
-      jti: "test-agent",
-      platformUrl: "https://platform.test/api/platform",
-      projectId,
-      scope: productionScope,
-      sub: userId,
-    };
-
-    await expect(
-      call(
-        appRouter.runtimeDiscover,
-        { body },
-        {
-          context: createContext({
-            agentToken: { ...claims, token: "agent-token" },
-          }),
-        }
-      )
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
-  it("preserves discovery pagination when a page has no matching views", async () => {
-    await seedRuntimeApp("oldmatch", [
+  it("returns a sanitized 504 and cancels the resolver when its one-second budget expires", async () => {
+    await seedRuntimeApp("timeoutmatch", [
       { instances: true, path: "/", slot: "page" },
     ]);
-    await seedRuntimeApp("newnomatch", [
-      { instances: true, path: "/", slot: "other" },
+
+    const requests: Request[] = [];
+
+    const runtimeFetch = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async (value, init) => {
+        requests.push(
+          value instanceof Request ? value : new Request(value, init)
+        );
+
+        return await Promise.withResolvers<Response>().promise;
+      });
+
+    try {
+      const handler = new OpenAPIHandler({ apps: appRouter });
+
+      const result = await handler.handle(
+        new Request("https://platform.test/api/platform/apps/runtime/resolve", {
+          body: JSON.stringify({
+            contexts: [{ context: {}, path: "/", status: "ready" }],
+            scopes: [productionScope],
+            slot: "page",
+            subjectId: "principal",
+            toolUrl: "https://host.test/tools",
+          }),
+          headers: { "content-type": "application/json" },
+          method: "POST",
+        }),
+        { context: createContext(), prefix: "/api/platform" }
+      );
+
+      expect(result.response?.status).toBe(504);
+      expect(await result.response?.json()).toMatchObject({
+        code: "GATEWAY_TIMEOUT",
+        message: "View resolution timed out",
+      });
+      expect(runtimeFetch).toHaveBeenCalledOnce();
+      expect(requests[0]?.signal.aborted).toBe(true);
+    } finally {
+      runtimeFetch.mockRestore();
+    }
+  });
+
+  it("returns per-app timeout warnings with completed data over HTTP", async () => {
+    const views = [{ instances: true as const, path: "/", slot: "page" }];
+    const completed = await seedRuntimeApp("completewarn", views);
+    const stalled = await seedRuntimeApp("stalledwarn", views);
+    const requests: Request[] = [];
+
+    const runtimeFetch = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async (value, init) => {
+        const request =
+          value instanceof Request ? value : new Request(value, init);
+
+        requests.push(request);
+
+        if (request.url.includes(`/a/${completed.app.shortId}/`)) {
+          return Response.json({
+            json: [{ data: {}, key: "ready", metadata: {} }],
+          });
+        }
+
+        return await Promise.withResolvers<Response>().promise;
+      });
+
+    try {
+      const handler = new OpenAPIHandler({ apps: appRouter });
+
+      const result = await handler.handle(
+        new Request("https://platform.test/api/platform/apps/runtime/resolve", {
+          body: JSON.stringify({
+            contexts: [{ context: {}, path: "/", status: "ready" }],
+            scopes: [productionScope],
+            slot: "page",
+            subjectId: "principal",
+            toolUrl: "https://host.test/tools",
+          }),
+          headers: { "content-type": "application/json" },
+          method: "POST",
+        }),
+        { context: createContext(), prefix: "/api/platform" }
+      );
+
+      expect(result.response?.status).toBe(200);
+      expect(await result.response?.json()).toMatchObject({
+        data: [{ app: { id: completed.app.id }, key: "ready" }],
+        status: "ready",
+        warnings: [
+          {
+            appId: stalled.app.id,
+            code: "INSTANCE_RESOLUTION_TIMEOUT",
+            message: "View resolution timed out",
+            path: "/",
+          },
+        ],
+      });
+      expect(requests).toHaveLength(2);
+      expect(
+        requests.find((request) =>
+          request.url.includes(`/a/${stalled.app.shortId}/`)
+        )?.signal.aborted
+      ).toBe(true);
+    } finally {
+      runtimeFetch.mockRestore();
+    }
+  });
+
+  it("continues platform resolution past an entire page with no matching views", async () => {
+    const matching = await seedRuntimeApp("oldermatch", [
+      { instances: true, path: "/", slot: "page" },
     ]);
 
-    const body = {
-      page: 1,
-      pageSize: 1,
-      scopes: [productionScope],
-      slot: "page",
-      subjectId: "principal",
-      toolUrl: "https://host.test/tools",
-      viewPaths: ["/"],
-    };
-
-    const first = await call(
-      appRouter.runtimeDiscover,
-      { body },
-      { context: createContext() }
+    const scope = canonicalizeScope(productionScope);
+    await db.insert(appTable).values(
+      Array.from({ length: 100 }, (_, index) => ({
+        createdAt: new Date("2030-01-01T00:00:00.000Z"),
+        name: `Unpublished ${index}`,
+        projectId,
+        scope: scope.scope,
+        scopeKey: scope.scopeKey,
+        shortId: `page${String(index).padStart(8, "0")}`,
+      }))
     );
 
-    expect(first.body.items).toEqual([]);
-    expect(first.body.pagination.hasMore).toBe(true);
+    const runtimeFetch = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(Response.json({ json: [] }));
 
-    const second = await call(
-      appRouter.runtimeDiscover,
-      { body: { ...body, page: 2 } },
-      { context: createContext() }
+    const findMany = vi.spyOn(db.query.app, "findMany");
+
+    try {
+      const result = await call(
+        appRouter.runtimeResolve,
+        {
+          body: {
+            contexts: [{ context: {}, path: "/", status: "ready" }],
+            scopes: [productionScope],
+            slot: "page",
+            subjectId: "principal",
+            toolUrl: "https://host.test/tools",
+          },
+        },
+        { context: createContext() }
+      );
+
+      expect(result.body).toEqual({ data: [], status: "ready", warnings: [] });
+      expect(findMany).toHaveBeenCalledTimes(2);
+
+      const firstPage = z
+        .array(z.object({ id: z.string() }))
+        .parse(await findMany.mock.results[0]?.value);
+
+      const tiedIds = firstPage.slice(0, 100).map(({ id }) => id);
+      expect(tiedIds).toHaveLength(100);
+      expect(tiedIds).toEqual(tiedIds.toSorted().toReversed());
+      expect(runtimeFetch).toHaveBeenCalledOnce();
+      expect(testState.issueToken).toHaveBeenCalledWith(
+        expect.objectContaining({ installationId: matching.app.id })
+      );
+    } finally {
+      runtimeFetch.mockRestore();
+      findMany.mockRestore();
+    }
+  });
+
+  it("resolves each installation once when discovery pages overlap", async () => {
+    const matching = await seedRuntimeApp("overlapmatch", [
+      { instances: true, path: "/", slot: "page" },
+    ]);
+
+    const scope = canonicalizeScope(productionScope);
+    await db.insert(appTable).values(
+      Array.from({ length: 101 }, (_, index) => ({
+        createdAt: new Date("2030-01-01T00:00:00.000Z"),
+        currentDeploymentId: matching.deployment.id,
+        name: `Installation ${index}`,
+        projectId,
+        scope: scope.scope,
+        scopeKey: scope.scopeKey,
+        shortId: `over${String(index).padStart(8, "0")}`,
+      }))
     );
 
-    expect(second.body.items).toHaveLength(1);
-    expect(second.body.pagination.hasMore).toBe(false);
+    const installations = await db.query.app.findMany({
+      orderBy: { createdAt: "desc", id: "desc" },
+      with: {
+        currentDeployment: {
+          with: { app: { columns: { shortId: true } } },
+        },
+      },
+    });
+
+    // Model an offset shifted by a concurrent insert, repeating the last app from page one.
+    const findMany = vi
+      .spyOn(db.query.app, "findMany")
+      .mockResolvedValueOnce(installations.slice(0, 101))
+      .mockResolvedValueOnce(installations.slice(99));
+
+    const runtimeFetch = vi.spyOn(globalThis, "fetch").mockImplementation(
+      asyncFixture(() =>
+        Response.json({
+          json: [{ data: {}, key: "page", metadata: {} }],
+        })
+      )
+    );
+
+    testState.issueToken.mockClear();
+
+    try {
+      const result = await call(
+        appRouter.runtimeResolve,
+        {
+          body: {
+            contexts: [{ context: {}, path: "/", status: "ready" }],
+            scopes: [productionScope],
+            slot: "page",
+            subjectId: "principal",
+            toolUrl: "https://host.test/tools",
+          },
+        },
+        { context: createContext() }
+      );
+
+      expect(result.body.status).toBe("ready");
+
+      if (result.body.status !== "ready") {
+        throw new Error("Expected resolved installations");
+      }
+
+      expect(result.body.data.map(({ app }) => app.id).toSorted()).toEqual(
+        installations.map(({ id }) => id).toSorted()
+      );
+      expect(testState.issueToken).toHaveBeenCalledTimes(102);
+      expect(runtimeFetch).toHaveBeenCalledTimes(102);
+    } finally {
+      runtimeFetch.mockRestore();
+      findMany.mockRestore();
+    }
   });
 
   it("serves OpenAPI create and explicit lookup selectors with detailed inputs", async () => {

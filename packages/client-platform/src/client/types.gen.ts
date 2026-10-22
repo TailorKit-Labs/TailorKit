@@ -8,6 +8,26 @@ export type Schema0 = string | number | boolean | null | Array<Schema0> | {
   [key: string]: Schema0;
 };
 
+/**
+ * UndefinedError
+ */
+export type UndefinedError = {
+  defined: false;
+  code: string;
+  message: string;
+  data?: unknown;
+};
+
+/**
+ * GATEWAY_TIMEOUT
+ */
+export type GatewayTimeout = {
+  defined: true;
+  code: 'GATEWAY_TIMEOUT';
+  message: string;
+  data?: unknown;
+};
+
 export type AppAgentChatData = {
   body: {
     app: {
@@ -611,13 +631,32 @@ export type AppsListResponses = {
 
 export type AppsListResponse = AppsListResponses[keyof AppsListResponses];
 
-export type AppsRuntimeDiscoverData = {
+export type AppsRuntimeResolveData = {
   body: {
-    page?: number;
-    pageSize?: number;
     subjectId: string;
     toolUrl: string;
     appIds?: Array<string>;
+    contexts: Array<{
+      context: {
+        [key: string]: unknown;
+      };
+      contextBlobs?: Array<{
+        data: string;
+        lastModified?: number;
+        name?: string;
+        type: string;
+      }>;
+      contextMaps?: Array<Array<string | number>>;
+      contextMeta?: Array<{
+        path: Array<string | number>;
+        type: string;
+      }>;
+      path: string;
+      status: 'ready';
+    } | {
+      path: string;
+      status: 'loading' | 'error';
+    }>;
     scopes: Array<{
       name: string;
       value: {
@@ -625,19 +664,29 @@ export type AppsRuntimeDiscoverData = {
       };
     }>;
     slot: string;
-    viewPaths: Array<string>;
   };
   path?: never;
   query?: never;
-  url: '/apps/runtime/discover';
+  url: '/apps/runtime/resolve';
 };
 
-export type AppsRuntimeDiscoverResponses = {
+export type AppsRuntimeResolveErrors = {
+  /**
+   * View resolution timed out
+   */
+  504: GatewayTimeout | UndefinedError;
+};
+
+export type AppsRuntimeResolveError = AppsRuntimeResolveErrors[keyof AppsRuntimeResolveErrors];
+
+export type AppsRuntimeResolveResponses = {
   /**
    * OK
    */
   200: {
-    items: Array<{
+    status: 'loading';
+  } | {
+    data: Array<{
       app: {
         createdAt: string;
         createdByAgent: boolean;
@@ -689,38 +738,23 @@ export type AppsRuntimeDiscoverResponses = {
           slot: string;
         }>;
       };
-      session: {
-        expiresAt: number;
-        identity: {
-          appId: string;
-          appShortId: string;
-          deploymentId: string;
-          expiresAt: number;
-          installationId: string;
-          projectId: string;
-          projectShortId: string;
-          scope: {
-            name: string;
-            value: {
-              [key: string]: Schema0;
-            };
-          };
-          subjectId: string;
-          toolUrl: string;
-        };
-        token: string;
-        url: string;
+      data: unknown;
+      key: string;
+      metadata: {
+        [key: string]: unknown;
       };
     }>;
-    pagination: {
-      hasMore: boolean;
-      page: number;
-      pageSize: number;
-    };
+    status: 'ready';
+    warnings: Array<{
+      appId: string;
+      code: 'INSTANCE_RESOLUTION_TIMEOUT';
+      message: 'View resolution timed out';
+      path: string;
+    }>;
   };
 };
 
-export type AppsRuntimeDiscoverResponse = AppsRuntimeDiscoverResponses[keyof AppsRuntimeDiscoverResponses];
+export type AppsRuntimeResolveResponse = AppsRuntimeResolveResponses[keyof AppsRuntimeResolveResponses];
 
 export type AppsRuntimeSessionData = {
   body: {

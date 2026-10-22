@@ -43,6 +43,7 @@
     "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
+    "@orpc/experimental-effect": "catalog:",
     "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
     "@orpc/zod": "catalog:",

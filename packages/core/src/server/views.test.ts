@@ -1,3 +1,4 @@
+import { asyncFixture } from "@patchsmith/config/testing";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
@@ -31,17 +32,6 @@ const activeView: ActiveView = {
   view: "/customers",
 };
 
-const identity = {
-  appId: "app",
-  deploymentId: "deployment",
-  expiresAt: Date.now() + 300_000,
-  installationId: "installation",
-  projectId: "project",
-  scope: app.scope,
-  subjectId: "principal",
-  toolUrl: "https://host.test/api/patchsmith/tools/execute",
-};
-
 const viewRequest = (body?: ViewsInput, init: RequestInit = {}) =>
   new Request("https://host.test/api/patchsmith/views", {
     body: JSON.stringify(body ?? { activeView, slot: "page" }),
@@ -50,63 +40,39 @@ const viewRequest = (body?: ViewsInput, init: RequestInit = {}) =>
     ...init,
   });
 
-const setup = (apps = [app]) => {
-  const platformBodies: {
-    path: string;
-    body: unknown;
-    authorization: string | null;
-  }[] = [];
-
-  const actions: {
-    body: unknown;
-    authorization: string | null;
-    signal: AbortSignal;
-  }[] = [];
+const setup = (
+  customerSchema: z.ZodType<{ customer: unknown }> = z.object({
+    customer: z.string(),
+  })
+) => {
+  const requests: Request[] = [];
 
   const runtimeFetch = vi
     .spyOn(globalThis, "fetch")
-    .mockImplementation(async (input, init) => {
-      const request =
-        input instanceof Request ? input : new Request(input, init);
+    .mockRejectedValue(new Error("The host must not contact an app runtime"));
 
-      actions.push({
-        authorization: request.headers.get("authorization"),
-        body: await request.json(),
-        signal: request.signal,
-      });
-
-      return Response.json({ json: [instance] });
-    });
-
-  const platformFetch = vi.fn<typeof fetch>(async (input, init) => {
-    const request = input instanceof Request ? input : new Request(input, init);
-    const path = new URL(request.url).pathname;
-    platformBodies.push({
-      authorization: request.headers.get("authorization"),
-      body: await request.json(),
-      path,
-    });
-
-    if (path.endsWith("/apps/list")) {
-      return Response.json({ items: apps, pagination: { hasMore: false } });
-    }
-
-    if (path.endsWith("/apps/runtime/discover")) {
-      return Response.json({
-        items: apps.map((installation) => ({
-          app: installation,
-          session: {
-            expiresAt: identity.expiresAt,
-            identity: { ...identity, installationId: installation.id },
-            token: `app-token-${installation.id}`,
-            url: `https://runtime.test/${installation.id}/rpc`,
+  const reply = vi.fn(
+    asyncFixture(() =>
+      Response.json(
+        { data: [{ ...instance, app }], status: "ready", warnings: [] },
+        {
+          headers: {
+            "server-timing":
+              "views_discovery;dur=12.3, views_instances;dur=45.6",
           },
-        })),
-        pagination: { hasMore: false },
-      });
-    }
+        }
+      )
+    )
+  );
 
-    throw new Error(`Unexpected platform request: ${path}`);
+  const platformFetch = vi.fn<typeof fetch>(async (value, init) => {
+    const request = value instanceof Request ? value : new Request(value, init);
+    requests.push(request);
+    await request.clone().json();
+
+    return new URL(request.url).pathname.endsWith("/apps/list")
+      ? Response.json({ items: [app], pagination: { hasMore: false } })
+      : await reply();
   });
 
   const server = createPatchsmithServer({
@@ -121,7 +87,7 @@ const setup = (apps = [app]) => {
     },
     views: {
       "/": z.object({ user: z.string() }),
-      "/customers": z.object({ customer: z.string() }),
+      "/customers": customerSchema,
     },
   });
 
@@ -130,170 +96,231 @@ const setup = (apps = [app]) => {
     subjectId: "principal",
   }));
 
-  const run = async (
-    body?: Parameters<typeof viewRequest>[0],
-    init?: RequestInit
-  ) => await server.handler(viewRequest(body, init), { authenticate });
+  const run = async (body?: ViewsInput, init?: RequestInit) =>
+    await server.handler(viewRequest(body, init), { authenticate });
 
   return {
-    actions,
     authenticate,
-    platformBodies,
     platformFetch,
-    request: viewRequest,
+    reply,
+    requests,
     run,
     runtimeFetch,
     server,
   };
 };
 
-afterEach(() => {
-  vi.restoreAllMocks();
-});
+afterEach(() => vi.restoreAllMocks());
 
-it("discovers authorized apps on the host and calls the compiled action with validated composed context", async () => {
-  const { actions, platformBodies, run } = setup();
+it("makes one platform request with authenticated scopes and validated composed contexts", async () => {
+  const { requests, run, runtimeFetch } = setup();
   const response = await run();
   expect(response.status).toBe(200);
   expect(response.headers.get("cache-control")).toBe("no-store");
   expect(response.headers.get("server-timing")).toMatch(
-    /^views_auth;dur=\d+\.\d, views_discovery;dur=\d+\.\d, views_instances;dur=\d+\.\d$/u
+    /^views_auth;dur=\d+\.\d, views_platform;dur=\d+\.\d, views_discovery;dur=12\.3, views_instances;dur=45\.6$/u
   );
   expect(await response.json()).toEqual({
     data: [{ ...instance, app }],
     status: "ready",
+    warnings: [],
   });
-  expect(platformBodies).toEqual([
-    {
-      authorization: "Bearer project-key",
-      body: {
-        page: 1,
-        pageSize: 100,
-        scopes: [app.scope],
-        slot: "page",
-        subjectId: "principal",
-        toolUrl: identity.toolUrl,
-        viewPaths: ["/customers", "/"],
+  expect(requests).toHaveLength(1);
+  expect(requests[0]?.url).toBe(
+    "https://patchsmith.io/api/platform/apps/runtime/resolve"
+  );
+  expect(requests[0]?.headers.get("authorization")).toBe("Bearer project-key");
+  expect(await requests[0]?.json()).toEqual({
+    contexts: [
+      {
+        context: { customer: "customer", user: "user" },
+        path: "/customers",
+        status: "ready",
       },
-      path: "/api/platform/apps/runtime/discover",
-    },
-  ]);
-
-  expect(actions).toMatchObject([
-    {
-      authorization: "Bearer app-token-installation",
-      body: {
-        json: {
-          args: {
-            context: { customer: "customer", user: "user" },
-            path: "/customers",
-            slot: "page",
-          },
-          name: "_patchsmith.instances.resolve",
-        },
-      },
-    },
-  ]);
-});
-
-it("resolves single slots on the host without authorizing an app backend", async () => {
-  const { actions, platformBodies, run } = setup();
-  const response = await run({ activeView, slot: "single" });
-  expect(await response.json()).toEqual({ data: [{ app }], status: "ready" });
-  expect(platformBodies).toHaveLength(1);
-  expect(actions).toHaveLength(0);
-});
-
-it("falls back to an enabled ancestor and ignores deeper loading context", async () => {
-  const ancestorApp = {
-    ...app,
-    views: [
-      { instances: true, path: "/", slot: "page" },
-      { disabled: true, instances: true, path: "/customers", slot: "page" },
+      { context: { user: "user" }, path: "/", status: "ready" },
     ],
-  };
-
-  const { actions, run } = setup([ancestorApp]);
-  await run({
-    activeView: {
-      ...activeView,
-      layers: activeView.layers.map((layer) =>
-        layer.path === "/customers" ? { ...layer, status: "loading" } : layer
-      ),
-    },
+    scopes: [app.scope],
     slot: "page",
+    subjectId: "principal",
+    toolUrl: "https://host.test/api/patchsmith/tools/execute",
   });
-  expect(actions).toMatchObject([
-    { body: { json: { args: { context: { user: "user" }, path: "/" } } } },
-  ]);
+  expect(runtimeFetch).not.toHaveBeenCalled();
 });
 
-it.each(["loading", "error", "missing", "invalid", "duplicate"])(
-  "does not run any action when required context is %s",
+it("resolves single slots without contacting an app backend", async () => {
+  const { requests, run, runtimeFetch } = setup();
+  const response = await run({ activeView, slot: "single" });
+  expect(await response.json()).toEqual({
+    data: [{ app }],
+    status: "ready",
+    warnings: [],
+  });
+  expect(requests.map((request) => new URL(request.url).pathname)).toEqual([
+    "/api/platform/apps/list",
+  ]);
+  expect(runtimeFetch).not.toHaveBeenCalled();
+});
+
+it("preserves native and binary values produced by host context validation", async () => {
+  const { run, requests } = setup(
+    z.object({
+      customer: z.string().transform(() => ({
+        at: new Date("2026-10-22T00:00:00.000Z"),
+        count: 42n,
+        file: new File([new Uint8Array([0, 1, 255])], "context.bin", {
+          lastModified: 123,
+          type: "application/octet-stream",
+        }),
+        tags: new Map([["tag", 1]]),
+      })),
+    })
+  );
+
+  const response = await run();
+  expect(response.status).toBe(200);
+  expect(await requests[0]?.json()).toMatchObject({
+    contexts: [
+      {
+        context: {
+          customer: {
+            at: "2026-10-22T00:00:00.000Z",
+            count: "42",
+            tags: [["tag", 1]],
+          },
+          user: "user",
+        },
+        contextBlobs: [
+          {
+            data: "AAH/",
+            lastModified: 123,
+            name: "context.bin",
+            type: "application/octet-stream",
+          },
+        ],
+        contextMaps: [["customer", "file"]],
+        contextMeta: [
+          { path: ["customer", "at"], type: "date" },
+          { path: ["customer", "count"], type: "bigint" },
+          { path: ["customer", "tags"], type: "map" },
+        ],
+        path: "/customers",
+        status: "ready",
+      },
+      { context: { user: "user" }, path: "/", status: "ready" },
+    ],
+  });
+});
+
+it.each(["loading", "error", "missing", "invalid"])(
+  "passes context readiness for platform selection when a deeper context is %s",
   async (kind) => {
-    const { actions, platformBodies, run } = setup([
-      app,
-      { ...app, id: "second" },
-    ]);
+    const { requests, run, runtimeFetch, reply } = setup();
+    const status = kind === "loading" ? "loading" : "error";
 
-    let { layers } = activeView;
+    const layers =
+      kind === "missing"
+        ? activeView.layers.slice(0, 1)
+        : activeView.layers.map((layer): ActiveView["layers"][number] => {
+            if (layer.path !== "/customers") {
+              return layer;
+            }
 
-    if (kind === "missing") {
-      layers = layers.slice(0, 1);
-    } else if (kind === "duplicate") {
-      layers = [...layers, layers[0]].filter((layer) => layer !== undefined);
-    } else if (kind === "invalid") {
-      layers = layers.map((layer) =>
-        layer.path === "/customers"
-          ? { ...layer, context: { customer: 42 } }
-          : layer
-      );
-    } else if (kind === "loading" || kind === "error") {
-      layers = layers.map((layer) =>
-        layer.path === "/customers" ? { ...layer, status: kind } : layer
-      );
-    }
+            if (kind === "invalid") {
+              return { ...layer, context: { customer: 42 } };
+            }
+
+            return { ...layer, status };
+          });
+
+    reply.mockResolvedValueOnce(
+      status === "loading"
+        ? Response.json({ status: "loading" })
+        : new Response("Invalid view context", { status: 400 })
+    );
 
     const response = await run({
       activeView: { ...activeView, layers },
       slot: "page",
     });
 
-    expect(response.status).toBe(kind === "loading" ? 200 : 400);
+    expect(response.status).toBe(status === "loading" ? 200 : 400);
 
-    if (kind === "loading") {
+    if (status === "loading") {
       expect(await response.json()).toEqual({ status: "loading" });
     }
 
-    expect(platformBodies).toHaveLength(kind === "duplicate" ? 0 : 1);
-    expect(actions).toHaveLength(0);
+    expect(await requests[0]?.json()).toMatchObject({
+      contexts: [
+        { path: "/customers", status },
+        { context: { user: "user" }, path: "/", status: "ready" },
+      ],
+    });
+    expect(runtimeFetch).not.toHaveBeenCalled();
   }
 );
 
-it("rejects unavailable scopes and ignores installation IDs outside discovery", async () => {
-  const { actions, platformBodies, request, server, authenticate } = setup();
+it("leaves selection to the platform when a deeper context is invalid but an ancestor is usable", async () => {
+  const { run, requests } = setup();
 
-  const invalid = await server.handler(
-    request({ activeView, scopes: ["other"], slot: "page" }),
-    { authenticate }
+  const response = await run({
+    activeView: {
+      ...activeView,
+      layers: [
+        ...activeView.layers.slice(0, 1),
+        { path: "/customers", status: "loading" },
+      ],
+    },
+    slot: "page",
+  });
+
+  expect(response.status).toBe(200);
+  expect(await requests[0]?.json()).toMatchObject({
+    contexts: [
+      { path: "/customers", status: "loading" },
+      { path: "/", status: "ready" },
+    ],
+  });
+});
+
+it("rejects duplicate layers and unavailable scopes before contacting the platform", async () => {
+  const { run, platformFetch } = setup();
+  const [first] = activeView.layers;
+
+  const duplicate = await run({
+    activeView: {
+      ...activeView,
+      layers: first ? [...activeView.layers, first] : [],
+    },
+    slot: "page",
+  });
+
+  const scope = await run({ activeView, scopes: ["other"], slot: "page" });
+  expect(duplicate.status).toBe(400);
+  expect(scope.status).toBe(400);
+  expect(platformFetch).not.toHaveBeenCalled();
+});
+
+it("passes app filters to the platform and returns no out-of-scope installations", async () => {
+  const { run, requests, reply } = setup();
+  reply.mockResolvedValueOnce(
+    Response.json({ data: [], status: "ready", warnings: [] })
   );
-
-  expect(invalid.status).toBe(400);
-  expect(platformBodies).toHaveLength(0);
-
-  const selected = await server.handler(
-    request({ activeView, appIds: ["outside"], slot: "page" }),
-    { authenticate }
-  );
-
-  expect(await selected.json()).toEqual({ data: [], status: "ready" });
-  expect(actions).toHaveLength(0);
+  const response = await run({ activeView, appIds: ["outside"], slot: "page" });
+  expect(await response.json()).toEqual({
+    data: [],
+    status: "ready",
+    warnings: [],
+  });
+  expect(await requests[0]?.json()).toMatchObject({
+    appIds: ["outside"],
+    scopes: [app.scope],
+  });
 });
 
 it("requires authentication and rejects cross-origin and malformed requests", async () => {
-  const { actions, platformBodies, request, server } = setup();
+  const { platformFetch, server } = setup();
 
-  const unauthorized = await server.handler(request(), {
+  const unauthorized = await server.handler(viewRequest(), {
     authenticate: () => null,
   });
 
@@ -309,8 +336,8 @@ it("requires authentication and rejects cross-origin and malformed requests", as
     { body: "invalid JSON" },
     { body: undefined, method: "GET" },
   ]) {
-    // oxlint-disable-next-line no-await-in-loop -- Assert each malformed request is rejected before issuing the next.
-    const response = await server.handler(request(undefined, init), {
+    // oxlint-disable-next-line no-await-in-loop -- Check each rejection independently.
+    const response = await server.handler(viewRequest(undefined, init), {
       authenticate: () => ({
         scopes: { org: { id: "org" } },
         subjectId: "principal",
@@ -320,20 +347,15 @@ it("requires authentication and rejects cross-origin and malformed requests", as
     expect(response.status).toBe(init.method === "GET" ? 404 : 400);
   }
 
-  expect(platformBodies).toHaveLength(0);
-  expect(actions).toHaveLength(0);
+  expect(platformFetch).not.toHaveBeenCalled();
 });
 
-it("resolves installations concurrently and aborts their actions when the request is cancelled", async () => {
-  const { run, runtimeFetch, actions } = setup([app, { ...app, id: "second" }]);
-  runtimeFetch.mockImplementation(async (input, init) => {
-    const request = input instanceof Request ? input : new Request(input, init);
-    actions.push({
-      authorization: request.headers.get("authorization"),
-      body: await request.json(),
-      signal: request.signal,
-    });
-
+it("propagates request cancellation to the single platform call", async () => {
+  const { run, platformFetch } = setup();
+  const signals: AbortSignal[] = [];
+  platformFetch.mockImplementation(async (value, init) => {
+    const request = value instanceof Request ? value : new Request(value, init);
+    signals.push(request.signal);
     const { promise, reject } = Promise.withResolvers<Response>();
     request.signal.addEventListener(
       "abort",
@@ -347,76 +369,65 @@ it("resolves installations concurrently and aborts their actions when the reques
   });
   const controller = new AbortController();
   const pending = run(undefined, { signal: controller.signal });
+
+  const rejected = expect(pending).rejects.toMatchObject({
+    name: "AbortError",
+  });
+
   await vi.waitFor(() => {
-    expect(actions).toHaveLength(2);
+    expect(signals).toHaveLength(1);
   });
   controller.abort();
-  const response = await pending;
-  expect(response.status).toBe(502);
-  expect(actions.every(({ signal }) => signal.aborted)).toBe(true);
-  expect(
-    actions
-      .map(({ authorization }) => authorization)
-      .toSorted((a, b) => (a ?? "").localeCompare(b ?? ""))
-  ).toEqual(["Bearer app-token-installation", "Bearer app-token-second"]);
+  await rejected;
+  expect(signals.every((signal) => signal.aborted)).toBe(true);
 });
 
-it("flattens all app instances with one platform discovery call and keeps sessions private", async () => {
-  const { run, platformBodies, actions } = setup([
-    app,
-    { ...app, id: "second" },
-  ]);
+it.each([401, 404, 500, 502])(
+  "does not fall back to host fan-out or retry platform failure %s",
+  async (status) => {
+    const { run, platformFetch, runtimeFetch } = setup();
+    platformFetch.mockResolvedValueOnce(
+      new Response("private upstream error", { status })
+    );
+    const response = await run();
+    expect(response.status).toBe(502);
+    expect(await response.text()).toBe("Unable to resolve views");
+    expect(platformFetch).toHaveBeenCalledOnce();
+    expect(runtimeFetch).not.toHaveBeenCalled();
+  }
+);
 
-  const response = await run();
-  expect(await response.json()).toEqual({
-    data: [
-      { ...instance, app },
-      { ...instance, app: { ...app, id: "second" } },
-    ],
-    status: "ready",
-  });
-  expect(platformBodies.map(({ path }) => path)).toEqual([
-    "/api/platform/apps/runtime/discover",
-  ]);
-  expect(actions.map(({ authorization }) => authorization)).toEqual([
-    "Bearer app-token-installation",
-    "Bearer app-token-second",
-  ]);
-});
-
-it("continues paginated runtime discovery after an empty filtered page", async () => {
-  const { run, platformFetch, platformBodies } = setup();
+it("returns the platform's resolver timeout as a sanitized 504 without retrying", async () => {
+  const { run, platformFetch, runtimeFetch } = setup();
   platformFetch.mockResolvedValueOnce(
-    Response.json({ items: [], pagination: { hasMore: true } })
+    new Response("private timeout details", { status: 504 })
   );
   const response = await run();
-  expect(response.status).toBe(200);
-  expect(platformBodies).toMatchObject([{ body: { page: 2 } }]);
-  expect(await response.json()).toEqual({
+  expect(response.status).toBe(504);
+  expect(await response.text()).toBe("View resolution timed out");
+  expect(platformFetch).toHaveBeenCalledOnce();
+  expect(runtimeFetch).not.toHaveBeenCalled();
+});
+
+it("preserves successful data and per-app timeout warnings from the platform", async () => {
+  const { reply, run, runtimeFetch } = setup();
+
+  const partial = {
     data: [{ ...instance, app }],
     status: "ready",
-  });
-  expect(platformFetch).toHaveBeenCalledTimes(2);
-});
-
-it("does not retry failed resolver actions or issue another runtime session", async () => {
-  const { run, runtimeFetch, platformBodies } = setup();
-  runtimeFetch.mockResolvedValueOnce(
-    Response.json(
+    warnings: [
       {
-        json: {
-          code: "UNAUTHORIZED",
-          defined: false,
-          message: "Expired session",
-        },
+        appId: "timed-out-installation",
+        code: "INSTANCE_RESOLUTION_TIMEOUT",
+        message: "View resolution timed out",
+        path: "/customers",
       },
-      { status: 401 }
-    )
-  );
+    ],
+  };
+
+  reply.mockResolvedValueOnce(Response.json(partial));
   const response = await run();
-  expect(response.status).toBe(502);
-  expect(platformBodies.map(({ path }) => path)).toEqual([
-    "/api/platform/apps/runtime/discover",
-  ]);
-  expect(runtimeFetch).toHaveBeenCalledTimes(1);
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual(partial);
+  expect(runtimeFetch).not.toHaveBeenCalled();
 });

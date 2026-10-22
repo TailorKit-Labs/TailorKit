@@ -1,244 +1,293 @@
+import { handlerGen } from "@orpc/experimental-effect";
 import { openapi } from "@orpc/openapi";
-import { ORPCError } from "@orpc/server";
-import type { ViewInstance } from "@patchsmith/app/client";
-import { createClient, reference } from "@patchsmith/app/client/connection";
+import { ORPCError, RPCJsonSerializer } from "@orpc/server";
+import { appsRuntimeResolve } from "@patchsmith/client-platform/client";
+import { Effect } from "effect";
+import * as v from "valibot";
 
 import type { PatchsmithSchema } from "#schema/schema";
 import { httpPolicy, recordHttpTiming } from "#server/http";
+import { listApps } from "#server/list-apps";
 import { o, requireHostAuth } from "#server/procedures";
-import { discoverViewApps } from "#server/runtime-discovery";
 import { selectPatchsmithScopes } from "#server/scope";
 import {
   composeViewContext,
   getViewHierarchy,
-  selectSlotView,
   viewsInputSchema,
   viewsResultSchema,
 } from "#views";
-import type { ViewsResult, ViewLayer, ViewContextValues } from "#views";
+import type { ViewLayer, ViewContextValues } from "#views";
 
-const resolver = reference<
-  "action",
-  { slot: string; path: string; context: ViewContextValues },
-  ViewInstance[]
->("_patchsmith.instances.resolve", "action");
+const contextSerializer = new RPCJsonSerializer();
 
-const validateLayers = async (
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- Schema and serialization failures enter through untyped exception boundaries.
+const invalidContext = (cause: unknown) =>
+  new ORPCError("BAD_REQUEST", {
+    cause,
+    message: "Invalid view context",
+  });
+
+const serializeContext = (context: ViewContextValues) =>
+  Effect.gen(function* serializeValues() {
+    const serialized = yield* Effect.try({
+      catch: invalidContext,
+      try: () => contextSerializer.serialize(context),
+    });
+
+    const blobs =
+      serialized.blobs === undefined
+        ? undefined
+        : yield* Effect.forEach(
+            serialized.blobs,
+            (blob) =>
+              Effect.gen(function* serializeBlob() {
+                const buffer = yield* Effect.tryPromise({
+                  catch: invalidContext,
+                  try: async () => await blob.arrayBuffer(),
+                });
+
+                const bytes = new Uint8Array(buffer);
+                let binary = "";
+
+                for (let offset = 0; offset < bytes.length; offset += 8192) {
+                  binary += String.fromCodePoint(
+                    ...bytes.subarray(offset, offset + 8192)
+                  );
+                }
+
+                return {
+                  data: btoa(binary),
+                  lastModified:
+                    blob instanceof File ? blob.lastModified : undefined,
+                  name: blob instanceof File ? blob.name : undefined,
+                  type: blob.type,
+                };
+              }),
+            { concurrency: "unbounded" }
+          );
+
+    const json = yield* Effect.try({
+      catch: invalidContext,
+      try: () => v.parse(v.record(v.string(), v.unknown()), serialized.json),
+    });
+
+    return {
+      context: json,
+      contextBlobs: blobs,
+      contextMaps: serialized.maps,
+      contextMeta: serialized.meta?.map(([type, ...path]) => ({ path, type })),
+    };
+  });
+
+const validateLayers = (
   schema: PatchsmithSchema,
   paths: Set<string>,
   layers: ViewLayer[]
 ) =>
-  await Promise.all(
-    layers.map(async (layer) => {
-      const validator = Object.entries(schema.views).find(
-        ([path]) => path === layer.path
-      )?.[1];
+  Effect.forEach(
+    layers,
+    (layer) =>
+      Effect.gen(function* validateLayer() {
+        const validator = Object.entries(schema.views).find(
+          ([path]) => path === layer.path
+        )?.[1];
 
-      if (!paths.has(layer.path) || layer.status !== "ready" || !validator) {
-        return layer;
-      }
+        if (!paths.has(layer.path) || layer.status !== "ready" || !validator) {
+          return layer;
+        }
 
-      const parsed = await validator["~standard"].validate(layer.context);
+        const parsed = yield* Effect.tryPromise({
+          catch: invalidContext,
+          try: async () => await validator["~standard"].validate(layer.context),
+        });
 
-      if (parsed.issues) {
-        throw new Error(`Invalid context for view "${layer.path}".`);
-      }
-
-      return { ...layer, context: parsed.value };
-    })
+        return parsed.issues
+          ? { path: layer.path, status: "error" as const }
+          : { ...layer, context: parsed.value };
+      }).pipe(
+        Effect.orElseSucceed((): ViewLayer => ({
+          path: layer.path,
+          status: "error",
+        }))
+      ),
+    { concurrency: "unbounded" }
   );
 
-/** Discover authorized installations and run their generated instance actions on the host. */
+/** The host authenticates and validates context; the platform owns app-backend fan-out. */
 export const views = o
   .meta(
     openapi({ method: "POST", path: "/views" }),
     httpPolicy({ authTiming: "views_auth", authenticate: true, json: true })
   )
+  .errors({ GATEWAY_TIMEOUT: { message: "View resolution timed out" } })
   .use(requireHostAuth)
   .input(viewsInputSchema)
   .output(viewsResultSchema)
-  .handler(async ({ context, input }) => {
-    const { request, schema } = context;
-    const viewer = context.patchsmith;
+  .handler(
+    handlerGen(function* views({ context, input }) {
+      const { schema } = context;
+      const viewer = context.patchsmith;
 
-    const recordTiming = (stage: string, started: number) => {
-      recordHttpTiming(context, stage, started);
-    };
-
-    let scopes;
-
-    try {
-      scopes =
-        input.scopes?.length === 0
-          ? []
-          : selectPatchsmithScopes(viewer.scopes, input.scopes);
-    } catch {
-      throw new ORPCError("BAD_REQUEST", { message: "Invalid views request" });
-    }
-
-    const definition = schema.slots[input.slot];
-
-    if (!definition || !scopes.length || input.appIds?.length === 0) {
-      return { data: [], status: "ready" };
-    }
-
-    if (definition.multiple === true && input.activeView === null) {
-      return { status: "idle" };
-    }
-
-    const controller = new AbortController();
-
-    const abort = () => {
-      controller.abort();
-    };
-
-    request.signal.addEventListener("abort", abort, { once: true });
-
-    try {
-      request.signal.throwIfAborted();
-
-      const discoveryStarted = performance.now();
-
-      const { apps: discovered, sessions } = await discoverViewApps(
-        context,
-        input,
-        definition,
-        viewer,
-        scopes,
-        context.toolUrl,
-        controller.signal
-      );
-
-      recordTiming("views_discovery", discoveryStarted);
-
-      const apps = discovered.filter(
-        (app) => input.appIds === undefined || input.appIds.includes(app.id)
-      );
-
-      if (definition.multiple !== true) {
-        return {
-          data: apps
-            .filter((app) =>
-              app.views?.some(
-                (view) =>
-                  view.slot === input.slot &&
-                  !view.disabled &&
-                  !view.instances &&
-                  definition.views.includes(view.path)
-              )
-            )
-            .map((app) => ({ app })),
-          status: "ready",
-        };
-      }
-
-      const active = input.activeView;
-
-      if (!active) {
-        return { status: "idle" };
-      }
-
-      const matches = apps.flatMap((app) => {
-        const view = selectSlotView(
-          app.views ?? [],
-          input.slot,
-          active.view,
-          schema
-        );
-
-        return view?.instances ? [{ app, view }] : [];
+      const scopes = yield* Effect.try({
+        catch: () =>
+          new ORPCError("BAD_REQUEST", { message: "Invalid views request" }),
+        try: () =>
+          input.scopes?.length === 0
+            ? []
+            : selectPatchsmithScopes(viewer.scopes, input.scopes),
       });
 
-      const paths = new Set(
-        matches.flatMap(({ view }) => getViewHierarchy(view.path))
-      );
+      const definition = schema.slots[input.slot];
 
-      let layers;
-
-      try {
-        layers = await validateLayers(schema, paths, active.layers);
-      } catch {
-        throw new ORPCError("BAD_REQUEST", { message: "Invalid view context" });
+      if (!definition || !scopes.length || input.appIds?.length === 0) {
+        return { data: [], status: "ready" as const, warnings: [] };
       }
 
-      const resolved = matches.map(({ app, view }) => ({
-        app,
-        props: composeViewContext(view.path, {
-          declaredViews: Object.keys(schema.views),
-          layers,
-        }),
-      }));
+      return yield* Effect.gen(function* resolveViews() {
+        if (definition.multiple !== true) {
+          const started = performance.now();
 
-      if (resolved.some(({ props }) => props.status === "error")) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: "View context is unavailable",
-        });
-      }
-
-      if (resolved.some(({ props }) => props.status === "loading")) {
-        return { status: "loading" };
-      }
-
-      const instancesStarted = performance.now();
-
-      const data = await Promise.all(
-        resolved.map(async ({ app, props }) => {
-          if (props.status !== "ready") {
-            return [];
-          }
-
-          const backend = createClient({
-            // oxlint-disable-next-line require-await -- The async provider returns this request's already authorized session without I/O.
-            getSession: async () => {
-              const session = sessions.get(app.id);
-
-              if (!session) {
-                throw new Error("Missing discovered runtime session");
-              }
-
-              return session;
-            },
+          const apps = yield* Effect.tryPromise({
+            catch: () =>
+              new ORPCError("BAD_GATEWAY", {
+                message: "Unable to resolve views",
+              }),
+            try: async (signal) => await listApps(context, scopes, signal),
           });
 
-          const close = () => {
-            backend.close();
+          recordHttpTiming(context, "views_discovery", started);
+
+          return {
+            data: apps
+              .filter(
+                (app) =>
+                  input.appIds === undefined || input.appIds.includes(app.id)
+              )
+              .filter((app) =>
+                app.views?.some(
+                  (view) =>
+                    view.slot === input.slot &&
+                    !view.disabled &&
+                    !view.instances &&
+                    definition.views.includes(view.path)
+                )
+              )
+              .map((app) => ({ app })),
+            status: "ready" as const,
+            warnings: [],
           };
+        }
 
-          controller.signal.addEventListener("abort", close, { once: true });
+        const active = input.activeView;
 
-          try {
-            controller.signal.throwIfAborted();
+        if (!active) {
+          return { status: "idle" as const };
+        }
 
-            const instances = await backend.action(resolver, {
-              context: props.context,
-              path: props.view,
-              slot: input.slot,
-            });
+        const paths = getViewHierarchy(active.view).filter((path) =>
+          definition.views.includes(path)
+        );
 
-            return instances.map((instance) => ({ ...instance, app }));
-          } finally {
-            controller.signal.removeEventListener("abort", close);
-            backend.close();
-          }
-        })
-      );
+        const layers = yield* validateLayers(
+          schema,
+          new Set(paths.flatMap(getViewHierarchy)),
+          active.layers
+        );
 
-      recordTiming("views_instances", instancesStarted);
+        const contexts = yield* Effect.forEach(
+          paths,
+          (path) =>
+            Effect.gen(function* prepareContext() {
+              const props = yield* Effect.try({
+                catch: invalidContext,
+                try: () =>
+                  composeViewContext(path, {
+                    declaredViews: Object.keys(schema.views),
+                    layers,
+                  }),
+              });
 
-      const result: ViewsResult = { data: data.flat(), status: "ready" };
+              if (props.status !== "ready") {
+                return { path, status: props.status };
+              }
 
-      return result;
-    } catch (error) {
-      controller.abort();
+              return {
+                ...(yield* serializeContext(props.context)),
+                path,
+                status: props.status,
+              };
+            }).pipe(
+              // Reject errors only for views selected by an installation on the platform.
+              Effect.orElseSucceed(() => ({ path, status: "error" as const }))
+            ),
+          { concurrency: "unbounded" }
+        );
 
-      if (error instanceof ORPCError) {
-        throw error;
-      }
+        const started = performance.now();
 
-      throw new ORPCError("BAD_GATEWAY", {
-        message: "Unable to resolve views",
+        const { data, response } = yield* Effect.tryPromise({
+          catch: () =>
+            new ORPCError("BAD_GATEWAY", {
+              message: "Unable to resolve views",
+            }),
+          try: async (signal) =>
+            await appsRuntimeResolve({
+              body: {
+                appIds:
+                  input.appIds === undefined ? undefined : [...input.appIds],
+                contexts,
+                scopes,
+                slot: input.slot,
+                subjectId: viewer.subjectId,
+                toolUrl: context.toolUrl,
+              },
+              client: context.platform,
+              headers: context.platformHeaders,
+              responseStyle: "fields",
+              signal,
+              throwOnError: false,
+            }),
+        });
+
+        recordHttpTiming(context, "views_platform", started);
+
+        if (!response) {
+          return yield* Effect.fail(
+            new ORPCError("BAD_GATEWAY", {
+              message: "Unable to resolve views",
+            })
+          );
+        }
+
+        const timing = response.headers.get("server-timing");
+
+        if (timing !== null) {
+          context.resHeaders?.append("server-timing", timing);
+        }
+
+        if (response.status === 400) {
+          return yield* Effect.fail(
+            new ORPCError("BAD_REQUEST", { message: "Invalid view context" })
+          );
+        }
+
+        if (response.status === 504) {
+          return yield* Effect.fail(
+            new ORPCError("GATEWAY_TIMEOUT", {
+              message: "View resolution timed out",
+            })
+          );
+        }
+
+        if (!response.ok || !data) {
+          return yield* Effect.fail(
+            new ORPCError("BAD_GATEWAY", {
+              message: "Unable to resolve views",
+            })
+          );
+        }
+
+        return data;
       });
-    } finally {
-      request.signal.removeEventListener("abort", abort);
-    }
-  });
+    })
+  );
