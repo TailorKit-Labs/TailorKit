@@ -1,5 +1,6 @@
 import { asyncFixture } from "@patchsmith/config/testing";
 import { defineContract } from "@patchsmith/core/schema";
+import type { ViewsResult } from "@patchsmith/core/views";
 import {
   CancelledError,
   QueryClient,
@@ -37,13 +38,15 @@ const PanelApps = ({
 it("lets React Query deduplicate and invalidate views independently of the nanostore cache", async () => {
   let appId = "nanostore";
 
-  const request = vi
-    .fn<typeof fetch>()
-    .mockImplementation(
-      asyncFixture(() =>
-        Response.json({ data: [{ app: { id: appId } }], status: "ready" })
-      )
-    );
+  const request = vi.fn<typeof fetch>().mockImplementation(
+    asyncFixture(() =>
+      Response.json({
+        data: [{ app: { id: appId } }],
+        status: "ready",
+        warnings: [],
+      } satisfies ViewsResult)
+    )
+  );
 
   const client = createClient({
     baseUrl: "https://host.test/api/patchsmith",
@@ -68,6 +71,9 @@ it("lets React Query deduplicate and invalidate views independently of the nanos
       </QueryClientProvider>
     );
     await waitFor(() => {
+      expect(
+        queryClient.getQueryState(["patchsmith", "views", input])
+      ).toMatchObject({ error: null, status: "success" });
       expect(screen.getAllByText("tanstack")).toHaveLength(2);
     });
     expect(request).toHaveBeenCalledTimes(2);
@@ -93,6 +99,7 @@ it("lets React Query deduplicate and invalidate views independently of the nanos
     expect(cached?.getSnapshot().data).toEqual({
       data: [{ app: { id: "nanostore" } }],
       status: "ready",
+      warnings: [],
     });
   } finally {
     cleanup();
@@ -108,7 +115,11 @@ it("provides validated apps and views as promises without a provider or abort si
     .mockResolvedValueOnce(Response.json({ status: "loading" }))
     .mockResolvedValueOnce(Response.json({ status: "idle" }))
     .mockResolvedValueOnce(
-      Response.json({ data: [{ app: { id: 1 } }], status: "ready" })
+      Response.json({
+        data: [{ app: { id: 1 } }],
+        status: "ready",
+        warnings: [],
+      })
     )
     .mockResolvedValueOnce(
       new Response("Host rejected the query", { status: 403 })
