@@ -195,7 +195,6 @@ it("typechecks and bundles examples with scaffold imports and the public SDK", a
 
     const references = renderGeneratedReferences(schema, {
       bindingsPath: "../src/patchsmith.gen.ts",
-      hasApi: true,
     });
 
     expect(references["components/RequiredText.md"]).toContain(

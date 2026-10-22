@@ -40,13 +40,9 @@ export const validateServerBuildOutput = (
   loaded: LoadedPatchsmithConfig,
   output: string
 ) => {
-  if (!loaded.config.server) {
-    return;
-  }
-
   const migrationsDirectory = appDatabasePaths(
     loaded.root,
-    loaded.config.server.migrations
+    loaded.config.server?.migrations
   ).migrations;
 
   for (const name of ["server", "client", "migrations", "tmp"]) {
@@ -78,19 +74,12 @@ export const buildServer = async (
   registrations: InstanceRegistration[] = [],
   viteConfig: UserConfig = {}
 ) => {
-  const config = loaded.config.server;
-
-  if (!config) {
-    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
-    return undefined;
-  }
-
   const output = buildOutDir ?? path.resolve(loaded.root, ".patchsmith");
   const directory = path.join(output, "server");
 
   const migrationsDirectory = appDatabasePaths(
     loaded.root,
-    config.migrations
+    loaded.config.server?.migrations
   ).migrations;
 
   const migrationsOutput = path.join(output, "migrations");
@@ -158,6 +147,23 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
       mode: viteConfig.mode,
       plugins: [
         ...(viteConfig.plugins ?? []),
+        {
+          name: "patchsmith-server-runtime",
+          async resolveId(id) {
+            if (id !== "patchsmith/server") {
+              return null;
+            }
+
+            // Generated entries can live outside the app's dependency tree.
+            return await this.resolve(
+              id,
+              path.join(loaded.root, "package.json"),
+              {
+                skipSelf: true,
+              }
+            );
+          },
+        },
         instanceServerPlugin(loaded.root, instances),
         {
           closeWatcher: async () => {
@@ -170,7 +176,7 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
 
             const { migrations, files } = await readAppMigrations(
               migrationsDirectory,
-              config.migrations === undefined
+              loaded.config.server?.migrations === undefined
             );
 
             await checkAppSchema(loaded.root, migrationsDirectory);
@@ -185,7 +191,10 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
             await cp(migrationsDirectory, migrationsOutput, {
               recursive: true,
             }).catch((error: ErrorOptions["cause"]) => {
-              if (config.migrations === undefined && isMissingFile(error)) {
+              if (
+                loaded.config.server?.migrations === undefined &&
+                isMissingFile(error)
+              ) {
                 return;
               }
 

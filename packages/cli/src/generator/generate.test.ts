@@ -78,7 +78,11 @@ describe("generateApp", () => {
         tooling,
       });
       const sourceFiles = await readdir(path.join(targetDirectory, "src"));
-      expect(sourceFiles.toSorted()).toEqual(["patchsmith.gen.ts", "root.tsx"]);
+      expect(sourceFiles.toSorted()).toEqual([
+        "patchsmith.functions.gen.ts",
+        "patchsmith.gen.ts",
+        "root.tsx",
+      ]);
       const config = await loadPatchsmithConfig(undefined, targetDirectory);
       expect(config.config).not.toHaveProperty("logos");
       expect(config.config).not.toHaveProperty("server");
@@ -90,7 +94,7 @@ describe("generateApp", () => {
       );
 
       expect(bindings).toContain('"sidebar"');
-      expect(bindings).not.toContain("createApi");
+      expect(bindings).toContain("createApi");
       expect(
         await readFile(
           path.join(
@@ -111,7 +115,7 @@ describe("generateApp", () => {
       schema: { components: {} },
       targetDirectory,
     });
-    expect(await readdir(path.join(targetDirectory, "src"))).toHaveLength(2);
+    expect(await readdir(path.join(targetDirectory, "src"))).toHaveLength(3);
   });
 
   it("scaffolds Valibot as the default validator for app functions", async () => {

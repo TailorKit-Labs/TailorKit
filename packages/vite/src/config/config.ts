@@ -76,8 +76,8 @@ export interface PatchsmithConfig extends v.InferInput<
    */
   name: string;
   /**
-   * Enables the private app backend and its database migrations when present.
-   * Set to `{}` to use the default paths; omit for a client-only app.
+   * Optional settings for the private app backend, which is always built.
+   * Omit to use the default migration path.
    * @default undefined
    */
   server?: {

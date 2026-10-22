@@ -336,7 +336,7 @@ const renderViewsReference = (
         "",
         "Place the view under this slot's directory at the declared path. Read context with useContext() inside the view.",
         slot.multiple === true
-          ? "Enable server: {}. Use stable instance keys and product-supported metadata."
+          ? "Use stable instance keys and product-supported metadata."
           : "Keep the app's ClientProvider above this view when using backend hooks.",
         "",
         viewExample(name, firstView, slot.multiple === true),
@@ -370,7 +370,7 @@ export const renderReferences = (
   schema: PatchsmithSchemaFile,
   components: ReferenceComponent[],
   responsive: ResponsiveLookup,
-  { bindingsPath, hasApi }: { bindingsPath: string; hasApi: boolean }
+  { bindingsPath }: { bindingsPath: string }
 ): GeneratedFiles => {
   const files: GeneratedFiles = {};
 
@@ -382,9 +382,7 @@ export const renderReferences = (
     "- [Slots and context](views.md): choose a supported surface and read its context.",
     "- [Host tools](tools.md): inputs, results, and client/server execution.",
     "- [Styling](styling.md): token and responsive/state lookup.",
-    hasApi
-      ? `- App functions: \`api\` references routers discovered in \`src/functions/**/*.fn.ts\`; search the [generated bindings](${bindingsPath}) for \`AppServerFunctions\` and inspect your own function source when needed.`
-      : "- App functions: enable `server: {}`, add a router under `src/functions/**/*.fn.ts`, then regenerate bindings to expose `api`.",
+    `- App functions: \`api\` references routers discovered in \`src/functions/**/*.fn.ts\`; search the [generated bindings](${bindingsPath}) for \`AppServerFunctions\` and inspect your own function source when needed.`,
     "",
     "## Components",
     "",

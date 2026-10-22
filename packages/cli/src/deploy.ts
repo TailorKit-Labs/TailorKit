@@ -272,9 +272,7 @@ const typecheckAppEntries = async (
 
   const clientFiles = await getClientSourceFiles(loaded.root);
 
-  const functionFiles = loaded.config.server
-    ? await discoverFunctionFiles(loaded.root)
-    : [];
+  const functionFiles = await discoverFunctionFiles(loaded.root);
 
   const entryFiles = [
     ...clientFiles,
@@ -371,12 +369,10 @@ export const runDeploy = async (
   } = await import("@patchsmith/vite/builder");
 
   // Refresh imports before the build and compiler run concurrently, including on a fresh checkout.
-  if (loaded.config.server) {
-    await generateFunctionTypes(
-      loaded.root,
-      await discoverFunctionFiles(loaded.root)
-    );
-  }
+  await generateFunctionTypes(
+    loaded.root,
+    await discoverFunctionFiles(loaded.root)
+  );
 
   const [buildResult, typecheckResult] = await Promise.allSettled([
     buildProject({ ...options, cwd: loaded.root }),

@@ -127,7 +127,11 @@ it("passes bare mode through initialization and still generates host capabilitie
   });
 
   const files = await readdir(path.join(directory, "src"));
-  expect(files.toSorted()).toEqual(["patchsmith.gen.ts", "root.tsx"]);
+  expect(files.toSorted()).toEqual([
+    "patchsmith.functions.gen.ts",
+    "patchsmith.gen.ts",
+    "root.tsx",
+  ]);
 });
 
 it("reports schema fetch failures without creating a project", async () => {

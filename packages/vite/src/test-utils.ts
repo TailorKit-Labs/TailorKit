@@ -60,7 +60,7 @@ export const createDatabaseTestApp = async (root: string): Promise<void> => {
   const files = {
     "package.json": '{"type":"module"}',
     "patchsmith.config.mjs":
-      'export default { name: "Test App", slug: "test-app", host: "https://host.test", server: {} };',
+      'export default { name: "Test App", slug: "test-app", host: "https://host.test" };',
     "src/db/schema.ts": testSchema,
     "src/functions/todos.fn.ts": `import { createFunctions, defineRouter } from "patchsmith/server";
 import { defineDatabase, defineRelations } from "patchsmith/db";

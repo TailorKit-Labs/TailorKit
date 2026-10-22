@@ -126,7 +126,7 @@ it.each([
       await writeFile(path.join(root, "package.json"), '{"type":"module"}');
       await writeFile(
         path.join(root, "patchsmith.config.mjs"),
-        'export default { name: "Test App", slug: "test-app", host: "https://host.test", server: {} };'
+        'export default { name: "Test App", slug: "test-app", host: "https://host.test" };'
       );
       await writeFile(
         path.join(root, "src/root.tsx"),
@@ -231,7 +231,7 @@ it.each([
       await writeFile(path.join(root, "package.json"), '{"type":"module"}');
       await writeFile(
         path.join(root, "patchsmith.config.mjs"),
-        'export default { name: "Test App", slug: "test-app", host: "https://host.test", server: {} };'
+        'export default { name: "Test App", slug: "test-app", host: "https://host.test" };'
       );
       await writeFile(
         path.join(root, "src/root.tsx"),
@@ -267,7 +267,7 @@ it("builds file routes with discovered functions and blocks server imports from 
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(
       path.join(root, "patchsmith.config.mjs"),
-      'export default { appId: "configured-app", name: "Test App", slug: "test-app", host: "https://host.example.com", server: {} };'
+      'export default { appId: "configured-app", name: "Test App", slug: "test-app", host: "https://host.example.com" };'
     );
     await Promise.all(
       ["src/functions"].map(async (directory) => {
@@ -355,6 +355,52 @@ it("builds file routes with discovered functions and blocks server imports from 
     await expect(buildFixture({ cwd: root })).rejects.toThrow(
       "cannot be imported into a browser bundle"
     );
+  } finally {
+    await rm(root, { force: true, recursive: true });
+  }
+});
+
+it("builds and declares an empty backend without server configuration", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "patchsmith-empty-backend-"));
+
+  try {
+    await linkTestDependencies(root);
+    await mkdir(path.join(root, "src"));
+    await writeFile(path.join(root, "package.json"), '{"type":"module"}');
+    await writeFile(
+      path.join(root, "patchsmith.config.mjs"),
+      'export default { name: "Test App", slug: "test-app", host: "https://host.test" };'
+    );
+    await writeFile(
+      path.join(root, "src/root.tsx"),
+      'import { defineRoute } from "patchsmith/client"; export default defineRoute({ shellComponent: () => "client" });'
+    );
+
+    await buildFixture({ cwd: root });
+
+    const application: ApplicationModule = await import(
+      pathToFileURL(path.join(root, ".patchsmith/server/server.js")).href
+    );
+
+    expect(application.default.functions).toEqual({});
+    expect(application.migrations).toEqual([]);
+    expect(application.runtimeManifest).toEqual(runtimeManifest);
+    expect(
+      await readFile(
+        path.join(root, "src/patchsmith.functions.gen.ts"),
+        "utf-8"
+      )
+    ).toContain("Record<never, never>");
+    expect(
+      JSON.parse(
+        await readFile(
+          path.join(root, ".patchsmith/patchsmith-upload.json"),
+          "utf-8"
+        )
+      )
+    ).toMatchObject({
+      assets: { client: "client/client.js", server: "server/server.js" },
+    });
   } finally {
     await rm(root, { force: true, recursive: true });
   }
@@ -559,7 +605,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(
       path.join(root, "patchsmith.config.mjs"),
-      'export default { name: "Test App", slug: "test-app", host: "https://host.example.com", server: {} };'
+      'export default { name: "Test App", slug: "test-app", host: "https://host.example.com" };'
     );
     await mkdir(path.join(root, "src/functions"), { recursive: true });
     await writeFile(
@@ -882,18 +928,6 @@ it("builds colocated instance resolvers as query-only server actions", async () 
     } finally {
       await watcher.close();
     }
-
-    await writeFile(
-      path.join(root, "src/slots/page/index.view.tsx"),
-      viewSource
-    );
-    await writeFile(
-      path.join(root, "no-server.config.mjs"),
-      'export default { name: "Test App", slug: "test-app", host: "https://host.example.com" };'
-    );
-    await expect(
-      buildFixture({ configPath: "no-server.config.mjs", cwd: root })
-    ).rejects.toThrow("require server configuration");
   } finally {
     await rm(root, { force: true, recursive: true });
   }
