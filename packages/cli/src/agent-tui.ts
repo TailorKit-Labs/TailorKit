@@ -17,8 +17,12 @@ import type { PatchsmithSchemaFile } from "./generator/types";
 
 const schemaFetchTimeoutMs = 10_000;
 
+type AgentChat = (
+  ...args: Parameters<PatchsmithRouterClient["appAgent"]["chat"]>
+) => Promise<AsyncIterable<UIMessageChunk>>;
+
 interface AgentTuiOptions {
-  client: { appAgent: Pick<PatchsmithRouterClient["appAgent"], "chat"> };
+  client: { appAgent: { chat: AgentChat } };
   hostUrl: string;
   appId: string;
   schemaPath?: string;
@@ -47,7 +51,6 @@ export const openAgentTui = async (
     input: ChatInput,
     signal?: AbortSignal
   ): Promise<AsyncIterable<UIMessageChunk>> => {
-    // oxlint-disable-next-line typescript/no-unsafe-assignment -- The generated RPC event iterator type is erased; the host validates each chunk.
     const chunks: AsyncIterable<UIMessageChunk> = await client.appAgent.chat(
       input,
       { signal }

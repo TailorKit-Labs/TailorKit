@@ -11,7 +11,7 @@ import type {
 import type { PatchsmithHostContext } from "@patchsmith/core/server/types";
 import { toJsonSchema } from "@valibot/to-json-schema";
 import { jsonSchema, tool } from "ai";
-import type { ToolExecutionOptions } from "ai";
+import type { Tool, ToolExecutionOptions } from "ai";
 import * as v from "valibot";
 
 export type PatchsmithToolInput = Record<string, JSONValue>;
@@ -19,6 +19,27 @@ export type PatchsmithToolInput = Record<string, JSONValue>;
 export type PatchsmithToolOutput =
   | { status: "running"; progress: Progress }
   | { status: "completed"; result: CallToolResult };
+
+// Name the public SDK types so declaration emit does not expose transitive dependencies.
+type PatchsmithTool<TInput> = Tool<TInput, PatchsmithToolOutput> & {
+  execute: NonNullable<Tool<TInput, PatchsmithToolOutput>["execute"]>;
+};
+
+// oxlint-disable-next-line typescript/consistent-type-definitions -- An object type alias retains implicit index signatures required by the AI SDK's ToolSet.
+export type PatchsmithTools = {
+  createApp: PatchsmithTool<{
+    description?: string;
+    name: string;
+    prompt: string;
+    scope: string;
+  }>;
+  editApp: PatchsmithTool<{
+    appId: string;
+    prompt: string;
+    threadId?: string;
+  }>;
+  listApps: PatchsmithTool<{ page: number; pageSize: number }>;
+};
 
 /** The MCP capability of a configured Patchsmith server. */
 export interface PatchsmithMcpServer<TScopes> {
@@ -187,7 +208,7 @@ const agentResultSchema = v.object({
 export const createTools = <TScopes extends Record<string, JSONValue>>(
   patchsmith: PatchsmithMcpServer<TScopes>,
   context: NoInfer<PatchsmithHostContext<TScopes>>
-) => {
+): PatchsmithTools => {
   const scopes = Object.keys(context.scopes);
 
   if (scopes.length === 0) {
@@ -271,5 +292,3 @@ export const createTools = <TScopes extends Record<string, JSONValue>>(
     }),
   };
 };
-
-export type PatchsmithTools = ReturnType<typeof createTools>;
