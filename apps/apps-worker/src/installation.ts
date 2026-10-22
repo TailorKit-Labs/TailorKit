@@ -29,6 +29,12 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
   readonly #actions = createActionLeases();
   readonly #verify = verifier(this.env);
   readonly #source = deploymentSource(this.env);
+  #prepared:
+    | {
+        version: string;
+        facet: Pick<AppFacet, "query" | "mutate" | "action">;
+      }
+    | undefined;
 
   readonly #subscriptions = createSubscriptions(
     this.ctx,
@@ -145,12 +151,29 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
     });
   }
 
+  async #callFacet<T>(facet: Pick<AppFacet, "query">, call: () => Promise<T>) {
+    try {
+      return await call();
+    } catch (error) {
+      // An older in-flight action must not evict a replacement deployment's stub.
+      if (this.#prepared?.facet === facet) {
+        this.#prepared = undefined;
+      }
+
+      throw error;
+    }
+  }
+
   #databaseQuery(input: Invocation, identity: Identity) {
     return this.#facet(identity).pipe(
       Effect.flatMap((facet: Pick<AppFacet, "query">) =>
         Effect.tryPromise({
           catch: appError,
-          try: async () => await facet.query(input, identity),
+          try: async () =>
+            await this.#callFacet(
+              facet,
+              async () => await facet.query(input, identity)
+            ),
         })
       )
     );
@@ -167,7 +190,11 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
 
         const result = yield* Effect.tryPromise({
           catch: appError,
-          try: async () => await facet.mutate(input, identity),
+          try: async () =>
+            await this.#callFacet(
+              facet,
+              async () => await facet.mutate(input, identity)
+            ),
         });
 
         if (result.committed && result.tables.length) {
@@ -185,7 +212,11 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
       (input: Invocation, subscriber) =>
         Effect.tryPromise({
           catch: appError,
-          try: async () => await facet.query(input, subscriber),
+          try: async () =>
+            await this.#callFacet(
+              facet,
+              async () => await facet.query(input, subscriber)
+            ),
         }).pipe(
           Effect.flatMap((result) =>
             resultEffect(result.result).pipe(
@@ -215,6 +246,17 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
   #prepareFacet(deployment: ServerDeployment, identity: Identity) {
     return Effect.gen({ self: this }, function* prepareFacet() {
       const version = `${deployment.deploymentId}:${deployment.checksum}`;
+
+      if (identity.expiresAt <= Date.now()) {
+        return yield* Effect.fail(
+          new AppError("UNAUTHORIZED", "App token expired")
+        );
+      }
+
+      if (this.#prepared?.version === version) {
+        return { facet: this.#prepared.facet };
+      }
+
       // Verify code before stopping the running version. Cache belongs to this installation.
       const code = yield* this.#source.code(deployment);
 
@@ -266,6 +308,8 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
           }) as Pick<AppFacet, "query" | "mutate" | "action">;
 
           // Runtime results have already passed JSON validation; CF's RPC types cannot describe unknown values.
+          this.#prepared = { facet, version };
+
           return { facet };
         },
       });
@@ -305,11 +349,15 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
             );
 
             return await abortable(
-              facet.action(
-                input,
-                identity,
-                capability,
-                cancellationStream(lease.signal)
+              this.#callFacet(
+                facet,
+                async () =>
+                  await facet.action(
+                    input,
+                    identity,
+                    capability,
+                    cancellationStream(lease.signal)
+                  )
               ),
               lease.signal
             );
