@@ -1,5 +1,12 @@
 # @patchsmith/ai-sdk
 
+## 0.1.0-beta.60
+
+### Patch Changes
+
+- a325be8: Fix prerelease builds by declaring tool types through the AI SDK's public exports, preserving typed inputs and streaming outputs without referencing transitive dependency paths.
+- @patchsmith/core@0.1.0-beta.60
+
 ## 0.1.0-beta.59
 
 ### Patch Changes

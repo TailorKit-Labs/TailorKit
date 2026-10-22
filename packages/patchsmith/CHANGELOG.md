@@ -1,5 +1,18 @@
 # patchsmith
 
+## 0.1.0-beta.60
+
+### Patch Changes
+
+- Updated dependencies [a325be8]
+  - @patchsmith/ai-sdk@0.1.0-beta.60
+  - @patchsmith/app@0.1.0-beta.60
+  - @patchsmith/app-db@0.1.0-beta.60
+  - @patchsmith/cli@0.1.0-beta.60
+  - @patchsmith/core@0.1.0-beta.60
+  - @patchsmith/react@0.1.0-beta.60
+  - @patchsmith/vite@0.1.0-beta.60
+
 ## 0.1.0-beta.59
 
 ### Minor Changes
