@@ -411,7 +411,7 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
         "Regeneration uses the configured host URL."
       );
       expect(requests[0]?.body).toContain("deploy");
-      expect(requests[0]?.body).not.toContain("src/functions/notes.fn.ts");
+      expect(requests[0]?.body).not.toContain("src/functions/notes.router.ts");
     } finally {
       await session?.destroy();
       delete env.AI_GATEWAY_API_KEY;

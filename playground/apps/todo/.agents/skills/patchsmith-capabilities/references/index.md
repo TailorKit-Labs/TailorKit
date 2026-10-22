@@ -6,7 +6,7 @@ Read this index, then only the component or capability needed for the change. Ke
 - [Slots and context](views.md): choose a supported surface and read its context.
 - [Host tools](tools.md): inputs, results, and client/server execution.
 - [Styling](styling.md): token and responsive/state lookup.
-- App functions: enable `server: {}`, add a router under `src/functions/**/*.fn.ts`, then regenerate bindings to expose `api`.
+- App functions: enable `server: {}`, add a router under `src/functions/**/*.router.ts`, then regenerate bindings to expose `api`.
 
 ## Components
 

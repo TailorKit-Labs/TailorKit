@@ -322,7 +322,7 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
           (importer !== undefined &&
             importer !== null &&
             importer !== "" &&
-            path.resolve(path.dirname(importer), id).endsWith(".fn.ts"))
+            path.resolve(path.dirname(importer), id).endsWith(".router.ts"))
         ) {
           throw new Error(
             "App server implementations cannot be imported into a browser bundle. Import api from #patchsmith and server types with import type."
@@ -332,7 +332,7 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
         if (importer !== undefined && importer !== null && importer !== "") {
           const result = await this.resolve(id, importer, { skipSelf: true });
 
-          if (result?.id.split("?")[0]?.endsWith(".fn.ts") === true) {
+          if (result?.id.split("?")[0]?.endsWith(".router.ts") === true) {
             throw new Error(
               "App server implementations cannot be imported into a browser bundle. Import api from #patchsmith and server types with import type."
             );

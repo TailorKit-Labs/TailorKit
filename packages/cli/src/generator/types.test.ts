@@ -72,7 +72,7 @@ it("generates type-only function bindings, including custom output paths and emp
       path.join(root, "patchsmith.config.mjs"),
       'export default { name: "Test App", slug: "test-app", host: "https://host.test", server: {} };'
     );
-    const filename = path.join(root, "src/functions/todos.fn.ts");
+    const filename = path.join(root, "src/functions/todos.router.ts");
     await writeFile(filename, 'throw new Error("Never evaluate server code");');
     const generated = await generateTypes({ cwd: root });
     expect(await readFile(generated, "utf-8")).toContain(
@@ -83,7 +83,7 @@ it("generates type-only function bindings, including custom output paths and emp
     );
     const registry = path.join(root, "src/patchsmith.functions.gen.ts");
     expect(await readFile(registry, "utf-8")).toContain(
-      'import type module0 from "./functions/todos.fn"'
+      'import type module0 from "./functions/todos.router"'
     );
 
     const custom = await generateTypes({
@@ -97,7 +97,7 @@ it("generates type-only function bindings, including custom output paths and emp
     await rm(filename);
     await generateTypes({ cwd: root });
     expect(await readFile(registry, "utf-8")).toContain("Record<never, never>");
-    expect(await readFile(registry, "utf-8")).not.toContain("todos.fn");
+    expect(await readFile(registry, "utf-8")).not.toContain("todos.router");
   } finally {
     fetch.mockRestore();
     await rm(root, { force: true, recursive: true });
@@ -118,7 +118,7 @@ it("requires explicit backend opt-in", async () => {
       'export default { name: "Test App", slug: "test-app", host: "https://host.test" };'
     );
     await writeFile(
-      path.join(root, "src/functions/todos.fn.ts"),
+      path.join(root, "src/functions/todos.router.ts"),
       'throw new Error("Unused functions");'
     );
     const generated = await generateTypes({ cwd: root });

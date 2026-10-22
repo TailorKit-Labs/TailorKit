@@ -202,7 +202,7 @@ it("rejects direct internal queries, mutations and actions before running their 
   const execution = createExecution(
     createFileServer([
       {
-        filename: "src/functions/hidden.fn.ts",
+        filename: "src/functions/hidden.router.ts",
         functions: defineRouter({
           read: fn.query.internal().handler(handler),
           run: fn.action.internal().handler(handler),

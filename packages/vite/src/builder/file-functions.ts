@@ -21,7 +21,7 @@ export interface FunctionFile {
   path: string[];
 }
 
-/** Only .fn.ts modules register functions; dots and directories separate namespaces. */
+/** Only .router.ts modules register functions; dots and directories separate namespaces. */
 export const discoverFunctionFiles = async (
   root: string
 ): Promise<FunctionFile[]> => {
@@ -44,7 +44,7 @@ export const discoverFunctionFiles = async (
   const files: FunctionFile[] = [];
 
   const filenames = entries
-    .filter((entry) => entry.isFile() && entry.name.endsWith(".fn.ts"))
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".router.ts"))
     .map((entry) =>
       path.relative(directory, path.join(entry.parentPath, entry.name))
     )
@@ -54,7 +54,7 @@ export const discoverFunctionFiles = async (
     const filename = path.join(directory, entry);
 
     const segments = entry
-      .slice(0, -".fn.ts".length)
+      .slice(0, -".router.ts".length)
       .split(functionPathSeparator);
 
     for (const segment of segments) {

@@ -40,7 +40,7 @@ it("builds the app's Vite config with custom plugins, aliases, constants and out
     `
     );
     await writeFile(
-      path.join(root, "src/functions/example.fn.ts"),
+      path.join(root, "src/functions/example.router.ts"),
       `
       import { defineRouter, fn } from "patchsmith/server";
       import { message } from "@/message";

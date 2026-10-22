@@ -309,7 +309,7 @@ it.each([false, true])(
     await mkdir(path.join(root, "src/functions"), { recursive: true });
     await writeFile(path.join(root, "src/root.tsx"), "export default {};\n");
     await writeFile(
-      path.join(root, "src/functions/example.fn.ts"),
+      path.join(root, "src/functions/example.router.ts"),
       'export const invalid: number = "string";'
     );
     await writeFile(
@@ -332,15 +332,15 @@ it.each([false, true])(
 
     await expect(deployment).rejects.toThrow("type check failed");
     await expect(deployment).rejects.toThrow(
-      'Command: tsc --noEmit --project "tsconfig.json" --pretty false (app entries: "src/root.tsx", "src/functions/example.fn.ts")'
+      'Command: tsc --noEmit --project "tsconfig.json" --pretty false (app entries: "src/root.tsx", "src/functions/example.router.ts")'
     );
     await expect(deployment).rejects.not.toThrow(".patchsmith-typecheck-");
-    await expect(deployment).rejects.toThrow("src/functions/example.fn.ts");
+    await expect(deployment).rejects.toThrow("src/functions/example.router.ts");
     await expect(deployment).rejects.toThrow("error TS2322");
 
     if (interactive) {
       expect(onTypecheckFailed.mock.calls[0]?.[0].output).toContain(
-        "src/functions/example.fn.ts"
+        "src/functions/example.router.ts"
       );
     } else {
       expect(onTypecheckFailed).not.toHaveBeenCalled();
@@ -355,12 +355,12 @@ it("refreshes stale function types before deployment typechecking", async () => 
   await linkTestDependencies(root);
   await mkdir(path.join(root, "src/functions"), { recursive: true });
   await writeFile(
-    path.join(root, "src/functions/todos.fn.ts"),
+    path.join(root, "src/functions/todos.router.ts"),
     'import { defineRouter, fn } from "patchsmith/server"; export default defineRouter({ list: fn.query.handler(() => 42) });'
   );
   await writeFile(
     path.join(root, "src/patchsmith.functions.gen.ts"),
-    'import type missing from "./functions/deleted.fn"; export type AppServerFunctions = typeof missing;'
+    'import type missing from "./functions/deleted.router"; export type AppServerFunctions = typeof missing;'
   );
   await writeFile(
     path.join(root, "src/root.tsx"),
@@ -386,7 +386,7 @@ it("refreshes stale function types before deployment typechecking", async () => 
   expect(mocks.publish).toHaveBeenCalledOnce();
   expect(
     await readFile(path.join(root, "src/patchsmith.functions.gen.ts"), "utf-8")
-  ).not.toContain("deleted.fn");
+  ).not.toContain("deleted.router");
 });
 
 it("typechecks file route roots, layouts and views without a manual client entry", async () => {
@@ -394,7 +394,7 @@ it("typechecks file route roots, layouts and views without a manual client entry
   await mkdir(path.join(root, "src/slots/panel"), { recursive: true });
   await mkdir(path.join(root, "src/functions"), { recursive: true });
   await writeFile(
-    path.join(root, "src/functions/example.fn.ts"),
+    path.join(root, "src/functions/example.router.ts"),
     "export default {};\n"
   );
 
@@ -456,7 +456,7 @@ it("typechecks file route roots, layouts and views without a manual client entry
     '--project "tsconfig.json"'
   );
   expect(onTypecheckFailed.mock.calls[0]?.[0].command).toContain(
-    '"src/functions/example.fn.ts"'
+    '"src/functions/example.router.ts"'
   );
 
   for (const file of sources) {

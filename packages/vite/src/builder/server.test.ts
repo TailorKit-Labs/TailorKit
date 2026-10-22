@@ -134,11 +134,11 @@ it.each([
       );
 
       await writeFile(
-        path.join(root, "src/functions/family.fn.ts"),
+        path.join(root, "src/functions/family.router.ts"),
         router(first)
       );
       await writeFile(
-        path.join(root, "src/functions/family/get.fn.ts"),
+        path.join(root, "src/functions/family/get.router.ts"),
         router(second)
       );
 
@@ -150,8 +150,10 @@ it.each([
 
       if (error !== undefined) {
         await expect(loaded).rejects.toThrow(error);
-        await expect(loaded).rejects.toThrow("src/functions/family.fn.ts");
-        await expect(loaded).rejects.toThrow("src/functions/family/get.fn.ts");
+        await expect(loaded).rejects.toThrow("src/functions/family.router.ts");
+        await expect(loaded).rejects.toThrow(
+          "src/functions/family/get.router.ts"
+        );
 
         return;
       }
@@ -177,31 +179,31 @@ it.each([
       const types = path.join(root, "src/patchsmith.functions.gen.ts");
 
       try {
-        const extra = path.join(root, "src/functions/extra.fn.ts");
+        const extra = path.join(root, "src/functions/extra.router.ts");
         await writeFile(extra, router("added: read"));
         await expect
           .poll(async () => await readFile(artifact, "utf-8"), {
             timeout: 5000,
           })
-          .toContain("src/functions/extra.fn.ts");
+          .toContain("src/functions/extra.router.ts");
         await expect
           .poll(async () => await readFile(types, "utf-8"))
-          .toContain("./functions/extra.fn");
-        await rename(extra, path.join(root, "src/functions/renamed.fn.ts"));
+          .toContain("./functions/extra.router");
+        await rename(extra, path.join(root, "src/functions/renamed.router.ts"));
         await expect
           .poll(async () => await readFile(artifact, "utf-8"), {
             timeout: 5000,
           })
-          .toContain("src/functions/renamed.fn.ts");
-        await rm(path.join(root, "src/functions/renamed.fn.ts"));
+          .toContain("src/functions/renamed.router.ts");
+        await rm(path.join(root, "src/functions/renamed.router.ts"));
         await expect
           .poll(async () => await readFile(artifact, "utf-8"), {
             timeout: 5000,
           })
-          .not.toContain("src/functions/renamed.fn.ts");
+          .not.toContain("src/functions/renamed.router.ts");
         await expect
           .poll(async () => await readFile(types, "utf-8"))
-          .not.toContain("renamed.fn");
+          .not.toContain("renamed.router");
       } finally {
         await watcher.close();
       }
@@ -238,7 +240,7 @@ it.each([
         'import { defineRoute } from "patchsmith/client"; export default defineRoute({ shellComponent: () => "client" });'
       );
       await writeFile(
-        path.join(root, "src/functions/example.fn.ts"),
+        path.join(root, "src/functions/example.router.ts"),
         `${source}\n${router("read")}`
       );
 
@@ -284,7 +286,7 @@ it("builds file routes with discovered functions and blocks server imports from 
       'export const value = "Lazy server helper";'
     );
     await writeFile(
-      path.join(root, "src/functions/example.fn.ts"),
+      path.join(root, "src/functions/example.router.ts"),
       'import { defineRouter, fn } from "patchsmith/server"; export default defineRouter({ configured: fn.query.handler(() => "Configured server loaded"), hidden: fn.query.internal().handler(() => "Internal server result"), lazy: fn.action.handler(async () => (await import("./helper")).value) });'
     );
     await buildFixture({ cwd: root });
@@ -345,12 +347,12 @@ it("builds file routes with discovered functions and blocks server imports from 
     });
     await writeFile(
       path.join(root, "src/root.tsx"),
-      `import type app from "./functions/example.fn";\n${client}`
+      `import type app from "./functions/example.router";\n${client}`
     );
     await expect(buildFixture({ cwd: root })).resolves.toBeDefined();
     await writeFile(
       path.join(root, "src/root.tsx"),
-      `import "./functions/example.fn";\n${client}`
+      `import "./functions/example.router";\n${client}`
     );
     await expect(buildFixture({ cwd: root })).rejects.toThrow(
       "cannot be imported into a browser bundle"
@@ -519,7 +521,7 @@ describe("database app builds", () => {
   });
 
   it.each([
-    "./functions/todos.fn",
+    "./functions/todos.router",
     "patchsmith/server",
     "patchsmith/db",
     "@patchsmith/app-db",
@@ -563,7 +565,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
     );
     await mkdir(path.join(root, "src/functions"), { recursive: true });
     await writeFile(
-      path.join(root, "src/functions/reports.fn.ts"),
+      path.join(root, "src/functions/reports.router.ts"),
       `
       import { defineRouter, fn } from "patchsmith/server";
       export default defineRouter({

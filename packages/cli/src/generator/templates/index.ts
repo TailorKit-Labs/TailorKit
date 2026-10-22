@@ -14,7 +14,7 @@ export { default as relationsTemplate } from "./src/db/relations.ts.liquid";
 
 export { default as schemaTemplate } from "./src/db/schema.ts.liquid";
 
-export { default as greetingTemplate } from "./src/functions/greeting.fn.ts.liquid";
+export { default as greetingTemplate } from "./src/functions/greeting.router.ts.liquid";
 
 export { default as rootTemplate } from "./src/root.tsx.liquid";
 

@@ -25,7 +25,7 @@ These are the main files for a host with a `panel` slot and a `/` view:
         </Tree.Folder>
       </Tree.Folder>
       <Tree.Folder name="functions" defaultOpen>
-        <Tree.File name="greeting.fn.ts" />
+        <Tree.File name="greeting.router.ts" />
       </Tree.Folder>
       <Tree.Folder name="db">
         <Tree.File name="index.ts" />
@@ -50,13 +50,13 @@ Use these files to add UI, backend logic, and configuration:
 | --- | --- |
 | `src/slots/` | UI views, grouped by slot. |
 | `src/root.tsx` | The shared UI shell. |
-| `src/functions/**/*.fn.ts` | Automatically registered backend function routers. |
+| `src/functions/**/*.router.ts` | Automatically registered backend function routers. |
 | `src/patchsmith.functions.gen.ts` | Generated type-only function registry. |
 | `src/db/` | Database schema, connection, and migrations. |
 | `src/patchsmith.gen.ts` | Generated components, tools, and types; refreshed by `patchsmith generate`. |
 | `patchsmith.config.ts` | The host URL and app logos. |
 | `vite.config.ts` | Build configuration. |
 
-Backend functions require `server: {}` in `patchsmith.config.ts`. File paths supply API namespaces: `greeting.fn.ts` exporting `defineRouter({ getGreeting })` exposes `api.greeting.getGreeting`. Dots and directories both create nested namespaces. Run `patchsmith generate` after adding or moving modules; the builder creates the private server entry automatically.
+Backend functions require `server: {}` in `patchsmith.config.ts`. File paths supply API namespaces: `greeting.router.ts` exporting `defineRouter({ getGreeting })` exposes `api.greeting.getGreeting`. Dots and directories both create nested namespaces. Run `patchsmith generate` after adding or moving modules; the builder creates the private server entry automatically.
 
 Start by [writing UI for a slot](/writing-apps/ui).
