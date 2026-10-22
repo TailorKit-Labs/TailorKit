@@ -1,0 +1,19 @@
+packages/api-platform/src/runtime/deployment-workflow.ts
+  s_03779b7e2ab596::t_7c7a879e1e2bb9 18-19,21-22,26-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "051d6bc5dd07d51e2cc463ad9781a736b6891c4b",
+  "prompts": {},
+  "sessions": {
+    "s_03779b7e2ab596": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1635d-7a6e-74b2-b3c9-1ec29d075b00",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
