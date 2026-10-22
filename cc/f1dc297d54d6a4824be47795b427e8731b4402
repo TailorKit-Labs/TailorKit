@@ -33,8 +33,10 @@ packages/app/src/server/database.test-d.ts
   s_e0e9d1c83a08a8::t_67feb23051b242 86
 apps/apps-worker/src/tests/backend.ts
   s_e0e9d1c83a08a8::t_4fd7b3398cde82 44-59,62,68
+  s_e0e9d1c83a08a8::t_74e272a36375ac 70
 packages/app/README.md
   s_e0e9d1c83a08a8::t_275a61746a7841 165-170,172-182,184-189
+  s_e0e9d1c83a08a8::t_74e272a36375ac 171,183
 packages/app/src/server.ts
   s_e0e9d1c83a08a8::t_f156699f59ab45 22
 apps/apps-worker/src/runtime/execution.test.ts
@@ -45,6 +47,8 @@ apps/apps-worker/src/runtime/execution.test.ts
   s_e0e9d1c83a08a8::t_1c93b1b155f080 373
   s_e0e9d1c83a08a8::t_c68e2bf97ec40e 385
   s_e0e9d1c83a08a8::t_0c6d08b7caa006 391
+  s_e0e9d1c83a08a8::t_b318ba61966cf4 204-208,286-293,345
+  s_e0e9d1c83a08a8::t_74e272a36375ac 202-203,210,284-285,295,343-344,347
 ---
 {
   "schema_version": "authorship/3.0.0",
