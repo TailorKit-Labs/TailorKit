@@ -1,6 +1,10 @@
 import { invocationSchema } from "@patchsmith/app/protocol";
 import type { Invocation } from "@patchsmith/app/protocol";
-import type { AppDefinition, Identity } from "@patchsmith/app/server";
+import type {
+  AppDefinition,
+  FunctionVisibility,
+  Identity,
+} from "@patchsmith/app/server";
 import { Effect } from "effect";
 import { catch as catchEffect } from "effect/Effect";
 import * as v from "valibot";
@@ -15,7 +19,7 @@ import { migrateDatabase } from "./database/migrations";
 import type { AppMigration } from "./database/migrations";
 import { AppError, appError, failedResult } from "./errors";
 import type { InvocationResult } from "./errors";
-import { prepareFunction, functionValue } from "./functions";
+import { prepareFunction, functionValue, requireFunction } from "./functions";
 
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
   typeof value === "object" && value !== null;
@@ -48,9 +52,10 @@ export const createExecution = (
     input: Invocation,
     identity: Identity,
     kind: "query" | "mutation",
-    tables?: Set<string>
+    tables?: Set<string>,
+    access: FunctionVisibility = "public"
   ): ExecutionResult => {
-    const { fn, args } = prepareFunction(app, input, identity, kind);
+    const { fn, args } = prepareFunction(app, input, identity, kind, access);
 
     const scope = databaseScope(
       persistence,
@@ -99,13 +104,17 @@ export const createExecution = (
   const mutate = (
     input: Invocation & { requestId: string },
     identity: Identity,
-    tables?: Set<string>
+    tables?: Set<string>,
+    access: FunctionVisibility = "public"
   ): MutationResult => {
     if (identity.expiresAt <= Date.now()) {
       throw new AppError("UNAUTHORIZED", "App token expired");
     }
 
     z.uuid().parse(input.requestId);
+
+    // Check before receipt lookup so a client cannot replay an internal mutation's result.
+    requireFunction(app, input.name, "mutation", access);
 
     const fingerprint = JSON.stringify([
       identity.subjectId,
@@ -141,7 +150,7 @@ export const createExecution = (
         return { committed: false, tables: stored.tables, value: stored.value };
       }
 
-      const result = execute(input, identity, "mutation", tables);
+      const result = execute(input, identity, "mutation", tables, access);
       persistence.execute(
         "INSERT INTO patchsmith_receipts (id, fingerprint, result) VALUES (?, ?, ?)",
         [input.requestId, fingerprint, JSON.stringify(result)]
@@ -169,7 +178,7 @@ export const createExecution = (
             {
               fetch: services.fetch,
               mutate: async (call) => {
-                const result = mutate(call, identity);
+                const result = mutate(call, identity, undefined, "internal");
 
                 if (result.committed && result.tables.length) {
                   await services.committed(result.tables);
@@ -181,7 +190,8 @@ export const createExecution = (
                 await (async () => {
                   await Promise.resolve();
 
-                  return execute(call, identity, "query").value;
+                  return execute(call, identity, "query", undefined, "internal")
+                    .value;
                 })(),
               tool: services.tool,
             },
@@ -254,7 +264,8 @@ export const createExecution = (
           )
         );
       }),
-    mutate,
+    mutate: (input: Invocation & { requestId: string }, identity: Identity) =>
+      mutate(input, identity),
     query: (input: Invocation, identity: Identity) =>
       execute(input, identity, "query"),
   };

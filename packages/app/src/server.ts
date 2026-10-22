@@ -19,6 +19,7 @@ export type {
   AppDefinition,
   ActionContext,
   FunctionKind,
+  FunctionVisibility,
 } from "./server/functions";
 
 export { AppError } from "./errors";

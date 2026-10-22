@@ -366,7 +366,7 @@ const actionFunctions = defineRouter({ ...functions,
   } }),
 });
 export default { functions: actionFunctions };
-export const runtimeManifest = { apiVersion: 1, requires: ["database", "actions"] };
+export const runtimeManifest = { apiVersion: 1, requires: ["database", "actions", "internal-functions"] };
 export const migrations = ${JSON.stringify(history)};`;
 
       await writeFile(entry, setup);
@@ -549,6 +549,47 @@ export const migrations = ${JSON.stringify(history)};`;
         "initial query snapshots"
       );
       assert.deepEqual(await first.query(list), await second.query(list));
+      await assert.rejects(
+        first.query(reference("privateTodos.list", "query")),
+        { code: "NOT_FOUND" }
+      );
+      await assert.rejects(
+        first.mutate(reference("privateTodos.add", "mutation"), {
+          text: "Direct internal write",
+        }),
+        { code: "NOT_FOUND" }
+      );
+      await assert.rejects(
+        first.action(reference("privateTodos.run", "action")),
+        { code: "NOT_FOUND" }
+      );
+      const internalSnapshots = [];
+      const internalErrors = [];
+
+      const stopInternal = first.subscribe(
+        reference("privateTodos.list", "query"),
+        undefined,
+        (rows) => {
+          internalSnapshots.push(rows);
+        },
+        {
+          onError: (error) => {
+            internalErrors.push(error);
+          },
+        }
+      );
+
+      try {
+        await wait(
+          () => internalErrors.length > 0,
+          "internal subscription rejection"
+        );
+        assert.equal(internalErrors[0].code, "NOT_FOUND");
+        assert.deepEqual(internalSnapshots, []);
+      } finally {
+        stopInternal();
+      }
+
       const nestedApi = createApi();
       assert.deepEqual(await first.query(nestedApi.nested.read), []);
       assert.deepEqual(await first.action(nestedApi.tasks.read), []);

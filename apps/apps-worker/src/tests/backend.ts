@@ -41,17 +41,32 @@ const add = fn.mutation
     if (!todo) throw new AppError("INTERNAL_SERVER_ERROR", "Could not create todo");
     return todo;
   });
-const importTodo = fn.action.functions({ list, add })
+const privateTodos = defineRouter({
+  list: fn.query.internal().handler(({ db }) =>
+    db.query.todos.findMany({ limit: 1000 }).sync()
+  ),
+  add: fn.mutation.internal()
+    .input(z.object({ text: z.string().trim().min(1).max(500) }))
+    .handler(({ db, input }) => {
+      const todo = db.insert(schema.todos)
+        .values({ id: crypto.randomUUID(), text: input.text, done: false })
+        .returning().get();
+      if (!todo) throw new AppError("INTERNAL_SERVER_ERROR", "Could not create todo");
+      return todo;
+    }),
+  run: fn.action.internal().handler(() => "private"),
+});
+const importTodo = fn.action.functions({ privateTodos })
   .input(z.object({ url: z.url() }))
   .handler(async ({ input, queries, mutations, tools, signal }) => {
-    await queries.list();
+    await queries.privateTodos.list();
     const response = await fetch(input.url, { signal });
     if (!response.ok) throw new AppError("UNAVAILABLE", "External API failed");
     const data = z.object({ title: z.string().trim().min(1).max(500) })
       .parse(await response.json());
     const text = await tools.echo(data.title);
-    return mutations.add({ text });
+    return mutations.privateTodos.add({ text });
   });
-export default defineRouter({ list, add, importTodo });`
+export default defineRouter({ list, add, importTodo, privateTodos });`
   );
 };

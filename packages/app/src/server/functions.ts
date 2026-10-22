@@ -29,6 +29,8 @@ export interface Identity {
 
 export type FunctionKind = "query" | "mutation" | "action";
 
+export type FunctionVisibility = "public" | "internal";
+
 export type FunctionResult<D> = D extends {
   result: infer R extends StandardSchemaV1;
 }
@@ -135,6 +137,8 @@ export const action = <
 // Erasure is private to dispatch; the generic definitions preserve app argument/result types.
 export interface RegisteredFunction<TOutput = unknown> {
   kind: FunctionKind;
+  /** Definitions without visibility retain the public behavior of older apps. */
+  visibility?: FunctionVisibility;
   args: StandardSchemaV1;
   result?: StandardSchemaV1;
   handler: (context: never) => TOutput;

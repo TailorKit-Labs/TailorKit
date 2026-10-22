@@ -185,6 +185,31 @@ it("uses undefined input and infers returns for mutations and async actions with
   );
 });
 
+it("keeps public builders unchanged when deriving internal functions at any chain position", () => {
+  const query = fn.query.input(z.number()).output(z.number());
+  const internalQuery = query.internal().handler(({ input }) => input);
+  const publicQuery = query.handler(({ input }) => input);
+
+  const internalMutation = fn.mutation
+    .internal()
+    .input(z.number())
+    .output(z.number())
+    .handler(({ input }) => input);
+
+  const internalAction = fn.action
+    .functions({ internalMutation, internalQuery })
+    .internal()
+    .handler(() => null);
+
+  expect(internalQuery.visibility).toBe("internal");
+  expect(internalMutation.visibility).toBe("internal");
+  expect(internalAction.visibility).toBe("internal");
+  expect(publicQuery.visibility).toBe("public");
+  expect(fn.query.handler(() => null).visibility).toBe("public");
+  expect(fn.mutation.handler(() => null).visibility).toBe("public");
+  expect(fn.action.handler(() => null).visibility).toBe("public");
+});
+
 it("validates optional output schemas for synchronous and async actions", async () => {
   const app = {
     functions: defineRouter({

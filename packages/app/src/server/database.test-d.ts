@@ -69,6 +69,31 @@ const directMutation = appFn.mutation.handler(({ db }) =>
   db.query.posts.findFirst().sync()
 );
 
+const internalQuery = appFn.query.internal().handler(({ db }) => {
+  // @ts-expect-error Internal queries retain read-only database access.
+  void db.insert;
+
+  return db.query.users.findMany({ with: { posts: true } }).sync();
+});
+
+const internalMutation = appFn.mutation
+  .internal()
+  .handler(({ db }) =>
+    db.insert(users).values({ id: "internal" }).returning().get()
+  );
+
+appFn.action
+  .functions({ internalMutation, internalQuery })
+  .handler(async ({ queries, mutations }) => {
+    const rows = await queries.internalQuery();
+    rows satisfies {
+      id: string;
+      posts: { id: string; userId: string; published: boolean }[];
+    }[];
+
+    return await mutations.internalMutation();
+  });
+
 // @ts-expect-error Per-function database binding has been removed.
 void appFn.query.database;
 
