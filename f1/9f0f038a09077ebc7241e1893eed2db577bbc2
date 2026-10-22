@@ -1,0 +1,25 @@
+.changeset/quiet-functions-register.md
+  s_05815f86ed8f63::t_358ab62038aaec 8
+packages/app/README.md
+  s_05815f86ed8f63::t_0b775042570c5e 160
+packages/vite/README.md
+  s_05815f86ed8f63::t_b09218a19428ff 26
+packages/vite/src/builder/server.test.ts
+  s_05815f86ed8f63::t_ad4c1cd04d197a 117,145-150,152-154,159,214-261
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f19f0f038a09077ebc7241e1893eed2db577bbc2",
+  "prompts": {},
+  "sessions": {
+    "s_05815f86ed8f63": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1613e-259d-77e3-8a95-eb3cb5131bf7",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
