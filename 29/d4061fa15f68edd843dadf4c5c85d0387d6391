@@ -1,0 +1,39 @@
+packages/sandbox/README.md
+  s_9c188dbbf5111f::t_6c11faeaca9de2 81-84
+packages/app/src/client/canvas-controller.test.ts
+  s_9c188dbbf5111f::t_8c9b0d1535ee80 6,19-35,37
+  s_9c188dbbf5111f::t_4a92644934deb5 38-43,52
+packages/sandbox/benchmarks/main.ts
+  s_9c188dbbf5111f::t_1fe236473fbe19 160-161
+packages/sandbox/src/host/canvas.ts
+  s_9c188dbbf5111f::t_8c9b0d1535ee80 33-43,108-110,136-141,234-266,268-269,278
+  s_9c188dbbf5111f::t_9e3f9b0afbd1e9 267,270-277,279-280
+packages/sandbox/benchmarks/shared.ts
+  s_9c188dbbf5111f::t_1fe236473fbe19 7-8
+packages/sandbox/benchmarks/client.ts
+  s_9c188dbbf5111f::t_1fe236473fbe19 88,98,184-187
+  s_9c188dbbf5111f::t_b606eeaa932715 78-87,89-97,99-108,124
+packages/app/src/client/canvas.ts
+  s_9c188dbbf5111f::t_6b149f54bd9ecd 4,42-43,49,83-87,104,156-161,230
+packages/app/src/client/canvas-controller.ts
+  s_9c188dbbf5111f::t_6b149f54bd9ecd 183
+packages/sandbox/src/host/canvas.test.ts
+  s_9c188dbbf5111f::t_455cfe3085086c 14,60-61,77-132,137
+  s_9c188dbbf5111f::t_cd854148de1807 133-136,138-143
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "29d4061fa15f68edd843dadf4c5c85d0387d6391",
+  "prompts": {},
+  "sessions": {
+    "s_9c188dbbf5111f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16210-0d38-7bc2-aee5-73390ea5bd6d",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
