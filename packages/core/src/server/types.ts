@@ -5,6 +5,7 @@ import type {
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
 import type {
+  ContractHooks,
   ContractTools,
   ComponentDefinitions,
   NoComponentFieldCallbackConflicts,
@@ -87,6 +88,7 @@ export interface PatchsmithServerBaseOptions<
     ) => Promise<Response>;
     platformBaseUrl?: PatchsmithPlatformOptions["baseUrl"];
     platformFetch?: typeof fetch;
+    runtimeFetch?: typeof fetch;
     platformHeaders?: PatchsmithPlatformOptions["headers"];
   };
 }
@@ -103,6 +105,7 @@ export interface PatchsmithServerSchemaOptions<
 }
 
 export interface PatchsmithServerInputOptions extends PatchsmithServerBaseOptions {
+  hooks?: ContractHooks;
   slots?: SlotDefinitions;
   tools?: ContractTools;
   components: ComponentDefinitions;

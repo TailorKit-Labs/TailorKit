@@ -71,6 +71,7 @@ export const runtimeSessionSchema = z.object({
     appShortId: z.string(),
     deploymentId: z.string(),
     expiresAt: z.number(),
+    hook: z.string().optional(),
     installationId: z.string(),
     projectId: z.string(),
     projectShortId: z.string(),
@@ -82,21 +83,31 @@ export const runtimeSessionSchema = z.object({
   url: z.url(),
 });
 
+interface RuntimeHookGrant {
+  hook?: string;
+}
+
 type RuntimeApp = Pick<z.infer<typeof App>, "id" | "shortId" | "scope"> & {
-  currentDeployment: Pick<z.infer<typeof AppDeployment>, "id"> | null;
+  currentDeployment: Pick<z.infer<typeof AppDeployment>, "id" | "hooks"> | null;
 };
 
 /** Reuse the already authorized discovery row instead of looking up each app again. */
 export const createRuntimeSession = async (
   context: Pick<Context, "project">,
   app: RuntimeApp,
-  input: z.infer<typeof runtimeViewerSchema>
+  input: z.infer<typeof runtimeViewerSchema> & RuntimeHookGrant
 ) => {
   const deployment = app.currentDeployment;
 
   if (!deployment) {
     throw new ORPCError("NOT_FOUND", {
       message: "App has no published deployment.",
+    });
+  }
+
+  if (input.hook !== undefined && !deployment.hooks.includes(input.hook)) {
+    throw new ORPCError("NOT_FOUND", {
+      message: "App deployment does not implement this hook.",
     });
   }
 
@@ -126,7 +137,14 @@ export const createRuntimeSession = async (
 
   // Each app belongs to one installation scope. Resolve identity from the authorized
   // database record, never from browser input or the ordering of the viewer's scopes.
+  const hookGrant: RuntimeHookGrant = {};
+
+  if (input.hook !== undefined) {
+    hookGrant.hook = input.hook;
+  }
+
   const identity = {
+    ...hookGrant,
     appId: app.id,
     appShortId: app.shortId,
     deploymentId: deployment.id,
@@ -155,6 +173,14 @@ export const runtimeSession = protectedRouter
       body: runtimeViewerSchema
         .extend({
           app: appSelectorSchema,
+          hook: z
+            .string()
+            .min(1)
+            .max(255)
+            .regex(
+              /^[a-zA-Z][a-zA-Z0-9_]{0,63}(?:\.[a-zA-Z][a-zA-Z0-9_]{0,63})*$/u
+            )
+            .optional(),
           scopes: scopesSchema,
         })
         .strict(),

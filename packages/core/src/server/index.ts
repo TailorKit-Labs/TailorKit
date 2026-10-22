@@ -7,3 +7,5 @@ export { createServer } from "./contract";
 export type { ToolImplementations, ContractScopes } from "./contract";
 
 export type { PatchsmithRouter, PatchsmithRouterClient } from "./router";
+
+export type { HookCallers } from "./hooks";

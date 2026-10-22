@@ -682,6 +682,7 @@ describe("platform appRouter", () => {
       .insert(appDeployment)
       .values({
         appId: source.id,
+        hooks: ["sync"],
         logoLightPath: `logos/${"a".repeat(64)}.svg`,
         shortId: "published001",
         status: "published",
@@ -776,7 +777,7 @@ describe("platform appRouter", () => {
     expect(listed.items[0]).toMatchObject({
       ...installed,
       createdByAgent: false,
-      currentDeployment: { id: deployment.id },
+      currentDeployment: { hooks: ["sync"], id: deployment.id },
       description: source.description,
       name: source.name,
       scope: stagingScope,
@@ -863,6 +864,7 @@ describe("platform appRouter", () => {
     );
 
     expect(pinned.body.currentDeployment?.id).toBe(deployment.id);
+    expect(pinned.body.currentDeployment?.hooks).toEqual(["sync"]);
     await call(
       appRouter.delete,
       { body: { app: { id: installed.id }, scope: stagingScope } },
@@ -1563,6 +1565,7 @@ describe("platform appRouter", () => {
     );
 
     expect(deployed.body.currentDeployment?.id).toBe(deployment.id);
+    expect(deployed.body.currentDeployment?.hooks).toEqual([]);
     expect(deployed.body.views).toEqual([
       { instances: true, path: "/", slot: "page" },
       { disabled: true, path: "/disabled", slot: "page" },
@@ -1654,6 +1657,7 @@ describe("platform appRouter", () => {
       subjectId: "principal",
       toolUrl: input.body.toolUrl,
     });
+
     await expect(
       call(
         appRouter.runtimeSession,
@@ -1777,6 +1781,43 @@ describe("platform appRouter", () => {
       `http://localhost:8787/p/proj00000001/a/${created.shortId}/rpc`
     );
     testState.env.APP_RUNTIME_URL = undefined;
+
+    await expect(
+      call(
+        appRouter.runtimeSession,
+        { ...input, body: { ...input.body, hook: "sync" } },
+        { context }
+      )
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await db
+      .update(appDeployment)
+      .set({ hooks: ["customers.sync"] })
+      .where(eq(appDeployment.id, deployment.id));
+
+    const hookApps = await call(
+      appRouter.list,
+      { body: { scopes: [productionScope] } },
+      { context }
+    );
+
+    expect(
+      hookApps.body.items.find((item) => item.id === created.id)
+        ?.currentDeployment?.hooks
+    ).toEqual(["customers.sync"]);
+
+    const hookSession = await call(
+      appRouter.runtimeSession,
+      { ...input, body: { ...input.body, hook: "customers.sync" } },
+      { context }
+    );
+
+    expect(hookSession.body.identity.hook).toBe("customers.sync");
+    expect(testState.issueToken).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        hook: "customers.sync",
+        installationId: created.id,
+      })
+    );
 
     await db
       .update(appTable)

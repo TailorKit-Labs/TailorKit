@@ -5,6 +5,8 @@ import type {
   NoComponentFieldCallbackConflicts,
 } from "./components";
 import { assertComponentDescription } from "./components";
+import type { ContractHooks } from "./hooks";
+import { validateHooks } from "./hooks";
 import type { EmptyDefinitionMap, Schema } from "./shared";
 import type { ContractTools } from "./tools";
 import { flattenTools } from "./tools";
@@ -29,7 +31,9 @@ export interface PatchsmithContract<
     string,
     StandardSchemaV1
   >,
+  THooks extends ContractHooks = ContractHooks,
 > {
+  readonly hooks: THooks;
   readonly components: TComponents;
   readonly views: TViews;
   readonly slots: TSlots;
@@ -44,34 +48,46 @@ export function defineContract<
   const TSlots extends SlotDefinitions = EmptyDefinitionMap,
   const TTools extends ContractTools = EmptyDefinitionMap,
   const TScopes extends Record<string, Schema> = EmptyDefinitionMap,
+  const THooks extends ContractHooks = EmptyDefinitionMap,
 >(definition: {
   components?: TComponents &
     NoComponentFieldCallbackConflicts<NoInfer<TComponents>>;
   views?: TViews & ViewContextHierarchy<NoInfer<TViews>>;
   slots?: TSlots & SlotDefinitions<keyof NoInfer<TViews> & string>;
   tools?: TTools;
+  hooks?: THooks;
   scopes?: TScopes;
-}): PatchsmithContract<TComponents, TViews, TSlots, TTools, TScopes>;
+}): PatchsmithContract<TComponents, TViews, TSlots, TTools, TScopes, THooks>;
 export function defineContract(definition: {
   components?: ComponentDefinitions;
   views?: ContextDefinitions;
   slots?: SlotDefinitions;
   tools?: ContractTools;
+  hooks?: ContractHooks;
   scopes?: Record<string, Schema>;
 }): PatchsmithContract {
   for (const name of Object.keys(definition)) {
-    if (!["components", "views", "slots", "tools", "scopes"].includes(name)) {
+    if (
+      !["components", "views", "slots", "tools", "scopes", "hooks"].includes(
+        name
+      )
+    ) {
       throw new Error(`Unknown contract field "${name}"`);
     }
   }
 
-  flattenTools(definition.tools ?? {});
+  const tools = definition.tools ?? {};
+  const hooks = definition.hooks ?? {};
+  const components = definition.components ?? {};
+  const slots = definition.slots ?? {};
+  flattenTools(tools);
+  validateHooks(hooks);
 
-  for (const [name, component] of Object.entries(definition.components ?? {})) {
+  for (const [name, component] of Object.entries(components)) {
     assertComponentDescription(name, component);
   }
 
-  for (const [name, slot] of Object.entries(definition.slots ?? {})) {
+  for (const [name, slot] of Object.entries(slots)) {
     if (slot.description !== undefined && !isStringValue(slot.description)) {
       throw new TypeError(`Slot "${name}" description must be a string.`);
     }
@@ -88,10 +104,11 @@ export function defineContract(definition: {
   }
 
   return {
-    components: definition.components ?? {},
+    components,
+    hooks,
     scopes: definition.scopes ?? {},
-    slots: definition.slots ?? {},
-    tools: definition.tools ?? {},
+    slots,
+    tools,
     views: definition.views ?? {},
   };
 }

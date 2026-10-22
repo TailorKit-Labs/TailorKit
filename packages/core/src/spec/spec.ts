@@ -20,6 +20,18 @@ const toolRecord: v.GenericSchema<unknown, ToolRecord> = v.lazy(() =>
 export const PatchsmithSchemaSpecSchema = v.pipe(
   v.strictObject({
     components: componentRecord,
+    hooks: v.optional(
+      v.record(
+        v.string(),
+        v.strictObject({
+          input: v.optional(v.record(v.string(), v.unknown())),
+          inputOptional: v.optional(v.boolean()),
+          output: v.optional(v.record(v.string(), v.unknown())),
+          outputOptional: v.optional(v.boolean()),
+        })
+      ),
+      () => ({})
+    ),
     scopes: v.optional(v.record(v.string(), v.record(v.string(), v.unknown()))),
     slots: v.optional(
       v.record(

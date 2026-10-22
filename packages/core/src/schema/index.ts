@@ -69,3 +69,12 @@ export type { PatchsmithTheme } from "#primitives/theme";
 export { defineContract } from "./contract";
 
 export type { PatchsmithContract } from "./contract";
+
+export { hook } from "./hooks";
+
+export type {
+  ContractHook,
+  ContractHooks,
+  InferHookInput,
+  InferHookOutput,
+} from "./hooks";

@@ -99,3 +99,25 @@ export const serializeSchema = (
 
   return serialized === undefined ? undefined : compactJsonSchema(serialized);
 };
+
+// JSON Schema cannot represent undefined at its root. Preserve that information
+// separately before sending the schema to app type generation.
+export const schemaMayBeOmitted = (schema: Schema): boolean => {
+  // oxlint-disable-next-line unicorn/no-useless-undefined -- Probe whether the schema accepts an omitted context.
+  const result = schema["~standard"].validate(undefined);
+
+  if (result instanceof Promise) {
+    // Serialization is synchronous; conservatively allow omission for async schemas.
+    void (async () => {
+      try {
+        await result;
+      } catch {
+        /* Intentionally no action is needed. */
+      }
+    })();
+
+    return true;
+  }
+
+  return !result.issues;
+};

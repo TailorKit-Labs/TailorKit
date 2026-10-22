@@ -13,6 +13,7 @@ import { readClientManifest } from "./builder/client-views";
 import { getBuildEnvironment } from "./builder/env";
 import { createFileFunctionEntry } from "./builder/file-functions";
 import { createFileRouteEntry, fileRoutesPlugin } from "./builder/file-routes";
+import { discoverHooks } from "./builder/hooks";
 import { instanceExtractionPlugin } from "./builder/instances";
 import type { InstanceModule } from "./builder/instances";
 import { buildServer, validateServerBuildOutput } from "./builder/server";
@@ -142,6 +143,8 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
       await serverWatcher.close();
     }
 
+    const hooks = await discoverHooks(loaded.root);
+
     serverWatcher = await buildServer(
       loaded,
       requireValue(functionEntry).entry,
@@ -203,7 +206,17 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
     );
     await writeFile(
       path.join(resolvedOutDir, "patchsmith-upload.json"),
-      `${JSON.stringify(createPatchsmithUploadManifest(logoManifest, true, views, loaded.config.appId), null, 2)}\n`,
+      `${JSON.stringify(
+        createPatchsmithUploadManifest(
+          logoManifest,
+          true,
+          views,
+          loaded.config.appId,
+          hooks.map(({ name }) => name)
+        ),
+        null,
+        2
+      )}\n`,
       "utf-8"
     );
   };

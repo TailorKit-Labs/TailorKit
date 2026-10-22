@@ -1,5 +1,9 @@
 import type { ToolBridge, PatchsmithServerTools } from "@patchsmith/app/client";
-import type { AppDefinition, Identity } from "@patchsmith/app/server";
+import type {
+  AppDefinition,
+  Identity,
+  FunctionVisibility,
+} from "@patchsmith/app/server";
 
 import { inExecutionContext } from "./context";
 import { AppError } from "./errors";
@@ -31,10 +35,14 @@ export interface ActionCalls<TOutput = unknown> {
   mutate: (input: Invocation & { requestId: string }) => Promise<TOutput>;
 }
 
+interface NestedActionCalls extends ActionCalls {
+  action: (input: Invocation) => Promise<ReturnType<typeof functionValue>>;
+}
+
 export const createActionExecution = (app: AppDefinition) => {
   type Call = (
     check: () => void,
-    calls: ActionCalls
+    calls: NestedActionCalls
   ) => (
     args: Invocation["args"],
     options?: { requestId?: string }
@@ -44,9 +52,14 @@ export const createActionExecution = (app: AppDefinition) => {
     [name: string]: Group | Call;
   }
 
-  const bindings = new Map<unknown, { queries: Group; mutations: Group }>();
+  const bindings = new Map<
+    unknown,
+    { queries: Group; mutations: Group; actions: Group }
+  >();
 
   const compile = (functions: Functions, prefix = "") => {
+    const actions: Group = {};
+    Object.setPrototypeOf(actions, null);
     const queries: Group = {};
     Object.setPrototypeOf(queries, null);
     const mutations: Group = {};
@@ -57,6 +70,10 @@ export const createActionExecution = (app: AppDefinition) => {
 
       if (!isFunction(definition)) {
         const nested = compile(definition, name);
+
+        if (Object.keys(nested.actions).length) {
+          actions[key] = nested.actions;
+        }
 
         if (Object.keys(nested.queries).length) {
           queries[key] = nested.queries;
@@ -69,10 +86,6 @@ export const createActionExecution = (app: AppDefinition) => {
         continue;
       }
 
-      if (definition.kind === "action") {
-        continue;
-      }
-
       if (resolveFunction(app.functions, name) !== definition) {
         throw new AppError(
           "NOT_FOUND",
@@ -81,10 +94,19 @@ export const createActionExecution = (app: AppDefinition) => {
       }
 
       const { kind } = definition;
-      (kind === "query" ? queries : mutations)[key] =
+
+      const group = { action: actions, mutation: mutations, query: queries }[
+        kind
+      ];
+
+      group[key] =
         // oxlint-disable-next-line typescript/promise-function-async -- These capability guards must throw synchronously before dispatching asynchronous work.
         (check, calls) => (args, options) => {
           check();
+
+          if (kind === "action") {
+            return calls.action({ args, name });
+          }
 
           return kind === "query"
             ? calls.query({ args, name })
@@ -96,7 +118,7 @@ export const createActionExecution = (app: AppDefinition) => {
         };
     }
 
-    return { mutations, queries };
+    return { actions, mutations, queries };
   };
 
   const isCall = (entry: Group | Call): entry is Call =>
@@ -109,7 +131,7 @@ export const createActionExecution = (app: AppDefinition) => {
   const bind = (
     group: Group,
     check: () => void,
-    calls: ActionCalls
+    calls: NestedActionCalls
   ): BoundGroup => {
     const bound: BoundGroup = {};
     Object.setPrototypeOf(bound, null);
@@ -140,12 +162,16 @@ export const createActionExecution = (app: AppDefinition) => {
 
   register(app.functions);
 
-  return async (
+  const run = async (
     input: Invocation,
     identity: Identity,
     calls: ActionCalls,
-    signal = new AbortController().signal
-  ) => {
+    initialSignal = new AbortController().signal,
+    access: FunctionVisibility = "public"
+  ): Promise<ReturnType<typeof functionValue>> => {
+    const controller = new AbortController();
+    const signal = AbortSignal.any([initialSignal, controller.signal]);
+
     const scope = {
       active: true,
       fetch: calls.fetch,
@@ -203,12 +229,39 @@ export const createActionExecution = (app: AppDefinition) => {
       );
 
     check();
-    const { fn, args } = prepareFunction(app, input, identity, "action");
+
+    const { fn, args } = prepareFunction(
+      app,
+      input,
+      identity,
+      "action",
+      access
+    );
+
     const binding = bindings.get(fn);
 
     if (!binding) {
       throw new AppError("NOT_FOUND", "App action not found");
     }
+
+    const nestedCalls: NestedActionCalls = {
+      ...calls,
+      action: async (invocation) => {
+        check();
+
+        const value = await run(
+          invocation,
+          identity,
+          calls,
+          signal,
+          "internal"
+        );
+
+        check();
+
+        return value;
+      },
+    };
 
     try {
       // SAFETY: prepareFunction validates args with this registered action schema, and compile binds only its declared query and mutation functions.
@@ -216,10 +269,11 @@ export const createActionExecution = (app: AppDefinition) => {
         fn.handler(
           /* oxlint-disable typescript/no-unsafe-type-assertion -- prepareFunction validates args with this registered action schema, and compile binds only its declared query and mutation functions. */
           {
+            actions: bind(binding.actions, check, nestedCalls),
             args,
             identity,
-            mutations: bind(binding.mutations, check, calls),
-            queries: bind(binding.queries, check, calls),
+            mutations: bind(binding.mutations, check, nestedCalls),
+            queries: bind(binding.queries, check, nestedCalls),
             requestId: crypto.randomUUID(),
             scope: identity.scope,
             signal,
@@ -234,8 +288,11 @@ export const createActionExecution = (app: AppDefinition) => {
       return functionValue(fn, value);
     } finally {
       scope.active = false;
+      controller.abort();
     }
   };
+
+  return run;
 };
 
 export interface ActionServices {

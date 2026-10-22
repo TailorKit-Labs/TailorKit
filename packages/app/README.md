@@ -184,6 +184,40 @@ The builder discovers this router alongside public routers. An action importing 
 
 Internal functions are omitted from the typed client `api`, including namespaces with no public functions. The runtime rejects direct client calls and query subscriptions with `NOT_FOUND`, even when the caller supplies the function name manually. Visibility is enforced before mutation receipt lookup, so a client cannot replay the result of an internal mutation.
 
-`.internal()` preserves input/output schemas and database capabilities, and can appear anywhere before `.handler()`. Action dependencies remain limited to queries and mutations; marking an action internal does not add action-to-action calls.
+`.internal()` preserves input/output schemas and database capabilities, and can appear anywhere before `.handler()`. Action dependencies may include queries, mutations, and actions.
 
 New backend builds require the `internal-functions` runtime capability. Deploy the updated apps worker before using the updated SDK and builder; older workers reject these bundles as incompatible.
+
+## Host hooks
+
+Hosts declare hooks in their contract. Apps implement any subset of them in `src/hooks`:
+
+```text
+src/hooks/
+  sync.hook.ts                 → sync
+  customers/sync.hook.ts       → customers.sync
+  billing.updated.hook.ts      → billing.updated
+  helpers.ts                  → ordinary supporting module
+```
+
+Each hook file default-exports `defineHook` from `patchsmith/server`. The required `hook` string supplies input and output types from the generated host bindings and must match the file path. Duplicate names and mismatches fail the build. Regenerate bindings after changing the host contract or registered app functions.
+
+```ts
+// src/hooks/sync.hook.ts
+import { defineHook } from "patchsmith/server";
+
+export default defineHook({
+  hook: "sync",
+  handler: async ({ input, actions }) => {
+    return await actions.customers.sync(input);
+  },
+});
+```
+
+The example assumes the app server registers `customers.sync`. Hook handlers receive typed `queries`, `mutations`, and `actions` for all discovered function routers, plus server `tools`, `identity`, `scope`, `requestId`, and `signal`. They receive no direct database handle. Ordinary actions can call other actions declared through `.functions(...)` using `actions` as well.
+
+Hook files are discovered automatically and bundled only into the private server bundle. Hook files do not need manual registration. Watch builds discover added, renamed, and removed hook files. Deployment typechecks include discovered hooks.
+
+Only host-issued sessions granting the named hook can invoke its handler. Browser backend sessions cannot invoke hooks. Nested actions retain the caller's identity and cancellation; their query and mutation access follows their own `.functions(...)` declarations. Calls after completion or cancellation fail.
+
+Hooks use the existing action lifetime and execution limits. Invocation waits for completion and does not automatically retry, schedule continuations, or provide durable execution. Keep sync batches bounded and make host writes safe to repeat.

@@ -89,6 +89,15 @@ export const prepareFunction = (
   }
 
   freezeIdentity(identity);
+
+  if (input.name === "_patchsmith.hooks.invoke") {
+    const hook = z.object({ hook: z.string() }).safeParse(input.args);
+
+    if (!hook.success || identity.hook !== hook.data.hook) {
+      throw new AppError("FORBIDDEN", "A host hook session is required");
+    }
+  }
+
   const fn = requireFunction(app, input.name, kind, access);
 
   const args = fn.args["~standard"].validate(input.args);

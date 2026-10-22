@@ -250,6 +250,7 @@ describe("platform deployment uploads", () => {
           body: {
             app: { id: currentApp.id },
             assets: [{ ...metadata, objectKey: "client.js" }],
+            hooks: ["sync", "billing.updated"],
             scope: productionScope,
             server: { ...metadata, objectKey: "server.js" },
             views: [
@@ -267,6 +268,10 @@ describe("platform deployment uploads", () => {
       expect(created.body.server?.file.objectKey).toMatch(
         /\/server\/server\.js$/u
       );
+      expect(created.body.deployment.hooks).toEqual([
+        "sync",
+        "billing.updated",
+      ]);
       expect(created.body.deployment.views).toEqual([
         { instances: true, path: "/", slot: "page" },
         { disabled: true, path: "/disabled", slot: "page" },
@@ -324,7 +329,7 @@ describe("platform deployment uploads", () => {
         .spyOn(globalThis, "fetch")
         .mockResolvedValue(new Response("client-code"));
 
-      await call(
+      const published = await call(
         deploymentRouter.publish,
         {
           body: { rollout: true, scope: productionScope },
@@ -332,6 +337,8 @@ describe("platform deployment uploads", () => {
         },
         { context }
       );
+
+      expect(published.body.hooks).toEqual(["sync", "billing.updated"]);
       await expect(
         call(
           deploymentRouter.runtime,

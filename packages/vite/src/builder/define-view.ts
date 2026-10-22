@@ -103,9 +103,13 @@ export const childNodes = (node: ESTree.Node): ESTree.Node[] =>
     );
   });
 
-const bindImports = (node: ESTree.ImportDeclaration, scope: Scope) => {
-  const sdk =
-    node.importKind !== "type" && clientImports.has(node.source.value);
+const bindImports = (
+  node: ESTree.ImportDeclaration,
+  scope: Scope,
+  imports: Set<string>,
+  definition: string
+) => {
+  const sdk = node.importKind !== "type" && imports.has(node.source.value);
 
   for (const specifier of node.specifiers) {
     let binding: Binding = "local";
@@ -117,7 +121,7 @@ const bindImports = (node: ESTree.ImportDeclaration, scope: Scope) => {
       specifier.type === "ImportSpecifier" &&
       specifier.importKind !== "type" &&
       specifier.imported.type === "Identifier" &&
-      specifier.imported.name === "defineView"
+      specifier.imported.name === definition
     ) {
       binding = "view";
     }
@@ -127,7 +131,11 @@ const bindImports = (node: ESTree.ImportDeclaration, scope: Scope) => {
 };
 
 /** Resolve SDK import bindings, including declarations hoisted past a call. */
-const callScopes = (program: ESTree.Program) => {
+const callScopes = (
+  program: ESTree.Program,
+  imports: Set<string>,
+  definition: string
+) => {
   const scopes = new WeakMap<ESTree.Node, Scope>();
 
   const bindVariables = (node: ESTree.VariableDeclaration, scope: Scope) => {
@@ -179,7 +187,7 @@ const callScopes = (program: ESTree.Program) => {
     scopes.set(node, scope);
 
     if (node.type === "ImportDeclaration") {
-      bindImports(node, scope);
+      bindImports(node, scope, imports, definition);
 
       return;
     } else if (node.type === "VariableDeclaration") {
@@ -236,8 +244,12 @@ const callScopes = (program: ESTree.Program) => {
 };
 
 /** Recognize the same SDK calls in route inference and instance extraction. */
-export const createDefineViewMatcher = (program: ESTree.Program) => {
-  const scopes = callScopes(program);
+const createDefinitionMatcher = (
+  program: ESTree.Program,
+  imports: Set<string>,
+  definition: string
+) => {
+  const scopes = callScopes(program, imports, definition);
 
   return (node: ESTree.Node): node is ESTree.CallExpression => {
     if (node.type !== "CallExpression") {
@@ -261,8 +273,20 @@ export const createDefineViewMatcher = (program: ESTree.Program) => {
 
     return callee.computed
       ? callee.property.type === "Literal" &&
-          callee.property.value === "defineView"
+          callee.property.value === definition
       : callee.property.type === "Identifier" &&
-          callee.property.name === "defineView";
+          callee.property.name === definition;
   };
 };
+
+export const createDefineViewMatcher = (program: ESTree.Program) =>
+  createDefinitionMatcher(program, clientImports, "defineView");
+
+const serverImports = new Set([
+  "patchsmith/server",
+  "@patchsmith/app/server",
+  "patchsmith/app/server",
+]);
+
+export const createDefineHookMatcher = (program: ESTree.Program) =>
+  createDefinitionMatcher(program, serverImports, "defineHook");

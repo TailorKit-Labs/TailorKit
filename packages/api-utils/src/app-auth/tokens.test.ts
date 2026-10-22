@@ -312,3 +312,15 @@ it.each([undefined, null, "", 123, "x".repeat(257)])(
     await expect(verify(token)).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   }
 );
+
+it("signs and preserves a host hook grant without granting ordinary sessions hook access", async () => {
+  const granted = await issueAppToken(signing, {
+    ...identity,
+    hook: "customers.sync",
+  });
+
+  expect(decodeJwt(granted.token).hook).toBe("customers.sync");
+  expect(await verify(granted.token)).toMatchObject({ hook: "customers.sync" });
+  const ordinary = await issueAppToken(signing, identity);
+  expect(await verify(ordinary.token)).not.toHaveProperty("hook");
+});

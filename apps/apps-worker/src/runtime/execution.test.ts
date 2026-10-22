@@ -10,6 +10,7 @@ import {
   defineRelations,
 } from "@patchsmith/app-db";
 import {
+  withHooks,
   createFunctions,
   createFileServer,
   defineRouter,
@@ -19,6 +20,7 @@ import {
   AppError,
   withInstanceResolvers,
 } from "@patchsmith/app/server";
+import type { ActionContext } from "@patchsmith/app/server";
 import { asyncFixture } from "@patchsmith/config/testing";
 import { sql } from "drizzle-orm";
 import { sqliteView } from "drizzle-orm/sqlite-core";
@@ -942,4 +944,99 @@ it("runs nested relational queries and preserves scope, permissions and invalida
   const prepared = usersQuery.findMany().prepare();
   scope.close();
   expect(() => prepared.all()).toThrow("Database scope has ended");
+});
+
+it("runs host hooks with registered queries, mutations, nested actions", async () => {
+  const { persistence, sqlite } = fixture();
+
+  const records = {
+    read: fn.query.handler(({ db }) => db.select().from(todos).all()),
+    save: fn.mutation
+      .input(z.object({ id: z.string(), title: z.string() }))
+      .handler(({ db, input }) =>
+        db.insert(todos).values(input).returning().all()
+      ),
+  };
+
+  const refresh = fn.action
+    .internal()
+    .functions({ records })
+    .input(z.string())
+    .handler(async ({ input, mutations, identity: caller }) => {
+      expect(caller.subjectId).toBe("user");
+
+      return await mutations.records.save({
+        id: input,
+        title: "From nested action",
+      });
+    });
+
+  let retained:
+    | (() => ReturnType<
+        ActionContext<{ refresh: typeof refresh }>["actions"]["refresh"]
+      >)
+    | undefined;
+
+  const app = withHooks({ functions: { records, refresh } }, [
+    {
+      definition: {
+        handler: async (
+          context: { input: string } & ActionContext<{
+            records: typeof records;
+            refresh: typeof refresh;
+          }>
+        ) => {
+          expect("db" in context).toBe(false);
+          expect(Object.isFrozen(context.actions)).toBe(true);
+          retained = async () => await context.actions.refresh(context.input);
+          await context.actions.refresh(context.input);
+
+          return await context.queries.records.read();
+        },
+        hook: "sync",
+      },
+      name: "sync",
+    },
+  ]);
+
+  const execution = createExecution(app, persistence);
+
+  const input = {
+    args: { hook: "sync", input: "synced" },
+    name: "_patchsmith.hooks.invoke",
+  };
+
+  const run = async (viewer: typeof identity & { hook?: string }) =>
+    await Effect.runPromise(
+      execution.action(
+        input,
+        viewer,
+        {
+          committed: asyncFixture((tables: string[]) => {
+            expect(tables).toEqual(["todos"]);
+          }),
+        },
+        new AbortController().signal
+      )
+    );
+
+  const ordinaryResult = await run(identity);
+  expect(ordinaryResult.result).toMatchObject({
+    error: { code: "FORBIDDEN" },
+    ok: false,
+  });
+  const otherResult = await run({ ...identity, hook: "other" });
+  expect(otherResult.result).toMatchObject({
+    error: { code: "FORBIDDEN" },
+    ok: false,
+  });
+  expect(sqlite.prepare("SELECT count(*) AS n FROM todos").get()).toMatchObject(
+    { n: 0 }
+  );
+  const syncResult = await run({ ...identity, hook: "sync" });
+  expect(syncResult.result).toMatchObject({
+    ok: true,
+    value: { output: [{ id: "synced", title: "From nested action" }] },
+  });
+  await expect(retained?.()).rejects.toThrow("Action has ended");
 });

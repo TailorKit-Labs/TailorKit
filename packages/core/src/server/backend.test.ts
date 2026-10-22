@@ -205,3 +205,18 @@ it("rejects malformed JSON", async () => {
   expect(response.status).toBe(400);
   expect(issueSession).not.toHaveBeenCalled();
 });
+
+it("does not let browser session requests grant hook execution", async () => {
+  const response = await handleBackendSession(
+    new Request("https://host.test/api/patchsmith/backend/session", {
+      body: JSON.stringify({ appId: "app", hook: "sync" }),
+      headers: { "content-type": "application/json" },
+      method: "POST",
+    }),
+    authenticate,
+    issueSession
+  );
+
+  expect(response.status).toBe(400);
+  expect(issueSession).not.toHaveBeenCalled();
+});

@@ -46,3 +46,53 @@ Keep the headers server-side and create them for each authenticated caller. They
 The helper includes the configured host URL so the builder agent can fetch its `/schema` endpoint when creating or editing an app. That endpoint must be reachable from the agent’s sandbox. Contract schemas stay out of HTTP headers; the caller context header has an 8 KiB limit.
 
 Clients must implement MCP 2026-07-28 and request progress notifications to receive agent events. See the [app-agent protocol and client example](../agent/README.md#mcp).
+
+## Invoke app hooks
+
+Declare hooks alongside host tools. A tool is implemented by the host and called by an app; a hook is implemented by an app and called by the host.
+
+```ts
+import { defineContract, hook } from "patchsmith";
+import { createServer } from "patchsmith/server";
+import { z } from "zod";
+
+const contract = defineContract({
+  scopes: { team: z.object({ id: z.string() }) },
+  hooks: {
+    sync: hook()
+      .input(z.object({ mode: z.enum(["full", "incremental"]) }))
+      .output(z.object({ processed: z.number(), hasMore: z.boolean() })),
+  },
+});
+
+const patchsmith = createServer({
+  contract,
+  baseUrl: "https://example.com/api/patchsmith",
+  projectKey,
+});
+
+const context = {
+  scopes: { team: { id: teamId } },
+  subjectId: "service:sync",
+};
+
+const apps = await patchsmith.hooks.sync.list({ context });
+
+for (const app of apps) {
+  await patchsmith.hooks.sync.invoke({
+    appId: app.id,
+    context,
+    input: { mode: "incremental" },
+  });
+}
+```
+
+Call these methods from trusted server code, such as a cron handler, verified webhook handler, or authenticated manual operation. The host must resolve the caller's authorized scopes and subject before passing `context`. Both methods accept an optional `signal` for cancellation.
+
+`list` reads hook names from each installation’s active published deployment metadata, without calling app runtimes. Apps with no declared hooks are omitted. `invoke` targets one installation, validates input before execution, obtains a server-only session granting that hook, and validates its output. Platform project credentials and hook sessions stay on the host. Apps run inside the existing sandbox and use host tools for host data writes.
+
+Hook names are flat contract keys with optional dotted namespaces, such as `"customers.sync"`; access those callers as `patchsmith.hooks["customers.sync"]`. Hooks without input or output schemas accept no payload or return value. App bindings use the parsed input type and the output validator's accepted type, preserving host schema transformations.
+
+This interface does not manage schedules, webhook verification, sync checkpoints, concurrency locks, or retries. The host controls triggers; apps can store provider-specific checkpoints in their installation database.
+
+Hook names are recorded per deployment from the build manifest. Existing deployments and older uploaders default to no hooks; rebuild and republish hook-enabled apps to populate the metadata. Installations and rollouts use their selected deployment’s hook list. Deploy the database migration before the updated platform; host invocation checks support before issuing a hook session.

@@ -151,6 +151,7 @@ export type AppAgentCreateResponses = {
       appId: string;
       clientEntryFileId: string | null;
       createdAt: string;
+      hooks: Array<string>;
       id: string;
       logoDarkFileId: string | null;
       logoDarkPath: string | null;
@@ -230,6 +231,7 @@ export type AppsCreateResponses = {
       appId: string;
       clientEntryFileId: string | null;
       createdAt: string;
+      hooks: Array<string>;
       id: string;
       logoDarkFileId: string | null;
       logoDarkPath: string | null;
@@ -349,6 +351,7 @@ export type AppsDeployResponses = {
       appId: string;
       clientEntryFileId: string | null;
       createdAt: string;
+      hooks: Array<string>;
       id: string;
       logoDarkFileId: string | null;
       logoDarkPath: string | null;
@@ -432,6 +435,7 @@ export type AppsGetResponses = {
       appId: string;
       clientEntryFileId: string | null;
       createdAt: string;
+      hooks: Array<string>;
       id: string;
       logoDarkFileId: string | null;
       logoDarkPath: string | null;
@@ -519,6 +523,7 @@ export type AppsInstallResponses = {
       appId: string;
       clientEntryFileId: string | null;
       createdAt: string;
+      hooks: Array<string>;
       id: string;
       logoDarkFileId: string | null;
       logoDarkPath: string | null;
@@ -595,6 +600,7 @@ export type AppsListResponses = {
         appId: string;
         clientEntryFileId: string | null;
         createdAt: string;
+        hooks: Array<string>;
         id: string;
         logoDarkFileId: string | null;
         logoDarkPath: string | null;
@@ -712,6 +718,7 @@ export type AppsRuntimeResolveResponses = {
           appId: string;
           clientEntryFileId: string | null;
           createdAt: string;
+          hooks: Array<string>;
           id: string;
           logoDarkFileId: string | null;
           logoDarkPath: string | null;
@@ -770,6 +777,7 @@ export type AppsRuntimeSessionData = {
        */
       slug: string;
     };
+    hook?: string;
     scopes: Array<{
       name: string;
       value: {
@@ -793,6 +801,7 @@ export type AppsRuntimeSessionResponses = {
       appShortId: string;
       deploymentId: string;
       expiresAt: number;
+      hook?: string;
       installationId: string;
       projectId: string;
       projectShortId: string;
@@ -867,6 +876,7 @@ export type AppsUpdateResponses = {
       appId: string;
       clientEntryFileId: string | null;
       createdAt: string;
+      hooks: Array<string>;
       id: string;
       logoDarkFileId: string | null;
       logoDarkPath: string | null;
@@ -1044,6 +1054,7 @@ export type DeploymentsCreateData = {
         objectKey: 'client.js';
       }
     ];
+    hooks?: Array<string>;
     logos?: {
       dark?: {
         checksum: string;
@@ -1108,6 +1119,7 @@ export type DeploymentsCreateResponses = {
       appId: string;
       clientEntryFileId: string | null;
       createdAt: string;
+      hooks: Array<string>;
       id: string;
       logoDarkFileId: string | null;
       logoDarkPath: string | null;
@@ -1208,6 +1220,7 @@ export type DeploymentsGetResponses = {
     appId: string;
     clientEntryFileId: string | null;
     createdAt: string;
+    hooks: Array<string>;
     id: string;
     logoDarkFileId: string | null;
     logoDarkPath: string | null;
@@ -1262,6 +1275,7 @@ export type DeploymentsListResponses = {
       appId: string;
       clientEntryFileId: string | null;
       createdAt: string;
+      hooks: Array<string>;
       id: string;
       logoDarkFileId: string | null;
       logoDarkPath: string | null;
@@ -1312,6 +1326,7 @@ export type DeploymentsPublishResponses = {
     appId: string;
     clientEntryFileId: string | null;
     createdAt: string;
+    hooks: Array<string>;
     id: string;
     logoDarkFileId: string | null;
     logoDarkPath: string | null;

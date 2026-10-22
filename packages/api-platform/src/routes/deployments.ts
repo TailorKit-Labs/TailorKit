@@ -82,6 +82,7 @@ const createDeploymentInput = z
   .object({
     app: appSelectorSchema,
     assets: z.tuple([createDeploymentAssetInput]),
+    hooks: AppDeployment.shape.hooks.optional(),
     logos: z
       .object({
         dark: createDeploymentLogoInput.optional(),
@@ -92,6 +93,12 @@ const createDeploymentInput = z
     server: createDeploymentServerInput.optional(),
     views: AppDeployment.shape.views.optional(),
   })
+  .refine(
+    ({ hooks, server }) => (hooks?.length ?? 0) === 0 || server !== undefined,
+    {
+      message: "Hooks require a server bundle.",
+    }
+  )
   .refine(
     ({ assets }) =>
       assets.reduce((total, asset) => total + asset.contentLength, 0) <=
@@ -483,6 +490,7 @@ const createAppDeployment = cliRouter
         .insert(appDeployment)
         .values({
           appId: context.app.id,
+          hooks: input.body.hooks ?? [],
           id: deploymentId,
           shortId: deploymentShortId,
           status: "uploading",

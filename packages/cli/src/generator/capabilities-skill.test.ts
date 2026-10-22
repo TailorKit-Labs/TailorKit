@@ -44,6 +44,10 @@ const schema: PatchsmithSchemaFile = {
       fields: { properties: { value: { type: "string" } }, type: "object" },
     },
   },
+  hooks: {
+    notify: {},
+    sync: { input: { type: "string" }, output: { type: "number" } },
+  },
   slots: {
     page: { description: "Main content area.", multiple: true, views: ["/"] },
   },
@@ -191,7 +195,7 @@ it("generates a discoverable skill with working reference links, including custo
   }
 });
 
-it("typechecks components, callbacks, tools and context from one bindings file", async () => {
+it("typechecks components, callbacks, tools, hooks and context from one bindings file", async () => {
   const root = await mkdtemp(
     path.join(tmpdir(), "patchsmith-single-bindings-")
   );
@@ -202,6 +206,13 @@ it("typechecks components, callbacks, tools and context from one bindings file",
       path.join(root, "consumer.ts"),
       `
 import { Button, Input, tools } from "./host";
+import { defineHook } from "patchsmith/server";
+defineHook({ hook: "sync", handler: ({ input }) => input.length });
+defineHook({ hook: "notify", handler: () => {} });
+// @ts-expect-error Hook output stays typed through generated module augmentation.
+defineHook({ hook: "sync", handler: () => "wrong" });
+// @ts-expect-error Hook names must be declared by the host.
+defineHook({ hook: "missing", handler: () => {} });
 import type { ButtonProps, InputProps, ViewProps, PatchsmithBackendTools } from "./host";
 const button: ButtonProps = { variant: "primary", onPress: () => {} };
 const input: InputProps = { onChange: ({ value }) => { value.toUpperCase(); } };
@@ -238,7 +249,14 @@ tools.todos.add(123);
           module: "ESNext",
           moduleResolution: "Bundler",
           noEmit: true,
-          paths: { "patchsmith/client": [client] },
+          paths: {
+            "patchsmith/client": [client],
+            "patchsmith/server": [
+              fileURLToPath(
+                import.meta.resolve("@patchsmith/app/server")
+              ).replace(/\.js$/u, ".d.ts"),
+            ],
+          },
           skipLibCheck: true,
           strict: true,
           target: "ESNext",

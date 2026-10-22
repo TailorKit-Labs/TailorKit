@@ -82,6 +82,10 @@ export interface SerializedTool {
 }
 
 export interface PatchsmithSchemaFile extends Record<string, unknown> {
+  hooks?: Record<
+    string,
+    SerializedCallback & { inputOptional?: boolean; outputOptional?: boolean }
+  >;
   tools?: SerializedTools;
   components?: Record<string, SerializedComponent>;
   views?: Record<string, SerializedView>;
@@ -791,6 +795,16 @@ const resolveSchemaFile = (
       },
     ])
   ),
+  hooks: Object.fromEntries(
+    Object.entries(schema.hooks ?? {}).map(([name, definition]) => [
+      name,
+      {
+        ...definition,
+        input: resolveSchema(definition.input),
+        output: resolveSchema(definition.output),
+      },
+    ])
+  ),
   tools: resolveTools(schema.tools ?? {}),
   views: Object.fromEntries(
     Object.entries(schema.views ?? {}).map(([name, view]) => [
@@ -838,6 +852,26 @@ declare module "patchsmith/client" { interface PatchsmithServerTools extends Pat
 export const tools = ${renderToolRuntime(schema.tools ?? {})} as PatchsmithTools;`,
     renderTypeAliases(components, fieldAliases),
   ];
+
+  if (Object.keys(schema.hooks ?? {}).length) {
+    const definitions = Object.entries(schema.hooks ?? {}).map(
+      ([name, definition]) => {
+        const input = definition.input
+          ? toTypeScriptType(definition.input, 4)
+          : "undefined";
+
+        const output = definition.output
+          ? toTypeScriptType(definition.output, 4)
+          : "void";
+
+        return `    ${quote(name)}: { input: ${input}${definition.inputOptional === true ? " | undefined" : ""}; output: ${output}${definition.outputOptional === true ? " | undefined" : ""} };`;
+      }
+    );
+
+    chunks.push(
+      `import type {} from "patchsmith/server";\ndeclare module "patchsmith/server" {\n  interface PatchsmithHooks {\n${definitions.join("\n")}\n  }\n}`
+    );
+  }
 
   if (
     options.functionsModule !== undefined &&
