@@ -7,8 +7,6 @@ import {
 } from "@patchsmith/api-utils/app-auth";
 import { db } from "@patchsmith/db";
 import type { App, AppDeployment } from "@patchsmith/db/schema/apps";
-import { Effect } from "effect";
-import { catch as catchEffect } from "effect/Effect";
 import { z } from "zod";
 
 import { appSelectorSchema } from "#app-selector";
@@ -239,59 +237,33 @@ export const getRuntimeBundle = protectedRouter
     };
   });
 
-/** Cache publication failures do not undo a published deployment; worker misses use the API. */
+/** Roll out installed scopes before enqueueing independently retryable warm-up steps. */
 export const publishRuntimeMetadata = async (
   metadata: AppDeploymentMetadata,
-  appShortId: string
+  _appShortId: string
 ) => {
-  await Effect.runPromise(
-    // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context, effecttsgo/unknown-in-effect-catch -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
-    Effect.tryPromise({
-      catch: (err) => err,
-      try: async () => {
-        if (
-          !(
-            env.APP_RUNTIME_SERVICE_TOKEN !== undefined &&
-            env.APP_RUNTIME_SERVICE_TOKEN !== null &&
-            env.APP_RUNTIME_SERVICE_TOKEN !== ""
-          )
-        ) {
-          return;
-        }
+  const { selectRuntimeDeployment } = await import("#runtime/deployment-steps");
+  const selected = await selectRuntimeDeployment(metadata, db);
 
-        const url = new URL(
-          `/p/${metadata.projectId}/a/${appShortId}/new-deployment`,
-          env.APP_RUNTIME_INTERNAL_URL ??
-            `https://internal.${env.ASSET_DOMAIN ?? "tailorkit.app"}`
-        );
+  if (!selected || env.APP_RUNTIME_SERVICE_TOKEN === undefined) {
+    return;
+  }
 
-        if (url.protocol !== "https:") {
-          throw new Error("App runtime URL requires HTTPS");
-        }
+  try {
+    const [{ start }, { warmAppDeployment }] = await Promise.all([
+      import("workflow/api"),
+      import("#runtime/deployment-workflow"),
+    ]);
 
-        const response = await fetch(url, {
-          body: JSON.stringify(metadata),
-          headers: {
-            authorization: `Bearer ${env.APP_RUNTIME_SERVICE_TOKEN}`,
-            "content-type": "application/json",
-          },
-          method: "POST",
-          redirect: "error",
-          signal: AbortSignal.timeout(10_000),
-        });
-
-        if (!response.ok) {
-          throw new Error(
-            `Runtime metadata publication failed (${response.status})`
-          );
-        }
+    await start(warmAppDeployment, [
+      {
+        appId: metadata.appId,
+        deploymentId: metadata.deploymentId,
+        projectId: metadata.projectId,
       },
-    }).pipe(
-      catchEffect((err) =>
-        Effect.sync(() => {
-          console.error("Could not publish app runtime metadata", err);
-        })
-      )
-    )
-  );
+    ]);
+  } catch (error) {
+    // Publication remains usable: new token hints synchronously discover its code.
+    console.error("Could not enqueue app deployment warm-up", error);
+  }
 };

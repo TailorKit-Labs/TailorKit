@@ -8,7 +8,6 @@ import { get } from "node:http";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { setTimeout as delay } from "node:timers/promises";
 import { gzipSync, gunzipSync } from "node:zlib";
 
 import {
@@ -136,7 +135,6 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
     durableObjects: {
       STORES: { className: "PatchsmithAppInstallation", useSQLite: true },
     },
-    kvNamespaces: ["DEPLOYMENTS"],
     modules: [
       { path: path.join(dist, "index.js"), type: "ESModule" },
       ...(await readdir(dist))
@@ -409,12 +407,6 @@ export const migrations = ${JSON.stringify(history)};`;
         objectKey: "private/todo/server/server.js",
         projectId,
       };
-      await (
-        await mf.getKVNamespace("DEPLOYMENTS")
-      ).put(
-        JSON.stringify([published.projectId, published.appId]),
-        JSON.stringify(published)
-      );
     };
 
     await publishRpc(migrations, "backend");
@@ -1070,7 +1062,7 @@ export const migrations = ${JSON.stringify(history)};`;
     assert.match(timing, /runtime_gateway;dur=\d/u);
     assert.match(timing, /runtime_installation;dur=\d/u);
     assert.match(timing, /runtime_execute;dur=\d/u);
-    assert.match(timing, /runtime_metadata_kv;dur=\d/u);
+    assert.doesNotMatch(timing, /runtime_metadata_kv/u);
     assert.equal(
       response.headers.get("access-control-expose-headers"),
       "server-timing"
@@ -1113,12 +1105,8 @@ export const migrations = ${JSON.stringify(history)};`;
     assert.equal(otherProject.globals, 1);
 
     published = { ...published, projectId: otherProjectId };
-    await (
-      await mf.getKVNamespace("DEPLOYMENTS")
-    ).delete(JSON.stringify([projectId, "app"]));
-    // Existing tokens may reuse verified metadata for at most five seconds.
-    await delay(5100);
-    assert.equal((await invoke("one")).status, 403);
+    // A changed hint forces confirmation even while local metadata is fresh.
+    assert.equal((await invoke("one", "v-new")).status, 403);
 
     await publish(2);
     assert.equal((await invoke("one", "v1")).status, 200);
@@ -1130,8 +1118,11 @@ export const migrations = ${JSON.stringify(history)};`;
       .then((result) => result.json);
 
     assert.equal(updated.version, 2);
-    assert.equal(updated.globals, 2);
+    assert.equal(updated.globals, 1);
 
+    // Remove the origin copy: cold recovery must use the verified code in supervisor SQLite.
+    await (await mf.getR2Bucket("BUNDLES")).delete(published.objectKey);
+    const readsBeforeRestart = metadataReads;
     // Cold supervisor and facet after process restart must recover the same persistent SQLite.
     await mf.dispose();
     mf = new Miniflare(convertV4MiniflareOptions(options));
@@ -1144,18 +1135,15 @@ export const migrations = ${JSON.stringify(history)};`;
 
     assert.equal(recovered.globals, 1);
     assert.equal(recovered.version, 2);
+    assert.equal(metadataReads, readsBeforeRestart);
 
+    await (
+      await mf.getR2Bucket("BUNDLES")
+    ).put(published.objectKey, gzipSync(bundle(2)));
     const originalHash = published.checksum;
     published = { ...published, checksum: "a".repeat(64) };
-    await (
-      await mf.getKVNamespace("DEPLOYMENTS")
-    ).delete(JSON.stringify([projectId, "app"]));
-    await delay(5100);
-    assert.equal((await invoke("one")).status, 500);
+    assert.equal((await invoke("one", "v-checksum")).status, 500);
     published = { ...published, checksum: originalHash };
-    await (
-      await mf.getKVNamespace("DEPLOYMENTS")
-    ).put(JSON.stringify([projectId, "app"]), JSON.stringify(published));
     assert.equal(
       (await (await invoke("one")).json().then((result) => result.json))
         .globals,

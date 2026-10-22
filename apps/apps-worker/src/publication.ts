@@ -1,7 +1,7 @@
 import type { AppDeploymentMetadata } from "@patchsmith/api-utils/app-auth";
 import { AppError } from "@patchsmith/app/server";
 
-/** Public URL identifiers must describe the same private bundle as the payload. */
+/** A target installation may use another app’s bundle; verify project and private path shape. */
 export const validateDeploymentPublication = (
   metadata: AppDeploymentMetadata,
   publication: { projectId: string; appShortId: string }
@@ -14,7 +14,7 @@ export const validateDeploymentPublication = (
     segments[0] !== "projects" ||
     !/^[a-z0-9]{12}$/u.test(segments[1] ?? "") ||
     segments[2] !== "apps" ||
-    segments[3] !== publication.appShortId ||
+    !/^[a-z0-9]{12}$/u.test(segments[3] ?? "") ||
     segments[4] !== "deployments" ||
     !/^[a-z0-9]{12}$/u.test(segments[5] ?? "") ||
     segments[6] !== "server" ||

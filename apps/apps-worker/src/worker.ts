@@ -1,7 +1,6 @@
 import {
   appRuntimeIssuer,
   appDeploymentMetadata,
-  deploymentMetadataKey,
   runtimeServiceAuthorized,
 } from "@patchsmith/api-utils/app-auth";
 import type { Identity } from "@patchsmith/app/server";
@@ -16,7 +15,7 @@ import assets from "./assets";
 import { validateDeploymentPublication } from "./publication";
 import { appError } from "./runtime/errors";
 import { verifier } from "./supervisor/auth";
-import { metadataLifetimeSeconds, installationName } from "./supervisor/source";
+import { installationName } from "./supervisor/source";
 import { RuntimeTimings } from "./timing";
 import { routeInstallation, rpcErrorResponse } from "./transport";
 
@@ -109,13 +108,14 @@ export default {
           yield* Effect.tryPromise({
             catch: appError,
             try: async () => {
-              await env.DEPLOYMENTS.put(
-                deploymentMetadataKey(parsed.data),
-                JSON.stringify(parsed.data),
-                {
-                  expirationTtl: metadataLifetimeSeconds,
-                }
-              );
+              const metadata = parsed.data;
+              await env.STORES.getByName(
+                installationName(
+                  { ...metadata, installationId: metadata.appId },
+                  appRuntimeIssuer(env.PLATFORM_URL)
+                ),
+                { locationHint: "enam" }
+              ).warm(metadata);
             },
           });
 

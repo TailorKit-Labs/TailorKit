@@ -1,12 +1,11 @@
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 
-import { appDeploymentMetadata } from "@patchsmith/api-utils/app-auth";
 import { asyncFixture } from "@patchsmith/config/testing";
 import { Effect } from "effect";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
-import { deploymentSource, warmMetadataLifetimeMs } from "./source";
+import { deploymentSource, metadataRevalidateMs } from "./source";
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -42,7 +41,39 @@ const identity = {
   toolUrl: "https://host.test/api/patchsmith/tools/execute",
 };
 
-const setup = (contents: string | Uint8Array<ArrayBuffer> | null = code) => {
+const memory = () => {
+  const values = new Map<string, string>();
+
+  return {
+    kv: {
+      delete: (key: string) => values.delete(key),
+      get: (key: string) => values.get(key),
+      put: (key: string, value: string) => {
+        values.set(key, value);
+      },
+    },
+    transactionSync: (write: () => void) => {
+      const snapshot = new Map(values);
+
+      try {
+        write();
+      } catch (error) {
+        values.clear();
+
+        for (const [key, value] of snapshot) {
+          values.set(key, value);
+        }
+
+        throw error;
+      }
+    },
+  };
+};
+
+const setup = (
+  contents: string | Uint8Array<ArrayBuffer> | null = code,
+  storage = memory()
+) => {
   const get = vi.fn(
     asyncFixture(() =>
       contents === null
@@ -51,21 +82,21 @@ const setup = (contents: string | Uint8Array<ArrayBuffer> | null = code) => {
     )
   );
 
-  return {
-    get,
-    source: deploymentSource({
+  const tasks: Promise<void>[] = [];
+
+  const source = deploymentSource(
+    {
       BUNDLES: { get },
-      // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-
-      DEPLOYMENTS: {
-        get: vi.fn<() => Promise<null>>().mockResolvedValue(null),
-        put: vi.fn<() => Promise<void>>().mockReturnValue(Promise.resolve()),
-      },
-
       PLATFORM_URL: "https://platform.test/api/platform",
       RUNTIME_SERVICE_TOKEN: "private",
-    }),
-  };
+    },
+    storage,
+    (task) => {
+      tasks.push(task);
+    }
+  );
+
+  return { get, source, storage, tasks };
 };
 
 afterEach(() => {
@@ -73,15 +104,20 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-it("resolves authorized metadata separately from R2 code and never follows redirects with credentials", async () => {
+it("persists metadata across supervisor recreation without a network lookup", async () => {
   const fetch = vi
     .spyOn(globalThis, "fetch")
-    .mockResolvedValue(Response.json(deployment));
+    .mockImplementation(asyncFixture(() => Response.json(deployment)));
 
-  const { source, get } = setup();
-
-  expect(await Effect.runPromise(source.current(identity))).toEqual(deployment);
-  expect(get).not.toHaveBeenCalled();
+  const first = setup();
+  expect(await Effect.runPromise(first.source.current(identity))).toEqual(
+    deployment
+  );
+  const restarted = setup(code, first.storage);
+  expect(await Effect.runPromise(restarted.source.current(identity))).toEqual(
+    deployment
+  );
+  expect(fetch).toHaveBeenCalledOnce();
   expect(fetch.mock.calls[0]?.[1]).toMatchObject({
     headers: {
       authorization: "Bearer private",
@@ -89,263 +125,127 @@ it("resolves authorized metadata separately from R2 code and never follows redir
     },
     redirect: "manual",
   });
-
-  expect(await Effect.runPromise(source.code(deployment))).toBe(code);
-  expect(get).toHaveBeenCalledWith(deployment.objectKey);
-  expect(fetch).toHaveBeenCalledOnce();
 });
 
-it.each(["miss", "changed pointer"] as const)(
-  "does not overwrite a newer publication when a delayed lookup finishes (%s)",
-  async (scenario) => {
-    let pointer =
-      scenario === "miss" ? null : { ...deployment, deploymentId: "v0" };
-
-    const newer = { ...deployment, deploymentId: "v2" };
-    const started = Promise.withResolvers<boolean>();
-    const release = Promise.withResolvers<boolean>();
-
-    const fetch = vi
-      .spyOn(globalThis, "fetch")
-      .mockImplementationOnce(async () => {
-        started.resolve(true);
-        await release.promise;
-
-        return Response.json(deployment);
-      })
-      .mockImplementation(asyncFixture(() => Response.json(newer)));
-
-    const kv = {
-      get: asyncFixture(() => pointer),
-      put: vi.fn(
-        asyncFixture((_key: string, value: string) => {
-          pointer = appDeploymentMetadata.parse(JSON.parse(value));
-        })
-      ),
-    };
-
-    const source = deploymentSource({
-      BUNDLES: { get: vi.fn() },
-      DEPLOYMENTS: kv,
-      PLATFORM_URL: "https://platform.test",
-      RUNTIME_SERVICE_TOKEN: "private",
-    });
-
-    const pending = Effect.runPromise(source.current(identity));
-    await started.promise;
-    // The publication endpoint writes v2 while the v1 lookup is still pending.
-    await kv.put(
-      JSON.stringify([identity.projectId, identity.appId]),
-      JSON.stringify(newer)
-    );
-    release.resolve(true);
-
-    expect(await pending).toEqual(deployment);
-    expect(await Effect.runPromise(source.current(identity))).toEqual(
-      deployment
-    );
-    expect(fetch).toHaveBeenCalledOnce();
-    expect(pointer).toEqual(newer);
-    expect(kv.put).toHaveBeenCalledOnce();
-
-    expect(
-      await Effect.runPromise(
-        source.current({ ...identity, deploymentId: "v2" }, "v1")
-      )
-    ).toEqual(newer);
-    expect(pointer).toEqual(newer);
-    expect(kv.put).toHaveBeenCalledOnce();
-  }
-);
-
-it.each([null, "tampered", `${code} extra`])(
-  "rejects missing, corrupted and oversized R2 code: %s",
-  async (contents) => {
-    const awaitedResult1 = await Effect.runPromiseExit(
-      setup(contents).source.code(deployment)
-    );
-
-    expect(awaitedResult1._tag).toBe("Failure");
-  }
-);
-
-it.each([302, 403, 404, 503])(
-  "fails closed when platform metadata returns %s",
-  async (status) => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(null, { status })
-    );
-    const { source, get } = setup();
-
-    const awaitedResult2 = await Effect.runPromiseExit(
-      source.current(identity)
-    );
-
-    expect(awaitedResult2._tag).toBe("Failure");
-    expect(get).not.toHaveBeenCalled();
-  }
-);
-
-it("serves KV hits to old clients and caches platform lookups locally", async () => {
-  vi.useFakeTimers({ toFake: ["Date"] });
-
-  const values = new Map<
-    string,
-    ReturnType<typeof appDeploymentMetadata.parse>
-  >();
-
-  const put = vi.fn(
-    asyncFixture((key: string, value: string) => {
-      values.set(key, appDeploymentMetadata.parse(JSON.parse(value)));
-    })
-  );
+it("serves stale metadata immediately and deduplicates hourly background revalidation", async () => {
+  vi.useFakeTimers();
+  const release = Promise.withResolvers<Response>();
 
   const fetch = vi
     .spyOn(globalThis, "fetch")
-    .mockResolvedValueOnce(Response.json({ ...deployment, deploymentId: "v2" }))
-    .mockResolvedValueOnce(
-      Response.json({ ...deployment, deploymentId: "v2" })
-    );
+    .mockResolvedValueOnce(Response.json(deployment))
+    .mockImplementationOnce(async () => await release.promise);
 
-  const source = deploymentSource({
-    BUNDLES: { get: vi.fn() },
-    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-
-    DEPLOYMENTS: {
-      get: asyncFixture((key: string) => values.get(key) ?? null),
-      put,
-    },
-
-    PLATFORM_URL: "https://platform.test",
-    RUNTIME_SERVICE_TOKEN: "private",
-  });
-
-  const awaitedResult3 = await Effect.runPromise(source.current(identity));
-  expect(awaitedResult3.deploymentId).toBe("v2");
-  expect(put).not.toHaveBeenCalled();
-
-  const awaitedResult4 = await Effect.runPromise(
-    source.current(identity, "v2")
+  const first = setup();
+  await Effect.runPromise(first.source.current(identity));
+  vi.setSystemTime(Date.now() + metadataRevalidateMs);
+  const caller = { ...identity, expiresAt: Date.now() + 120_000 };
+  expect(await Effect.runPromise(first.source.current(caller))).toEqual(
+    deployment
   );
-
-  expect(awaitedResult4.deploymentId).toBe("v2");
-  expect(fetch).toHaveBeenCalledOnce();
-  values.set(JSON.stringify([identity.projectId, identity.appId]), deployment);
-  vi.setSystemTime(Date.now() + warmMetadataLifetimeMs);
-
-  // A stale replica must not cause a downgrade after v2 migrations ran.
-  const awaitedResult5 = await Effect.runPromise(
-    source.current(identity, "v2")
+  expect(await Effect.runPromise(first.source.current(caller))).toEqual(
+    deployment
   );
+  expect(first.tasks).toHaveLength(1);
+  release.resolve(Response.json({ ...deployment, deploymentId: "v2" }));
+  await Promise.all(first.tasks);
+  const resolved1 = await Effect.runPromise(first.source.current(caller));
 
-  expect(awaitedResult5.deploymentId).toBe("v2");
+  expect(resolved1.deploymentId).toBe("v2");
   expect(fetch).toHaveBeenCalledTimes(2);
 });
 
-it.each([undefined, "v1"])(
-  "confirms a cold KV pointer that disagrees with the token (running: %s)",
-  async (runningDeploymentId) => {
-    const current = { ...deployment, deploymentId: "v2" };
-
-    const fetch = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(Response.json(current));
-
-    const get = vi.fn(asyncFixture(() => deployment));
-    const put = vi.fn(asyncFixture(() => {}));
-
-    const source = deploymentSource({
-      BUNDLES: { get: vi.fn() },
-      DEPLOYMENTS: { get, put },
-      PLATFORM_URL: "https://platform.test",
-      RUNTIME_SERVICE_TOKEN: "private",
-    });
-
-    const caller = { ...identity, deploymentId: "v2" };
-
-    expect(
-      await Effect.runPromise(source.current(caller, runningDeploymentId))
-    ).toEqual(current);
-    expect(fetch).toHaveBeenCalledOnce();
-    expect(put).not.toHaveBeenCalled();
-    expect(await Effect.runPromise(source.current(caller, "v2"))).toEqual(
-      current
-    );
-    expect(get).toHaveBeenCalledOnce();
-    expect(fetch).toHaveBeenCalledOnce();
-  }
-);
-
-it("does not cache or reuse mismatched KV metadata when platform confirmation fails", async () => {
+it("confirms a new token hint immediately while old clients keep the latest deployment", async () => {
   const fetch = vi
     .spyOn(globalThis, "fetch")
-    .mockResolvedValue(new Response(null, { status: 503 }));
-
-  const put = vi.fn(asyncFixture(() => {}));
-
-  const source = deploymentSource({
-    BUNDLES: { get: vi.fn() },
-    DEPLOYMENTS: { get: asyncFixture(() => deployment), put },
-    PLATFORM_URL: "https://platform.test",
-    RUNTIME_SERVICE_TOKEN: "private",
-  });
-
-  const caller = { ...identity, deploymentId: "v2" };
-
-  const first = await Effect.runPromiseExit(source.current(caller));
-  const retry = await Effect.runPromiseExit(source.current(caller));
-
-  expect(first._tag).toBe("Failure");
-  expect(retry._tag).toBe("Failure");
-  expect(fetch).toHaveBeenCalledTimes(2);
-  expect(put).not.toHaveBeenCalled();
-});
-
-it("bounds warm metadata reuse and refreshes when a token signals a deployment change", async () => {
-  vi.useFakeTimers({ toFake: ["Date"] });
-  const get = vi.fn(asyncFixture(() => deployment));
-
-  const fetch = vi
-    .spyOn(globalThis, "fetch")
+    .mockResolvedValueOnce(Response.json(deployment))
     .mockImplementation(
       asyncFixture(() => Response.json({ ...deployment, deploymentId: "v2" }))
     );
 
-  const source = deploymentSource({
-    BUNDLES: { get: vi.fn() },
-    DEPLOYMENTS: { get, put: asyncFixture(() => {}) },
-    PLATFORM_URL: "https://platform.test",
-    RUNTIME_SERVICE_TOKEN: "private",
-  });
-
+  const { source } = setup();
   await Effect.runPromise(source.current(identity));
-  await Effect.runPromise(
-    source.current({ ...identity, subjectId: "other" }, "v1")
-  );
-  expect(get).toHaveBeenCalledOnce();
 
-  vi.setSystemTime(Date.now() + warmMetadataLifetimeMs);
-  await Effect.runPromise(source.current(identity, "v1"));
-  expect(get).toHaveBeenCalledTimes(2);
-
-  const updated = await Effect.runPromise(
-    source.current({ ...identity, deploymentId: "v2" }, "v1")
+  const resolved2 = await Effect.runPromise(
+    source.current({ ...identity, deploymentId: "v2" })
   );
 
-  expect(updated.deploymentId).toBe("v2");
-  expect(fetch).toHaveBeenCalledOnce();
+  expect(resolved2.deploymentId).toBe("v2");
+  const resolved3 = await Effect.runPromise(source.current(identity));
 
-  const expired = await Effect.runPromiseExit(
-    source.current({ ...identity, expiresAt: Date.now() }, "v2")
+  expect(resolved3.deploymentId).toBe("v2");
+  const resolved4 = await Effect.runPromise(source.current(identity));
+
+  expect(resolved4.deploymentId).toBe("v2");
+  expect(fetch).toHaveBeenCalledTimes(3);
+});
+
+it("orders a delayed revalidation before a newer publication confirmation", async () => {
+  const release = Promise.withResolvers<Response>();
+
+  const fetch = vi
+    .spyOn(globalThis, "fetch")
+    .mockImplementationOnce(async () => await release.promise)
+    .mockResolvedValueOnce(
+      Response.json({ ...deployment, deploymentId: "v2" })
+    );
+
+  const { source, storage } = setup();
+  const older = source.refresh(identity);
+  const newer = source.refresh({ ...identity, deploymentId: "v2" });
+  release.resolve(Response.json(deployment));
+  await Promise.all([older, newer]);
+  const restarted = setup(code, storage);
+
+  const resolved5 = await Effect.runPromise(
+    restarted.source.current({ ...identity, deploymentId: "v2" })
   );
 
-  expect(expired._tag).toBe("Failure");
+  expect(resolved5.deploymentId).toBe("v2");
+  expect(fetch).toHaveBeenCalledTimes(2);
+});
 
-  const mismatch = await Effect.runPromiseExit(
-    source.current({ ...identity, projectId: "other" })
+it("retains stale metadata when background revalidation fails", async () => {
+  vi.useFakeTimers();
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  vi.spyOn(globalThis, "fetch")
+    .mockResolvedValueOnce(Response.json(deployment))
+    .mockRejectedValue(new Error("Unavailable"));
+  const fixture = setup();
+  await Effect.runPromise(fixture.source.current(identity));
+  vi.setSystemTime(Date.now() + metadataRevalidateMs);
+  const caller = { ...identity, expiresAt: Date.now() + 120_000 };
+  expect(await Effect.runPromise(fixture.source.current(caller))).toEqual(
+    deployment
   );
+  await Promise.all(fixture.tasks);
+  expect(fixture.storage.kv.get("runtime:metadata")).toContain(
+    '"deploymentId":"v1"'
+  );
+});
 
-  expect(mismatch._tag).toBe("Failure");
+it("restores verified decoded code from storage after eviction without R2", async () => {
+  const content = `//${"x".repeat(160_000)}`;
+
+  const metadata = {
+    ...deployment,
+    checksum: createHash("sha256").update(content).digest("hex"),
+    contentLength: content.length,
+  };
+
+  const first = setup(content);
+  expect(await Effect.runPromise(first.source.code(metadata))).toBe(content);
+  const restarted = setup(null, first.storage);
+  expect(await Effect.runPromise(restarted.source.code(metadata))).toBe(
+    content
+  );
+  expect(first.get).toHaveBeenCalledOnce();
+  expect(restarted.get).not.toHaveBeenCalled();
+  const smaller = { ...deployment, deploymentId: "v2" };
+  expect(
+    await Effect.runPromise(setup(code, first.storage).source.code(smaller))
+  ).toBe(code);
+  expect(first.storage.kv.get("runtime:bundle:1")).toBeUndefined();
 });
 
 it("verifies compressed server bytes before inflating and caches the decoded code", async () => {
@@ -425,3 +325,56 @@ it.each(["utf-8", "gzip"] as const)(
     );
   }
 );
+
+it("keeps the previous decoded bundle intact if a replacement storage write fails", async () => {
+  const first = setup();
+  await Effect.runPromise(first.source.code(deployment));
+  const content = `//${"x".repeat(100_000)}`;
+
+  const next = {
+    ...deployment,
+    checksum: createHash("sha256").update(content).digest("hex"),
+    contentLength: content.length,
+    deploymentId: "v2",
+  };
+
+  const write = first.storage.kv.put;
+
+  const put = vi
+    .spyOn(first.storage.kv, "put")
+    .mockImplementation((key, value) => {
+      if (key === "runtime:bundle:1") {
+        throw new Error("Storage failure");
+      }
+
+      write(key, value);
+    });
+
+  const result = await Effect.runPromiseExit(
+    setup(content, first.storage).source.code(next)
+  );
+
+  expect(result._tag).toBe("Failure");
+  put.mockRestore();
+  const restarted = setup(null, first.storage);
+  expect(await Effect.runPromise(restarted.source.code(deployment))).toBe(code);
+  expect(restarted.get).not.toHaveBeenCalled();
+});
+
+it("rejects authentication that expires during an authoritative metadata lookup", async () => {
+  vi.useFakeTimers();
+  vi.spyOn(globalThis, "fetch").mockImplementation(
+    asyncFixture(() => {
+      vi.setSystemTime(Date.now() + 180_000);
+
+      return Response.json(deployment);
+    })
+  );
+  const { source } = setup();
+
+  const result = await Effect.runPromiseExit(
+    source.current({ ...identity, expiresAt: Date.now() + 120_000 })
+  );
+
+  expect(result._tag).toBe("Failure");
+});

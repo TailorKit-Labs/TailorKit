@@ -38,18 +38,25 @@ it.each([
       Response.json({ ...deployment, [field]: value })
     );
 
-    const source = deploymentSource({
-      BUNDLES: { get: load },
-      // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    const source = deploymentSource(
+      {
+        BUNDLES: { get: load },
 
-      DEPLOYMENTS: {
-        get: vi.fn<() => Promise<null>>().mockResolvedValue(null),
-        put: vi.fn(async () => {}),
+        PLATFORM_URL: "https://platform.test",
+        RUNTIME_SERVICE_TOKEN: "private",
       },
-
-      PLATFORM_URL: "https://platform.test",
-      RUNTIME_SERVICE_TOKEN: "private",
-    });
+      {
+        kv: {
+          delete: () => false,
+          get: (key: string) => new Map<string, string>().get(key),
+          put: () => {},
+        },
+        transactionSync: (write: () => void) => {
+          write();
+        },
+      },
+      () => {}
+    );
 
     const result = await Effect.runPromise(
       source
@@ -65,18 +72,25 @@ it.each([
 it("rejects a token that expires while resolving deployment", async () => {
   vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json(deployment));
 
-  const source = deploymentSource({
-    BUNDLES: { get: vi.fn() },
-    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+  const source = deploymentSource(
+    {
+      BUNDLES: { get: vi.fn() },
 
-    DEPLOYMENTS: {
-      get: vi.fn<() => Promise<null>>().mockResolvedValue(null),
-      put: vi.fn(async () => {}),
+      PLATFORM_URL: "https://platform.test",
+      RUNTIME_SERVICE_TOKEN: "private",
     },
-
-    PLATFORM_URL: "https://platform.test",
-    RUNTIME_SERVICE_TOKEN: "private",
-  });
+    {
+      kv: {
+        delete: () => false,
+        get: (key: string) => new Map<string, string>().get(key),
+        put: () => {},
+      },
+      transactionSync: (write: () => void) => {
+        write();
+      },
+    },
+    () => {}
+  );
 
   const result = await Effect.runPromise(
     source
@@ -90,9 +104,9 @@ it("rejects a token that expires while resolving deployment", async () => {
 it("routes code versions to the same storage but separates hosts, projects, apps and installations", () => {
   const name = installationName(identity, "host");
 
-  expect(installationName({ ...identity, deploymentId: "v2" }, "host")).toBe(
-    name
-  );
+  const nextIdentity = { ...identity, deploymentId: "v2" };
+
+  expect(installationName(nextIdentity, "host")).toBe(name);
 
   for (const key of ["projectId", "appId", "installationId"] as const) {
     expect(installationName({ ...identity, [key]: "other" }, "host")).not.toBe(

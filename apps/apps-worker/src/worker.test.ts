@@ -124,9 +124,6 @@ beforeEach(() => {
   source.code.mockResolvedValue("code");
 });
 
-const isStringValue = <TValue>(value: TValue): value is TValue & string =>
-  typeof value === "string";
-
 const setup = () => {
   vi.stubGlobal(
     "fetch",
@@ -164,7 +161,9 @@ const setup = () => {
   const abort = vi.fn();
 
   const put = vi.fn((_key: string, value: string) => {
-    version = value;
+    if (_key === "version") {
+      version = value;
+    }
   });
 
   const get = vi.fn(
@@ -175,6 +174,7 @@ const setup = () => {
     }
   );
 
+  const values = new Map<string, string>();
   const id = { equals: vi.fn(() => true), toString: () => "installation-id" };
   // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
@@ -184,7 +184,22 @@ const setup = () => {
       facets: { abort, get },
       getWebSockets: () => [],
       id,
-      storage: { kv: { get: () => version, put } },
+      storage: {
+        kv: {
+          delete: (key: string) => values.delete(key),
+          get: (key: string) => (key === "version" ? version : values.get(key)),
+          put: (key: string, value: string) => {
+            if (key === "version") {
+              put(key, value);
+            } else {
+              values.set(key, value);
+            }
+          },
+        },
+        transactionSync: (write: () => void) => {
+          write();
+        },
+      },
       waitUntil: (task: Promise<void>) => {
         void task;
       },
@@ -207,7 +222,8 @@ const setup = () => {
     )
   );
 
-  const getByName = vi.fn((_name: string) => ({ fetch: routeFetch }));
+  const warm = vi.fn(async (_metadata: ServerDeployment) => {});
+  const getByName = vi.fn((_name: string) => ({ fetch: routeFetch, warm }));
   const idFromName = vi.fn(() => id);
 
   // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
@@ -223,10 +239,6 @@ const setup = () => {
         }),
       },
 
-      DEPLOYMENTS: {
-        get: vi.fn<() => Promise<null>>().mockResolvedValue(null),
-        put: vi.fn<() => Promise<void>>().mockReturnValue(Promise.resolve()),
-      },
       LOADER: { get: load },
       PLATFORM_URL: signing.issuer,
       RUNTIME_SERVICE_TOKEN: "private",
@@ -249,6 +261,7 @@ const setup = () => {
     put,
     routeFetch,
     startup,
+    warm,
   };
 };
 
@@ -602,8 +615,7 @@ it("rechecks authentication and rejects the wrong supervisor before looking up a
 });
 
 it("accepts metadata publication only with the shared service credential", async () => {
-  const { env, getByName } = setup();
-  const deploymentPut = vi.spyOn(env.DEPLOYMENTS, "put");
+  const { env, warm } = setup();
   env.RUNTIME_SERVICE_TOKEN = "x".repeat(32);
 
   const publish = async (
@@ -631,17 +643,22 @@ it("accepts metadata publication only with the shared service credential", async
   expect(awaitedResult13.status).toBe(400);
   const awaitedResult14 = await publish(env.RUNTIME_SERVICE_TOKEN);
   expect(awaitedResult14.status).toBe(204);
-  expect(deploymentPut).toHaveBeenCalledWith(
-    JSON.stringify([deployment.projectId, deployment.appId]),
-    expect.any(String),
-    { expirationTtl: 300 }
+  expect(warm).toHaveBeenCalledExactlyOnceWith(deployment);
+});
+
+it("warms and persists verified source without invoking application handlers", async () => {
+  const fixtures = setup();
+
+  const installation = new PatchsmithAppInstallation(
+    fixtures.ctx,
+    fixtures.env
   );
-  const [, publishedMetadata] = requireValue(deploymentPut.mock.calls[0]);
 
-  if (!isStringValue(publishedMetadata)) {
-    throw new Error("Expected serialized deployment metadata.");
-  }
-
-  expect(JSON.parse(publishedMetadata)).toEqual(deployment);
-  expect(getByName).not.toHaveBeenCalled();
+  await installation.warm(deployment);
+  expect(source.current).toHaveBeenCalledOnce();
+  expect(source.code).toHaveBeenCalledOnce();
+  expect(fixtures.get).toHaveBeenCalledOnce();
+  expect(fixtures.facetQuery).not.toHaveBeenCalled();
+  expect(fixtures.facetMutate).not.toHaveBeenCalled();
+  expect(fixtures.facetAction).not.toHaveBeenCalled();
 });

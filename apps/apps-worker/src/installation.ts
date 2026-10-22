@@ -29,7 +29,9 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
   readonly #queue = Semaphore.makeUnsafe(1);
   readonly #actions = createActionLeases();
   readonly #verify = verifier(this.env);
-  readonly #source = deploymentSource(this.env);
+  readonly #source = deploymentSource(this.env, this.ctx.storage, (task) => {
+    this.ctx.waitUntil(task);
+  });
   #prepared:
     | {
         version: string;
@@ -49,6 +51,38 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
       ),
     this.#queue
   );
+
+  /** Only the trusted gateway's service-authenticated publication route calls this RPC. */
+  async warm(metadata: ServerDeployment): Promise<void> {
+    const expected = this.env.STORES.idFromName(
+      installationName(
+        { ...metadata, installationId: metadata.appId },
+        appRuntimeIssuer(this.env.PLATFORM_URL)
+      )
+    );
+
+    if (!this.ctx.id.equals(expected)) {
+      throw new AppError("FORBIDDEN", "Installation mismatch");
+    }
+
+    await Effect.runPromise(
+      this.#queue.withPermits(1)(
+        Effect.gen({ self: this }, function* warm() {
+          // The push is a hint: re-read the authority to tolerate delayed workflow runs.
+          const deployment = yield* Effect.tryPromise({
+            catch: appError,
+            try: async () => await this.#source.refresh(metadata),
+          });
+
+          yield* this.#prepareFacet(
+            deployment,
+            { expiresAt: Number.MAX_SAFE_INTEGER },
+            new RuntimeTimings()
+          );
+        })
+      )
+    );
+  }
 
   async fetch(request: Request): Promise<Response> {
     const timings = new RuntimeTimings();
@@ -303,7 +337,7 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
 
   #prepareFacet(
     deployment: ServerDeployment,
-    identity: Identity,
+    identity: Pick<Identity, "expiresAt">,
     timings: RuntimeTimings
   ) {
     return Effect.gen({ self: this }, function* prepareFacet() {
