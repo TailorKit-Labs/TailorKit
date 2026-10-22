@@ -23,6 +23,12 @@ const isToolHandler = (
 
 const appListSchema = v.array(patchsmithAppSchema);
 
+export interface ApiRequestOptions {
+  signal?: AbortSignal;
+}
+
+export interface ViewsRequestOptions extends ViewsInput, ApiRequestOptions {}
+
 const isFunctionValue = <TValue>(
   value: TValue
 ): value is Extract<TValue, CallableFunction> => typeof value === "function";
@@ -224,7 +230,9 @@ export const createEndpointClient = (options: {
   };
 
   return {
-    apps: async (signal: AbortSignal): Promise<PatchsmithApp[]> => {
+    apps: async ({ signal }: ApiRequestOptions = {}): Promise<
+      PatchsmithApp[]
+    > => {
       const response = await request(new URL("apps", baseUrl), {
         credentials: "same-origin",
         signal,
@@ -242,7 +250,7 @@ export const createEndpointClient = (options: {
     clearSessions,
     getSessionProvider,
     getToolBridge,
-    views: async (input: ViewsInput, signal: AbortSignal) => {
+    views: async ({ signal, ...input }: ViewsRequestOptions) => {
       const response = await request(new URL("views", baseUrl), {
         body: JSON.stringify(input),
         credentials: "same-origin",
@@ -261,3 +269,6 @@ export const createEndpointClient = (options: {
 };
 
 export type EndpointClient = ReturnType<typeof createEndpointClient>;
+
+/** Validated host requests without response caching or UI lifecycle state. */
+export type PatchsmithClientApi = Pick<EndpointClient, "apps" | "views">;

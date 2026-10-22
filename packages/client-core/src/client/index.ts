@@ -1,6 +1,11 @@
 export { createEndpointClient } from "./endpoints";
 
-export type { EndpointClient } from "./endpoints";
+export type {
+  ApiRequestOptions,
+  EndpointClient,
+  PatchsmithClientApi,
+  ViewsRequestOptions,
+} from "./endpoints";
 
 export { createPatchsmithFetchClient } from "./fetch-client";
 

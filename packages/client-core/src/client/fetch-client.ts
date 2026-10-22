@@ -33,10 +33,14 @@ export const createPatchsmithFetchClient = (
 
   return {
     apps: (settings: FetchCacheOptions = {}) =>
-      cache.getStore([...prefix, "apps"], endpoints.apps, {
-        ...options.cache?.apps,
-        ...settings,
-      }),
+      cache.getStore(
+        [...prefix, "apps"],
+        async (signal) => await endpoints.apps({ signal }),
+        {
+          ...options.cache?.apps,
+          ...settings,
+        }
+      ),
     baseUrl,
     cache,
     cacheOptions: options.cache,
@@ -49,7 +53,7 @@ export const createPatchsmithFetchClient = (
     views: (input: ViewsInput, settings: FetchCacheOptions = {}) =>
       cache.getStore(
         [...prefix, "views", input],
-        async (signal) => await endpoints.views(input, signal),
+        async (signal) => await endpoints.views({ ...input, signal }),
         {
           ...options.cache?.slot,
           ...settings,

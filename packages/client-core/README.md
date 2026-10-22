@@ -2,6 +2,8 @@
 
 `@patchsmith/client-core` contains shared client functionality for Patchsmith integrations.
 
+`createPatchsmithClientConfig` exposes `api.apps({ signal })` and `api.views({ ...input, signal })` for uncached, validated host requests. Each method takes a single options object; `signal` is optional, and `apps()` also works without options. The React `createClient` exposes the same `api`. Use these promises with TanStack Query or another cache; see the [TanStack Query example](../react/README.md#tanstack-query). For standalone server requests, `createEndpointClient` exposes the same methods without creating a response cache. Supply a request-scoped authenticated `fetch` implementation.
+
 View queries send one `POST /views` request to the host. The host discovers installations in the authenticated scopes, selects the supported view, validates and composes its ancestor context, and resolves instances through each app's generated action. `useViews` and managed instance rendering use this transport. Apps supplied to a React provider only seed `useApps`; they do not override host view discovery. Use `appIds` or `scopes` to filter a view query.
 
 Server code can prefetch without mounting React or starting a sandbox:
