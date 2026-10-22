@@ -1,0 +1,93 @@
+.changeset/builtin-icon-catalogue.md
+  s_a899d53bd8fd59::t_d50dfb2fe5ae3e 10-12
+apps/icons-assets/README.md
+  s_a899d53bd8fd59::t_5949a995f93b24 3,19,21-35
+apps/icons-assets/catalogues/lucide-v1.generated.json
+  s_1b1202c143ef2c::t_37093ab3308cbb 1-2161
+apps/icons-assets/package.json
+  s_a899d53bd8fd59::t_2f056239579641 20
+apps/icons-assets/scripts/build-assets.mjs
+  s_a899d53bd8fd59::t_ce6f61d6120be4 1,3,5-9
+apps/icons-assets/scripts/catalogue.mjs
+  s_a899d53bd8fd59::t_b8ed9c2b7b5cd5 1-93
+apps/icons-assets/tests/assets.test.ts
+  s_a899d53bd8fd59::t_8a1e9d8568ca56 1,20,77-85
+apps/icons-assets/tests/catalogue.test.ts
+  s_1b1202c143ef2c::t_7da8dba0b61b61 1-67
+docs/concepts/components.mdx
+  s_a899d53bd8fd59::t_58d2e4518d901c 108,111-130,134-138,154
+packages/cli/src/generator/types.test.ts
+  s_1b1202c143ef2c::t_3370958fa115a6 22,29-30
+packages/core/scripts/generate-icon-names.ts
+  s_a899d53bd8fd59::t_b3592a4b02c7bb 1-3,7,9-14,16-39,42,44-48,52-86,92-97,102-103
+packages/core/scripts/icon-catalogue.test.ts
+  s_a899d53bd8fd59::t_4bc0ff86420776 1-64
+packages/core/scripts/icon-catalogue.ts
+  s_a899d53bd8fd59::t_a54806d87a1d8f 1-51
+packages/core/src/icons/arktype.ts
+  s_1b1202c143ef2c::t_3d2da73ebd4f71 13
+packages/core/src/icons/definition.ts
+  s_a899d53bd8fd59::t_469306e342e2ab 5-14,16,19-23,29-32
+packages/core/src/icons/icons.test.ts
+  s_a899d53bd8fd59::t_e8a366f476e6c3 14-16,35-41,44,72
+packages/core/src/icons/lucide-names.generated.ts
+  s_1b1202c143ef2c::t_35410d7fa7a34c 1-2
+packages/core/src/icons/valibot.ts
+  s_1b1202c143ef2c::t_739d51a5e908f0 13
+packages/core/src/icons/zod.ts
+  s_1b1202c143ef2c::t_9a68a2ecf33259 13
+packages/core/src/primitives/primitives.test.ts
+  s_a899d53bd8fd59::t_e72739bf002d45 41-43,45
+packages/patchsmith/src/arktype.ts
+  s_1b1202c143ef2c::t_2a330d00d07517 4-5
+packages/patchsmith/src/icons.test-d.ts
+  s_a899d53bd8fd59::t_a1eef6a2c4bb32 1-30
+packages/patchsmith/src/index.ts
+  s_1b1202c143ef2c::t_a815c66a935a9c 30-37
+packages/patchsmith/src/valibot.ts
+  s_1b1202c143ef2c::t_0b268f8409e3b0 4-5
+packages/patchsmith/src/zod.ts
+  s_1b1202c143ef2c::t_2a79ec9bc53464 4-5
+packages/react/src/__tests__/icons.test.tsx
+  s_1b1202c143ef2c::t_38e9e10acce371 84-104
+packages/react/src/icons/loader.test.ts
+  s_a899d53bd8fd59::t_3097439cec788a 27,33-47,61,78-79
+packages/react/src/icons/loader.ts
+  s_1b1202c143ef2c::t_dc4bde1b26bb66 3-4,43,67
+packages/react/src/index.ts
+  s_1b1202c143ef2c::t_7abb846801f965 43-44
+playground/apps/todo/.agents/skills/patchsmith-capabilities/references/components/Icon.md
+  s_1b1202c143ef2c::t_1cb13d2876f13d 11
+playground/apps/todo/src/icon.types.tsx
+  s_a899d53bd8fd59::t_8ad0330edb5243 1-2,10-22
+playground/apps/todo/src/patchsmith.gen.ts
+  s_1b1202c143ef2c::t_d5a85927e9e4fe 263
+playground/schema.json
+  s_1b1202c143ef2c::t_a0bb5bdf7771c2 8372
+pnpm-lock.yaml
+  s_1b1202c143ef2c::t_9d35e28a6cda17 426-428
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "60d7446e410aa3dc46e47cc7f8f221b17f79956f",
+  "prompts": {},
+  "sessions": {
+    "s_1b1202c143ef2c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16184-eb53-7563-a0dc-48ad1728952d",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_a899d53bd8fd59": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a162df-9ac9-7d80-9ae8-b53a08a1c118",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
