@@ -8,7 +8,7 @@ Validated context values retain the existing RPC serialization semantics across 
 
 The platform discovers all installation pages and checks selected context readiness before issuing sessions or starting any resolver. A selected error rejects the request; loading returns a loading result. Unsupported or disabled deeper contexts do not prevent an enabled ancestor from resolving. A nearer view without instances blocks fallback through it. Cancelling the host request cancels its platform request and the platform's outstanding app calls. Runtime sessions and credentials are never part of the resolution response.
 
-The resolution phase has one shared 1,000 ms budget, including context decoding, session issuance, cold runtime startup, resolver execution, and response-body reading for every selected app. Discovery and host authentication/validation run before this budget; network travel to the platform is additional. On expiry the platform interrupts the resolution fibers, closes outstanding backend clients, and returns a sanitized 504 `View resolution timed out`, which the host preserves. It returns no partial results and does not retry. Adjust `instanceResolutionTimeoutMs` in `packages/api-platform/src/runtime/view-resolution.ts` to change the limit.
+The resolution phase has one shared 1,000 ms budget, including context decoding, session issuance, cold runtime startup, resolver execution, and response-body reading for every selected app. Discovery and host authentication/validation run before this budget; network travel to the platform is additional. On expiry the platform interrupts unfinished resolution fibers and closes outstanding backend clients. If any app completed, it returns those apps' fully validated results in discovery order, including valid empty results; unfinished apps are omitted. If no app completed, it returns a sanitized 504 `View resolution timed out`, which the host preserves. Caller cancellation and resolver failures still fail the request. No actions are retried. Partial results use the existing ready response shape and the normal client cache freshness window (30 seconds by default); callers can explicitly refetch. Adjust `instanceResolutionTimeoutMs` in `packages/api-platform/src/runtime/view-resolution.ts` to change the limit.
 
 The new platform and host handlers use oRPC's `handlerGen` integration. Effect handles concurrent work, interruption, and backend-client finalization; Promise-based SDK and database calls are adapted at their boundaries.
 
@@ -19,6 +19,17 @@ The new platform and host handlers use oRPC's `handlerGen` integration. Effect h
 3. Repeat the production benchmark after deployment, including a host outside US East. Keep cold and repeated samples separate.
 
 `views_platform` measures the host's full platform call. `views_discovery` and `views_instances` are platform measurements returned through `Server-Timing`; they are contained within `views_platform`, so do not add all three. Instance timing now includes session issuance as well as resolver execution. Authentication timing remains on the host.
+
+## Further latency opportunities
+
+The SDK already shares in-flight requests for identical view inputs and caches ready responses for 30 seconds by default (`packages/client-core/src/client/fetch-client.ts` and `store/fetch/cache.ts`). Different slots and contexts use different cache keys, so they still perform independent platform discovery.
+
+- Share in-flight installation discovery across concurrent slots for the same authenticated project, canonical scopes, app filters, and pagination. Keep per-request cancellation independent when sharing work. This avoids repeated database reads without retaining stale installations between request bursts.
+- Reuse the parsed signing JWK and imported signing key in `packages/api-platform/src/runtime/auth.ts`. Currently each runtime session parses the configured key and `issueAppToken` imports it again. Key reuse can remove repeated CPU work while still minting a fresh identity-bound token per session; invalidate by the configured key value when it rotates.
+- Consider a short-lived installation-metadata cache only with explicit invalidation for installs, uninstalls, view/config edits, and deployment publication. Key it by authenticated project, scopes, and app filters. Discovery includes the current published deployment, so stale entries could start an outdated app. The baseline's median discovery stage was 78 ms; measure cache hit rate and timing before choosing a TTL.
+- Coalesce navbar, panel, and page discovery into one platform metadata lookup where their authorization and scope inputs match. Resolver contexts remain slot-specific. The baseline initial load issued three separate views requests.
+
+These are follow-up candidates, not changes in this PR. Context-dependent resolver results and issued sessions should retain their existing identity and scope boundaries. Rebenchmark the new platform fan-out first to rank the remaining costs.
 
 ## Baseline collected before this change
 

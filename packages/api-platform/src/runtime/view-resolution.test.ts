@@ -2,7 +2,7 @@ import { runPromise } from "@orpc/experimental-effect";
 import { RPCSerializer } from "@orpc/server";
 import type { Session } from "@patchsmith/app/client/connection";
 import { asyncFixture } from "@patchsmith/config/testing";
-import { Effect, Fiber } from "effect";
+import { Effect, Exit, Fiber } from "effect";
 import { TestClock } from "effect/testing";
 import { expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
@@ -414,7 +414,7 @@ it.each([
   }
 );
 
-it("limits all concurrent resolves to one second and closes even uncooperative backend requests", async () => {
+it("returns completed instances at one second and closes uncooperative backend requests", async () => {
   const options = setup();
   const session = Promise.withResolvers<Session>();
   options.createSession.mockReturnValueOnce(session.promise);
@@ -447,10 +447,9 @@ it("limits all concurrent resolves to one second and closes even uncooperative b
       expect(options.requests).toHaveLength(2);
       expect(options.requests[1]?.signal.aborted).toBe(false);
       yield* TestClock.adjust(1);
-      const failure = yield* Effect.flip(Fiber.join(fiber));
-      expect(failure).toMatchObject({
-        code: "GATEWAY_TIMEOUT",
-        message: "View resolution timed out",
+      expect(yield* Fiber.join(fiber)).toEqual({
+        data: [{ ...instance, app: { ...app, id: "second" } }],
+        status: "ready",
       });
       expect(options.requests[1]?.signal.aborted).toBe(true);
       expect(options.fetch).toHaveBeenCalledTimes(2);
@@ -512,6 +511,112 @@ it("bounds response-body reading when a resolver sends headers but never finishe
         code: "GATEWAY_TIMEOUT",
       });
       expect(options.requests[0]?.signal.aborted).toBe(true);
+    }).pipe(Effect.provide(TestClock.layer()))
+  );
+});
+
+it("keeps discovery order when completed resolvers finish out of order", async () => {
+  const options = setup();
+  const firstResponse = Promise.withResolvers<Response>();
+
+  const installations = [
+    app,
+    { ...app, id: "second" },
+    { ...app, id: "stalled" },
+  ];
+
+  options.fetch.mockImplementation(async (value, init) => {
+    const request = value instanceof Request ? value : new Request(value, init);
+    options.requests.push(request);
+
+    if (request.url.includes("/installation/")) {
+      return await firstResponse.promise;
+    }
+
+    if (request.url.includes("/second/")) {
+      return Response.json({ json: [{ ...instance, key: "second" }] });
+    }
+
+    return await Promise.withResolvers<Response>().promise;
+  });
+
+  await runPromise(
+    Effect.gen(function* orderedPartialTest() {
+      const fiber = yield* resolveRuntimeViewsEffect(
+        installations,
+        input,
+        options
+      ).pipe(Effect.forkChild);
+
+      yield* TestClock.adjust(500);
+      expect(options.requests).toHaveLength(3);
+      firstResponse.resolve(Response.json({ json: [instance] }));
+      yield* TestClock.adjust(500);
+      expect(yield* Fiber.join(fiber)).toEqual({
+        data: [
+          { ...instance, app },
+          { ...instance, app: installations[1], key: "second" },
+        ],
+        status: "ready",
+      });
+      expect(options.requests[2]?.signal.aborted).toBe(true);
+    }).pipe(Effect.provide(TestClock.layer()))
+  );
+});
+
+it("returns an empty completed response when a sibling times out during session issuance", async () => {
+  const options = setup();
+  const session = Promise.withResolvers<Session>();
+  options.createSession.mockReturnValueOnce(session.promise);
+  options.fetch.mockResolvedValue(Response.json({ json: [] }));
+
+  await runPromise(
+    Effect.gen(function* emptyPartialTest() {
+      const fiber = yield* resolveRuntimeViewsEffect(
+        [app, { ...app, id: "second" }],
+        input,
+        options
+      ).pipe(Effect.forkChild);
+
+      yield* TestClock.adjust(1000);
+      expect(yield* Fiber.join(fiber)).toEqual({ data: [], status: "ready" });
+      expect(options.fetch).toHaveBeenCalledOnce();
+      session.resolve(
+        yield* Effect.promise(async () => await setup().createSession(app))
+      );
+      yield* Effect.yieldNow;
+      expect(options.fetch).toHaveBeenCalledOnce();
+    }).pipe(Effect.provide(TestClock.layer()))
+  );
+});
+
+it("does not turn interruption after a completed app into a partial success", async () => {
+  const options = setup();
+
+  options.fetch.mockImplementation(async (value, init) => {
+    const request = value instanceof Request ? value : new Request(value, init);
+    options.requests.push(request);
+
+    if (request.url.includes("/installation/")) {
+      return Response.json({ json: [instance] });
+    }
+
+    return await Promise.withResolvers<Response>().promise;
+  });
+
+  await runPromise(
+    Effect.gen(function* partialInterruptionTest() {
+      const fiber = yield* resolveRuntimeViewsEffect(
+        [app, { ...app, id: "second" }],
+        input,
+        options
+      ).pipe(Effect.forkChild);
+
+      yield* TestClock.adjust(500);
+      expect(options.requests).toHaveLength(2);
+      yield* Fiber.interrupt(fiber);
+      expect(Exit.hasInterrupts(yield* Fiber.await(fiber))).toBe(true);
+      expect(options.requests[1]?.signal.aborted).toBe(true);
     }).pipe(Effect.provide(TestClock.layer()))
   );
 });
