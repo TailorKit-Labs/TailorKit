@@ -1,0 +1,153 @@
+packages/core/src/server/hooks.ts
+  s_f0d547ff8cf2ae::t_e9677942a964b3 1-196,200-216
+  s_f0d547ff8cf2ae::t_7f13e06599b4c6 197-199
+packages/api-platform/src/routes/apps.test.ts
+  s_f0d547ff8cf2ae::t_7f13e06599b4c6 1660,1785-1820
+  s_f0d547ff8cf2ae::t_310ac41293eb2b 685,780,867,1568,1821
+packages/api-platform/src/routes/deployments.test.ts
+  s_f0d547ff8cf2ae::t_7f13e06599b4c6 253,271-274
+  s_f0d547ff8cf2ae::t_8dcedc613b7ad7 332,340-341
+packages/vite/src/builder/upload-manifest.test.ts
+  s_f0d547ff8cf2ae::t_dc9cd768900bbb 4-38
+  s_f0d547ff8cf2ae::t_d616c3a2e70066 1-3,39
+packages/core/README.md
+  s_f0d547ff8cf2ae::t_e9677942a964b3 49-98
+apps/apps-worker/src/runtime/execution.test.ts
+  s_f0d547ff8cf2ae::t_7f13e06599b4c6 13,23,948-961,963-979,981-1041
+  s_f0d547ff8cf2ae::t_17679ef376e7f7 1042
+packages/core/src/server/hooks.test.ts
+  s_f0d547ff8cf2ae::t_7f13e06599b4c6 1-49,51-53,55,57-162,164-200
+  s_f0d547ff8cf2ae::t_3b0c698f292303 50,54,56,163
+packages/vite/src/builder/hooks.test.ts
+  s_f0d547ff8cf2ae::t_7f13e06599b4c6 1-19,21-74,89-94,102-104,106,108-152,154-158
+  s_f0d547ff8cf2ae::t_f1f525f69450ff 75,86
+  s_f0d547ff8cf2ae::t_dc9cd768900bbb 76-85
+  s_f0d547ff8cf2ae::t_158cbfb9efc957 87-88
+packages/api-platform/src/routes/runtime.ts
+  s_f0d547ff8cf2ae::t_7f13e06599b4c6 109-111
+  s_f0d547ff8cf2ae::t_e9677942a964b3 74,86-89,91,98,108,112,140-145,147,176-183
+  s_f0d547ff8cf2ae::t_a782623e183995 113
+packages/api-platform/src/routes/deployments.ts
+  s_f0d547ff8cf2ae::t_7f13e06599b4c6 96,98-101
+  s_f0d547ff8cf2ae::t_4f3afd9b2b024b 85,97,493
+packages/cli/src/deploy.ts
+  s_f0d547ff8cf2ae::t_e9677942a964b3 271-272,274,281
+  s_f0d547ff8cf2ae::t_0b89005847086a 534
+packages/vite/src/builder/upload-manifest.ts
+  s_f0d547ff8cf2ae::t_e9677942a964b3 68-69,86
+  s_f0d547ff8cf2ae::t_7f13e06599b4c6 19-43
+.changeset/host-app-hooks.md
+  s_f0d547ff8cf2ae::t_f1f525f69450ff 1-14
+packages/vite/src/index.ts
+  s_f0d547ff8cf2ae::t_e9677942a964b3 16,146-147
+  s_f0d547ff8cf2ae::t_dc9cd768900bbb 209-211,213-219
+packages/vite/src/builder/server.ts
+  s_f0d547ff8cf2ae::t_7f13e06599b4c6 1-9,13,21-22,31,70-74,76-77,128-134,136-139,141-145,188,232-237,239-243,246-260
+  s_f0d547ff8cf2ae::t_6d90a234d26d82 238,244-245,261
+packages/app/src/server/hooks.ts
+  s_f0d547ff8cf2ae::t_e9677942a964b3 1-121
+packages/api-platform/openapi.json
+  s_f0d547ff8cf2ae::t_e7274a401a8abd 453-462,551,820-829,918,1312-1321,1410,1703-1712,1801,2096-2105,2194,2462-2471,2560,3311-3316,3377-3379,3669-3678,3767,4543-4552,4641,5075-5084,5173,5323-5332,5421,5547-5556,5645
+packages/cli/src/deploy.test.ts
+  s_f0d547ff8cf2ae::t_e59c9b300ebaa0 109,158
+packages/client-platform/src/client/types.gen.ts
+  s_f0d547ff8cf2ae::t_578daa40b15020 154,234,354,438,526,603,721,780,804,879,1122,1223,1278,1329
+packages/core/src/server/routes/deployments.ts
+  s_f0d547ff8cf2ae::t_974d656cff77d9 100-115,139
+apps/apps-worker/src/runtime/actions.test.ts
+  s_f0d547ff8cf2ae::t_3c2d17274a94e3 612-641,645-693
+apps/apps-worker/src/runtime/actions.ts
+  s_f0d547ff8cf2ae::t_97f0cdd108ed88 38-41,45,55-58,61-62,74-77,97-102,107-110,121,134,165,171-174,247-250,260-265,272,275-276,291,294-295
+apps/apps-worker/src/runtime/bundle.ts
+  s_f0d547ff8cf2ae::t_baaaddeb749061 40-41
+apps/apps-worker/src/runtime/functions.ts
+  s_f0d547ff8cf2ae::t_e11caad5e52e43 92-100
+packages/api-utils/src/app-auth/tokens.test.ts
+  s_f0d547ff8cf2ae::t_e393a9e986678b 315-326
+packages/api-utils/src/app-auth/tokens.ts
+  s_788d559f4e7678::t_5619944159a803 58,129,156,256-261,263
+packages/app/README.md
+  s_f0d547ff8cf2ae::t_41d8d943db2b8d 190-216,218,220-223
+packages/app/src/protocol.ts
+  s_f0d547ff8cf2ae::t_9875400ff559b8 15
+packages/app/src/server.ts
+  s_f0d547ff8cf2ae::t_2b3347cbe07a65 30-39
+packages/app/src/server/functions.ts
+  s_f0d547ff8cf2ae::t_9655f2f949ff80 18-19,44,85
+packages/app/src/server/hooks.test-d.ts
+  s_f0d547ff8cf2ae::t_f524d9fafa9cb2 1-65
+packages/cli/src/generator/capabilities-skill.test.ts
+  s_f0d547ff8cf2ae::t_f1e29b76f67c5c 47-50,198,209-215,252-259
+packages/cli/src/generator/types-schema.test.ts
+  s_f0d547ff8cf2ae::t_a3feee82e5f3cd 646-676
+packages/cli/src/generator/types.ts
+  s_f0d547ff8cf2ae::t_9492643abee066 85-88,798-807,856-875
+packages/core/src/schema/contract.ts
+  s_f0d547ff8cf2ae::t_4e92e2bf809410 8-9,34,36,51,58,60,66,70-74,79-84,86,90,107-108,110-111
+packages/core/src/schema/hooks.test.ts
+  s_f0d547ff8cf2ae::t_83c73182e88135 1-55
+packages/core/src/schema/hooks.ts
+  s_f0d547ff8cf2ae::t_b32180b7352ee7 1-95
+packages/core/src/schema/index.ts
+  s_f0d547ff8cf2ae::t_0eeb2d8b399694 72-80
+packages/core/src/schema/schema.ts
+  s_f0d547ff8cf2ae::t_932397cc45febf 9-10,12-16,70,79,86-87,159,166
+packages/core/src/schema/shared.ts
+  s_f0d547ff8cf2ae::t_83bd597ee69850 102-123
+packages/core/src/server/backend.test.ts
+  s_f0d547ff8cf2ae::t_259ce83d44d780 208-222
+packages/core/src/server/contract.ts
+  s_f0d547ff8cf2ae::t_5c3ee33df87f24 1,13,15,82-92,95-96,98,145-155
+packages/core/src/server/handler.ts
+  s_f0d547ff8cf2ae::t_9d78e25c5178a3 84
+packages/core/src/server/hooks.test-d.ts
+  s_f0d547ff8cf2ae::t_a83490a9364ddf 1-52
+packages/core/src/server/index.ts
+  s_f0d547ff8cf2ae::t_3acf3a6301fea7 10-11
+packages/core/src/server/types.ts
+  s_f0d547ff8cf2ae::t_991b4e2d8dba6f 8,91,108
+packages/core/src/spec/spec.ts
+  s_858acc0ca5974d::t_9bcbc7356f9b59 23-34
+packages/patchsmith/src/index.ts
+  s_f0d547ff8cf2ae::t_2670f463a8aeb8 1,12-15
+packages/patchsmith/src/server.ts
+  s_f0d547ff8cf2ae::t_04323c4a7000dd 26-27
+packages/vite/src/builder/define-view.ts
+  s_f0d547ff8cf2ae::t_cb8c81e444575e 106-112,124,134-138,190,247-252,276,278,281-292
+packages/vite/src/builder/hooks.ts
+  s_f0d547ff8cf2ae::t_fcd24d4d5b7bcd 1-213
+packages/vite/src/builder/index.ts
+  s_f0d547ff8cf2ae::t_725f93045cb57e 13,21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "92fd9032ce7f03a0548daef299583b5cf3d3460f",
+  "prompts": {},
+  "sessions": {
+    "s_788d559f4e7678": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16167-2fda-7c71-af2d-a16684bb8fcf",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_858acc0ca5974d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16166-5116-7c90-9c8a-941d4ebbc188",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_f0d547ff8cf2ae": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16144-7130-75d1-90e5-de5ca26dd535",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
