@@ -1,4 +1,4 @@
-import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -7,10 +7,12 @@ import {
   PatchsmithSchemaSpec,
 } from "@patchsmith/core/spec";
 import { isViewAncestor } from "@patchsmith/core/views";
+import {
+  discoverFunctionFiles,
+  generateFunctionTypes,
+} from "@patchsmith/vite/builder";
 import { loadPatchsmithConfig } from "@patchsmith/vite/config/loader";
 import * as v from "valibot";
-
-import { isMissingFile } from "#utils/fs-errors";
 
 import { renderReferences } from "./references";
 import type { ResponsiveReference } from "./references";
@@ -24,9 +26,6 @@ const isNumberValue = <TValue>(value: TValue): value is TValue & number =>
 
 const isBooleanValue = <TValue>(value: TValue): value is TValue & boolean =>
   typeof value === "boolean";
-
-const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
-  typeof value === "object" && value !== null;
 
 export interface JsonSchema {
   $defs?: Record<string, JsonSchema>;
@@ -803,7 +802,7 @@ const resolveSchemaFile = (
 
 export const renderGeneratedTypes = (
   schemaFile: PatchsmithSchemaFile,
-  options: { serverModule?: string } = {}
+  options: { functionsModule?: string } = {}
 ): string => {
   const schema = resolveSchemaFile(schemaFile);
   const toolsType = renderTools(schema.tools ?? {});
@@ -841,14 +840,14 @@ export const tools = ${renderToolRuntime(schema.tools ?? {})} as PatchsmithTools
   ];
 
   if (
-    options.serverModule !== undefined &&
-    options.serverModule !== null &&
-    options.serverModule !== ""
+    options.functionsModule !== undefined &&
+    options.functionsModule !== null &&
+    options.functionsModule !== ""
   ) {
     chunks.splice(
       1,
       0,
-      `import { createApi } from "patchsmith/client";\nimport type app from ${quote(options.serverModule)};\ntype AppServerFunctions = typeof app.functions;\ndeclare module "patchsmith/client" {\n  interface PatchsmithServerFunctions extends AppServerFunctions {}\n}\n\nexport const api = createApi<typeof app.functions>();`
+      `import { createApi } from "patchsmith/client";\nimport type { AppServerFunctions } from ${quote(options.functionsModule)};\ndeclare module "patchsmith/client" {\n  interface PatchsmithServerFunctions extends AppServerFunctions {}\n}\n\nexport const api = createApi<AppServerFunctions>();`
     );
   }
 
@@ -948,38 +947,25 @@ export const generateTypes = async (
       ? await fetchSchemaFromHost(loaded.config.host)
       : await readSchemaFile(path.resolve(root, options.schemaPath)));
 
-  const serverEntry = path.resolve(
-    loaded.root,
-    loaded.config.server?.entry ?? "src/server.ts"
-  );
+  const functionFiles = loaded.config.server
+    ? await discoverFunctionFiles(loaded.root)
+    : [];
 
-  const serverExists = await stat(serverEntry)
-    .then((file) => file.isFile())
-    .catch((error: ErrorOptions["cause"]) => {
-      const code =
-        error !== null && isObjectValue(error) && "code" in error
-          ? error.code
-          : undefined;
+  let functionsModule: string | undefined;
 
-      if (isMissingFile(error) || code === "ENOTDIR") {
-        return false;
-      }
+  if (loaded.config.server) {
+    const typesFile = await generateFunctionTypes(loaded.root, functionFiles);
 
-      throw error;
-    });
-
-  let serverModule: string | undefined;
-
-  if (serverExists) {
     const relative = path
-      .relative(path.dirname(outPath), serverEntry)
-      .replaceAll(path.sep, "/")
-      .replace(/\.tsx?$/u, "");
+      .relative(path.dirname(outPath), typesFile)
+      .split(path.sep)
+      .join("/")
+      .replace(/\.ts$/u, "");
 
-    serverModule = relative.startsWith(".") ? relative : `./${relative}`;
+    functionsModule = relative.startsWith(".") ? relative : `./${relative}`;
   }
 
-  const output = renderGeneratedTypes(schema, { serverModule });
+  const output = renderGeneratedTypes(schema, { functionsModule });
   const skill = await prepareAppSkill(root, outPath);
 
   const references =
@@ -987,7 +973,7 @@ export const generateTypes = async (
       ? null
       : renderGeneratedReferences(schema, {
           bindingsPath: skill.bindingsPath,
-          hasApi: serverExists,
+          hasApi: Boolean(loaded.config.server),
         });
 
   await mkdir(path.dirname(outPath), { recursive: true });

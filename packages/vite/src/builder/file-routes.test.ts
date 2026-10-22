@@ -284,10 +284,6 @@ const withFileRouteApp = async (check: (root: string) => Promise<void>) => {
       'export default { name: "Test App", slug: "test-app", host: "https://host.example.com", server: {} };'
     );
     await writeFile(
-      path.join(root, "src/server.ts"),
-      'import { defineServer } from "patchsmith/server"; export default defineServer({});'
-    );
-    await writeFile(
       path.join(root, "src/root.tsx"),
       'import { defineRoute, ClientProvider } from "patchsmith/client"; export default defineRoute({ shellComponent: ClientProvider });'
     );

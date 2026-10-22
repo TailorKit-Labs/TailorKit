@@ -267,22 +267,21 @@ const typecheckAppEntries = async (
     return undefined;
   }
 
-  const { getClientSourceFiles } = await import("@patchsmith/vite/builder");
+  const { getClientSourceFiles, discoverFunctionFiles } =
+    await import("@patchsmith/vite/builder");
+
   const clientFiles = await getClientSourceFiles(loaded.root);
+
+  const functionFiles = loaded.config.server
+    ? await discoverFunctionFiles(loaded.root)
+    : [];
 
   const entryFiles = [
     ...clientFiles,
-    ...(loaded.config.server
-      ? [
-          path.resolve(
-            loaded.root,
-            loaded.config.server.entry ?? "src/server.ts"
-          ),
-        ]
-      : []),
+    ...functionFiles.map(({ filename }) => filename),
   ];
 
-  // Check both application entry points with the project compiler options.
+  // Check UI entries and every discovered function module with the project compiler options.
   const temporary = await mkdtemp(
     path.join(loaded.root, ".patchsmith-typecheck-")
   );
@@ -365,8 +364,19 @@ export const runDeploy = async (
     );
   }
 
-  const { patchsmithUploadManifestSchema } =
-    await import("@patchsmith/vite/builder");
+  const {
+    patchsmithUploadManifestSchema,
+    discoverFunctionFiles,
+    generateFunctionTypes,
+  } = await import("@patchsmith/vite/builder");
+
+  // Refresh imports before the build and compiler run concurrently, including on a fresh checkout.
+  if (loaded.config.server) {
+    await generateFunctionTypes(
+      loaded.root,
+      await discoverFunctionFiles(loaded.root)
+    );
+  }
 
   const [buildResult, typecheckResult] = await Promise.allSettled([
     buildProject({ ...options, cwd: loaded.root }),

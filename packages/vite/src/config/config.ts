@@ -15,7 +15,6 @@ const patchsmithConfigSchema = v.strictObject({
   name: v.pipe(v.string(), v.trim(), v.minLength(1)),
   server: v.optional(
     v.strictObject({
-      entry: v.optional(v.pipe(v.string(), v.minLength(1)), "src/server.ts"),
       migrations: v.optional(v.pipe(v.string(), v.minLength(1))),
     })
   ),
@@ -82,11 +81,6 @@ export interface PatchsmithConfig extends v.InferInput<
    * @default undefined
    */
   server?: {
-    /**
-     * Source entry point for the app's private backend bundle.
-     * @default "src/server.ts"
-     */
-    entry?: string;
     /**
      * Directory containing Drizzle migrations, used for generation and bundling.
      * When omitted, uses `./src/db/migrations` and allows that directory to be absent.

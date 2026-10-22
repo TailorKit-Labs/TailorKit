@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 
-import { defineServer, query } from "@patchsmith/app/server";
+import { defineRouter, query } from "@patchsmith/app/server";
 import { afterEach, expect, it } from "vite-plus/test";
 import { z } from "zod";
 
@@ -187,9 +187,11 @@ it("does not expose database handlers when initialization fails", () => {
   sqlite.exec("INSERT INTO todos (id, text) VALUES ('one', 'Persisted')");
   let calls = 0;
 
-  const app = defineServer({
-    probe: query({ args: z.object({}), handler: () => (calls += 1) }),
-  });
+  const app = {
+    functions: defineRouter({
+      probe: query({ args: z.object({}), handler: () => (calls += 1) }),
+    }),
+  };
 
   expect(() =>
     createExecution(app, persistence, [initial, required])

@@ -1,6 +1,6 @@
 # Patchsmith Vite integration
 
-`@patchsmith/vite` builds Patchsmith apps. It loads app configuration, discovers routes, extracts instance resolvers, bundles backend code, validates migrations, and writes deployment manifests. The app runtime lives in `@patchsmith/app`.
+`@patchsmith/vite` builds Patchsmith apps. It loads app configuration, discovers routes and backend function routers, extracts instance resolvers, bundles backend code, validates migrations, and writes deployment manifests. The app runtime lives in `@patchsmith/app`.
 
 ## Configure the plugin
 
@@ -20,3 +20,7 @@ For ordinary Vite, import `defineConfig` from `vite` and set `plugins: [patchsmi
 ## Internal entry points
 
 The CLI imports config loading from `@patchsmith/vite/config/loader` and migration and deployment helpers from `@patchsmith/vite/builder`. The `patchsmith/app/config` entry point exposes the app config authoring API.
+
+## Backend functions
+
+Enable `server: {}` in `patchsmith.config.ts`. Default routers in `src/functions/**/*.fn.ts` register automatically, with dots and directories creating nested API namespaces. The builder generates the private server entry and refreshes `src/patchsmith.functions.gen.ts` using type-only router imports. Builds bundle backend code without executing it. Duplicate function paths and function/namespace conflicts throw when the server bundle loads; `name` and `then` are reserved at every depth. Watch builds refresh registrations and type imports when modules are added, moved, or removed.

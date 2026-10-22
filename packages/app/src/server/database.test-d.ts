@@ -9,13 +9,7 @@ import { z } from "zod";
 
 import type { Client } from "#client/connection";
 import { createApi } from "#client/reference";
-import {
-  createFunctions,
-  query,
-  mutation,
-  defineRouter,
-  defineServer,
-} from "#server";
+import { createFunctions, query, mutation, defineRouter } from "#server";
 
 const users = table("users", { id: text().primaryKey() });
 
@@ -102,9 +96,9 @@ mutation({
 appFn.query.handler(({ db }) => db.query.users.findMany());
 
 const router = defineRouter({ directMutation, directQuery, read, write });
-const app = defineServer(router);
-const nestedApp = defineServer({ users: router });
-const nestedApi = createApi<typeof nestedApp.functions>();
+const app = defineRouter(router);
+const nestedApp = defineRouter({ users: router });
+const nestedApi = createApi<typeof nestedApp>();
 
 appFn.action.handler((context) => {
   // @ts-expect-error Shared database configuration does not give actions a database handle.
@@ -119,7 +113,7 @@ const run = appFn.action
 
 void run;
 
-const api = createApi<typeof app.functions>();
+const api = createApi<typeof app>();
 declare const client: Client;
 
 void (client.query(nestedApi.users.read, { id: "u1" }) satisfies Promise<

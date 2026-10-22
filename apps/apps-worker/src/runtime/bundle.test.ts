@@ -1,10 +1,12 @@
-import { defineServer, fn } from "@patchsmith/app/server";
+import { defineRouter, fn } from "@patchsmith/app/server";
 import { expect, it, vi } from "vite-plus/test";
 
 import { createApplicationExecution } from "./bundle";
 
 const application = {
-  default: defineServer({ value: fn.query.handler(() => "ready") }),
+  default: {
+    functions: defineRouter({ value: fn.query.handler(() => "ready") }),
+  },
   migrations: [],
   runtimeManifest: { apiVersion: 1, requires: ["database", "actions"] },
 };

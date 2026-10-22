@@ -18,7 +18,6 @@ import {
   pnpmWorkspaceTemplate,
   patchsmithConfigTemplate,
   tsconfigTemplate,
-  serverTemplate,
   schemaTemplate,
   databaseTemplate,
   relationsTemplate,
@@ -270,11 +269,6 @@ export const generateApp = async (
       : [{ dest: starter.viewFile, template: defaultViewTemplate }]),
     {
       condition: !bare,
-      dest: path.join("src", "server.ts"),
-      template: serverTemplate,
-    },
-    {
-      condition: !bare,
       dest: path.join("src", "db", "schema.ts"),
       template: schemaTemplate,
     },
@@ -290,7 +284,7 @@ export const generateApp = async (
     },
     {
       condition: !bare,
-      dest: path.join("src", "functions", "greeting.ts"),
+      dest: path.join("src", "functions", "greeting.fn.ts"),
       template: greetingTemplate,
     },
   ];

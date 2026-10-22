@@ -65,6 +65,7 @@ export const runtimeManifest = {
 /** Bundle the private app backend and migrations. */
 export const buildServer = async (
   loaded: LoadedPatchsmithConfig,
+  functionsEntry: string,
   watch = false,
   buildOutDir?: string,
   instances: InstanceModule[] = [],
@@ -120,8 +121,8 @@ export const buildServer = async (
       entry,
       `${
         instances.length
-          ? `import app from ${JSON.stringify(path.resolve(loaded.root, config.entry ?? "src/server.ts"))};\nimport { withInstanceResolvers } from "patchsmith/server";\n${instanceServerImports(instances)}\nexport default withInstanceResolvers(app, ${instanceServerBindings(instances, registrations)});`
-          : `export { default } from ${JSON.stringify(path.resolve(loaded.root, config.entry ?? "src/server.ts"))};`
+          ? `import app from ${JSON.stringify(functionsEntry)};\nimport { withInstanceResolvers } from "patchsmith/server";\n${instanceServerImports(instances)}\nexport default withInstanceResolvers(app, ${instanceServerBindings(instances, registrations)});`
+          : `export { default } from ${JSON.stringify(functionsEntry)};`
       }
 export { default as migrations } from "patchsmith:migrations";
 export const runtimeManifest = ${JSON.stringify(runtimeManifest)};

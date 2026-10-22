@@ -62,69 +62,28 @@ const mockSchemaFetch = (requests: number) => {
   return fetch;
 };
 
-it("links the app to the configured server entry and never falls back to an unrelated default file", async () => {
-  const root = await mkdtemp(
-    path.join(tmpdir(), "patchsmith-configured-server-types-")
-  );
-
+it("generates type-only function bindings, including custom output paths and empty backends", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "patchsmith-function-types-"));
   const fetch = mockSchemaFetch(3);
 
   try {
-    await mkdir(path.join(root, "backend"));
-    await mkdir(path.join(root, "src"));
-    await writeFile(
-      path.join(root, "patchsmith.config.mjs"),
-      'export default { name: "Test App", slug: "test-app", host: "https://host.test", server: { entry: "./backend/api.ts" } };'
-    );
-    await writeFile(
-      path.join(root, "backend/api.ts"),
-      'throw new Error("Never evaluate server code");'
-    );
-    await writeFile(
-      path.join(root, "src/server.ts"),
-      'throw new Error("Unused default server");'
-    );
-    const generated = await generateTypes({ cwd: root });
-    expect(await readFile(generated, "utf-8")).toContain(
-      'import type app from "../backend/api"'
-    );
-
-    const custom = await generateTypes({
-      cwd: root,
-      outFile: "src/generated/host.ts",
-    });
-
-    expect(await readFile(custom, "utf-8")).toContain(
-      'import type app from "../../backend/api"'
-    );
-    await rm(path.join(root, "backend/api.ts"));
-    await generateTypes({ cwd: root });
-    expect(await readFile(generated, "utf-8")).not.toContain("createApi");
-  } finally {
-    fetch.mockRestore();
-    await rm(root, { force: true, recursive: true });
-  }
-});
-
-it("preserves the type-only API link when regenerating host types, including custom paths", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "patchsmith-host-types-"));
-  const fetch = mockSchemaFetch(3);
-
-  try {
-    await mkdir(path.join(root, "src"));
-    await writeFile(
-      path.join(root, "src/server.ts"),
-      'throw new Error("Never evaluate server code");'
-    );
+    await mkdir(path.join(root, "src/functions"), { recursive: true });
     await writeFile(
       path.join(root, "patchsmith.config.mjs"),
       'export default { name: "Test App", slug: "test-app", host: "https://host.test", server: {} };'
     );
+    const filename = path.join(root, "src/functions/todos.fn.ts");
+    await writeFile(filename, 'throw new Error("Never evaluate server code");');
     const generated = await generateTypes({ cwd: root });
-    const output = await readFile(generated, "utf-8");
-    expect(output).toContain('import type app from "./server"');
-    expect(output).toContain(
-      "export const api = createApi<typeof app.functions>();"
+    expect(await readFile(generated, "utf-8")).toContain(
+      'import type { AppServerFunctions } from "./patchsmith.functions.gen"'
+    );
+    expect(await readFile(generated, "utf-8")).toContain(
+      "createApi<AppServerFunctions>()"
+    );
+    const registry = path.join(root, "src/patchsmith.functions.gen.ts");
+    expect(await readFile(registry, "utf-8")).toContain(
+      'import type module0 from "./functions/todos.fn"'
     );
 
     const custom = await generateTypes({
@@ -133,51 +92,36 @@ it("preserves the type-only API link when regenerating host types, including cus
     });
 
     expect(await readFile(custom, "utf-8")).toContain(
-      'import type app from "../server"'
+      'import type { AppServerFunctions } from "../patchsmith.functions.gen"'
     );
-    await rm(path.join(root, "src/server.ts"));
-    const missing = await generateTypes({ cwd: root });
-    expect(await readFile(missing, "utf-8")).not.toContain("createApi");
+    await rm(filename);
+    await generateTypes({ cwd: root });
+    expect(await readFile(registry, "utf-8")).toContain("Record<never, never>");
+    expect(await readFile(registry, "utf-8")).not.toContain("todos.fn");
   } finally {
     fetch.mockRestore();
     await rm(root, { force: true, recursive: true });
   }
 });
 
-it("detects the default server file without server configuration and removes stale API imports", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "patchsmith-detect-server-"));
-  const fetch = mockSchemaFetch(5);
+it("requires explicit backend opt-in", async () => {
+  const root = await mkdtemp(
+    path.join(tmpdir(), "patchsmith-client-only-types-")
+  );
+
+  const fetch = mockSchemaFetch(1);
 
   try {
+    await mkdir(path.join(root, "src/functions"), { recursive: true });
     await writeFile(
       path.join(root, "patchsmith.config.mjs"),
       'export default { name: "Test App", slug: "test-app", host: "https://host.test" };'
     );
+    await writeFile(
+      path.join(root, "src/functions/todos.fn.ts"),
+      'throw new Error("Unused functions");'
+    );
     const generated = await generateTypes({ cwd: root });
-    expect(await readFile(generated, "utf-8")).not.toContain("createApi");
-    const server = path.join(root, "src/server.ts");
-    await writeFile(server, 'throw new Error("Never evaluate server code");');
-    await generateTypes({ cwd: root });
-    expect(await readFile(generated, "utf-8")).toContain(
-      'import type app from "./server"'
-    );
-    expect(await readFile(generated, "utf-8")).toContain(
-      "export const api = createApi<typeof app.functions>();"
-    );
-
-    const custom = await generateTypes({
-      cwd: root,
-      outFile: "src/generated/host.ts",
-    });
-
-    expect(await readFile(custom, "utf-8")).toContain(
-      'import type app from "../server"'
-    );
-    await rm(server);
-    await generateTypes({ cwd: root });
-    expect(await readFile(generated, "utf-8")).not.toContain("createApi");
-    await mkdir(server);
-    await generateTypes({ cwd: root });
     expect(await readFile(generated, "utf-8")).not.toContain("createApi");
   } finally {
     fetch.mockRestore();

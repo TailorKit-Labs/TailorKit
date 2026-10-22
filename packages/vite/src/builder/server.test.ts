@@ -5,6 +5,7 @@ import {
   writeFile,
   rm,
   readdir,
+  rename,
   mkdtemp,
   mkdir,
 } from "node:fs/promises";
@@ -90,7 +91,175 @@ declare module "@patchsmith/app/client" {
   }
 }
 
-it("builds file routes with a configured server and blocks server imports from the browser", async () => {
+const router = (
+  keys: string
+) => `import { defineRouter, fn } from "patchsmith/server";
+      const read = fn.query.handler(() => { throw new Error("HANDLERS_MUST_NOT_RUN_DURING_BUILDS"); });
+      export default defineRouter({ ${keys} });`;
+
+it.each([
+  {
+    error: undefined,
+    first: "get: { children: read }",
+    second: "parents: read",
+  },
+  {
+    error: "Duplicate function: api.family.get.children",
+    first: "get: { children: read }",
+    second: "children: read",
+  },
+  {
+    error: "Function/namespace conflict: api.family.get",
+    first: "get: read",
+    second: "parents: read",
+  },
+])(
+  "validates merged routers when loading the bundle: $first / $second",
+  async ({ first, second, error }) => {
+    const root = await mkdtemp(
+      path.join(tmpdir(), "patchsmith-function-build-")
+    );
+
+    try {
+      await linkTestDependencies(root);
+      await mkdir(path.join(root, "src/functions/family"), { recursive: true });
+      await writeFile(path.join(root, "package.json"), '{"type":"module"}');
+      await writeFile(
+        path.join(root, "patchsmith.config.mjs"),
+        'export default { name: "Test App", slug: "test-app", host: "https://host.test", server: {} };'
+      );
+      await writeFile(
+        path.join(root, "src/root.tsx"),
+        'import { defineRoute } from "patchsmith/client"; export default defineRoute({ shellComponent: () => "client" });'
+      );
+
+      await writeFile(
+        path.join(root, "src/functions/family.fn.ts"),
+        router(first)
+      );
+      await writeFile(
+        path.join(root, "src/functions/family/get.fn.ts"),
+        router(second)
+      );
+
+      await buildFixture({ cwd: root });
+
+      const loaded = import(
+        pathToFileURL(path.join(root, ".patchsmith/server/server.js")).href
+      );
+
+      if (error !== undefined) {
+        await expect(loaded).rejects.toThrow(error);
+        await expect(loaded).rejects.toThrow("src/functions/family.fn.ts");
+        await expect(loaded).rejects.toThrow("src/functions/family/get.fn.ts");
+
+        return;
+      }
+
+      const application: ApplicationModule = await loaded;
+
+      expect(application.default.functions).toMatchObject({
+        family: {
+          get: { children: { kind: "query" }, parents: { kind: "query" } },
+        },
+      });
+      expect(
+        await readFile(path.join(root, ".patchsmith/client/client.js"), "utf-8")
+      ).not.toContain("HANDLERS_MUST_NOT_RUN");
+
+      const watcher = await buildFixture({ cwd: root, watch: true });
+
+      if (!("close" in watcher)) {
+        throw new Error("Expected a build watcher");
+      }
+
+      const artifact = path.join(root, ".patchsmith/server/server.js");
+      const types = path.join(root, "src/patchsmith.functions.gen.ts");
+
+      try {
+        const extra = path.join(root, "src/functions/extra.fn.ts");
+        await writeFile(extra, router("added: read"));
+        await expect
+          .poll(async () => await readFile(artifact, "utf-8"), {
+            timeout: 5000,
+          })
+          .toContain("src/functions/extra.fn.ts");
+        await expect
+          .poll(async () => await readFile(types, "utf-8"))
+          .toContain("./functions/extra.fn");
+        await rename(extra, path.join(root, "src/functions/renamed.fn.ts"));
+        await expect
+          .poll(async () => await readFile(artifact, "utf-8"), {
+            timeout: 5000,
+          })
+          .toContain("src/functions/renamed.fn.ts");
+        await rm(path.join(root, "src/functions/renamed.fn.ts"));
+        await expect
+          .poll(async () => await readFile(artifact, "utf-8"), {
+            timeout: 5000,
+          })
+          .not.toContain("src/functions/renamed.fn.ts");
+        await expect
+          .poll(async () => await readFile(types, "utf-8"))
+          .not.toContain("renamed.fn");
+      } finally {
+        await watcher.close();
+      }
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  }
+);
+
+it.each([
+  {
+    marker: "SERVER_MODULE_SCOPE_EXECUTED",
+    source: 'throw new Error("SERVER_MODULE_SCOPE_EXECUTED");',
+  },
+  {
+    marker: "WebSocketPair",
+    source: "globalThis.workerSockets = new WebSocketPair();",
+  },
+])(
+  "builds without evaluating backend module-scope code: $marker",
+  async ({ marker, source }) => {
+    const root = await mkdtemp(path.join(tmpdir(), "patchsmith-server-scope-"));
+
+    try {
+      await linkTestDependencies(root);
+      await mkdir(path.join(root, "src/functions"), { recursive: true });
+      await writeFile(path.join(root, "package.json"), '{"type":"module"}');
+      await writeFile(
+        path.join(root, "patchsmith.config.mjs"),
+        'export default { name: "Test App", slug: "test-app", host: "https://host.test", server: {} };'
+      );
+      await writeFile(
+        path.join(root, "src/root.tsx"),
+        'import { defineRoute } from "patchsmith/client"; export default defineRoute({ shellComponent: () => "client" });'
+      );
+      await writeFile(
+        path.join(root, "src/functions/example.fn.ts"),
+        `${source}\n${router("read")}`
+      );
+
+      await buildFixture({ cwd: root });
+
+      const server = await readFile(
+        path.join(root, ".patchsmith/server/server.js"),
+        "utf-8"
+      );
+
+      expect(server).toContain(marker);
+      expect(
+        await readFile(path.join(root, ".patchsmith/client/client.js"), "utf-8")
+      ).not.toContain(marker);
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  }
+);
+
+it("builds file routes with discovered functions and blocks server imports from the browser", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "patchsmith-custom-entries-"));
 
   try {
@@ -98,20 +267,12 @@ it("builds file routes with a configured server and blocks server imports from t
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(
       path.join(root, "patchsmith.config.mjs"),
-      'export default { appId: "configured-app", name: "Test App", slug: "test-app", host: "https://host.example.com", server: { entry: "./backend/api.ts" } };'
+      'export default { appId: "configured-app", name: "Test App", slug: "test-app", host: "https://host.example.com", server: {} };'
     );
     await Promise.all(
-      ["src", "backend"].map(async (directory) => {
-        await mkdir(path.join(root, directory));
+      ["src/functions"].map(async (directory) => {
+        await mkdir(path.join(root, directory), { recursive: true });
       })
-    );
-    await writeFile(
-      path.join(root, "src/client.ts"),
-      'throw new Error("Unused default client");'
-    );
-    await writeFile(
-      path.join(root, "src/server.ts"),
-      'throw new Error("Unused default server");'
     );
 
     const client =
@@ -119,16 +280,12 @@ it("builds file routes with a configured server and blocks server imports from t
 
     await writeFile(path.join(root, "src/root.tsx"), client);
     await writeFile(
-      path.join(root, "backend/api.ts"),
-      'import { defineServer, fn } from "patchsmith/server";\nconst app = defineServer({ configured: fn.query.handler(() => "Configured server loaded") });\nexport default app;'
-    );
-    await writeFile(
-      path.join(root, "backend/helper.ts"),
+      path.join(root, "src/functions/helper.ts"),
       'export const value = "Lazy server helper";'
     );
     await writeFile(
-      path.join(root, "backend/api.ts"),
-      'import { defineServer, fn } from "patchsmith/server"; export default defineServer({ configured: fn.query.handler(() => "Configured server loaded"), lazy: fn.action.handler(async () => (await import("./helper")).value) });'
+      path.join(root, "src/functions/example.fn.ts"),
+      'import { defineRouter, fn } from "patchsmith/server"; export default defineRouter({ configured: fn.query.handler(() => "Configured server loaded"), lazy: fn.action.handler(async () => (await import("./helper")).value) });'
     );
     await buildFixture({ cwd: root });
     expect(await readdir(path.join(root, ".patchsmith/server"))).toEqual([
@@ -156,11 +313,11 @@ it("builds file routes with a configured server and blocks server imports from t
     );
 
     expect(application.runtimeManifest).toEqual(runtimeManifest);
-    expect(application.default.functions.configured?.kind).toBe("query");
+    expect(application.default.functions).toMatchObject({
+      example: { configured: { kind: "query" } },
+    });
     expect(application.migrations).toEqual([]);
     expect(browser).not.toContain("Configured server loaded");
-    expect(browser).not.toContain("Unused default client");
-    expect(server).not.toContain("Unused default server");
     // The host deployment tool must build beneath the app so the generated
     // temporary server entry can resolve patchsmith/server from node_modules.
     const deploymentOutput = path.join(root, ".patchsmith/agent-deployment");
@@ -181,12 +338,12 @@ it("builds file routes with a configured server and blocks server imports from t
     });
     await writeFile(
       path.join(root, "src/root.tsx"),
-      `import type app from "../backend/api";\n${client}`
+      `import type app from "./functions/example.fn";\n${client}`
     );
     await expect(buildFixture({ cwd: root })).resolves.toBeDefined();
     await writeFile(
       path.join(root, "src/root.tsx"),
-      `import "../backend/api";\n${client}`
+      `import "./functions/example.fn";\n${client}`
     );
     await expect(buildFixture({ cwd: root })).rejects.toThrow(
       "cannot be imported into a browser bundle"
@@ -269,8 +426,9 @@ describe("database app builds", () => {
       expect(browser).not.toContain("SignJWT");
       expect(
         await readdir(path.join(root, "src"), { recursive: true })
-      ).toEqual(sourceFiles);
-      expect(sourceFiles).not.toContain("server.gen.ts");
+      ).toEqual(
+        expect.arrayContaining([...sourceFiles, "patchsmith.functions.gen.ts"])
+      );
       expect(
         JSON.parse(
           await readFile(
@@ -354,7 +512,7 @@ describe("database app builds", () => {
   });
 
   it.each([
-    "./server",
+    "./functions/todos.fn",
     "patchsmith/server",
     "patchsmith/db",
     "@patchsmith/app-db",
@@ -396,15 +554,16 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       path.join(root, "patchsmith.config.mjs"),
       'export default { name: "Test App", slug: "test-app", host: "https://host.example.com", server: {} };'
     );
+    await mkdir(path.join(root, "src/functions"), { recursive: true });
     await writeFile(
-      path.join(root, "src/server.ts"),
+      path.join(root, "src/functions/reports.fn.ts"),
       `
-      import { defineServer, fn } from "patchsmith/server";
-      export default defineServer({ reports: {
+      import { defineRouter, fn } from "patchsmith/server";
+      export default defineRouter({
         list: fn.query.handler(() => [{ id: "report_123" }]),
         write: fn.mutation.handler(() => "never"),
         external: fn.action.handler(() => Promise.resolve("never")),
-      } });
+      });
     `
     );
     await writeFile(

@@ -11,6 +11,7 @@ import { forEachSequential } from "#for-each-sequential";
 
 import { readClientManifest } from "./builder/client-views";
 import { getBuildEnvironment } from "./builder/env";
+import { createFileFunctionEntry } from "./builder/file-functions";
 import { createFileRouteEntry, fileRoutesPlugin } from "./builder/file-routes";
 import { instanceExtractionPlugin } from "./builder/instances";
 import type { InstanceModule } from "./builder/instances";
@@ -80,7 +81,6 @@ const getInstalledPreactVersion = (root: string): string => {
 /** Build the app client, private backend, migrations and deployment manifest. */
 export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
   let loaded: LoadedPatchsmithConfig;
-  let serverEntry: string;
   let preactVersion: string;
   let outputDirectory: string;
 
@@ -88,6 +88,11 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
   let clientOutDir: string;
   let watching = false;
   let fileEntry: Awaited<ReturnType<typeof createFileRouteEntry>> | undefined;
+
+  let functionEntry:
+    | Awaited<ReturnType<typeof createFileFunctionEntry>>
+    | undefined;
+
   let serverWatcher: Awaited<ReturnType<typeof buildServer>>;
   let resolved: ResolvedConfig;
   let customPlugins: Plugin[] = [];
@@ -99,6 +104,7 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
     }
 
     await fileEntry?.close();
+    await functionEntry?.close();
   };
 
   const writeBuildExtras = async (): Promise<void> => {
@@ -135,6 +141,7 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
 
     serverWatcher = await buildServer(
       loaded,
+      functionEntry?.entry ?? "",
       watching,
       resolvedOutDir,
       activeModules,
@@ -259,15 +266,20 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
           path.resolve(root, options.configPath ?? "patchsmith.config.ts")
         );
         loaded.root = await realpath(root);
-        serverEntry = path.resolve(
-          loaded.root,
-          loaded.config.server?.entry ?? "src/server.ts"
-        );
         preactVersion = getInstalledPreactVersion(loaded.root);
         assertSupportedPreactVersion(preactVersion);
         resolvedOutDir = path.resolve(loaded.root, outputDirectory);
         validateServerBuildOutput(loaded, resolvedOutDir);
         clientOutDir = path.join(resolvedOutDir, "client");
+
+        if (loaded.config.server) {
+          functionEntry = await createFileFunctionEntry(
+            loaded.root,
+            resolvedOutDir,
+            watching
+          );
+        }
+
         fileEntry = await createFileRouteEntry(
           loaded.root,
           resolvedOutDir,
@@ -310,7 +322,7 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
           (importer !== undefined &&
             importer !== null &&
             importer !== "" &&
-            path.resolve(path.dirname(importer), id) === serverEntry)
+            path.resolve(path.dirname(importer), id).endsWith(".fn.ts"))
         ) {
           throw new Error(
             "App server implementations cannot be imported into a browser bundle. Import api from #patchsmith and server types with import type."
@@ -320,7 +332,7 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
         if (importer !== undefined && importer !== null && importer !== "") {
           const result = await this.resolve(id, importer, { skipSelf: true });
 
-          if (result?.id.split("?")[0] === serverEntry) {
+          if (result?.id.split("?")[0]?.endsWith(".fn.ts") === true) {
             throw new Error(
               "App server implementations cannot be imported into a browser bundle. Import api from #patchsmith and server types with import type."
             );

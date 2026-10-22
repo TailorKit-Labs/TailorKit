@@ -62,18 +62,18 @@ export const createDatabaseTestApp = async (root: string): Promise<void> => {
     "patchsmith.config.mjs":
       'export default { name: "Test App", slug: "test-app", host: "https://host.test", server: {} };',
     "src/db/schema.ts": testSchema,
-    "src/root.tsx": `import { defineRoute } from "patchsmith/client";
-export default defineRoute({ shellComponent: () => "Database test client" });`,
-    "src/server.ts": `import { createFunctions, defineRouter, defineServer } from "patchsmith/server";
+    "src/functions/todos.fn.ts": `import { createFunctions, defineRouter } from "patchsmith/server";
 import { defineDatabase, defineRelations } from "patchsmith/db";
-import * as schema from "./db/schema";
+import * as schema from "../db/schema";
 const database = defineDatabase({ relations: defineRelations(schema) });
 const fn = createFunctions({ database });
 const router = defineRouter({
   list: fn.query.handler(({ db }) => db.query.todos.findMany().sync()),
   privateMarker: fn.query.handler(() => "PRIVATE_DATABASE_TEST"),
 });
-export default defineServer(router);`,
+export default router;`,
+    "src/root.tsx": `import { defineRoute } from "patchsmith/client";
+export default defineRoute({ shellComponent: () => "Database test client" });`,
   };
 
   await Promise.all(

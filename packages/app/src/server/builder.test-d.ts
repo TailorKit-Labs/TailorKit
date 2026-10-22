@@ -8,7 +8,7 @@ import { createApi } from "#client/reference";
 import { useAction, useMutation, useQuery } from "#preact";
 
 import { fn } from "./builder";
-import { defineServer } from "./functions";
+import { defineRouter } from "./functions";
 
 const functions = {
   actionWithoutSchemas: fn.action.handler(async ({ input }) => {
@@ -69,9 +69,9 @@ const save = fn.action
     return await context.mutations.write({ value: context.input.value + read });
   });
 
-const app = defineServer({ ...functions, save });
+const app = defineRouter({ ...functions, save });
 
-type Api = typeof app.functions;
+type Api = typeof app;
 
 const refs = createApi<Api>();
 declare const client: Client;

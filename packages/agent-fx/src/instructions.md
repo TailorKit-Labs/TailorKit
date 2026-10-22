@@ -41,11 +41,11 @@ App backend functions include queries for reading data, mutations for transactio
 | `src/patchsmith.gen.ts` | Generated bindings (`#patchsmith`). |
 | `src/root.tsx` | Shared UI/providers around views. |
 | `src/slots/<slot>/` | UI views (`*.view.tsx`), roots, and layouts. |
-| `src/functions/` | Backend function modules. |
-| `src/server.ts` | Backend function registration. |
+| `src/functions/**/*.fn.ts` | Automatically registered backend function routers. |
+| `src/patchsmith.functions.gen.ts` | Generated type-only function registry. |
 | `src/db/` | Tables, relationships, database builder, and migrations. |
 
-These are the default locations; existing apps may configure different backend paths.
+Backend modules register by file path; migration paths can be configured.
 
 ## App identity and deployment
 

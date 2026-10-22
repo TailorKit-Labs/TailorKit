@@ -10,3 +10,10 @@ export {
 } from "./generate-migrations";
 
 export { getClientSourceFiles } from "./file-routes";
+
+export {
+  discoverFunctionFiles,
+  generateFunctionTypes,
+  renderFunctionTypes,
+  type FunctionFile,
+} from "./file-functions";
