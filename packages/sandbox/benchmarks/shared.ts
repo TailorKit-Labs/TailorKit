@@ -4,6 +4,8 @@ export const Configuration = v.object({
   frames: v.optional(v.number(), 120),
   mode: v.picklist([
     "frames",
+    "paced",
+    "paced-skipped",
     "evaluation",
     "unregistered",
     "concurrent",

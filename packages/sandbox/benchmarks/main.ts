@@ -157,6 +157,8 @@ const runChecks = async () => {
       "wrong-size",
       "flood",
       "revoke",
+      "paced",
+      "paced-skipped",
     ];
 
     for (const mode of modes) {

@@ -11,6 +11,7 @@ class Bitmap {
 
 type PresentationReply =
   | { sequence: number; type: "presented" }
+  | { sequence: number; type: "ready" }
   | { message: string; type: "closed" };
 
 const fixture = (hidden: boolean) => {
@@ -56,6 +57,8 @@ const fixture = (hidden: boolean) => {
       return bitmap;
     },
     port,
+    send: (data: { type: string; sequence: number; delay?: number }) =>
+      port.dispatchEvent(new MessageEvent("message", { data })),
     target,
     transfer,
     visibility: (next: boolean) => {
@@ -69,6 +72,73 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   vi.useRealTimers();
+});
+
+it("paces bitmap-free draws on the host clock and enforces the host cap", async () => {
+  const test = fixture(false);
+
+  try {
+    test.send({ delay: 29, sequence: 1, type: "wait" });
+    await vi.advanceTimersByTimeAsync(28);
+    expect(test.port.postMessage).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(test.port.postMessage).toHaveBeenLastCalledWith({
+      sequence: 1,
+      type: "ready",
+    });
+    test.send({ delay: 0, sequence: 2, type: "wait" });
+    await vi.advanceTimersByTimeAsync(49);
+    expect(test.port.postMessage).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(test.port.postMessage).toHaveBeenLastCalledWith({
+      sequence: 2,
+      type: "ready",
+    });
+    expect(test.transfer).not.toHaveBeenCalled();
+  } finally {
+    test.target.close();
+  }
+});
+
+it("cancels and replaces host waits, tolerates late cancellation, and cleans up on revocation", async () => {
+  const test = fixture(false);
+
+  test.send({ delay: 2_147_483_647, sequence: 1, type: "wait" });
+  test.send({ sequence: 1, type: "cancelWait" });
+  test.send({ delay: 10, sequence: 2, type: "wait" });
+  test.send({ sequence: 1, type: "cancelWait" });
+  await vi.advanceTimersByTimeAsync(10);
+  expect(test.port.postMessage).toHaveBeenCalledExactlyOnceWith({
+    sequence: 2,
+    type: "ready",
+  });
+  test.send({ sequence: 2, type: "cancelWait" });
+  test.send({ delay: 100, sequence: 3, type: "wait" });
+  test.target.close();
+  expect(vi.getTimerCount()).toBe(0);
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(test.port.postMessage).toHaveBeenCalledTimes(2);
+});
+
+it.each([
+  { delay: -1, sequence: 1, type: "wait" },
+  { delay: Infinity, sequence: 1, type: "wait" },
+  { delay: 2_147_483_648, sequence: 1, type: "wait" },
+  { delay: 1, sequence: 2, type: "wait" },
+  { sequence: 1, type: "cancelWait" },
+])("rejects invalid pacing requests: %j", (message) => {
+  const test = fixture(false);
+  test.send(message);
+  expect(test.port.close).toHaveBeenCalledTimes(1);
+  expect(vi.getTimerCount()).toBe(0);
+});
+
+it("disconnects producers that flood host waits", () => {
+  const test = fixture(false);
+  test.send({ delay: 10, sequence: 1, type: "wait" });
+  test.send({ delay: 10, sequence: 2, type: "wait" });
+  expect(test.port.close).toHaveBeenCalledTimes(1);
+  expect(vi.getTimerCount()).toBe(0);
 });
 
 it("presents and acknowledges hidden-document frames while preserving the FPS gate", async () => {
