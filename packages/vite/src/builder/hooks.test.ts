@@ -8,6 +8,7 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 import * as v from "valibot";
 import { build } from "vite";
@@ -72,6 +73,19 @@ it("bundles hooks privately, validates literal names and watches added and remov
     expect(
       await readFile(path.join(root, ".patchsmith/server/server.js"), "utf-8")
     ).toContain("PRIVATE_HOOK_HANDLER");
+
+    const application = v.parse(
+      v.object({
+        runtimeManifest: v.object({ requires: v.array(v.string()) }),
+      }),
+      await import(
+        pathToFileURL(path.join(root, ".patchsmith/server/server.js")).href
+      )
+    );
+
+    expect(application.runtimeManifest.requires).toEqual(
+      expect.arrayContaining(["hooks", "nested-actions"])
+    );
 
     const readHooks = async () =>
       v.parse(
