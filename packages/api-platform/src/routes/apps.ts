@@ -85,6 +85,7 @@ const discoverApps = async (
     offset: (page - 1) * pageSize,
     orderBy: {
       createdAt: "desc",
+      id: "desc",
     },
     where: {
       RAW: (fields, { and, eq: eqValue, or }) =>
@@ -243,7 +244,7 @@ const runtimeResolve = protectedRouter
   )
   .handler(async ({ context, input, signal }) => {
     const discoveryStarted = performance.now();
-    const apps: z.infer<typeof AppWithCurrentDeployment>[] = [];
+    const apps = new Map<string, z.infer<typeof AppWithCurrentDeployment>>();
     let page = 1;
     const pageSize = 100;
 
@@ -257,11 +258,12 @@ const runtimeResolve = protectedRouter
         pageSize,
       });
 
-      apps.push(
-        ...installations
-          .slice(0, pageSize)
-          .map((appValue) => withAppAssetUrl(appValue, context.project.shortId))
-      );
+      for (const appValue of installations.slice(0, pageSize)) {
+        apps.set(
+          appValue.id,
+          withAppAssetUrl(appValue, context.project.shortId)
+        );
+      }
 
       if (installations.length <= pageSize) {
         break;
@@ -273,7 +275,7 @@ const runtimeResolve = protectedRouter
     const discoveryMs = performance.now() - discoveryStarted;
     const instancesStarted = performance.now();
 
-    const result = await resolveRuntimeViews(apps, input.body, {
+    const result = await resolveRuntimeViews([...apps.values()], input.body, {
       createSession: async (appValue) =>
         await createRuntimeSession(context, appValue, input.body),
       signal,

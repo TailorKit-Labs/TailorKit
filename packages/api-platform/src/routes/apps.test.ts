@@ -384,10 +384,93 @@ describe("platform appRouter", () => {
 
       expect(result.body).toEqual({ data: [], status: "ready" });
       expect(findMany).toHaveBeenCalledTimes(2);
+
+      const firstPage = z
+        .array(z.object({ id: z.string() }))
+        .parse(await findMany.mock.results[0]?.value);
+
+      const tiedIds = firstPage.slice(0, 100).map(({ id }) => id);
+      expect(tiedIds).toHaveLength(100);
+      expect(tiedIds).toEqual(tiedIds.toSorted().toReversed());
       expect(runtimeFetch).toHaveBeenCalledOnce();
       expect(testState.issueToken).toHaveBeenCalledWith(
         expect.objectContaining({ installationId: matching.app.id })
       );
+    } finally {
+      runtimeFetch.mockRestore();
+      findMany.mockRestore();
+    }
+  });
+
+  it("resolves each installation once when discovery pages overlap", async () => {
+    const matching = await seedRuntimeApp("overlapmatch", [
+      { instances: true, path: "/", slot: "page" },
+    ]);
+
+    const scope = canonicalizeScope(productionScope);
+    await db.insert(appTable).values(
+      Array.from({ length: 101 }, (_, index) => ({
+        createdAt: new Date("2030-01-01T00:00:00.000Z"),
+        currentDeploymentId: matching.deployment.id,
+        name: `Installation ${index}`,
+        projectId,
+        scope: scope.scope,
+        scopeKey: scope.scopeKey,
+        shortId: `over${String(index).padStart(8, "0")}`,
+      }))
+    );
+
+    const installations = await db.query.app.findMany({
+      orderBy: { createdAt: "desc", id: "desc" },
+      with: {
+        currentDeployment: {
+          with: { app: { columns: { shortId: true } } },
+        },
+      },
+    });
+
+    // Model an offset shifted by a concurrent insert, repeating the last app from page one.
+    const findMany = vi
+      .spyOn(db.query.app, "findMany")
+      .mockResolvedValueOnce(installations.slice(0, 101))
+      .mockResolvedValueOnce(installations.slice(99));
+
+    const runtimeFetch = vi.spyOn(globalThis, "fetch").mockImplementation(
+      asyncFixture(() =>
+        Response.json({
+          json: [{ data: {}, key: "page", metadata: {} }],
+        })
+      )
+    );
+
+    testState.issueToken.mockClear();
+
+    try {
+      const result = await call(
+        appRouter.runtimeResolve,
+        {
+          body: {
+            contexts: [{ context: {}, path: "/", status: "ready" }],
+            scopes: [productionScope],
+            slot: "page",
+            subjectId: "principal",
+            toolUrl: "https://host.test/tools",
+          },
+        },
+        { context: createContext() }
+      );
+
+      expect(result.body.status).toBe("ready");
+
+      if (result.body.status !== "ready") {
+        throw new Error("Expected resolved installations");
+      }
+
+      expect(result.body.data.map(({ app }) => app.id).toSorted()).toEqual(
+        installations.map(({ id }) => id).toSorted()
+      );
+      expect(testState.issueToken).toHaveBeenCalledTimes(102);
+      expect(runtimeFetch).toHaveBeenCalledTimes(102);
     } finally {
       runtimeFetch.mockRestore();
       findMany.mockRestore();
