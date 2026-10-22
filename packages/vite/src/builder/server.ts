@@ -1,7 +1,5 @@
-import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, writeFile, cp, rm } from "node:fs/promises";
 import path from "node:path";
-import { promisify } from "node:util";
 
 import type { RuntimeManifest } from "@patchsmith/app/server";
 import { build } from "vite";
@@ -19,35 +17,6 @@ import {
 import type { InstanceModule, InstanceRegistration } from "./instances";
 import { readAppMigrations } from "./migrations";
 import { checkAppSchema } from "./schema-check";
-
-// Evaluate module registration in a disposable local build process. Handlers never run.
-const inspectServer = `
-import { readFile } from "node:fs/promises";
-const source = await readFile(process.argv[1], "utf8");
-try {
-  await import("data:text/javascript;base64," + Buffer.from(source).toString("base64"));
-} catch (error) {
-  console.error(error instanceof Error ? error.message : String(error));
-  process.exit(1);
-}
-process.exit(0);
-`;
-
-const validateServerBundle = async (filename: string) => {
-  try {
-    // oxlint-disable-next-line typescript/strict-void-return -- execFile's completion callback is adapted to a Promise; its ChildProcess return is intentionally ignored.
-    await promisify(execFile)(
-      process.execPath,
-      ["--input-type=module", "--eval", inspectServer, filename],
-      { maxBuffer: 2 * 1024 * 1024, timeout: 10_000 }
-    );
-  } catch (error) {
-    throw new Error(
-      `Unable to register app functions: ${error instanceof Error ? error.message : String(error)}`,
-      { cause: error }
-    );
-  }
-};
 
 const containsImplementation = (parent: string, child: string) => {
   const relative = path.relative(parent, child);
@@ -224,9 +193,6 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
             id === "patchsmith:migrations"
               ? "\0patchsmith:migrations"
               : undefined,
-          writeBundle: async () => {
-            await validateServerBundle(path.join(directory, "server.js"));
-          },
         },
       ],
       resolve: viteConfig.resolve,

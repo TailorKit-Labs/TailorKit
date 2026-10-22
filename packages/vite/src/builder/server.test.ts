@@ -114,7 +114,7 @@ it.each([
     second: "parents: read",
   },
 ])(
-  "validates merged routers during the build: $first / $second",
+  "validates merged routers when loading the bundle: $first / $second",
   async ({ first, second, error }) => {
     const root = await mkdtemp(
       path.join(tmpdir(), "patchsmith-function-build-")
@@ -142,20 +142,21 @@ it.each([
         router(second)
       );
 
+      await buildFixture({ cwd: root });
+
+      const loaded = import(
+        pathToFileURL(path.join(root, ".patchsmith/server/server.js")).href
+      );
+
       if (error !== undefined) {
-        const built = buildFixture({ cwd: root });
-        await expect(built).rejects.toThrow(error);
-        await expect(built).rejects.toThrow("src/functions/family.fn.ts");
-        await expect(built).rejects.toThrow("src/functions/family/get.fn.ts");
+        await expect(loaded).rejects.toThrow(error);
+        await expect(loaded).rejects.toThrow("src/functions/family.fn.ts");
+        await expect(loaded).rejects.toThrow("src/functions/family/get.fn.ts");
 
         return;
       }
 
-      await buildFixture({ cwd: root });
-
-      const application: ApplicationModule = await import(
-        pathToFileURL(path.join(root, ".patchsmith/server/server.js")).href
-      );
+      const application: ApplicationModule = await loaded;
 
       expect(application.default.functions).toMatchObject({
         family: {
@@ -204,6 +205,54 @@ it.each([
       } finally {
         await watcher.close();
       }
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  }
+);
+
+it.each([
+  {
+    marker: "SERVER_MODULE_SCOPE_EXECUTED",
+    source: 'throw new Error("SERVER_MODULE_SCOPE_EXECUTED");',
+  },
+  {
+    marker: "WebSocketPair",
+    source: "globalThis.workerSockets = new WebSocketPair();",
+  },
+])(
+  "builds without evaluating backend module-scope code: $marker",
+  async ({ marker, source }) => {
+    const root = await mkdtemp(path.join(tmpdir(), "patchsmith-server-scope-"));
+
+    try {
+      await linkTestDependencies(root);
+      await mkdir(path.join(root, "src/functions"), { recursive: true });
+      await writeFile(path.join(root, "package.json"), '{"type":"module"}');
+      await writeFile(
+        path.join(root, "patchsmith.config.mjs"),
+        'export default { name: "Test App", slug: "test-app", host: "https://host.test", server: {} };'
+      );
+      await writeFile(
+        path.join(root, "src/root.tsx"),
+        'import { defineRoute } from "patchsmith/client"; export default defineRoute({ shellComponent: () => "client" });'
+      );
+      await writeFile(
+        path.join(root, "src/functions/example.fn.ts"),
+        `${source}\n${router("read")}`
+      );
+
+      await buildFixture({ cwd: root });
+
+      const server = await readFile(
+        path.join(root, ".patchsmith/server/server.js"),
+        "utf-8"
+      );
+
+      expect(server).toContain(marker);
+      expect(
+        await readFile(path.join(root, ".patchsmith/client/client.js"), "utf-8")
+      ).not.toContain(marker);
     } finally {
       await rm(root, { force: true, recursive: true });
     }

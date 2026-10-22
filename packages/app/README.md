@@ -157,7 +157,7 @@ Enable `server: {}` in `patchsmith.config.ts`. The builder discovers `src/functi
 
 File paths prefix router keys. Both `billing.invoices.fn.ts` and `billing/invoices.fn.ts` expose `api.billing.invoices.*`; mixed dots and directories work too. `index.fn.ts` creates an `index` namespace. Router objects may nest, so `tasks.fn.ts` exporting `defineRouter({ get: { children, parents } })` exposes `api.tasks.get.children` and `api.tasks.get.parents`.
 
-Shared namespaces merge across files. Duplicate callable paths and function/namespace conflicts fail the build with the API path and both source files. Every namespace and function name must start with a letter and contain at most 64 letters, digits, or underscores. `name` and `then` are reserved because client references use them internally.
+Shared namespaces merge across files. Duplicate callable paths and function/namespace conflicts throw when the server bundle loads, with the API path and both source files. Every namespace and function name must start with a letter and contain at most 64 letters, digits, or underscores. `name` and `then` are reserved because client references use them internally.
 
 Run `patchsmith generate` after adding, moving, or deleting function files. Generated `src/patchsmith.functions.gen.ts` imports routers only as types; `src/patchsmith.gen.ts` uses those types for client `api` references. Builds refresh the function registry, and build watch mode tracks new, renamed, and removed modules. Private implementations stay out of the browser bundle.
 
