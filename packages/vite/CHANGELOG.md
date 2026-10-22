@@ -1,5 +1,12 @@
 # @patchsmith/vite
 
+## 0.1.0-beta.63
+
+### Patch Changes
+
+- Updated dependencies [29d4061]
+  - @patchsmith/app@0.1.0-beta.63
+
 ## 0.1.0-beta.62
 
 ### Minor Changes

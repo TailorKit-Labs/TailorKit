@@ -1,5 +1,13 @@
 # @patchsmith/cli
 
+## 0.1.0-beta.63
+
+### Patch Changes
+
+- @patchsmith/core@0.1.0-beta.63
+  - @patchsmith/vite@0.1.0-beta.63
+  - @patchsmith/client-platform@0.1.0-beta.63
+
 ## 0.1.0-beta.62
 
 ### Minor Changes
