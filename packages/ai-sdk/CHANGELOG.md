@@ -1,5 +1,12 @@
 # @patchsmith/ai-sdk
 
+## 0.1.0-beta.59
+
+### Patch Changes
+
+- Updated dependencies [07731b1]
+  - @patchsmith/core@0.1.0-beta.59
+
 ## 0.1.0-beta.58
 
 ### Patch Changes
