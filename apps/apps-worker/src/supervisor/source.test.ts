@@ -6,7 +6,7 @@ import { asyncFixture } from "@patchsmith/config/testing";
 import { Effect } from "effect";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
-import { deploymentSource } from "./source";
+import { deploymentSource, warmMetadataLifetimeMs } from "./source";
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -68,7 +68,10 @@ const setup = (contents: string | Uint8Array<ArrayBuffer> | null = code) => {
   };
 };
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.useRealTimers();
+});
 
 it("resolves authorized metadata separately from R2 code and never follows redirects with credentials", async () => {
   const fetch = vi
@@ -121,6 +124,8 @@ it.each([302, 403, 404, 503])(
 );
 
 it("serves KV hits to old clients and fills misses from the platform", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+
   const values = new Map<
     string,
     ReturnType<typeof appDeploymentMetadata.parse>
@@ -163,6 +168,7 @@ it("serves KV hits to old clients and fills misses from the platform", async () 
   expect(awaitedResult4.deploymentId).toBe("v2");
   expect(fetch).toHaveBeenCalledOnce();
   values.set(JSON.stringify([identity.projectId, identity.appId]), deployment);
+  vi.setSystemTime(Date.now() + warmMetadataLifetimeMs);
 
   // A stale replica must not cause a downgrade after v2 migrations ran.
   const awaitedResult5 = await Effect.runPromise(
@@ -171,6 +177,53 @@ it("serves KV hits to old clients and fills misses from the platform", async () 
 
   expect(awaitedResult5.deploymentId).toBe("v2");
   expect(fetch).toHaveBeenCalledTimes(2);
+});
+
+it("bounds warm metadata reuse and refreshes when a token signals a deployment change", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  const get = vi.fn(asyncFixture(() => deployment));
+
+  const fetch = vi
+    .spyOn(globalThis, "fetch")
+    .mockImplementation(
+      asyncFixture(() => Response.json({ ...deployment, deploymentId: "v2" }))
+    );
+
+  const source = deploymentSource({
+    BUNDLES: { get: vi.fn() },
+    DEPLOYMENTS: { get, put: asyncFixture(() => {}) },
+    PLATFORM_URL: "https://platform.test",
+    RUNTIME_SERVICE_TOKEN: "private",
+  });
+
+  await Effect.runPromise(source.current(identity));
+  await Effect.runPromise(
+    source.current({ ...identity, subjectId: "other" }, "v1")
+  );
+  expect(get).toHaveBeenCalledOnce();
+
+  vi.setSystemTime(Date.now() + warmMetadataLifetimeMs);
+  await Effect.runPromise(source.current(identity, "v1"));
+  expect(get).toHaveBeenCalledTimes(2);
+
+  const updated = await Effect.runPromise(
+    source.current({ ...identity, deploymentId: "v2" }, "v1")
+  );
+
+  expect(updated.deploymentId).toBe("v2");
+  expect(fetch).toHaveBeenCalledOnce();
+
+  const expired = await Effect.runPromiseExit(
+    source.current({ ...identity, expiresAt: Date.now() }, "v2")
+  );
+
+  expect(expired._tag).toBe("Failure");
+
+  const mismatch = await Effect.runPromiseExit(
+    source.current({ ...identity, projectId: "other" })
+  );
+
+  expect(mismatch._tag).toBe("Failure");
 });
 
 it("verifies compressed server bytes before inflating and caches the decoded code", async () => {

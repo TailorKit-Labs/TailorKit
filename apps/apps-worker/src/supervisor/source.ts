@@ -30,6 +30,7 @@ export const installationName = (identity: Identity, issuer: string) =>
   ]);
 
 export const metadataLifetimeSeconds = 300;
+export const warmMetadataLifetimeMs = 5000;
 
 /** Bound stored and inflated bytes before allocating or executing bundle code. */
 const readBundleBytes = async (
@@ -78,6 +79,34 @@ export const deploymentSource = (
   }
 ) => {
   let cached: { version: string; code: string } | undefined;
+
+  let metadata:
+    | {
+        key: string;
+        deployment: ServerDeployment;
+        tokenDeploymentId: string;
+        expiresAt: number;
+      }
+    | undefined;
+
+  const tokenChanged = (identity: Identity, key: string) =>
+    metadata?.key === key &&
+    identity.deploymentId !== metadata.tokenDeploymentId &&
+    identity.deploymentId !== metadata.deployment.deploymentId;
+
+  const warmDeployment = (
+    key: string,
+    runningDeploymentId?: string
+  ): ServerDeployment | undefined => {
+    const reusable =
+      metadata?.key === key &&
+      metadata.expiresAt > Date.now() &&
+      (runningDeploymentId === undefined ||
+        runningDeploymentId === "" ||
+        runningDeploymentId === metadata.deployment.deploymentId);
+
+    return reusable ? metadata?.deployment : undefined;
+  };
 
   return {
     code: (deployment: ServerDeployment) =>
@@ -131,13 +160,33 @@ export const deploymentSource = (
 
           return code;
         },
-      }),
+      }).pipe(
+        Effect.tapError(() =>
+          Effect.sync(() => {
+            // A corrected publication must be observable immediately after a bad bundle.
+            metadata = undefined;
+          })
+        )
+      ),
 
     current: (identity: Identity, runningDeploymentId?: string) =>
       Effect.tryPromise({
         catch: appError,
         try: async () => {
           const key = deploymentMetadataKey(identity);
+          const now = Date.now();
+
+          if (identity.expiresAt <= now) {
+            throw new AppError("UNAUTHORIZED", "App token expired");
+          }
+
+          const deploymentHintChanged = tokenChanged(identity, key);
+
+          const warm = warmDeployment(key, runningDeploymentId);
+
+          if (warm && !deploymentHintChanged) {
+            return warm;
+          }
 
           const cachedMetadata = appDeploymentMetadata.safeParse(
             await env.DEPLOYMENTS.get(key, "json").catch(() => null)
@@ -151,6 +200,7 @@ export const deploymentSource = (
           // This prevents a stale KV replica from switching an installation backwards.
           if (
             !deployment ||
+            deploymentHintChanged ||
             (runningDeploymentId !== undefined &&
               runningDeploymentId !== null &&
               runningDeploymentId !== "" &&
@@ -218,6 +268,13 @@ export const deploymentSource = (
           if (identity.expiresAt <= Date.now()) {
             throw new AppError("UNAUTHORIZED", "App token expired");
           }
+
+          metadata = {
+            deployment,
+            expiresAt: now + warmMetadataLifetimeMs,
+            key,
+            tokenDeploymentId: identity.deploymentId,
+          };
 
           return deployment;
         },

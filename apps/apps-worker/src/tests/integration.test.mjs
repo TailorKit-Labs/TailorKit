@@ -8,6 +8,7 @@ import { get } from "node:http";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import { gzipSync, gunzipSync } from "node:zlib";
 
 import {
@@ -1106,6 +1107,8 @@ export const migrations = ${JSON.stringify(history)};`;
     await (
       await mf.getKVNamespace("DEPLOYMENTS")
     ).delete(JSON.stringify([projectId, "app"]));
+    // Existing tokens may reuse verified metadata for at most five seconds.
+    await delay(5100);
     assert.equal((await invoke("one")).status, 403);
 
     await publish(2);
@@ -1138,6 +1141,7 @@ export const migrations = ${JSON.stringify(history)};`;
     await (
       await mf.getKVNamespace("DEPLOYMENTS")
     ).delete(JSON.stringify([projectId, "app"]));
+    await delay(5100);
     assert.equal((await invoke("one")).status, 500);
     published = { ...published, checksum: originalHash };
     await (

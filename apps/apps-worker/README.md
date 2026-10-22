@@ -213,7 +213,9 @@ Requests use `Authorization: Bearer your_runtime_service_token`; configure that 
 
 KV entries are keyed by `[projectId, appId]` and expire after five minutes. Misses fetch the authoritative platform metadata and fill KV. Publication failures are logged without undoing publication; expiration lets the cache recover even if its previous value remains. Before replacing a running deployment, the worker confirms a changed KV pointer with the platform to avoid switching backwards on stale replicas. A subscriber refresh resolves its facet once and reuses it for all affected subscriptions.
 
-Publication does not broadcast to every installation. Active clients discover an update on subsequent calls or authentication renewal. KV propagation can delay discovery. The host does not remount the app; server deployments must preserve compatibility with existing client code. Active actions are cancelled on facet replacement and are not automatically retried.
+Each warm installation reuses validated metadata for up to five seconds and keeps its initialized facet while the deployment ID and checksum match. Every request still verifies its token and installation; cached metadata never contains a caller's permissions or subject. A token naming a different deployment bypasses the warm cache and confirms the pointer with the platform. An older token continues to execute the latest backend, rather than selecting old code.
+
+Publication does not broadcast to every installation. Active clients discover an update on subsequent calls or authentication renewal. KV propagation and the five-second warm cache can delay discovery for existing tokens. Cache expiry is checked on access, with no background polling; restarts discard warm state. Failed refreshes fail the call rather than serving expired metadata. The host does not remount the app; server deployments must preserve compatibility with existing client code. Active actions are cancelled on facet replacement and are not automatically retried.
 
 ## Sandbox networking
 

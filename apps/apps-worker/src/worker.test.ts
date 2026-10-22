@@ -445,11 +445,11 @@ it("loads isolated code, passes only the verified identity and caches a warm dep
   const awaitedResult4 = await installation.fetch(await request());
   await awaitedResult4.text();
 
-  expect(source.current).toHaveBeenCalledTimes(2);
+  expect(source.current).toHaveBeenCalledOnce();
   expect(source.code).toHaveBeenCalledOnce();
   expect(fixtures.put).toHaveBeenCalledOnce();
   expect(fixtures.abort).not.toHaveBeenCalled();
-  expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+  expect(globalThis.fetch).toHaveBeenCalledOnce();
 });
 
 it("changes code on the same facet and accepts old client tokens without switching back", async () => {
