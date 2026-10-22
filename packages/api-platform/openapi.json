@@ -3645,6 +3645,23 @@
                 }
               }
             }
+          },
+          "504": {
+            "description": "View resolution timed out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/GatewayTimeout"
+                    },
+                    {
+                      "$ref": "#/components/schemas/UndefinedError"
+                    }
+                  ]
+                }
+              }
+            }
           }
         }
       }
@@ -6107,6 +6124,40 @@
             }
           }
         ]
+      },
+      "UndefinedError": {
+        "title": "UndefinedError",
+        "type": "object",
+        "properties": {
+          "defined": {
+            "const": false
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {}
+        },
+        "required": ["defined", "code", "message"]
+      },
+      "GatewayTimeout": {
+        "title": "GATEWAY_TIMEOUT",
+        "type": "object",
+        "properties": {
+          "defined": {
+            "const": true
+          },
+          "code": {
+            "const": "GATEWAY_TIMEOUT"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {}
+        },
+        "required": ["defined", "code", "message"]
       }
     }
   }

@@ -3,6 +3,7 @@ import type { RPCJsonSerializationMeta } from "@orpc/server";
 import type { ViewInstance } from "@patchsmith/app/client";
 import { createClient, reference } from "@patchsmith/app/client/connection";
 import type { Session } from "@patchsmith/app/client/connection";
+import { Effect } from "effect";
 import { z } from "zod";
 
 const viewPath = z.string().startsWith("/").max(1024);
@@ -81,166 +82,173 @@ const resolver = reference<
   ViewInstance[]
 >("_patchsmith.instances.resolve", "action");
 
+/** Shared wall-clock budget for session issuance and all concurrent instance calls. */
+export const instanceResolutionTimeoutMs = 1000;
+
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- Promise rejection reasons are untyped at the backend transport boundary.
+const resolutionFailure = (cause: unknown) =>
+  new ORPCError("BAD_GATEWAY", {
+    cause,
+    message: "Unable to resolve views",
+  });
+
 /** Only the platform calls app backends; the host supplies validated view contexts. */
-export const resolveRuntimeViews = async <TApp extends RuntimeInstallation>(
+export const resolveRuntimeViews = <TApp extends RuntimeInstallation>(
   apps: TApp[],
   input: { slot: string; contexts: z.infer<typeof runtimeViewContexts> },
   options: {
     createSession: (app: TApp) => Promise<Session>;
     fetch?: typeof fetch;
-    signal?: AbortSignal;
   }
-) => {
-  const contexts = input.contexts.toSorted(
-    (left, right) =>
-      right.path.split("/").filter(Boolean).length -
-      left.path.split("/").filter(Boolean).length
-  );
-
-  const selected = apps.flatMap((app) => {
-    const context = contexts.find((candidate) =>
-      app.views.some(
-        (view) =>
-          view.slot === input.slot &&
-          view.path === candidate.path &&
-          !view.disabled
-      )
+) =>
+  Effect.gen(function* resolveViews() {
+    const contexts = input.contexts.toSorted(
+      (left, right) =>
+        right.path.split("/").filter(Boolean).length -
+        left.path.split("/").filter(Boolean).length
     );
 
-    const view = app.views.find(
-      (candidate) =>
-        candidate.slot === input.slot &&
-        candidate.path === context?.path &&
-        !candidate.disabled
-    );
-
-    return context && view?.instances ? [{ app, context }] : [];
-  });
-
-  if (selected.some(({ context }) => context.status === "error")) {
-    throw new ORPCError("BAD_REQUEST", { message: "Invalid view context" });
-  }
-
-  if (selected.some(({ context }) => context.status === "loading")) {
-    return { status: "loading" as const };
-  }
-
-  const decodedContexts = new Map<string, z.infer<typeof contextValues>>();
-
-  const resolved = selected.flatMap(({ app, context }) => {
-    if (context.status !== "ready") {
-      return [];
-    }
-
-    try {
-      const cached = decodedContexts.get(context.path);
-
-      if (cached !== undefined) {
-        return [{ app, context: cached, path: context.path }];
-      }
-
-      const blobs = context.contextBlobs?.map((blob) => {
-        const bytes = Uint8Array.from(
-          atob(blob.data),
-          (character) => character.codePointAt(0) ?? 0
-        );
-
-        return blob.name === undefined
-          ? new Blob([bytes], { type: blob.type })
-          : new File([bytes], blob.name, {
-              lastModified: blob.lastModified,
-              type: blob.type,
-            });
-      });
-
-      if ((context.contextMaps?.length ?? 0) !== (blobs?.length ?? 0)) {
-        throw new Error("Invalid binary context metadata");
-      }
-
-      const json = structuredClone(context.context);
-
-      const meta = context.contextMeta?.map<RPCJsonSerializationMeta>(
-        ({ type, path }) => [type, ...path]
+    const selected = apps.flatMap((app) => {
+      const context = contexts.find((candidate) =>
+        app.views.some(
+          (view) =>
+            view.slot === input.slot &&
+            view.path === candidate.path &&
+            !view.disabled
+        )
       );
 
-      const serialized =
-        context.contextMaps === undefined
-          ? { json, meta }
-          : {
-              blobs: blobs ?? [],
-              json,
-              maps: context.contextMaps,
-              meta,
-            };
-
-      const decoded = contextValues.parse(
-        contextSerializer.deserialize(serialized)
+      const view = app.views.find(
+        (candidate) =>
+          candidate.slot === input.slot &&
+          candidate.path === context?.path &&
+          !candidate.disabled
       );
 
-      decodedContexts.set(context.path, decoded);
+      return context && view?.instances ? [{ app, context }] : [];
+    });
 
-      return [{ app, context: decoded, path: context.path }];
-    } catch {
-      throw new ORPCError("BAD_REQUEST", { message: "Invalid view context" });
+    if (selected.some(({ context }) => context.status === "error")) {
+      return yield* Effect.fail(
+        new ORPCError("BAD_REQUEST", { message: "Invalid view context" })
+      );
     }
-  });
 
-  const controller = new AbortController();
+    if (selected.some(({ context }) => context.status === "loading")) {
+      return { status: "loading" as const };
+    }
 
-  const abort = () => {
-    controller.abort();
-  };
+    const decodedContexts = new Map<string, z.infer<typeof contextValues>>();
 
-  options.signal?.addEventListener("abort", abort, { once: true });
+    const resolved = yield* Effect.try({
+      catch: () =>
+        new ORPCError("BAD_REQUEST", { message: "Invalid view context" }),
+      try: () =>
+        selected.flatMap(({ app, context }) => {
+          if (context.status !== "ready") {
+            return [];
+          }
 
-  try {
-    options.signal?.throwIfAborted();
+          const cached = decodedContexts.get(context.path);
 
-    const instances = await Promise.all(
-      resolved.map(async ({ app, context, path }) => {
-        controller.signal.throwIfAborted();
-        const session = await options.createSession(app);
-        controller.signal.throwIfAborted();
+          if (cached !== undefined) {
+            return [{ app, context: cached, path: context.path }];
+          }
 
-        const backend = createClient({
-          fetch: options.fetch,
-          // oxlint-disable-next-line require-await -- The platform has already issued this request's authorized session.
-          getSession: async () => session,
-        });
+          const blobs = context.contextBlobs?.map((blob) => {
+            const bytes = Uint8Array.from(
+              atob(blob.data),
+              (character) => character.codePointAt(0) ?? 0
+            );
 
-        const close = () => {
-          backend.close();
-        };
+            return blob.name === undefined
+              ? new Blob([bytes], { type: blob.type })
+              : new File([bytes], blob.name, {
+                  lastModified: blob.lastModified,
+                  type: blob.type,
+                });
+          });
 
-        controller.signal.addEventListener("abort", close, { once: true });
+          if ((context.contextMaps?.length ?? 0) !== (blobs?.length ?? 0)) {
+            throw new Error("Invalid binary context metadata");
+          }
 
-        try {
-          controller.signal.throwIfAborted();
+          const json = structuredClone(context.context);
 
-          const result = instancesSchema.parse(
-            await backend.action(resolver, {
-              context,
-              path,
-              slot: input.slot,
-            })
+          const meta = context.contextMeta?.map<RPCJsonSerializationMeta>(
+            ({ type, path }) => [type, ...path]
           );
 
-          return result.map((instance) => ({ ...instance, app }));
-        } finally {
-          controller.signal.removeEventListener("abort", close);
-          backend.close();
-        }
-      })
+          const serialized =
+            context.contextMaps === undefined
+              ? { json, meta }
+              : {
+                  blobs: blobs ?? [],
+                  json,
+                  maps: context.contextMaps,
+                  meta,
+                };
+
+          const decoded = contextValues.parse(
+            contextSerializer.deserialize(serialized)
+          );
+
+          decodedContexts.set(context.path, decoded);
+
+          return [{ app, context: decoded, path: context.path }];
+        }),
+    });
+
+    const instances = yield* Effect.forEach(
+      resolved,
+      ({ app, context, path }) =>
+        Effect.gen(function* resolveInstallation() {
+          const session = yield* Effect.tryPromise({
+            catch: resolutionFailure,
+            try: async () => await options.createSession(app),
+          });
+
+          return yield* Effect.acquireUseRelease(
+            Effect.sync(() =>
+              createClient({
+                fetch: options.fetch,
+                // oxlint-disable-next-line require-await -- The platform has already issued this request's authorized session.
+                getSession: async () => session,
+              })
+            ),
+            (backend) =>
+              Effect.tryPromise({
+                catch: resolutionFailure,
+                try: async () => {
+                  const result = instancesSchema.parse(
+                    await backend.action(resolver, {
+                      context,
+                      path,
+                      slot: input.slot,
+                    })
+                  );
+
+                  return result.map((instance) => ({ ...instance, app }));
+                },
+              }),
+            (backend) =>
+              Effect.sync(() => {
+                backend.close();
+              })
+          );
+        }),
+      { concurrency: "unbounded" }
     );
 
     return { data: instances.flat(), status: "ready" as const };
-  } catch (error) {
-    controller.abort();
-    throw new ORPCError("BAD_GATEWAY", {
-      cause: error,
-      message: "Unable to resolve views",
-    });
-  } finally {
-    options.signal?.removeEventListener("abort", abort);
-  }
-};
+  }).pipe(
+    Effect.timeoutOrElse({
+      duration: instanceResolutionTimeoutMs,
+      orElse: () =>
+        Effect.fail(
+          new ORPCError("GATEWAY_TIMEOUT", {
+            message: "View resolution timed out",
+          })
+        ),
+    })
+  );

@@ -185,6 +185,9 @@ catalogs:
     '@orpc/contract':
       specifier: 2.0.0-beta.40
       version: 2.0.0-beta.40
+    '@orpc/experimental-effect':
+      specifier: 2.0.0-beta.40
+      version: 2.0.0-beta.40
     '@orpc/openapi':
       specifier: 2.0.0-beta.40
       version: 2.0.0-beta.40
@@ -791,6 +794,9 @@ importers:
 
   packages/api-platform:
     dependencies:
+      '@orpc/experimental-effect':
+        specifier: 'catalog:'
+        version: 2.0.0-beta.40(crossws@0.4.15(srvx@1.0.4))(effect@4.0.5)
       '@orpc/openapi':
         specifier: 'catalog:'
         version: 2.0.0-beta.40(crossws@0.4.15(srvx@1.0.4))
@@ -1217,6 +1223,9 @@ importers:
       '@orpc/contract':
         specifier: 'catalog:'
         version: 2.0.0-beta.40
+      '@orpc/experimental-effect':
+        specifier: 'catalog:'
+        version: 2.0.0-beta.40(crossws@0.4.15(srvx@1.0.4))(effect@4.0.5)
       '@orpc/openapi':
         specifier: 'catalog:'
         version: 2.0.0-beta.40(crossws@0.4.15(srvx@1.0.4))
@@ -1232,6 +1241,9 @@ importers:
       '@standard-schema/spec':
         specifier: ^1.1.0
         version: 1.1.0
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.5
       valibot:
         specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
@@ -19436,7 +19448,7 @@ snapshots:
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
       solid-js: 1.9.15
-      vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-preview@5.0.1)(@vitest/ui@5.0.1)(@voidzero-dev/vite-plus-core@1.3.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(typescript@7.0.2)(yaml@2.9.1))(happy-dom@21.0.3)
+      vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-preview@5.0.5)(@vitest/ui@5.0.1)(@voidzero-dev/vite-plus-core@1.3.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(typescript@7.0.2)(yaml@2.9.1))(happy-dom@21.0.3)
     transitivePeerDependencies:
       - '@opentelemetry/api'
 

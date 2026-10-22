@@ -1,10 +1,30 @@
+import { runPromise } from "@orpc/experimental-effect";
 import { RPCSerializer } from "@orpc/server";
 import type { Session } from "@patchsmith/app/client/connection";
 import { asyncFixture } from "@patchsmith/config/testing";
+import { Effect, Fiber } from "effect";
+import { TestClock } from "effect/testing";
 import { expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
-import { resolveRuntimeViews } from "./view-resolution";
+import { resolveRuntimeViews as resolveRuntimeViewsEffect } from "./view-resolution";
+
+const resolveRuntimeViews = async <
+  TApp extends Parameters<typeof resolveRuntimeViewsEffect>[0][number],
+>(
+  apps: TApp[],
+  input: Parameters<typeof resolveRuntimeViewsEffect>[1],
+  options: Omit<
+    Parameters<typeof resolveRuntimeViewsEffect>[2],
+    "createSession"
+  > & {
+    createSession: (app: TApp) => Promise<Session>;
+    signal?: AbortSignal;
+  }
+) =>
+  await runPromise(resolveRuntimeViewsEffect(apps, input, options), {
+    signal: options.signal,
+  });
 
 const rootView = { instances: true as const, path: "/", slot: "page" };
 
@@ -307,7 +327,7 @@ it("fans out concurrently and aborts every backend request on client cancellatio
     signal: controller.signal,
   });
 
-  const rejected = expect(run).rejects.toMatchObject({ code: "BAD_GATEWAY" });
+  const rejected = expect(run).rejects.toMatchObject({ name: "AbortError" });
   await vi.waitFor(() => {
     expect(options.requests).toHaveLength(2);
   });
@@ -334,7 +354,7 @@ it("does not start a backend after cancellation during session issuance", async 
       createSession,
       signal: controller.signal,
     })
-  ).rejects.toMatchObject({ code: "BAD_GATEWAY" });
+  ).rejects.toMatchObject({ name: "AbortError" });
   expect(options.fetch).not.toHaveBeenCalled();
 });
 
@@ -393,3 +413,105 @@ it.each([
     expect(options.fetch).toHaveBeenCalledOnce();
   }
 );
+
+it("limits all concurrent resolves to one second and closes even uncooperative backend requests", async () => {
+  const options = setup();
+  const session = Promise.withResolvers<Session>();
+  options.createSession.mockReturnValueOnce(session.promise);
+  options.fetch.mockImplementation(async (value, init) => {
+    const request = value instanceof Request ? value : new Request(value, init);
+    options.requests.push(request);
+
+    if (options.requests.length === 1) {
+      return Response.json({ json: [instance] });
+    }
+
+    // Deliberately ignore abort: the Effect deadline must still stop waiting.
+    return await Promise.withResolvers<Response>().promise;
+  });
+
+  await runPromise(
+    Effect.gen(function* deadlineTest() {
+      const fiber = yield* resolveRuntimeViewsEffect(
+        [app, { ...app, id: "second" }],
+        input,
+        options
+      ).pipe(Effect.forkChild);
+
+      yield* TestClock.adjust(600);
+      expect(options.requests).toHaveLength(1);
+      session.resolve(
+        yield* Effect.promise(async () => await setup().createSession(app))
+      );
+      yield* TestClock.adjust(399);
+      expect(options.requests).toHaveLength(2);
+      expect(options.requests[1]?.signal.aborted).toBe(false);
+      yield* TestClock.adjust(1);
+      const failure = yield* Effect.flip(Fiber.join(fiber));
+      expect(failure).toMatchObject({
+        code: "GATEWAY_TIMEOUT",
+        message: "View resolution timed out",
+      });
+      expect(options.requests[1]?.signal.aborted).toBe(true);
+      expect(options.fetch).toHaveBeenCalledTimes(2);
+    }).pipe(Effect.provide(TestClock.layer()))
+  );
+});
+
+it("includes session issuance in the one-second budget without starting an app after timeout", async () => {
+  const options = setup();
+  const session = Promise.withResolvers<Session>();
+  options.createSession.mockReturnValueOnce(session.promise);
+
+  await runPromise(
+    Effect.gen(function* sessionDeadlineTest() {
+      const fiber = yield* resolveRuntimeViewsEffect(
+        [app],
+        input,
+        options
+      ).pipe(Effect.forkChild);
+
+      yield* TestClock.adjust(1000);
+      const failure = yield* Effect.flip(Fiber.join(fiber));
+      expect(failure).toMatchObject({ code: "GATEWAY_TIMEOUT" });
+      expect(options.fetch).not.toHaveBeenCalled();
+      session.resolve(
+        yield* Effect.promise(async () => await setup().createSession(app))
+      );
+      yield* Effect.yieldNow;
+      expect(options.fetch).not.toHaveBeenCalled();
+    }).pipe(Effect.provide(TestClock.layer()))
+  );
+});
+
+it("bounds response-body reading when a resolver sends headers but never finishes", async () => {
+  const options = setup();
+  options.fetch.mockImplementation(
+    asyncFixture((value, init) => {
+      const request =
+        value instanceof Request ? value : new Request(value, init);
+
+      options.requests.push(request);
+
+      return new Response(new ReadableStream(), {
+        headers: { "content-type": "application/json" },
+      });
+    })
+  );
+
+  await runPromise(
+    Effect.gen(function* bodyDeadlineTest() {
+      const fiber = yield* resolveRuntimeViewsEffect(
+        [app],
+        input,
+        options
+      ).pipe(Effect.forkChild);
+
+      yield* TestClock.adjust(1000);
+      expect(yield* Effect.flip(Fiber.join(fiber))).toMatchObject({
+        code: "GATEWAY_TIMEOUT",
+      });
+      expect(options.requests[0]?.signal.aborted).toBe(true);
+    }).pipe(Effect.provide(TestClock.layer()))
+  );
+});

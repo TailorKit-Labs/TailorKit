@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import type { Client, ClientMeta, Options as Options2, RequestResult, ServerSentEventsResult, TDataShape } from './client/index.js';
-import type { AppAgentChatData, AppAgentChatResponse, AppAgentChatResponses, AppAgentCreateData, AppAgentCreateResponses, AppsCreateData, AppsCreateResponses, AppsDeleteData, AppsDeleteResponses, AppsDeployData, AppsDeployResponses, AppsGetData, AppsGetResponses, AppsInstallData, AppsInstallResponses, AppsListData, AppsListResponses, AppsRuntimeDiscoverData, AppsRuntimeDiscoverResponses, AppsRuntimeResolveData, AppsRuntimeResolveResponses, AppsRuntimeSessionData, AppsRuntimeSessionResponses, AppsUpdateData, AppsUpdateResponses, CliAuthApproveData, CliAuthApproveResponses, CliAuthDenyData, CliAuthDenyResponses, CliAuthPollData, CliAuthPollResponses, CliAuthStartData, CliAuthStartResponses, CliAuthVerifyTokenData, CliAuthVerifyTokenResponses, DeploymentsCreateData, DeploymentsCreateResponses, DeploymentsGetData, DeploymentsGetResponses, DeploymentsListData, DeploymentsListResponses, DeploymentsPublishData, DeploymentsPublishResponses, DeploymentsRuntimeData, DeploymentsRuntimeResponses } from './types.gen.js';
+import type { AppAgentChatData, AppAgentChatResponse, AppAgentChatResponses, AppAgentCreateData, AppAgentCreateResponses, AppsCreateData, AppsCreateResponses, AppsDeleteData, AppsDeleteResponses, AppsDeployData, AppsDeployResponses, AppsGetData, AppsGetResponses, AppsInstallData, AppsInstallResponses, AppsListData, AppsListResponses, AppsRuntimeDiscoverData, AppsRuntimeDiscoverResponses, AppsRuntimeResolveData, AppsRuntimeResolveErrors, AppsRuntimeResolveResponses, AppsRuntimeSessionData, AppsRuntimeSessionResponses, AppsUpdateData, AppsUpdateResponses, CliAuthApproveData, CliAuthApproveResponses, CliAuthDenyData, CliAuthDenyResponses, CliAuthPollData, CliAuthPollResponses, CliAuthStartData, CliAuthStartResponses, CliAuthVerifyTokenData, CliAuthVerifyTokenResponses, DeploymentsCreateData, DeploymentsCreateResponses, DeploymentsGetData, DeploymentsGetResponses, DeploymentsListData, DeploymentsListResponses, DeploymentsPublishData, DeploymentsPublishResponses, DeploymentsRuntimeData, DeploymentsRuntimeResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
   /**
@@ -99,7 +99,7 @@ export const appsRuntimeDiscover = <ThrowOnError extends boolean = false>(option
   }
 });
 
-export const appsRuntimeResolve = <ThrowOnError extends boolean = false>(options: Options<AppsRuntimeResolveData, ThrowOnError>): RequestResult<AppsRuntimeResolveResponses, unknown, ThrowOnError> => (options.client ?? client).post<AppsRuntimeResolveResponses, unknown, ThrowOnError>({
+export const appsRuntimeResolve = <ThrowOnError extends boolean = false>(options: Options<AppsRuntimeResolveData, ThrowOnError>): RequestResult<AppsRuntimeResolveResponses, AppsRuntimeResolveErrors, ThrowOnError> => (options.client ?? client).post<AppsRuntimeResolveResponses, AppsRuntimeResolveErrors, ThrowOnError>({
   url: '/apps/runtime/resolve',
   ...options,
   headers: {

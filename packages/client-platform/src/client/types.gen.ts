@@ -8,6 +8,26 @@ export type Schema0 = string | number | boolean | null | Array<Schema0> | {
   [key: string]: Schema0;
 };
 
+/**
+ * UndefinedError
+ */
+export type UndefinedError = {
+  defined: false;
+  code: string;
+  message: string;
+  data?: unknown;
+};
+
+/**
+ * GATEWAY_TIMEOUT
+ */
+export type GatewayTimeout = {
+  defined: true;
+  code: 'GATEWAY_TIMEOUT';
+  message: string;
+  data?: unknown;
+};
+
 export type AppAgentChatData = {
   body: {
     app: {
@@ -760,6 +780,15 @@ export type AppsRuntimeResolveData = {
   query?: never;
   url: '/apps/runtime/resolve';
 };
+
+export type AppsRuntimeResolveErrors = {
+  /**
+   * View resolution timed out
+   */
+  504: GatewayTimeout | UndefinedError;
+};
+
+export type AppsRuntimeResolveError = AppsRuntimeResolveErrors[keyof AppsRuntimeResolveErrors];
 
 export type AppsRuntimeResolveResponses = {
   /**

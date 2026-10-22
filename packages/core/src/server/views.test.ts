@@ -358,12 +358,16 @@ it("propagates request cancellation to the single platform call", async () => {
   });
   const controller = new AbortController();
   const pending = run(undefined, { signal: controller.signal });
+
+  const rejected = expect(pending).rejects.toMatchObject({
+    name: "AbortError",
+  });
+
   await vi.waitFor(() => {
     expect(signals).toHaveLength(1);
   });
   controller.abort();
-  const response = await pending;
-  expect(response.status).toBe(502);
+  await rejected;
   expect(signals.every((signal) => signal.aborted)).toBe(true);
 });
 
@@ -381,3 +385,15 @@ it.each([401, 404, 500, 502])(
     expect(runtimeFetch).not.toHaveBeenCalled();
   }
 );
+
+it("returns the platform's resolver timeout as a sanitized 504 without retrying", async () => {
+  const { run, platformFetch, runtimeFetch } = setup();
+  platformFetch.mockResolvedValueOnce(
+    new Response("private timeout details", { status: 504 })
+  );
+  const response = await run();
+  expect(response.status).toBe(504);
+  expect(await response.text()).toBe("View resolution timed out");
+  expect(platformFetch).toHaveBeenCalledOnce();
+  expect(runtimeFetch).not.toHaveBeenCalled();
+});

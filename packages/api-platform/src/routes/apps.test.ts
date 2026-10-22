@@ -344,6 +344,53 @@ describe("platform appRouter", () => {
     }
   });
 
+  it("returns a sanitized 504 and cancels the resolver when its one-second budget expires", async () => {
+    await seedRuntimeApp("timeoutmatch", [
+      { instances: true, path: "/", slot: "page" },
+    ]);
+
+    const requests: Request[] = [];
+
+    const runtimeFetch = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async (value, init) => {
+        requests.push(
+          value instanceof Request ? value : new Request(value, init)
+        );
+
+        return await Promise.withResolvers<Response>().promise;
+      });
+
+    try {
+      const handler = new OpenAPIHandler({ apps: appRouter });
+
+      const result = await handler.handle(
+        new Request("https://platform.test/api/platform/apps/runtime/resolve", {
+          body: JSON.stringify({
+            contexts: [{ context: {}, path: "/", status: "ready" }],
+            scopes: [productionScope],
+            slot: "page",
+            subjectId: "principal",
+            toolUrl: "https://host.test/tools",
+          }),
+          headers: { "content-type": "application/json" },
+          method: "POST",
+        }),
+        { context: createContext(), prefix: "/api/platform" }
+      );
+
+      expect(result.response?.status).toBe(504);
+      expect(await result.response?.json()).toMatchObject({
+        code: "GATEWAY_TIMEOUT",
+        message: "View resolution timed out",
+      });
+      expect(runtimeFetch).toHaveBeenCalledOnce();
+      expect(requests[0]?.signal.aborted).toBe(true);
+    } finally {
+      runtimeFetch.mockRestore();
+    }
+  });
+
   it("continues platform resolution past an entire page with no matching views", async () => {
     const matching = await seedRuntimeApp("oldermatch", [
       { instances: true, path: "/", slot: "page" },

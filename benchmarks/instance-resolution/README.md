@@ -8,6 +8,10 @@ Validated context values retain the existing RPC serialization semantics across 
 
 The platform discovers all installation pages and checks selected context readiness before issuing sessions or starting any resolver. A selected error rejects the request; loading returns a loading result. Unsupported or disabled deeper contexts do not prevent an enabled ancestor from resolving. A nearer view without instances blocks fallback through it. Cancelling the host request cancels its platform request and the platform's outstanding app calls. Runtime sessions and credentials are never part of the resolution response.
 
+The resolution phase has one shared 1,000 ms budget, including context decoding, session issuance, cold runtime startup, resolver execution, and response-body reading for every selected app. Discovery and host authentication/validation run before this budget; network travel to the platform is additional. On expiry the platform interrupts the resolution fibers, closes outstanding backend clients, and returns a sanitized 504 `View resolution timed out`, which the host preserves. It returns no partial results and does not retry. Adjust `instanceResolutionTimeoutMs` in `packages/api-platform/src/runtime/view-resolution.ts` to change the limit.
+
+The new platform and host handlers use oRPC's `handlerGen` integration. Effect handles concurrent work, interruption, and backend-client finalization; Promise-based SDK and database calls are adapted at their boundaries.
+
 ## Rollout
 
 1. Deploy the additive `/apps/runtime/resolve` platform endpoint. Existing SDKs continue using `/apps/runtime/discover` unchanged.

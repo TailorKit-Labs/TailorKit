@@ -1,6 +1,8 @@
+import { handlerGen } from "@orpc/experimental-effect";
 import { openapi } from "@orpc/openapi";
 import { ORPCError, RPCJsonSerializer } from "@orpc/server";
 import { appsRuntimeResolve } from "@patchsmith/client-platform/client";
+import { Effect } from "effect";
 import * as v from "valibot";
 
 import type { PatchsmithSchema } from "#schema/schema";
@@ -18,66 +20,97 @@ import type { ViewLayer, ViewContextValues } from "#views";
 
 const contextSerializer = new RPCJsonSerializer();
 
-const serializeContext = async (context: ViewContextValues) => {
-  const serialized = contextSerializer.serialize(context);
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- Schema and serialization failures enter through untyped exception boundaries.
+const invalidContext = (cause: unknown) =>
+  new ORPCError("BAD_REQUEST", {
+    cause,
+    message: "Invalid view context",
+  });
 
-  const blobs =
-    serialized.blobs === undefined
-      ? undefined
-      : await Promise.all(
-          serialized.blobs.map(async (blob) => {
-            const bytes = new Uint8Array(await blob.arrayBuffer());
-            let binary = "";
+const serializeContext = (context: ViewContextValues) =>
+  Effect.gen(function* serializeValues() {
+    const serialized = yield* Effect.try({
+      catch: invalidContext,
+      try: () => contextSerializer.serialize(context),
+    });
 
-            for (let offset = 0; offset < bytes.length; offset += 8192) {
-              binary += String.fromCodePoint(
-                ...bytes.subarray(offset, offset + 8192)
-              );
-            }
+    const blobs =
+      serialized.blobs === undefined
+        ? undefined
+        : yield* Effect.forEach(
+            serialized.blobs,
+            (blob) =>
+              Effect.gen(function* serializeBlob() {
+                const buffer = yield* Effect.tryPromise({
+                  catch: invalidContext,
+                  try: async () => await blob.arrayBuffer(),
+                });
 
-            return {
-              data: btoa(binary),
-              lastModified:
-                blob instanceof File ? blob.lastModified : undefined,
-              name: blob instanceof File ? blob.name : undefined,
-              type: blob.type,
-            };
-          })
-        );
+                const bytes = new Uint8Array(buffer);
+                let binary = "";
 
-  return {
-    context: v.parse(v.record(v.string(), v.unknown()), serialized.json),
-    contextBlobs: blobs,
-    contextMaps: serialized.maps,
-    contextMeta: serialized.meta?.map(([type, ...path]) => ({ path, type })),
-  };
-};
+                for (let offset = 0; offset < bytes.length; offset += 8192) {
+                  binary += String.fromCodePoint(
+                    ...bytes.subarray(offset, offset + 8192)
+                  );
+                }
 
-const validateLayers = async (
+                return {
+                  data: btoa(binary),
+                  lastModified:
+                    blob instanceof File ? blob.lastModified : undefined,
+                  name: blob instanceof File ? blob.name : undefined,
+                  type: blob.type,
+                };
+              }),
+            { concurrency: "unbounded" }
+          );
+
+    const json = yield* Effect.try({
+      catch: invalidContext,
+      try: () => v.parse(v.record(v.string(), v.unknown()), serialized.json),
+    });
+
+    return {
+      context: json,
+      contextBlobs: blobs,
+      contextMaps: serialized.maps,
+      contextMeta: serialized.meta?.map(([type, ...path]) => ({ path, type })),
+    };
+  });
+
+const validateLayers = (
   schema: PatchsmithSchema,
   paths: Set<string>,
   layers: ViewLayer[]
 ) =>
-  await Promise.all(
-    layers.map(async (layer): Promise<ViewLayer> => {
-      const validator = Object.entries(schema.views).find(
-        ([path]) => path === layer.path
-      )?.[1];
+  Effect.forEach(
+    layers,
+    (layer) =>
+      Effect.gen(function* validateLayer() {
+        const validator = Object.entries(schema.views).find(
+          ([path]) => path === layer.path
+        )?.[1];
 
-      if (!paths.has(layer.path) || layer.status !== "ready" || !validator) {
-        return layer;
-      }
+        if (!paths.has(layer.path) || layer.status !== "ready" || !validator) {
+          return layer;
+        }
 
-      try {
-        const parsed = await validator["~standard"].validate(layer.context);
+        const parsed = yield* Effect.tryPromise({
+          catch: invalidContext,
+          try: async () => await validator["~standard"].validate(layer.context),
+        });
 
         return parsed.issues
-          ? { path: layer.path, status: "error" }
+          ? { path: layer.path, status: "error" as const }
           : { ...layer, context: parsed.value };
-      } catch {
-        return { path: layer.path, status: "error" };
-      }
-    })
+      }).pipe(
+        Effect.orElseSucceed((): ViewLayer => ({
+          path: layer.path,
+          status: "error",
+        }))
+      ),
+    { concurrency: "unbounded" }
   );
 
 /** The host authenticates and validates context; the platform owns app-backend fan-out. */
@@ -86,147 +119,174 @@ export const views = o
     openapi({ method: "POST", path: "/views" }),
     httpPolicy({ authTiming: "views_auth", authenticate: true, json: true })
   )
+  .errors({ GATEWAY_TIMEOUT: { message: "View resolution timed out" } })
   .use(requireHostAuth)
   .input(viewsInputSchema)
   .output(viewsResultSchema)
-  .handler(async ({ context, input }) => {
-    const { request, schema } = context;
-    const viewer = context.patchsmith;
-    let scopes;
+  .handler(
+    handlerGen(function* views({ context, input }) {
+      const { schema } = context;
+      const viewer = context.patchsmith;
 
-    try {
-      scopes =
-        input.scopes?.length === 0
-          ? []
-          : selectPatchsmithScopes(viewer.scopes, input.scopes);
-    } catch {
-      throw new ORPCError("BAD_REQUEST", { message: "Invalid views request" });
-    }
+      const scopes = yield* Effect.try({
+        catch: () =>
+          new ORPCError("BAD_REQUEST", { message: "Invalid views request" }),
+        try: () =>
+          input.scopes?.length === 0
+            ? []
+            : selectPatchsmithScopes(viewer.scopes, input.scopes),
+      });
 
-    const definition = schema.slots[input.slot];
+      const definition = schema.slots[input.slot];
 
-    if (!definition || !scopes.length || input.appIds?.length === 0) {
-      return { data: [], status: "ready" };
-    }
+      if (!definition || !scopes.length || input.appIds?.length === 0) {
+        return { data: [], status: "ready" as const };
+      }
 
-    try {
-      request.signal.throwIfAborted();
+      return yield* Effect.gen(function* resolveViews() {
+        if (definition.multiple !== true) {
+          const started = performance.now();
 
-      if (definition.multiple !== true) {
-        const started = performance.now();
-        const apps = await listApps(context, scopes, request.signal);
-        recordHttpTiming(context, "views_discovery", started);
+          const apps = yield* Effect.tryPromise({
+            catch: () =>
+              new ORPCError("BAD_GATEWAY", {
+                message: "Unable to resolve views",
+              }),
+            try: async (signal) => await listApps(context, scopes, signal),
+          });
 
-        return {
-          data: apps
-            .filter(
-              (app) =>
-                input.appIds === undefined || input.appIds.includes(app.id)
-            )
-            .filter((app) =>
-              app.views?.some(
-                (view) =>
-                  view.slot === input.slot &&
-                  !view.disabled &&
-                  !view.instances &&
-                  definition.views.includes(view.path)
+          recordHttpTiming(context, "views_discovery", started);
+
+          return {
+            data: apps
+              .filter(
+                (app) =>
+                  input.appIds === undefined || input.appIds.includes(app.id)
               )
-            )
-            .map((app) => ({ app })),
-          status: "ready",
-        };
-      }
+              .filter((app) =>
+                app.views?.some(
+                  (view) =>
+                    view.slot === input.slot &&
+                    !view.disabled &&
+                    !view.instances &&
+                    definition.views.includes(view.path)
+                )
+              )
+              .map((app) => ({ app })),
+            status: "ready" as const,
+          };
+        }
 
-      const active = input.activeView;
+        const active = input.activeView;
 
-      if (!active) {
-        return { status: "idle" };
-      }
+        if (!active) {
+          return { status: "idle" as const };
+        }
 
-      const paths = getViewHierarchy(active.view).filter((path) =>
-        definition.views.includes(path)
-      );
+        const paths = getViewHierarchy(active.view).filter((path) =>
+          definition.views.includes(path)
+        );
 
-      const layers = await validateLayers(
-        schema,
-        new Set(paths.flatMap(getViewHierarchy)),
-        active.layers
-      );
+        const layers = yield* validateLayers(
+          schema,
+          new Set(paths.flatMap(getViewHierarchy)),
+          active.layers
+        );
 
-      const contexts = await Promise.all(
-        paths.map(async (path) => {
-          try {
-            const props = composeViewContext(path, {
-              declaredViews: Object.keys(schema.views),
-              layers,
-            });
+        const contexts = yield* Effect.forEach(
+          paths,
+          (path) =>
+            Effect.gen(function* prepareContext() {
+              const props = yield* Effect.try({
+                catch: invalidContext,
+                try: () =>
+                  composeViewContext(path, {
+                    declaredViews: Object.keys(schema.views),
+                    layers,
+                  }),
+              });
 
-            if (props.status !== "ready") {
-              return { path, status: props.status };
-            }
+              if (props.status !== "ready") {
+                return { path, status: props.status };
+              }
 
-            return {
-              ...(await serializeContext(props.context)),
-              path,
-              status: props.status,
-            };
-          } catch {
-            // The platform rejects errors only for views actually selected by an installation.
-            return { path, status: "error" as const };
-          }
-        })
-      );
+              return {
+                ...(yield* serializeContext(props.context)),
+                path,
+                status: props.status,
+              };
+            }).pipe(
+              // Reject errors only for views selected by an installation on the platform.
+              Effect.orElseSucceed(() => ({ path, status: "error" as const }))
+            ),
+          { concurrency: "unbounded" }
+        );
 
-      const started = performance.now();
+        const started = performance.now();
 
-      const { data, response } = await appsRuntimeResolve({
-        body: {
-          appIds: input.appIds === undefined ? undefined : [...input.appIds],
-          contexts,
-          scopes,
-          slot: input.slot,
-          subjectId: viewer.subjectId,
-          toolUrl: context.toolUrl,
-        },
-        client: context.platform,
-        headers: context.platformHeaders,
-        responseStyle: "fields",
-        signal: request.signal,
-        throwOnError: false,
-      });
-
-      recordHttpTiming(context, "views_platform", started);
-
-      if (!response) {
-        throw new ORPCError("BAD_GATEWAY", {
-          message: "Unable to resolve views",
+        const { data, response } = yield* Effect.tryPromise({
+          catch: () =>
+            new ORPCError("BAD_GATEWAY", {
+              message: "Unable to resolve views",
+            }),
+          try: async (signal) =>
+            await appsRuntimeResolve({
+              body: {
+                appIds:
+                  input.appIds === undefined ? undefined : [...input.appIds],
+                contexts,
+                scopes,
+                slot: input.slot,
+                subjectId: viewer.subjectId,
+                toolUrl: context.toolUrl,
+              },
+              client: context.platform,
+              headers: context.platformHeaders,
+              responseStyle: "fields",
+              signal,
+              throwOnError: false,
+            }),
         });
-      }
 
-      const timing = response.headers.get("server-timing");
+        recordHttpTiming(context, "views_platform", started);
 
-      if (timing !== null) {
-        context.resHeaders?.append("server-timing", timing);
-      }
+        if (!response) {
+          return yield* Effect.fail(
+            new ORPCError("BAD_GATEWAY", {
+              message: "Unable to resolve views",
+            })
+          );
+        }
 
-      if (response.status === 400) {
-        throw new ORPCError("BAD_REQUEST", { message: "Invalid view context" });
-      }
+        const timing = response.headers.get("server-timing");
 
-      if (!response.ok || !data) {
-        throw new ORPCError("BAD_GATEWAY", {
-          message: "Unable to resolve views",
-        });
-      }
+        if (timing !== null) {
+          context.resHeaders?.append("server-timing", timing);
+        }
 
-      return data;
-    } catch (error) {
-      if (error instanceof ORPCError) {
-        throw error;
-      }
+        if (response.status === 400) {
+          return yield* Effect.fail(
+            new ORPCError("BAD_REQUEST", { message: "Invalid view context" })
+          );
+        }
 
-      throw new ORPCError("BAD_GATEWAY", {
-        message: "Unable to resolve views",
+        if (response.status === 504) {
+          return yield* Effect.fail(
+            new ORPCError("GATEWAY_TIMEOUT", {
+              message: "View resolution timed out",
+            })
+          );
+        }
+
+        if (!response.ok || !data) {
+          return yield* Effect.fail(
+            new ORPCError("BAD_GATEWAY", {
+              message: "Unable to resolve views",
+            })
+          );
+        }
+
+        return data;
       });
-    }
-  });
+    })
+  );
