@@ -1,0 +1,25 @@
+packages/vite/src/index.ts
+  s_a11f6bc180ea21::t_8e89d9f0dcdc7a 36-38,322,332
+.changeset/router-module-suffix.md
+  s_a11f6bc180ea21::t_8e89d9f0dcdc7a 6
+packages/vite/src/builder/server.test.ts
+  s_a11f6bc180ea21::t_8e89d9f0dcdc7a 370-373,381-390,398-403
+  s_a11f6bc180ea21::t_928c7828ae8441 362-369,391-397
+  s_a11f6bc180ea21::t_1674fd6c179d3e 374-380
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d1797d6b034114f26409ca8f8cc69bec171ed996",
+  "prompts": {},
+  "sessions": {
+    "s_a11f6bc180ea21": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a161d1-02ed-78d2-9039-5049128b2489",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
