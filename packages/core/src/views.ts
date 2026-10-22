@@ -177,7 +177,7 @@ export const resolveSlotView = (
   };
 };
 
-/** The host owns discovery and resolution; callers supply only filters and view context. */
+/** The host authenticates and validates context; the platform resolves instances. */
 export interface ViewsInput {
   slot: string;
   scopes?: readonly string[];

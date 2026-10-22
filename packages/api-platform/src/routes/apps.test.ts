@@ -216,6 +216,184 @@ describe("platform appRouter", () => {
     return { app, deployment };
   };
 
+  it("resolves only authorized installations on the platform without returning runtime credentials", async () => {
+    const views = [{ instances: true as const, path: "/", slot: "page" }];
+    const first = await seedRuntimeApp("firstresolve", views);
+    const second = await seedRuntimeApp("secondresolve", views);
+    await seedRuntimeApp("stageresolve", views, stagingScope);
+    await seedRuntimeApp(
+      "foreignresolve",
+      views,
+      productionScope,
+      createContext({
+        project: { ...createContext().project, id: otherProjectId },
+      })
+    );
+    await seedRuntimeApp("disabledresolve", [
+      { disabled: true, instances: true, path: "/", slot: "page" },
+    ]);
+    const requests: Request[] = [];
+
+    const runtimeFetch = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async (value, init) => {
+        const request =
+          value instanceof Request ? value : new Request(value, init);
+
+        requests.push(request);
+        await request.clone().json();
+
+        return Response.json({
+          json: [{ data: {}, key: "page", metadata: { label: "Page" } }],
+        });
+      });
+
+    const findMany = vi.spyOn(db.query.app, "findMany");
+    const findFirst = vi.spyOn(db.query.app, "findFirst");
+
+    const body = {
+      contexts: [
+        {
+          context: { workspace: "verified" },
+          path: "/",
+          status: "ready" as const,
+        },
+      ],
+      scopes: [productionScope],
+      slot: "page",
+      subjectId: "principal",
+      toolUrl: "https://host.test/api/patchsmith/tools/execute",
+    };
+
+    try {
+      const handler = new OpenAPIHandler({ apps: appRouter });
+
+      const response = await handler.handle(
+        new Request("https://platform.test/api/platform/apps/runtime/resolve", {
+          body: JSON.stringify(body),
+          headers: { "content-type": "application/json" },
+          method: "POST",
+        }),
+        { context: createContext(), prefix: "/api/platform" }
+      );
+
+      expect(response.response?.status).toBe(200);
+      expect(response.response?.headers.get("cache-control")).toBe("no-store");
+      expect(response.response?.headers.get("server-timing")).toMatch(
+        /^views_discovery;dur=\d+\.\d, views_instances;dur=\d+\.\d$/u
+      );
+      const text = await response.response?.text();
+      expect(text).not.toContain("platform-token");
+
+      const result = z
+        .object({
+          data: z.array(
+            z.object({ app: z.object({ id: z.string() }), key: z.string() })
+          ),
+          status: z.literal("ready"),
+        })
+        .parse(JSON.parse(text ?? "null"));
+
+      expect(result.data.map(({ app }) => app.id).toSorted()).toEqual(
+        [first.app.id, second.app.id].toSorted()
+      );
+      expect(findMany).toHaveBeenCalledOnce();
+      expect(findFirst).not.toHaveBeenCalled();
+      expect(requests).toHaveLength(2);
+
+      for (const request of requests) {
+        expect(request.headers.get("authorization")).toBe(
+          "Bearer platform-token"
+        );
+        // oxlint-disable-next-line no-await-in-loop -- Read each captured request once while checking its independent wire contract.
+        expect(await request.json()).toEqual({
+          json: {
+            args: {
+              context: { workspace: "verified" },
+              path: "/",
+              slot: "page",
+            },
+            name: "_patchsmith.instances.resolve",
+          },
+        });
+      }
+
+      const filtered = await call(
+        appRouter.runtimeResolve,
+        { body: { ...body, appIds: [first.app.id, "not-an-installation"] } },
+        { context: createContext() }
+      );
+
+      expect(filtered.body).toMatchObject({
+        data: [{ app: { id: first.app.id } }],
+        status: "ready",
+      });
+      expect(requests).toHaveLength(3);
+      await expect(
+        call(
+          appRouter.runtimeResolve,
+          { body },
+          { context: createContext({ runtimeService: true }) }
+        )
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      expect(requests).toHaveLength(3);
+    } finally {
+      runtimeFetch.mockRestore();
+      findMany.mockRestore();
+      findFirst.mockRestore();
+    }
+  });
+
+  it("continues platform resolution past an entire page with no matching views", async () => {
+    const matching = await seedRuntimeApp("oldermatch", [
+      { instances: true, path: "/", slot: "page" },
+    ]);
+
+    const scope = canonicalizeScope(productionScope);
+    await db.insert(appTable).values(
+      Array.from({ length: 100 }, (_, index) => ({
+        createdAt: new Date("2030-01-01T00:00:00.000Z"),
+        name: `Unpublished ${index}`,
+        projectId,
+        scope: scope.scope,
+        scopeKey: scope.scopeKey,
+        shortId: `page${String(index).padStart(8, "0")}`,
+      }))
+    );
+
+    const runtimeFetch = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(Response.json({ json: [] }));
+
+    const findMany = vi.spyOn(db.query.app, "findMany");
+
+    try {
+      const result = await call(
+        appRouter.runtimeResolve,
+        {
+          body: {
+            contexts: [{ context: {}, path: "/", status: "ready" }],
+            scopes: [productionScope],
+            slot: "page",
+            subjectId: "principal",
+            toolUrl: "https://host.test/tools",
+          },
+        },
+        { context: createContext() }
+      );
+
+      expect(result.body).toEqual({ data: [], status: "ready" });
+      expect(findMany).toHaveBeenCalledTimes(2);
+      expect(runtimeFetch).toHaveBeenCalledOnce();
+      expect(testState.issueToken).toHaveBeenCalledWith(
+        expect.objectContaining({ installationId: matching.app.id })
+      );
+    } finally {
+      runtimeFetch.mockRestore();
+      findMany.mockRestore();
+    }
+  });
+
   it("discovers runtime sessions with one scoped query and no per-app lookups", async () => {
     const views = [{ instances: true as const, path: "/", slot: "page" }];
     const first = await seedRuntimeApp("first", views);

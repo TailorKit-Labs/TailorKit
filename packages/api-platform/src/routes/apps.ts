@@ -18,6 +18,10 @@ import {
   requireAppInScopes,
 } from "#procedures";
 import {
+  resolveRuntimeViews,
+  runtimeViewContexts,
+} from "#runtime/view-resolution";
+import {
   canonicalizeScope,
   canonicalizeScopes,
   scopeSchema,
@@ -191,6 +195,96 @@ const runtimeDiscover = protectedRouter
         pagination: { hasMore: apps.length > pageSize, page, pageSize },
       },
       headers: { "cache-control": "no-store" },
+    };
+  });
+
+/** Resolve all authorized installations near the app runtime, independently of host geography. */
+const runtimeResolve = protectedRouter
+  .meta(openapi({ method: "POST", path: "/apps/runtime/resolve" }))
+  .use(async ({ context, next }) => {
+    if (context.runtimeService === true) {
+      throw new ORPCError("FORBIDDEN");
+    }
+
+    return await next();
+  })
+  .input(
+    z.object({
+      body: z.strictObject({
+        ...runtimeViewerSchema.shape,
+        appIds: z.array(z.string().min(1).max(256)).optional(),
+        contexts: runtimeViewContexts,
+        scopes: scopesSchema,
+        slot: z.string().min(1).max(255),
+      }),
+    })
+  )
+  .output(
+    z.object({
+      body: z.discriminatedUnion("status", [
+        z.object({ status: z.literal("loading") }),
+        z.object({
+          data: z.array(
+            z.object({
+              app: AppWithCurrentDeployment,
+              data: z.unknown(),
+              key: z.string(),
+              metadata: z.record(z.string(), z.unknown()),
+            })
+          ),
+          status: z.literal("ready"),
+        }),
+      ]),
+      headers: z.object({
+        "cache-control": z.literal("no-store"),
+        "server-timing": z.string(),
+      }),
+    })
+  )
+  .handler(async ({ context, input, signal }) => {
+    const discoveryStarted = performance.now();
+    const apps: z.infer<typeof AppWithCurrentDeployment>[] = [];
+    let page = 1;
+    const pageSize = 100;
+
+    for (;;) {
+      signal?.throwIfAborted();
+
+      // oxlint-disable-next-line no-await-in-loop -- Discover every authorized page before resolving any app; context errors must prevent all app execution.
+      const installations = await discoverApps(context.project.id, {
+        ...input.body,
+        page,
+        pageSize,
+      });
+
+      apps.push(
+        ...installations
+          .slice(0, pageSize)
+          .map((appValue) => withAppAssetUrl(appValue, context.project.shortId))
+      );
+
+      if (installations.length <= pageSize) {
+        break;
+      }
+
+      page += 1;
+    }
+
+    const discoveryMs = performance.now() - discoveryStarted;
+    const instancesStarted = performance.now();
+
+    const result = await resolveRuntimeViews(apps, input.body, {
+      createSession: async (appValue) =>
+        await createRuntimeSession(context, appValue, input.body),
+      signal,
+    });
+
+    return {
+      body: result,
+      headers: {
+        "cache-control": "no-store" as const,
+        "server-timing": `views_discovery;dur=${discoveryMs.toFixed(1)}, views_instances;dur=${(performance.now() - instancesStarted).toFixed(1)}`,
+      },
     };
   });
 
@@ -531,6 +625,7 @@ export const appRouter = o.router({
   install: installApp,
   list: listApps,
   runtimeDiscover,
+  runtimeResolve,
   runtimeSession,
   update: updateApp,
 });

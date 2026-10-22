@@ -722,6 +722,116 @@ export type AppsRuntimeDiscoverResponses = {
 
 export type AppsRuntimeDiscoverResponse = AppsRuntimeDiscoverResponses[keyof AppsRuntimeDiscoverResponses];
 
+export type AppsRuntimeResolveData = {
+  body: {
+    subjectId: string;
+    toolUrl: string;
+    appIds?: Array<string>;
+    contexts: Array<{
+      context: {
+        [key: string]: unknown;
+      };
+      contextBlobs?: Array<{
+        data: string;
+        lastModified?: number;
+        name?: string;
+        type: string;
+      }>;
+      contextMaps?: Array<Array<string | number>>;
+      contextMeta?: Array<{
+        path: Array<string | number>;
+        type: string;
+      }>;
+      path: string;
+      status: 'ready';
+    } | {
+      path: string;
+      status: 'loading' | 'error';
+    }>;
+    scopes: Array<{
+      name: string;
+      value: {
+        [key: string]: Schema0;
+      };
+    }>;
+    slot: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/apps/runtime/resolve';
+};
+
+export type AppsRuntimeResolveResponses = {
+  /**
+   * OK
+   */
+  200: {
+    status: 'loading';
+  } | {
+    data: Array<{
+      app: {
+        createdAt: string;
+        createdByAgent: boolean;
+        currentDeploymentId: string | null;
+        description: string | null;
+        id: string;
+        name: string;
+        projectId: string;
+        scope: {
+          name: string;
+          value: {
+            [key: string]: Schema0;
+          };
+        };
+        shortId: string;
+        /**
+         * Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens.
+         */
+        slug: string;
+        updatedAt: string;
+        clientPath?: string;
+        currentDeployment: {
+          appId: string;
+          clientEntryFileId: string | null;
+          createdAt: string;
+          id: string;
+          logoDarkFileId: string | null;
+          logoDarkPath: string | null;
+          logoLightFileId: string | null;
+          logoLightPath: string | null;
+          shortId: string;
+          status: 'uploading' | 'deploying' | 'verifying' | 'published';
+          updatedAt: string;
+          views: Array<{
+            disabled?: true;
+            instances?: true;
+            path: string;
+            slot: string;
+          }>;
+        } | null;
+        logoPaths?: {
+          dark?: string;
+          light?: string;
+        };
+        views: Array<{
+          disabled?: true;
+          instances?: true;
+          path: string;
+          slot: string;
+        }>;
+      };
+      data: unknown;
+      key: string;
+      metadata: {
+        [key: string]: unknown;
+      };
+    }>;
+    status: 'ready';
+  };
+};
+
+export type AppsRuntimeResolveResponse = AppsRuntimeResolveResponses[keyof AppsRuntimeResolveResponses];
+
 export type AppsRuntimeSessionData = {
   body: {
     subjectId: string;

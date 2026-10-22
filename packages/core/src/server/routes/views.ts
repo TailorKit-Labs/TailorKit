@@ -1,27 +1,57 @@
 import { openapi } from "@orpc/openapi";
-import { ORPCError } from "@orpc/server";
-import type { ViewInstance } from "@patchsmith/app/client";
-import { createClient, reference } from "@patchsmith/app/client/connection";
+import { ORPCError, RPCJsonSerializer } from "@orpc/server";
+import { appsRuntimeResolve } from "@patchsmith/client-platform/client";
+import * as v from "valibot";
 
 import type { PatchsmithSchema } from "#schema/schema";
 import { httpPolicy, recordHttpTiming } from "#server/http";
+import { listApps } from "#server/list-apps";
 import { o, requireHostAuth } from "#server/procedures";
-import { discoverViewApps } from "#server/runtime-discovery";
 import { selectPatchsmithScopes } from "#server/scope";
 import {
   composeViewContext,
   getViewHierarchy,
-  selectSlotView,
   viewsInputSchema,
   viewsResultSchema,
 } from "#views";
-import type { ViewsResult, ViewLayer, ViewContextValues } from "#views";
+import type { ViewLayer, ViewContextValues } from "#views";
 
-const resolver = reference<
-  "action",
-  { slot: string; path: string; context: ViewContextValues },
-  ViewInstance[]
->("_patchsmith.instances.resolve", "action");
+const contextSerializer = new RPCJsonSerializer();
+
+const serializeContext = async (context: ViewContextValues) => {
+  const serialized = contextSerializer.serialize(context);
+
+  const blobs =
+    serialized.blobs === undefined
+      ? undefined
+      : await Promise.all(
+          serialized.blobs.map(async (blob) => {
+            const bytes = new Uint8Array(await blob.arrayBuffer());
+            let binary = "";
+
+            for (let offset = 0; offset < bytes.length; offset += 8192) {
+              binary += String.fromCodePoint(
+                ...bytes.subarray(offset, offset + 8192)
+              );
+            }
+
+            return {
+              data: btoa(binary),
+              lastModified:
+                blob instanceof File ? blob.lastModified : undefined,
+              name: blob instanceof File ? blob.name : undefined,
+              type: blob.type,
+            };
+          })
+        );
+
+  return {
+    context: v.parse(v.record(v.string(), v.unknown()), serialized.json),
+    contextBlobs: blobs,
+    contextMaps: serialized.maps,
+    contextMeta: serialized.meta?.map(([type, ...path]) => ({ path, type })),
+  };
+};
 
 const validateLayers = async (
   schema: PatchsmithSchema,
@@ -29,7 +59,7 @@ const validateLayers = async (
   layers: ViewLayer[]
 ) =>
   await Promise.all(
-    layers.map(async (layer) => {
+    layers.map(async (layer): Promise<ViewLayer> => {
       const validator = Object.entries(schema.views).find(
         ([path]) => path === layer.path
       )?.[1];
@@ -38,17 +68,19 @@ const validateLayers = async (
         return layer;
       }
 
-      const parsed = await validator["~standard"].validate(layer.context);
+      try {
+        const parsed = await validator["~standard"].validate(layer.context);
 
-      if (parsed.issues) {
-        throw new Error(`Invalid context for view "${layer.path}".`);
+        return parsed.issues
+          ? { path: layer.path, status: "error" }
+          : { ...layer, context: parsed.value };
+      } catch {
+        return { path: layer.path, status: "error" };
       }
-
-      return { ...layer, context: parsed.value };
     })
   );
 
-/** Discover authorized installations and run their generated instance actions on the host. */
+/** The host authenticates and validates context; the platform owns app-backend fan-out. */
 export const views = o
   .meta(
     openapi({ method: "POST", path: "/views" }),
@@ -60,11 +92,6 @@ export const views = o
   .handler(async ({ context, input }) => {
     const { request, schema } = context;
     const viewer = context.patchsmith;
-
-    const recordTiming = (stage: string, started: number) => {
-      recordHttpTiming(context, stage, started);
-    };
-
     let scopes;
 
     try {
@@ -82,42 +109,20 @@ export const views = o
       return { data: [], status: "ready" };
     }
 
-    if (definition.multiple === true && input.activeView === null) {
-      return { status: "idle" };
-    }
-
-    const controller = new AbortController();
-
-    const abort = () => {
-      controller.abort();
-    };
-
-    request.signal.addEventListener("abort", abort, { once: true });
-
     try {
       request.signal.throwIfAborted();
 
-      const discoveryStarted = performance.now();
-
-      const { apps: discovered, sessions } = await discoverViewApps(
-        context,
-        input,
-        definition,
-        viewer,
-        scopes,
-        context.toolUrl,
-        controller.signal
-      );
-
-      recordTiming("views_discovery", discoveryStarted);
-
-      const apps = discovered.filter(
-        (app) => input.appIds === undefined || input.appIds.includes(app.id)
-      );
-
       if (definition.multiple !== true) {
+        const started = performance.now();
+        const apps = await listApps(context, scopes, request.signal);
+        recordHttpTiming(context, "views_discovery", started);
+
         return {
           data: apps
+            .filter(
+              (app) =>
+                input.appIds === undefined || input.appIds.includes(app.id)
+            )
             .filter((app) =>
               app.views?.some(
                 (view) =>
@@ -138,99 +143,84 @@ export const views = o
         return { status: "idle" };
       }
 
-      const matches = apps.flatMap((app) => {
-        const view = selectSlotView(
-          app.views ?? [],
-          input.slot,
-          active.view,
-          schema
-        );
-
-        return view?.instances ? [{ app, view }] : [];
-      });
-
-      const paths = new Set(
-        matches.flatMap(({ view }) => getViewHierarchy(view.path))
+      const paths = getViewHierarchy(active.view).filter((path) =>
+        definition.views.includes(path)
       );
 
-      let layers;
+      const layers = await validateLayers(
+        schema,
+        new Set(paths.flatMap(getViewHierarchy)),
+        active.layers
+      );
 
-      try {
-        layers = await validateLayers(schema, paths, active.layers);
-      } catch {
-        throw new ORPCError("BAD_REQUEST", { message: "Invalid view context" });
-      }
-
-      const resolved = matches.map(({ app, view }) => ({
-        app,
-        props: composeViewContext(view.path, {
-          declaredViews: Object.keys(schema.views),
-          layers,
-        }),
-      }));
-
-      if (resolved.some(({ props }) => props.status === "error")) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: "View context is unavailable",
-        });
-      }
-
-      if (resolved.some(({ props }) => props.status === "loading")) {
-        return { status: "loading" };
-      }
-
-      const instancesStarted = performance.now();
-
-      const data = await Promise.all(
-        resolved.map(async ({ app, props }) => {
-          if (props.status !== "ready") {
-            return [];
-          }
-
-          const backend = createClient({
-            // oxlint-disable-next-line require-await -- The async provider returns this request's already authorized session without I/O.
-            getSession: async () => {
-              const session = sessions.get(app.id);
-
-              if (!session) {
-                throw new Error("Missing discovered runtime session");
-              }
-
-              return session;
-            },
-          });
-
-          const close = () => {
-            backend.close();
-          };
-
-          controller.signal.addEventListener("abort", close, { once: true });
-
+      const contexts = await Promise.all(
+        paths.map(async (path) => {
           try {
-            controller.signal.throwIfAborted();
-
-            const instances = await backend.action(resolver, {
-              context: props.context,
-              path: props.view,
-              slot: input.slot,
+            const props = composeViewContext(path, {
+              declaredViews: Object.keys(schema.views),
+              layers,
             });
 
-            return instances.map((instance) => ({ ...instance, app }));
-          } finally {
-            controller.signal.removeEventListener("abort", close);
-            backend.close();
+            if (props.status !== "ready") {
+              return { path, status: props.status };
+            }
+
+            return {
+              ...(await serializeContext(props.context)),
+              path,
+              status: props.status,
+            };
+          } catch {
+            // The platform rejects errors only for views actually selected by an installation.
+            return { path, status: "error" as const };
           }
         })
       );
 
-      recordTiming("views_instances", instancesStarted);
+      const started = performance.now();
 
-      const result: ViewsResult = { data: data.flat(), status: "ready" };
+      const { data, response } = await appsRuntimeResolve({
+        body: {
+          appIds: input.appIds === undefined ? undefined : [...input.appIds],
+          contexts,
+          scopes,
+          slot: input.slot,
+          subjectId: viewer.subjectId,
+          toolUrl: context.toolUrl,
+        },
+        client: context.platform,
+        headers: context.platformHeaders,
+        responseStyle: "fields",
+        signal: request.signal,
+        throwOnError: false,
+      });
 
-      return result;
+      recordHttpTiming(context, "views_platform", started);
+
+      if (!response) {
+        throw new ORPCError("BAD_GATEWAY", {
+          message: "Unable to resolve views",
+        });
+      }
+
+      const timing = response.headers.get("server-timing");
+
+      if (timing !== null) {
+        context.resHeaders?.append("server-timing", timing);
+      }
+
+      if (response.status === 400) {
+        throw new ORPCError("BAD_REQUEST", { message: "Invalid view context" });
+      }
+
+      if (!response.ok || !data) {
+        throw new ORPCError("BAD_GATEWAY", {
+          message: "Unable to resolve views",
+        });
+      }
+
+      return data;
     } catch (error) {
-      controller.abort();
-
       if (error instanceof ORPCError) {
         throw error;
       }
@@ -238,7 +228,5 @@ export const views = o
       throw new ORPCError("BAD_GATEWAY", {
         message: "Unable to resolve views",
       });
-    } finally {
-      request.signal.removeEventListener("abort", abort);
     }
   });

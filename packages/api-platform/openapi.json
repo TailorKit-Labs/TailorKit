@@ -3124,6 +3124,531 @@
         }
       }
     },
+    "/apps/runtime/resolve": {
+      "post": {
+        "operationId": "apps.runtimeResolve",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "subjectId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  },
+                  "toolUrl": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "appIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256
+                    }
+                  },
+                  "contexts": {
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "context": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {}
+                            },
+                            "contextBlobs": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "data": {
+                                    "type": "string"
+                                  },
+                                  "lastModified": {
+                                    "type": "number"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "type": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["data", "type"]
+                              }
+                            },
+                            "contextMaps": {
+                              "type": "array",
+                              "items": {
+                                "type": "array",
+                                "items": {
+                                  "type": ["string", "number"]
+                                }
+                              }
+                            },
+                            "contextMeta": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "path": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": ["string", "number"]
+                                    }
+                                  },
+                                  "type": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["path", "type"]
+                              }
+                            },
+                            "path": {
+                              "type": "string",
+                              "maxLength": 1024,
+                              "format": "starts_with",
+                              "pattern": "^\\/.*"
+                            },
+                            "status": {
+                              "type": "string",
+                              "const": "ready"
+                            }
+                          },
+                          "required": ["context", "path", "status"],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "path": {
+                              "type": "string",
+                              "maxLength": 1024,
+                              "format": "starts_with",
+                              "pattern": "^\\/.*"
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": ["loading", "error"]
+                            }
+                          },
+                          "required": ["path", "status"],
+                          "additionalProperties": false
+                        }
+                      ]
+                    }
+                  },
+                  "scopes": {
+                    "minItems": 1,
+                    "maxItems": 32,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+                        },
+                        "value": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 64
+                          },
+                          "additionalProperties": {
+                            "$ref": "#/components/schemas/__schema0"
+                          }
+                        }
+                      },
+                      "required": ["name", "value"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "slot": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  }
+                },
+                "required": [
+                  "subjectId",
+                  "toolUrl",
+                  "contexts",
+                  "scopes",
+                  "slot"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "const": "loading"
+                        }
+                      },
+                      "required": ["status"],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "app": {
+                                "type": "object",
+                                "properties": {
+                                  "createdAt": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "x-native-type": "date"
+                                  },
+                                  "createdByAgent": {
+                                    "type": "boolean"
+                                  },
+                                  "currentDeploymentId": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "description": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 255
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "maxLength": 127
+                                  },
+                                  "projectId": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "scope": {
+                                    "type": "object",
+                                    "properties": {
+                                      "name": {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+                                      },
+                                      "value": {
+                                        "type": "object",
+                                        "propertyNames": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 64
+                                        },
+                                        "additionalProperties": {
+                                          "$ref": "#/components/schemas/__schema0"
+                                        }
+                                      }
+                                    },
+                                    "required": ["name", "value"],
+                                    "additionalProperties": false
+                                  },
+                                  "shortId": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9]{12}$"
+                                  },
+                                  "slug": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 32,
+                                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                                    "description": "Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens."
+                                  },
+                                  "updatedAt": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "x-native-type": "date"
+                                  },
+                                  "clientPath": {
+                                    "type": "string",
+                                    "format": "uri"
+                                  },
+                                  "currentDeployment": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "appId": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "clientEntryFileId": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "format": "uuid",
+                                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "createdAt": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "x-native-type": "date"
+                                          },
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "logoDarkFileId": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "format": "uuid",
+                                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "logoDarkPath": {
+                                            "type": ["string", "null"]
+                                          },
+                                          "logoLightFileId": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "format": "uuid",
+                                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "logoLightPath": {
+                                            "type": ["string", "null"]
+                                          },
+                                          "shortId": {
+                                            "type": "string",
+                                            "pattern": "^[a-z0-9]{12}$"
+                                          },
+                                          "status": {
+                                            "type": "string",
+                                            "enum": [
+                                              "uploading",
+                                              "deploying",
+                                              "verifying",
+                                              "published"
+                                            ]
+                                          },
+                                          "updatedAt": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "x-native-type": "date"
+                                          },
+                                          "views": {
+                                            "maxItems": 1000,
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "disabled": {
+                                                  "type": "boolean",
+                                                  "const": true
+                                                },
+                                                "instances": {
+                                                  "type": "boolean",
+                                                  "const": true
+                                                },
+                                                "path": {
+                                                  "type": "string",
+                                                  "maxLength": 1024,
+                                                  "format": "starts_with",
+                                                  "pattern": "^\\/.*"
+                                                },
+                                                "slot": {
+                                                  "type": "string",
+                                                  "minLength": 1,
+                                                  "maxLength": 255
+                                                }
+                                              },
+                                              "required": ["path", "slot"],
+                                              "additionalProperties": false
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "appId",
+                                          "clientEntryFileId",
+                                          "createdAt",
+                                          "id",
+                                          "logoDarkFileId",
+                                          "logoDarkPath",
+                                          "logoLightFileId",
+                                          "logoLightPath",
+                                          "shortId",
+                                          "status",
+                                          "updatedAt",
+                                          "views"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "logoPaths": {
+                                    "type": "object",
+                                    "properties": {
+                                      "dark": {
+                                        "type": "string",
+                                        "format": "uri"
+                                      },
+                                      "light": {
+                                        "type": "string",
+                                        "format": "uri"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  "views": {
+                                    "maxItems": 1000,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "disabled": {
+                                          "type": "boolean",
+                                          "const": true
+                                        },
+                                        "instances": {
+                                          "type": "boolean",
+                                          "const": true
+                                        },
+                                        "path": {
+                                          "type": "string",
+                                          "maxLength": 1024,
+                                          "format": "starts_with",
+                                          "pattern": "^\\/.*"
+                                        },
+                                        "slot": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 255
+                                        }
+                                      },
+                                      "required": ["path", "slot"],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "createdAt",
+                                  "createdByAgent",
+                                  "currentDeploymentId",
+                                  "description",
+                                  "id",
+                                  "name",
+                                  "projectId",
+                                  "scope",
+                                  "shortId",
+                                  "slug",
+                                  "updatedAt",
+                                  "currentDeployment",
+                                  "views"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "data": {},
+                              "key": {
+                                "type": "string"
+                              },
+                              "metadata": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {}
+                              }
+                            },
+                            "required": ["app", "data", "key", "metadata"],
+                            "additionalProperties": false
+                          }
+                        },
+                        "status": {
+                          "type": "string",
+                          "const": "ready"
+                        }
+                      },
+                      "required": ["data", "status"],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "server-timing": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/apps/runtime/session": {
       "post": {
         "operationId": "apps.runtimeSession",
