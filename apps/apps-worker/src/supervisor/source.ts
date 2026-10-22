@@ -86,8 +86,7 @@ export const deploymentSource = (
         key: string
       ) => Promise<{ body: ReadableStream<Uint8Array> } | null>;
     };
-  },
-  options: { waitUntil?: (task: Promise<void>) => void } = {}
+  }
 ) => {
   let cached: { version: string; code: string } | undefined;
 
@@ -104,16 +103,6 @@ export const deploymentSource = (
     metadata?.key === key &&
     identity.deploymentId !== metadata.tokenDeploymentId &&
     identity.deploymentId !== metadata.deployment.deploymentId;
-
-  const fillMetadata = async (key: string, deployment: ServerDeployment) => {
-    try {
-      await env.DEPLOYMENTS.put(key, JSON.stringify(deployment), {
-        expirationTtl: metadataLifetimeSeconds,
-      });
-    } catch (error) {
-      console.error("Could not cache app deployment metadata", error);
-    }
-  };
 
   const warmDeployment = (
     key: string,
@@ -281,13 +270,8 @@ export const deploymentSource = (
               throw new AppError("FORBIDDEN", "App or project mismatch");
             }
 
-            const fill = fillMetadata(key, deployment);
-
-            if (options.waitUntil) {
-              options.waitUntil(fill);
-            } else {
-              await fill;
-            }
+            // Only publication writes the shared KV pointer. A delayed lookup
+            // must not overwrite a newer publication; cache this result locally.
           }
 
           if (
