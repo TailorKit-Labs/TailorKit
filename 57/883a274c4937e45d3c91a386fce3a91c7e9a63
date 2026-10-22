@@ -1,0 +1,25 @@
+apps/apps-worker/README.md
+  s_03779b7e2ab596::t_43da1195ef3a29 194,214,216
+apps/apps-worker/src/supervisor/source.ts
+  s_03779b7e2ab596::t_f03a411deb4086 88,260-261
+apps/apps-worker/src/installation.ts
+  s_03779b7e2ab596::t_f03a411deb4086 31
+apps/apps-worker/src/supervisor/source.test.ts
+  s_03779b7e2ab596::t_152eafcbc0576c 98-102,104-106,108-125,127-143,147-157,189,225,270
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "57883a274c4937e45d3c91a386fce3a91c7e9a63",
+  "prompts": {},
+  "sessions": {
+    "s_03779b7e2ab596": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1635d-7a6e-74b2-b3c9-1ec29d075b00",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
