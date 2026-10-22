@@ -1,0 +1,1 @@
+ALTER TABLE "app_deployment" ADD COLUMN "hooks" jsonb DEFAULT '[]' NOT NULL;
