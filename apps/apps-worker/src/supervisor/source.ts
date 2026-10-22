@@ -76,7 +76,8 @@ export const deploymentSource = (
         key: string
       ) => Promise<{ body: ReadableStream<Uint8Array> } | null>;
     };
-  }
+  },
+  options: { waitUntil?: (task: Promise<void>) => void } = {}
 ) => {
   let cached: { version: string; code: string } | undefined;
 
@@ -93,6 +94,16 @@ export const deploymentSource = (
     metadata?.key === key &&
     identity.deploymentId !== metadata.tokenDeploymentId &&
     identity.deploymentId !== metadata.deployment.deploymentId;
+
+  const fillMetadata = async (key: string, deployment: ServerDeployment) => {
+    try {
+      await env.DEPLOYMENTS.put(key, JSON.stringify(deployment), {
+        expirationTtl: metadataLifetimeSeconds,
+      });
+    } catch (error) {
+      console.error("Could not cache app deployment metadata", error);
+    }
+  };
 
   const warmDeployment = (
     key: string,
@@ -250,12 +261,13 @@ export const deploymentSource = (
               throw new AppError("FORBIDDEN", "App or project mismatch");
             }
 
-            await env.DEPLOYMENTS.put(key, JSON.stringify(deployment), {
-              expirationTtl: metadataLifetimeSeconds,
-              // oxlint-disable-next-line anti-slop/no-unknown-parameters -- JavaScript may reject with arbitrary values; this boundary records or preserves the original failure.
-            }).catch((error: unknown) => {
-              console.error("Could not cache app deployment metadata", error);
-            });
+            const fill = fillMetadata(key, deployment);
+
+            if (options.waitUntil) {
+              options.waitUntil(fill);
+            } else {
+              await fill;
+            }
           }
 
           if (

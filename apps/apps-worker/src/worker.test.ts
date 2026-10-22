@@ -173,6 +173,9 @@ const setup = () => {
       getWebSockets: () => [],
       id,
       storage: { kv: { get: () => version, put } },
+      waitUntil: (task: Promise<void>) => {
+        void task;
+      },
     } as unknown as DurableObjectState;
   /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
 

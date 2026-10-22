@@ -28,7 +28,11 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
   readonly #queue = Semaphore.makeUnsafe(1);
   readonly #actions = createActionLeases();
   readonly #verify = verifier(this.env);
-  readonly #source = deploymentSource(this.env);
+  readonly #source = deploymentSource(this.env, {
+    waitUntil: (task) => {
+      this.ctx.waitUntil(task);
+    },
+  });
   #prepared:
     | {
         version: string;

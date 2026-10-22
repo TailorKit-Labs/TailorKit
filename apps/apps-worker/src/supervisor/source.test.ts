@@ -95,6 +95,52 @@ it("resolves authorized metadata separately from R2 code and never follows redir
   expect(fetch).toHaveBeenCalledOnce();
 });
 
+it.each([false, true])(
+  "returns authoritative metadata before a background KV fill settles (failure: %s)",
+  async (fails) => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json(deployment));
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const fill = Promise.withResolvers<boolean>();
+    const tasks: Promise<void>[] = [];
+
+    const source = deploymentSource(
+      {
+        BUNDLES: { get: vi.fn() },
+        DEPLOYMENTS: {
+          get: asyncFixture(() => null),
+          put: async () => {
+            await fill.promise;
+          },
+        },
+        PLATFORM_URL: "https://platform.test",
+        RUNTIME_SERVICE_TOKEN: "private",
+      },
+      {
+        waitUntil: (task) => {
+          tasks.push(task);
+        },
+      }
+    );
+
+    expect(await Effect.runPromise(source.current(identity))).toEqual(
+      deployment
+    );
+    expect(tasks).toHaveLength(1);
+
+    if (fails) {
+      fill.reject(new Error("KV unavailable"));
+    } else {
+      fill.resolve(true);
+    }
+
+    await Promise.all(tasks);
+    expect(log).toHaveBeenCalledTimes(fails ? 1 : 0);
+    expect(await Effect.runPromise(source.current(identity))).toEqual(
+      deployment
+    );
+  }
+);
+
 it.each([null, "tampered", `${code} extra`])(
   "rejects missing, corrupted and oversized R2 code: %s",
   async (contents) => {
