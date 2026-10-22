@@ -1,0 +1,19 @@
+apps/apps-worker/README.md
+  s_03779b7e2ab596::t_4a4176934a0f08 224
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "316ed0bf4104658da622dd2dbf0bcdaf70750c14",
+  "prompts": {},
+  "sessions": {
+    "s_03779b7e2ab596": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1635d-7a6e-74b2-b3c9-1ec29d075b00",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
