@@ -1,0 +1,22 @@
+docs/concepts/hooks.mdx
+  s_0e4e551100410f::t_015f895a481ae4 1-83,85-116
+  s_0e4e551100410f::t_6948f4cbfba547 84
+docs/docs.json
+  s_0e4e551100410f::t_015f895a481ae4 26-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8554373dc64cf042d11ad69e886eb1fe98755ad9",
+  "prompts": {},
+  "sessions": {
+    "s_0e4e551100410f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a162fd-0c17-7e42-a25d-5fc38fe5b278",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
