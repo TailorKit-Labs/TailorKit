@@ -15,12 +15,27 @@ export const warmAppDeployment = async (input: RuntimeRollout) => {
 
     // Limit each batch to ten active warm-up steps, each independently retryable.
     for (let offset = 0; offset < ids.length; offset += 10) {
+      const batch = ids.slice(offset, offset + 10);
+
       // oxlint-disable-next-line no-await-in-loop -- Await each batch to cap concurrent per-installation warm-ups.
-      await Promise.all(
-        ids.slice(offset, offset + 10).map(async (id) => {
+      const results = await Promise.allSettled(
+        batch.map(async (id) => {
           await warmRuntimeDeployment(input.projectId, id);
         })
       );
+
+      for (const [index, result] of results.entries()) {
+        if (result.status === "rejected") {
+          const error: unknown = result.reason;
+
+          console.error("Could not warm app installation", {
+            appId: batch[index],
+            deploymentId: input.deploymentId,
+            error,
+            projectId: input.projectId,
+          });
+        }
+      }
     }
 
     cursor = ids.at(-1);
