@@ -54,7 +54,7 @@ const setup = (
   const reply = vi.fn(
     asyncFixture(() =>
       Response.json(
-        { data: [{ ...instance, app }], status: "ready" },
+        { data: [{ ...instance, app }], status: "ready", warnings: [] },
         {
           headers: {
             "server-timing":
@@ -123,6 +123,7 @@ it("makes one platform request with authenticated scopes and validated composed 
   expect(await response.json()).toEqual({
     data: [{ ...instance, app }],
     status: "ready",
+    warnings: [],
   });
   expect(requests).toHaveLength(1);
   expect(requests[0]?.url).toBe(
@@ -149,7 +150,11 @@ it("makes one platform request with authenticated scopes and validated composed 
 it("resolves single slots without contacting an app backend", async () => {
   const { requests, run, runtimeFetch } = setup();
   const response = await run({ activeView, slot: "single" });
-  expect(await response.json()).toEqual({ data: [{ app }], status: "ready" });
+  expect(await response.json()).toEqual({
+    data: [{ app }],
+    status: "ready",
+    warnings: [],
+  });
   expect(requests.map((request) => new URL(request.url).pathname)).toEqual([
     "/api/platform/apps/list",
   ]);
@@ -297,9 +302,15 @@ it("rejects duplicate layers and unavailable scopes before contacting the platfo
 
 it("passes app filters to the platform and returns no out-of-scope installations", async () => {
   const { run, requests, reply } = setup();
-  reply.mockResolvedValueOnce(Response.json({ data: [], status: "ready" }));
+  reply.mockResolvedValueOnce(
+    Response.json({ data: [], status: "ready", warnings: [] })
+  );
   const response = await run({ activeView, appIds: ["outside"], slot: "page" });
-  expect(await response.json()).toEqual({ data: [], status: "ready" });
+  expect(await response.json()).toEqual({
+    data: [],
+    status: "ready",
+    warnings: [],
+  });
   expect(await requests[0]?.json()).toMatchObject({
     appIds: ["outside"],
     scopes: [app.scope],

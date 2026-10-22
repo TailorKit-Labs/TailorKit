@@ -88,9 +88,11 @@ it("selects instances and validates keys without a framework", async () => {
     metadata: { title: "Overview" },
   };
 
-  const instances = vi
-    .spyOn(client.endpoints, "views")
-    .mockResolvedValue({ data: [{ ...instance, app }], status: "ready" });
+  const instances = vi.spyOn(client.endpoints, "views").mockResolvedValue({
+    data: [{ ...instance, app }],
+    status: "ready",
+    warnings: [],
+  });
 
   const id = Symbol("view");
   store.views.register({ context: { customer: "registered" }, id, view: "/" });
@@ -218,7 +220,7 @@ it("cancels an instance request when switching to a controlled slot", async () =
 
         try {
           respond = () => {
-            resolve({ data: [], status: "ready" });
+            resolve({ data: [], status: "ready", warnings: [] });
           };
         } catch (error) {
           rejectPending(error);

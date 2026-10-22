@@ -140,7 +140,7 @@ export const views = o
       const definition = schema.slots[input.slot];
 
       if (!definition || !scopes.length || input.appIds?.length === 0) {
-        return { data: [], status: "ready" as const };
+        return { data: [], status: "ready" as const, warnings: [] };
       }
 
       return yield* Effect.gen(function* resolveViews() {
@@ -174,6 +174,7 @@ export const views = o
               )
               .map((app) => ({ app })),
             status: "ready" as const,
+            warnings: [],
           };
         }
 

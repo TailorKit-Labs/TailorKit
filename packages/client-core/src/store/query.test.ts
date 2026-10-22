@@ -118,7 +118,9 @@ it("starts discovery only when observed and supplies filtered results and shared
 
 it("fetches views without a client discovery request or provided app data", async () => {
   const { fetch, store, app } = setup(false, []);
-  fetch.mockResolvedValue(Response.json({ data: [{ app }], status: "ready" }));
+  fetch.mockResolvedValue(
+    Response.json({ data: [{ app }], status: "ready", warnings: [] })
+  );
   const query = createViewsQuery(store, { slot: "page" });
   expect(fetch).not.toHaveBeenCalled();
   const stop = query.state.listen(() => {});
@@ -162,12 +164,15 @@ it("cancels obsolete context requests and ignores their late responses", async (
     Response.json({
       data: [{ app, data: {}, key: "second", metadata: {} }],
       status: "ready",
+      warnings: [],
     })
   );
   await vi.waitFor(() => {
     expect(query.state.get().data?.[0]).toMatchObject({ key: "second" });
   });
-  requests[0]?.resolve(Response.json({ data: [], status: "ready" }));
+  requests[0]?.resolve(
+    Response.json({ data: [], status: "ready", warnings: [] })
+  );
   await allTasks();
   expect(query.state.get().data?.[0]).toMatchObject({ key: "second" });
   stop();
@@ -176,7 +181,9 @@ it("cancels obsolete context requests and ignores their late responses", async (
 
 it("refetches an explicit installation through the host with current context", async () => {
   const { fetch, store, app } = setup();
-  fetch.mockResolvedValue(Response.json({ data: [], status: "ready" }));
+  fetch.mockResolvedValue(
+    Response.json({ data: [], status: "ready", warnings: [] })
+  );
   const query = createAppViewsQuery(store, app, "page");
   const id = Symbol("view");
   store.views.register({ context: { customer: "latest" }, id, view: "/" });
@@ -203,7 +210,9 @@ it("keeps root-slot discovery stable across child context changes and refreshes 
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockImplementation(
-      asyncFixture(() => Response.json({ data: [], status: "ready" }))
+      asyncFixture(() =>
+        Response.json({ data: [], status: "ready", warnings: [] })
+      )
     );
 
   const client = createPatchsmithFetchClient({
@@ -297,7 +306,7 @@ it("exposes partial-response warnings with data and clears them after a complete
   });
 
   fetch.mockResolvedValueOnce(
-    Response.json({ data: [{ app }], status: "ready" })
+    Response.json({ data: [{ app }], status: "ready", warnings: [] })
   );
   await query.refetch();
   expect(query.state.get().warnings).toEqual([]);

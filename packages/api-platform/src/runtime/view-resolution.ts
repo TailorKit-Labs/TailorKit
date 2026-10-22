@@ -266,7 +266,7 @@ export const resolveRuntimeViews = <TApp extends RuntimeInstallation>(
         { concurrency: "unbounded" }
       );
 
-      return { data: instances.flat(), status: "ready" as const };
+      return { data: instances.flat(), status: "ready" as const, warnings: [] };
     }).pipe(
       Effect.timeoutOrElse({
         duration: instanceResolutionTimeoutMs,

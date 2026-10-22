@@ -2,13 +2,13 @@
 
 The host can run anywhere. Keep user authentication and registered context-schema validation on the host, and keep app discovery, runtime-session issuance, and resolver fan-out on the Patchsmith platform near the app runtime.
 
-The public host `/views` request and result shapes stay unchanged. Multiple-slot requests send validated candidate contexts, verified scopes, the authenticated subject, and the trusted tool URL to `/apps/runtime/resolve`. The platform queries installations in that project and those scopes, selects the nearest enabled supported view, and calls the generated resolver for each match concurrently. App code continues executing in its Durable Object. Host tool calls retain their signed callback authorization.
+The host `/views` request shape stays unchanged. Ready responses always include `data` and `warnings`. Multiple-slot requests send validated candidate contexts, verified scopes, the authenticated subject, and the trusted tool URL to `/apps/runtime/resolve`. The platform queries installations in that project and those scopes, selects the nearest enabled supported view, and calls the generated resolver for each match concurrently. App code continues executing in its Durable Object. Host tool calls retain their signed callback authorization.
 
 Validated context values retain the existing RPC serialization semantics across the added platform hop, including dates, big integers, maps, and binary values produced by host-schema transformations.
 
 The platform discovers all installation pages and checks selected context readiness before issuing sessions or starting any resolver. A selected error rejects the request; loading returns a loading result. Unsupported or disabled deeper contexts do not prevent an enabled ancestor from resolving. A nearer view without instances blocks fallback through it. Cancelling the host request cancels its platform request and the platform's outstanding app calls. Runtime sessions and credentials are never part of the resolution response.
 
-The resolution phase has one shared 1,000 ms budget, including context decoding, session issuance, cold runtime startup, resolver execution, and response-body reading for every selected app. Discovery and host authentication/validation run before this budget; network travel to the platform is additional. On expiry the platform interrupts unfinished resolution fibers and closes outstanding backend clients. If any app completed, it returns those apps' fully validated results in discovery order, including valid empty results; unfinished apps are omitted. If no app completed, it returns a sanitized 504 `View resolution timed out`, which the host preserves. Caller cancellation and resolver failures still fail the request. No actions are retried. Partial results use a ready response with optional `warnings` metadata and the normal client cache freshness window (30 seconds by default); callers can explicitly refetch. Adjust `instanceResolutionTimeoutMs` in `packages/api-platform/src/runtime/view-resolution.ts` to change the limit.
+The resolution phase has one shared 1,000 ms budget, including context decoding, session issuance, cold runtime startup, resolver execution, and response-body reading for every selected app. Discovery and host authentication/validation run before this budget; network travel to the platform is additional. On expiry the platform interrupts unfinished resolution fibers and closes outstanding backend clients. If any app completed, it returns those apps' fully validated results in discovery order, including valid empty results; unfinished apps are omitted. If no app completed, it returns a sanitized 504 `View resolution timed out`, which the host preserves. Caller cancellation and resolver failures still fail the request. No actions are retried. Partial results use a ready response with `warnings` metadata and the normal client cache freshness window (30 seconds by default); callers can explicitly refetch. Adjust `instanceResolutionTimeoutMs` in `packages/api-platform/src/runtime/view-resolution.ts` to change the limit.
 
 A partial HTTP response includes one structured warning per timed-out app:
 
@@ -27,15 +27,15 @@ A partial HTTP response includes one structured warning per timed-out app:
 }
 ```
 
-`data` contains only completed results, and can be empty when a completed app returned no instances. Complete HTTP responses omit `warnings` for compatibility; framework-neutral view queries and React `useViews()` always expose a `warnings` array, empty when there are none. Warnings remain alongside their data during a refresh and clear when a complete response replaces it. Partial success keeps `error` null. A UI can show a non-blocking “Some apps couldn't load” notice when `warnings.length > 0` and use the existing `fetch()` callback to retry. The warning code is stable; consumers should not parse the message. No runtime credentials or underlying exception details are included.
+`data` contains only completed results, and can be empty when a completed app returned no instances. Every ready HTTP response, framework-neutral view query, and React `useViews()` result includes a `warnings` array, empty when there are none. Warnings remain alongside their data during a refresh and clear when a complete response replaces it. Partial success keeps `error` null. A UI can show a non-blocking “Some apps couldn't load” notice when `warnings.length > 0` and use the existing `fetch()` callback to retry. The warning code is stable; consumers should not parse the message. No runtime credentials or underlying exception details are included.
 
 The new platform and host handlers use oRPC's `handlerGen` integration. Effect handles concurrent work, interruption, and backend-client finalization; Promise-based SDK and database calls are adapted at their boundaries.
 
 ## Rollout
 
-1. Deploy the additive `/apps/runtime/resolve` platform endpoint. Existing SDKs continue using `/apps/runtime/discover` unchanged.
-2. Release the SDK and update hosts. The new SDK makes one platform resolution request and never falls back to calling app backends from the host.
-3. Repeat the production benchmark after deployment, including a host outside US East. Keep cold and repeated samples separate.
+This is a breaking replacement of `/apps/runtime/discover` with `/apps/runtime/resolve`; the obsolete discovery-and-session endpoint and generated client operation are removed. Deploy the platform and upgrade host SDKs together. Hosts require the new endpoint, and ready responses require a `warnings` array.
+
+Repeat the production benchmark after deployment, including a host outside US East. Keep cold and repeated samples separate.
 
 `views_platform` measures the host's full platform call. `views_discovery` and `views_instances` are platform measurements returned through `Server-Timing`; they are contained within `views_platform`, so do not add all three. Instance timing now includes session issuance as well as resolver execution. Authentication timing remains on the host.
 

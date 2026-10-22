@@ -140,6 +140,7 @@ it("deduplicates host view requests across framework-neutral consumers", async (
       Response.json({
         data: [{ app, data: {}, key: "overview", metadata: {} }],
         status: "ready",
+        warnings: [],
       })
     )
   );
@@ -169,7 +170,9 @@ it("prefetches views without a contract, registered context store or UI runtime"
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockImplementation(
-      asyncFixture(() => Response.json({ data: [{ app }], status: "ready" }))
+      asyncFixture(() =>
+        Response.json({ data: [{ app }], status: "ready", warnings: [] })
+      )
     );
 
   const client = createPatchsmithFetchClient({
@@ -181,7 +184,7 @@ it("prefetches views without a contract, registered context store or UI runtime"
   const query = client.views(input);
   await query.fetch();
   expect(query.getSnapshot()).toMatchObject({
-    data: { data: [{ app }], status: "ready" },
+    data: { data: [{ app }], status: "ready", warnings: [] },
     status: "ready",
   });
   await client.views(input).fetch();

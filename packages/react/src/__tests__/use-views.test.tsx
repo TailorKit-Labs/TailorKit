@@ -45,7 +45,8 @@ const wrapper = ({ children }: { children: ReactNode }) => (
   </StrictMode>
 );
 
-const ready = () => Response.json({ data: items, status: "ready" });
+const ready = () =>
+  Response.json({ data: items, status: "ready", warnings: [] });
 
 afterEach(() => {
   cleanup();

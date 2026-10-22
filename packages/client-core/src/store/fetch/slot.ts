@@ -43,8 +43,7 @@ export const createSlotStore = (
           current.status === "ready"
             ? (current.data?.status ?? "idle")
             : current.status,
-        warnings:
-          current.data?.status === "ready" ? (current.data.warnings ?? []) : [],
+        warnings: current.data?.status === "ready" ? current.data.warnings : [],
       };
     }
 

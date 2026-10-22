@@ -267,7 +267,7 @@ export const viewsResultSchema: v.GenericSchema<ViewsResult> = v.variant(
         ])
       ),
       status: v.literal("ready"),
-      warnings: v.optional(v.array(viewResolutionWarningSchema)),
+      warnings: v.array(viewResolutionWarningSchema),
     }),
     v.object({ status: v.picklist(["idle", "loading"]) }),
   ]
@@ -276,7 +276,7 @@ export const viewsResultSchema: v.GenericSchema<ViewsResult> = v.variant(
 export type ViewsResult =
   | {
       status: "ready";
-      warnings?: ViewResolutionWarning[];
+      warnings: ViewResolutionWarning[];
       data: (
         | { app: PatchsmithApp }
         | (ViewInstance & { app: PatchsmithApp })

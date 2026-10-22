@@ -97,7 +97,11 @@ const setup = () => {
 it("selects the closest enabled view and resolves instances with private installation sessions", async () => {
   const options = setup();
   const result = await resolveRuntimeViews([app], input, options);
-  expect(result).toEqual({ data: [{ ...instance, app }], status: "ready" });
+  expect(result).toEqual({
+    data: [{ ...instance, app }],
+    status: "ready",
+    warnings: [],
+  });
   expect(options.createSession).toHaveBeenCalledOnce();
   const [request] = options.requests;
   expect(request?.url).toBe("https://runtime.test/installation/rpc/actions");
@@ -255,7 +259,7 @@ it("does not fall back through a closer view without instances", async () => {
     options
   );
 
-  expect(result).toEqual({ data: [], status: "ready" });
+  expect(result).toEqual({ data: [], status: "ready", warnings: [] });
   expect(options.createSession).not.toHaveBeenCalled();
   expect(options.fetch).not.toHaveBeenCalled();
 });

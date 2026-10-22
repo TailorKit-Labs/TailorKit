@@ -35,7 +35,6 @@ import {
   createRuntimeSession,
   publishRuntimeMetadata,
   runtimeSession,
-  runtimeSessionSchema,
   runtimeViewerSchema,
 } from "./runtime";
 
@@ -143,65 +142,6 @@ const listApps = cliRouter
     };
   });
 
-/** Host-only discovery and runtime authorization share the same scoped database query. */
-const runtimeDiscover = protectedRouter
-  .meta(openapi({ method: "POST", path: "/apps/runtime/discover" }))
-  .input(
-    z.object({
-      body: paginationQuery.extend({
-        ...runtimeViewerSchema.shape,
-        appIds: z.array(z.string().min(1).max(256)).optional(),
-        scopes: scopesSchema,
-        slot: z.string().min(1),
-        viewPaths: z.array(z.string().min(1)),
-      }),
-    })
-  )
-  .output(
-    paginatedOutput(
-      z.object({
-        app: AppWithCurrentDeployment,
-        session: runtimeSessionSchema,
-      })
-    ).extend({ headers: z.object({ "cache-control": z.literal("no-store") }) })
-  )
-  .handler(async ({ context, input }) => {
-    const { page, pageSize, slot, viewPaths } = input.body;
-    const apps = await discoverApps(context.project.id, input.body);
-
-    const matching = apps
-      .slice(0, pageSize)
-      .map((installation) =>
-        withAppAssetUrl(installation, context.project.shortId)
-      )
-      .filter((installation) =>
-        installation.views.some(
-          (view) =>
-            view.slot === slot &&
-            view.instances === true &&
-            !view.disabled &&
-            viewPaths.includes(view.path)
-        )
-      );
-
-    return {
-      body: {
-        items: await Promise.all(
-          matching.map(async (installation) => ({
-            app: installation,
-            session: await createRuntimeSession(
-              context,
-              installation,
-              input.body
-            ),
-          }))
-        ),
-        pagination: { hasMore: apps.length > pageSize, page, pageSize },
-      },
-      headers: { "cache-control": "no-store" },
-    };
-  });
-
 /** Resolve all authorized installations near the app runtime, independently of host geography. */
 const runtimeResolve = protectedRouter
   .meta(openapi({ method: "POST", path: "/apps/runtime/resolve" }))
@@ -241,7 +181,7 @@ const runtimeResolve = protectedRouter
             })
           ),
           status: z.literal("ready"),
-          warnings: z.array(runtimeViewWarning).optional(),
+          warnings: z.array(runtimeViewWarning),
         }),
       ]),
       headers: z.object({
@@ -648,7 +588,6 @@ export const appRouter = o.router({
   get: getApp,
   install: installApp,
   list: listApps,
-  runtimeDiscover,
   runtimeResolve,
   runtimeSession,
   update: updateApp,
