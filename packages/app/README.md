@@ -153,7 +153,7 @@ const listTasks = fn.query.handler(({ db }) =>
 export default defineRouter({ listTasks });
 ```
 
-Enable `server: {}` in `patchsmith.config.ts`. The builder discovers `src/functions/**/*.fn.ts` and registers each default router automatically; no `src/server.ts` is needed. Other files remain ordinary helpers.
+Every app includes a private backend without additional configuration. The builder discovers `src/functions/**/*.fn.ts` and registers each default router automatically; no `src/server.ts` is needed. Other files remain ordinary helpers.
 
 File paths prefix router keys. Both `billing.invoices.fn.ts` and `billing/invoices.fn.ts` expose `api.billing.invoices.*`; mixed dots and directories work too. `index.fn.ts` creates an `index` namespace. Router objects may nest, so `tasks.fn.ts` exporting `defineRouter({ get: { children, parents } })` exposes `api.tasks.get.children` and `api.tasks.get.parents`.
 

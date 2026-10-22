@@ -45,7 +45,11 @@ type PlatformResponse =
   | { description: string | null; name: string }
   | { id: string; status?: string }
   | { code?: string; message: string }
-  | { assets: { uploadUrl: string }[]; deployment: { id: string } };
+  | {
+      assets: { uploadUrl: string }[];
+      deployment: { id: string };
+      server: { uploadUrl: string };
+    };
 
 const respond = (
   response: ServerResponse,
@@ -113,6 +117,7 @@ const handleRequest = async (
       respond(response, {
         assets: [{ uploadUrl: `${host}/upload` }],
         deployment: { id: "deployment" },
+        server: { uploadUrl: `${host}/upload` },
       });
 
       return;

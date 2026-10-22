@@ -864,7 +864,7 @@ export const tools = ${renderToolRuntime(schema.tools ?? {})} as PatchsmithTools
 /** Markdown references share the resolved schema used by the single bindings file. */
 export const renderGeneratedReferences = (
   schemaFile: PatchsmithSchemaFile,
-  options: { bindingsPath: string; hasApi: boolean }
+  options: { bindingsPath: string }
 ): GeneratedFiles => {
   const schema = resolveSchemaFile(schemaFile);
 
@@ -947,23 +947,16 @@ export const generateTypes = async (
       ? await fetchSchemaFromHost(loaded.config.host)
       : await readSchemaFile(path.resolve(root, options.schemaPath)));
 
-  const functionFiles = loaded.config.server
-    ? await discoverFunctionFiles(loaded.root)
-    : [];
+  const functionFiles = await discoverFunctionFiles(loaded.root);
+  const typesFile = await generateFunctionTypes(loaded.root, functionFiles);
 
-  let functionsModule: string | undefined;
+  const relative = path
+    .relative(path.dirname(outPath), typesFile)
+    .split(path.sep)
+    .join("/")
+    .replace(/\.ts$/u, "");
 
-  if (loaded.config.server) {
-    const typesFile = await generateFunctionTypes(loaded.root, functionFiles);
-
-    const relative = path
-      .relative(path.dirname(outPath), typesFile)
-      .split(path.sep)
-      .join("/")
-      .replace(/\.ts$/u, "");
-
-    functionsModule = relative.startsWith(".") ? relative : `./${relative}`;
-  }
+  const functionsModule = relative.startsWith(".") ? relative : `./${relative}`;
 
   const output = renderGeneratedTypes(schema, { functionsModule });
   const skill = await prepareAppSkill(root, outPath);
@@ -973,7 +966,6 @@ export const generateTypes = async (
       ? null
       : renderGeneratedReferences(schema, {
           bindingsPath: skill.bindingsPath,
-          hasApi: Boolean(loaded.config.server),
         });
 
   await mkdir(path.dirname(outPath), { recursive: true });

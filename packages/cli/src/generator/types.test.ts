@@ -70,7 +70,7 @@ it("generates type-only function bindings, including custom output paths and emp
     await mkdir(path.join(root, "src/functions"), { recursive: true });
     await writeFile(
       path.join(root, "patchsmith.config.mjs"),
-      'export default { name: "Test App", slug: "test-app", host: "https://host.test", server: {} };'
+      'export default { name: "Test App", slug: "test-app", host: "https://host.test" };'
     );
     const filename = path.join(root, "src/functions/todos.fn.ts");
     await writeFile(filename, 'throw new Error("Never evaluate server code");');
@@ -104,9 +104,9 @@ it("generates type-only function bindings, including custom output paths and emp
   }
 });
 
-it("requires explicit backend opt-in", async () => {
+it("discovers backend functions without server configuration", async () => {
   const root = await mkdtemp(
-    path.join(tmpdir(), "patchsmith-client-only-types-")
+    path.join(tmpdir(), "patchsmith-default-backend-types-")
   );
 
   const fetch = mockSchemaFetch(1);
@@ -122,7 +122,13 @@ it("requires explicit backend opt-in", async () => {
       'throw new Error("Unused functions");'
     );
     const generated = await generateTypes({ cwd: root });
-    expect(await readFile(generated, "utf-8")).not.toContain("createApi");
+    expect(await readFile(generated, "utf-8")).toContain("createApi");
+    expect(
+      await readFile(
+        path.join(root, "src/patchsmith.functions.gen.ts"),
+        "utf-8"
+      )
+    ).toContain('import type module0 from "./functions/todos.fn"');
   } finally {
     fetch.mockRestore();
     await rm(root, { force: true, recursive: true });

@@ -24,7 +24,7 @@ it("builds the app's Vite config with custom plugins, aliases, constants and out
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(
       path.join(root, "config/patchsmith.config.mjs"),
-      'export default { name: "Test App", slug: "test-app", host: "https://host.test", server: {} };'
+      'export default { name: "Test App", slug: "test-app", host: "https://host.test" };'
     );
     await writeFile(
       path.join(root, "src/message.ts"),

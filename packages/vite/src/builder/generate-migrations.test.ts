@@ -21,7 +21,7 @@ it.each([undefined, "history"])(
       await writeFile(path.join(root, "src/db/schema.ts"), testSchema);
       await writeFile(
         path.join(root, "patchsmith.config.mjs"),
-        `export default { name: "Test App", slug: "test-app", host: "https://host.example.com", server: ${JSON.stringify(directory !== undefined && directory !== null && directory !== "" ? { migrations: directory } : {})} };`
+        `export default ${JSON.stringify({ host: "https://host.example.com", name: "Test App", server: directory === undefined ? undefined : { migrations: directory }, slug: "test-app" })};`
       );
 
       const migrations = await generateAppMigrations({

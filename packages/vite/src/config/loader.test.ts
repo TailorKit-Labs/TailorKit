@@ -62,7 +62,7 @@ it("rejects app descriptions longer than 255 characters", () => {
   ).toThrow();
 });
 
-it("preserves backend enablement and migration configuration", () => {
+it("preserves optional backend settings and migration configuration", () => {
   expect(v.parse(patchsmithConfigSchema, { ...config, server: {} })).toEqual({
     ...config,
     server: {},

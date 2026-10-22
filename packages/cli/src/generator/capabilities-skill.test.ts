@@ -78,7 +78,7 @@ it("generates a discoverable skill with working reference links, including custo
   try {
     await writeFile(
       path.join(root, "patchsmith.config.mjs"),
-      'export default { name: "Example", slug: "example", host: "https://host.test", server: {} };'
+      'export default { name: "Example", slug: "example", host: "https://host.test" };'
     );
     await mkdir(path.join(root, "src"));
     await writeFile(
@@ -269,7 +269,6 @@ tools.todos.add(123);
 it("generates targeted human-readable references from the same component and slot contracts", () => {
   const files = renderGeneratedReferences(schema, {
     bindingsPath: "../../../src/patchsmith.gen.ts",
-    hasApi: false,
   });
 
   expect(files["components/Button.md"]).toContain('"primary", "secondary"');
@@ -301,7 +300,6 @@ it("carries component and slot descriptions from a host contract into skill refe
 
   const files = renderGeneratedReferences(contract, {
     bindingsPath: "../../../src/patchsmith.gen.ts",
-    hasApi: false,
   });
 
   expect(files["components/Form.md"]).toContain(
@@ -321,7 +319,6 @@ it("keeps responsive primitive references small without dropping the host's keys
 
   const files = renderGeneratedReferences(contract, {
     bindingsPath: "../../../src/patchsmith.gen.ts",
-    hasApi: false,
   });
 
   expect(files["components/Box.md"]?.length).toBeLessThan(6000);
@@ -339,7 +336,7 @@ it("removes obsolete references on regeneration and preserves unrelated source a
   try {
     await writeFile(
       path.join(root, "patchsmith.config.mjs"),
-      'export default { name: "Example", slug: "example", host: "https://host.test", server: {} };'
+      'export default { name: "Example", slug: "example", host: "https://host.test" };'
     );
     await generateTypes({ cwd: root, schema });
 
@@ -388,7 +385,7 @@ it("preserves an existing references directory without a generated ownership mar
   try {
     await writeFile(
       path.join(root, "patchsmith.config.mjs"),
-      'export default { name: "Example", slug: "example", host: "https://host.test", server: {} };'
+      'export default { name: "Example", slug: "example", host: "https://host.test" };'
     );
 
     const referencesDirectory = path.join(

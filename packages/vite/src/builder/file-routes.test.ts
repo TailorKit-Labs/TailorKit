@@ -281,7 +281,7 @@ const withFileRouteApp = async (check: (root: string) => Promise<void>) => {
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(
       path.join(root, "patchsmith.config.mjs"),
-      'export default { name: "Test App", slug: "test-app", host: "https://host.example.com", server: {} };'
+      'export default { name: "Test App", slug: "test-app", host: "https://host.example.com" };'
     );
     await writeFile(
       path.join(root, "src/root.tsx"),
@@ -454,7 +454,7 @@ it("checks re-exported view paths against their file locations during the build"
   }
 });
 
-it("resolves the client runtime from the app when build output is outside the project", async () => {
+it("resolves client and server runtimes from the app when build output is outside the project", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "patchsmith-file-client-"));
 
   const output = await mkdtemp(
@@ -480,6 +480,9 @@ it("resolves the client runtime from the app when build output is outside the pr
     );
 
     expect(manifest.views).toEqual([{ path: "/", slot: "panel" }]);
+    expect(
+      await readFile(path.join(output, "server/server.js"), "utf-8")
+    ).toContain("runtimeManifest");
   } finally {
     await rm(root, { force: true, recursive: true });
     await rm(output, { force: true, recursive: true });
