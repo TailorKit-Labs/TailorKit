@@ -1,0 +1,25 @@
+.changeset/nearby-instance-resolution.md
+  s_55caf14bd61e1b::t_04e3050c347510 8
+benchmarks/instance-resolution/README.md
+  s_55caf14bd61e1b::t_664a3981f6fe5d 11,23-33
+packages/api-platform/src/runtime/view-resolution.test.ts
+  s_55caf14bd61e1b::t_412a66fa51e9df 5,417,450-452,517-622
+packages/api-platform/src/runtime/view-resolution.ts
+  s_55caf14bd61e1b::t_217157bdbd55ad 104-108,110-114,117-125,127-132,134-145,147,149-156,158,160-162,164-168,170-185,188-263,265-270,272
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "acba86964cb08066f58d0139a763f4b749734523",
+  "prompts": {},
+  "sessions": {
+    "s_55caf14bd61e1b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1611d-74d6-7a51-b98f-a9c06f9607ee",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
