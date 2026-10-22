@@ -162,3 +162,28 @@ Shared namespaces merge across files. Duplicate callable paths and function/name
 Run `patchsmith generate` after adding, moving, or deleting function files. Generated `src/patchsmith.functions.gen.ts` imports routers only as types; `src/patchsmith.gen.ts` uses those types for client `api` references. Builds refresh the function registry, and build watch mode tracks new, renamed, and removed modules. Private implementations stay out of the browser bundle.
 
 Actions can import a router from `#functions/tasks.fn`, declare `.functions({ tasks })`, and call `queries.tasks.listTasks()`; they receive no direct database handle. Discovery does not grant additional action capabilities.
+
+## Internal functions
+
+Functions are public by default. Add `.internal()` before `.handler()` to restrict a query, mutation, or action to backend execution:
+
+```ts
+// src/functions/tasks.fn.ts
+import { defineRouter } from "patchsmith/server";
+
+import { fn } from "#db";
+
+const listTasks = fn.query
+  .internal()
+  .handler(({ db }) => db.query.tasks.findMany({ limit: 100 }).sync());
+
+export default defineRouter({ listTasks });
+```
+
+The builder discovers this router alongside public routers. An action importing it as `tasks` and declaring `.functions({ tasks })` can call `queries.tasks.listTasks()`. Internal mutations work through the action's `mutations` namespace with the same transaction and retry behavior as public mutations. Generated view instance resolvers can also read registered internal queries.
+
+Internal functions are omitted from the typed client `api`, including namespaces with no public functions. The runtime rejects direct client calls and query subscriptions with `NOT_FOUND`, even when the caller supplies the function name manually. Visibility is enforced before mutation receipt lookup, so a client cannot replay the result of an internal mutation.
+
+`.internal()` preserves input/output schemas and database capabilities, and can appear anywhere before `.handler()`. Action dependencies remain limited to queries and mutations; marking an action internal does not add action-to-action calls.
+
+New backend builds require the `internal-functions` runtime capability. Deploy the updated apps worker before using the updated SDK and builder; older workers reject these bundles as incompatible.

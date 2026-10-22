@@ -59,7 +59,13 @@ export const validateServerBuildOutput = (
 /** Emitted by this SDK's builder; breaking interface changes increment apiVersion. */
 export const runtimeManifest = {
   apiVersion: 1,
-  requires: ["database", "actions", "database-relations", "tools"],
+  requires: [
+    "database",
+    "actions",
+    "database-relations",
+    "tools",
+    "internal-functions",
+  ],
 } as const satisfies RuntimeManifest;
 
 /** Bundle the private app backend and migrations. */

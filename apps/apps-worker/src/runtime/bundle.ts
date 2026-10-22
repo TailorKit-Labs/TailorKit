@@ -36,6 +36,7 @@ const supportedFeatures = new Set([
   "actions",
   "database-relations",
   "tools",
+  "internal-functions",
 ]);
 
 /** Check compatibility before creating tables or applying any application migrations. */

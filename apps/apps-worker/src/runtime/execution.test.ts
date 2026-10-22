@@ -11,11 +11,13 @@ import {
 } from "@patchsmith/app-db";
 import {
   createFunctions,
+  createFileServer,
   defineRouter,
   query,
   mutation,
   fn,
   AppError,
+  withInstanceResolvers,
 } from "@patchsmith/app/server";
 import { asyncFixture } from "@patchsmith/config/testing";
 import { sql } from "drizzle-orm";
@@ -192,6 +194,203 @@ const fixture = () => {
 
   return { execution: createExecution(app, persistence), persistence, sqlite };
 };
+
+it("rejects direct internal queries, mutations and actions before running their handlers", async () => {
+  const { persistence } = fixture();
+  const handler = vi.fn(() => "private");
+
+  const execution = createExecution(
+    createFileServer([
+      {
+        filename: "src/functions/hidden.fn.ts",
+        functions: defineRouter({
+          read: fn.query.internal().handler(handler),
+          run: fn.action.internal().handler(handler),
+          write: fn.mutation.internal().handler(handler),
+        }),
+        path: ["hidden"],
+      },
+    ]),
+    persistence
+  );
+
+  expect(() => execution.query({ name: "hidden.read" }, identity)).toThrow(
+    "App function not found"
+  );
+  expect(() =>
+    execution.mutate(
+      { name: "hidden.write", requestId: crypto.randomUUID() },
+      identity
+    )
+  ).toThrow("App function not found");
+
+  for (const kind of ["query", "mutation"] as const) {
+    const name = kind === "query" ? "hidden.read" : "hidden.write";
+
+    const result = Effect.runSync(
+      execution.call(
+        kind,
+        kind === "mutation"
+          ? { name, requestId: crypto.randomUUID() }
+          : { name },
+        identity
+      )
+    );
+
+    expect(result).toMatchObject({
+      committed: false,
+      result: { error: { code: "NOT_FOUND" }, ok: false },
+      tables: [],
+    });
+  }
+
+  const spoofed = { access: "internal", name: "hidden.read" };
+  expect(
+    Effect.runSync(execution.call("query", spoofed, identity)).result
+  ).toMatchObject({ error: { code: "BAD_REQUEST" }, ok: false });
+
+  const result = await Effect.runPromise(
+    execution.action(
+      { name: "hidden.run" },
+      identity,
+      { committed: async () => {} },
+      new AbortController().signal
+    )
+  );
+
+  expect(result.result).toMatchObject({
+    error: { code: "NOT_FOUND" },
+    ok: false,
+  });
+  expect(handler).not.toHaveBeenCalled();
+});
+
+it("allows declared internal reads and writes from actions while blocking mutation receipt replay", async () => {
+  const { persistence, sqlite } = fixture();
+  const requestId = crypto.randomUUID();
+
+  const records = defineRouter({
+    read: fn.query
+      .internal()
+      .handler(({ db }) => db.select().from(todos).all()),
+    write: fn.mutation
+      .internal()
+      .input(z.object({ id: z.string(), title: z.string() }))
+      .handler(({ db, input }) =>
+        db.insert(todos).values(input).returning().all()
+      ),
+  });
+
+  const input = { id: "imported", title: "Imported through action" };
+
+  const execution = createExecution(
+    {
+      functions: defineRouter({
+        importRecord: fn.action
+          .functions({ records })
+          .handler(async ({ queries, mutations }) => {
+            await mutations.records.write(input, { requestId });
+
+            return await queries.records.read();
+          }),
+        records,
+      }),
+    },
+    persistence
+  );
+
+  const committed = vi.fn(async () => {});
+
+  const run = async () =>
+    await Effect.runPromise(
+      execution.action(
+        { name: "importRecord" },
+        identity,
+        { committed },
+        new AbortController().signal
+      )
+    );
+
+  const result = await run();
+  expect(result.result).toEqual({
+    ok: true,
+    value: [{ ...input, done: false }],
+  });
+  expect(committed).toHaveBeenCalledExactlyOnceWith(["todos"]);
+  const repeated = await run();
+  expect(repeated.result).toEqual(result.result);
+  expect(committed).toHaveBeenCalledOnce();
+
+  const replay = Effect.runSync(
+    execution.call(
+      "mutation",
+      { args: input, name: "records.write", requestId },
+      identity
+    )
+  );
+
+  expect(replay.result).toMatchObject({
+    error: { code: "NOT_FOUND" },
+    ok: false,
+  });
+  expect(sqlite.prepare("SELECT COUNT(*) AS count FROM todos").get()).toEqual({
+    count: 1,
+  });
+});
+
+it("allows generated instance resolvers to read internal queries", async () => {
+  const { persistence } = fixture();
+
+  const execution = createExecution(
+    withInstanceResolvers(
+      {
+        functions: defineRouter({
+          reports: { count: fn.query.internal().handler(() => 3) },
+        }),
+      },
+      [
+        {
+          dataSchema: z.object({ count: z.number() }),
+          path: "/",
+          resolve: async ({ queries }) => {
+            // SAFETY: This fixture registers reports.count above; generated app bindings normally supply the resolver's query types.
+            // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The runtime resolver interface erases app-specific query types at the bundle boundary.
+            const reports = queries as {
+              reports: { count: () => Promise<number> };
+            };
+
+            return [
+              {
+                data: { count: await reports.reports.count() },
+                key: "report",
+                metadata: {},
+              },
+            ];
+          },
+          slot: "panel",
+        },
+      ]
+    ),
+    persistence
+  );
+
+  const result = await Effect.runPromise(
+    execution.action(
+      {
+        args: { context: {}, path: "/", slot: "panel" },
+        name: "_patchsmith.instances.resolve",
+      },
+      identity,
+      { committed: async () => {} },
+      new AbortController().signal
+    )
+  );
+
+  expect(result.result).toEqual({
+    ok: true,
+    value: [{ data: { count: 3 }, key: "report", metadata: {} }],
+  });
+});
 
 it("distinguishes omitted and null mutation arguments when checking a replay receipt", () => {
   const { execution } = fixture();

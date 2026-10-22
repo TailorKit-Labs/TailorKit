@@ -3,6 +3,7 @@ import type {
   AppDefinition,
   Identity,
   FunctionKind,
+  FunctionVisibility,
 } from "@patchsmith/app/server";
 import { z } from "zod";
 
@@ -56,22 +57,39 @@ const freezeIdentity = (value: unknown): void => {
   Object.freeze(value);
 };
 
+/** Access is selected by the runtime entry point, never by invocation input. */
+export const requireFunction = (
+  app: AppDefinition,
+  name: string,
+  kind: FunctionKind,
+  access: FunctionVisibility = "public"
+) => {
+  const fn = resolveFunction(app.functions, name);
+
+  if (
+    !fn ||
+    fn.kind !== kind ||
+    (access === "public" && fn.visibility === "internal")
+  ) {
+    throw new AppError("NOT_FOUND", "App function not found");
+  }
+
+  return fn;
+};
+
 export const prepareFunction = (
   app: AppDefinition,
   input: Invocation,
   identity: Identity,
-  kind: FunctionKind
+  kind: FunctionKind,
+  access: FunctionVisibility = "public"
 ) => {
   if (identity.expiresAt <= Date.now()) {
     throw new AppError("UNAUTHORIZED", "App token expired");
   }
 
   freezeIdentity(identity);
-  const fn = resolveFunction(app.functions, input.name);
-
-  if (!fn || fn.kind !== kind) {
-    throw new AppError("NOT_FOUND", "App function not found");
-  }
+  const fn = requireFunction(app, input.name, kind, access);
 
   const args = fn.args["~standard"].validate(input.args);
 

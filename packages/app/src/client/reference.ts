@@ -16,7 +16,15 @@ export const reference = <K extends "query" | "mutation" | "action", I, O>(
 ): Reference<K, I, O> => Object.freeze({ name });
 
 export type References<F> = {
-  readonly [N in keyof F]: F[N] extends {
+  readonly [
+    N in keyof F as F[N] extends { visibility: "internal" }
+      ? never
+      : F[N] extends Functions
+        ? keyof References<F[N]> extends never
+          ? never
+          : N
+        : N
+  ]: F[N] extends {
     kind: infer K extends "query" | "mutation" | "action";
     args: infer A extends StandardSchemaV1;
     handler: (...args: never[]) => infer _Output;

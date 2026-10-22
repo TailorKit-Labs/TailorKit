@@ -12,6 +12,7 @@ import type {
   ActionContext,
   EmptyFunctions,
   FunctionKind,
+  FunctionVisibility,
   Functions,
   Identity,
 } from "./functions";
@@ -50,8 +51,10 @@ type BuiltFunction<
   O,
   F extends Functions,
   D extends DatabaseRelations,
+  V extends FunctionVisibility,
 > = {
   readonly kind: K;
+  readonly visibility: V;
   readonly args: A;
   readonly database?: DatabaseDefinition<D>;
   readonly handler: (
@@ -75,24 +78,28 @@ class FunctionBuilder<
   R extends StandardSchemaV1 | undefined = undefined,
   F extends Functions = EmptyFunctions,
   D extends DatabaseRelations = EmptyDatabaseRelations,
+  V extends FunctionVisibility = "public",
 > {
   private readonly kind: K;
   private readonly args: A;
   private readonly result: R;
   private readonly calls: F;
   private readonly databaseDefinition: DatabaseDefinition<D> | undefined;
+  private readonly visibility: V;
 
   constructor(
     kind: K,
     args: A,
     result: R,
     calls: F,
+    visibility: V,
     database?: DatabaseDefinition<D>
   ) {
     this.kind = kind;
     this.args = args;
     this.result = result;
     this.calls = calls;
+    this.visibility = visibility;
     this.databaseDefinition = database;
   }
 
@@ -102,6 +109,7 @@ class FunctionBuilder<
       schema,
       this.result,
       this.calls,
+      this.visibility,
       this.databaseDefinition
     );
   }
@@ -112,12 +120,13 @@ class FunctionBuilder<
       this.args,
       schema,
       this.calls,
+      this.visibility,
       this.databaseDefinition
     );
   }
 
   functions<const G extends Functions>(
-    this: FunctionBuilder<"action", A, R, F, D>,
+    this: FunctionBuilder<"action", A, R, F, D, V>,
     functions: G
   ) {
     return new FunctionBuilder(
@@ -125,13 +134,26 @@ class FunctionBuilder<
       this.args,
       this.result,
       functions,
+      this.visibility,
+      this.databaseDefinition
+    );
+  }
+
+  /** Restrict this function to backend execution; direct client calls are rejected. */
+  internal() {
+    return new FunctionBuilder(
+      this.kind,
+      this.args,
+      this.result,
+      this.calls,
+      "internal",
       this.databaseDefinition
     );
   }
 
   handler<O extends OutputInput<R>>(
     handler: (context: HandlerContext<K, A, F, D>) => HandlerOutput<K, O>
-  ): BuiltFunction<K, A, R, O, F, D> {
+  ): BuiltFunction<K, A, R, O, F, D, V> {
     const metadata: FunctionMetadata<R, F, D> = {};
 
     if (this.databaseDefinition) {
@@ -166,7 +188,8 @@ class FunctionBuilder<
           } as unknown as HandlerContext<K, A, F, D>),
 
         kind: this.kind,
-      }) as BuiltFunction<K, A, R, O, F, D>
+        visibility: this.visibility,
+      }) as BuiltFunction<K, A, R, O, F, D, V>
       /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
     );
   }
@@ -179,12 +202,19 @@ export const createFunctions = <
   options: { database?: DatabaseDefinition<D> } = {}
 ) =>
   Object.freeze({
-    action: new FunctionBuilder("action", v.undefined(), undefined, {}),
+    action: new FunctionBuilder(
+      "action",
+      v.undefined(),
+      undefined,
+      {},
+      "public"
+    ),
     mutation: new FunctionBuilder(
       "mutation",
       v.undefined(),
       undefined,
       {},
+      "public",
       options.database
     ),
     query: new FunctionBuilder(
@@ -192,6 +222,7 @@ export const createFunctions = <
       v.undefined(),
       undefined,
       {},
+      "public",
       options.database
     ),
   });

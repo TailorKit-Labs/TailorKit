@@ -30,6 +30,7 @@ it.each([
   ["database"],
   ["database", "actions"],
   ["database", "actions", "database-relations", "tools"],
+  ["database", "actions", "database-relations", "tools", "internal-functions"],
 ])("accepts supported required features %j", (...requires: string[]) => {
   const db = persistence();
 

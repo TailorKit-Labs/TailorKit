@@ -171,3 +171,68 @@ void saved;
 
 // @ts-expect-error Actions cannot be called with the mutation hook.
 useMutation(refs.save);
+
+const internalFunctions = {
+  read: fn.query
+    .internal()
+    .input(z.string().transform(Number))
+    .output(z.string().transform(Number))
+    .handler(({ input }) => {
+      expectTypeOf(input).toEqualTypeOf<number>();
+
+      return String(input);
+    }),
+  write: fn.mutation
+    .input(z.number())
+    .internal()
+    .output(z.number())
+    .handler(({ input }) => input),
+};
+
+const internalAction = fn.action
+  .internal()
+  .functions({ records: internalFunctions })
+  .input(z.string())
+  .output(z.number())
+  .handler(async ({ input, queries, mutations }) => {
+    const value = await queries.records.read(input);
+    expectTypeOf(value).toEqualTypeOf<number>();
+
+    // @ts-expect-error Internal function input types still precede schema transforms.
+    void queries.records.read(1);
+
+    return await mutations.records.write(value);
+  });
+
+const privateRefs = createApi<{
+  action: typeof internalAction;
+  hidden: typeof internalFunctions;
+  mixed: { visible: typeof functions.list; hidden: typeof internalFunctions };
+}>();
+
+expectTypeOf(internalAction.visibility).toEqualTypeOf<"internal">();
+
+expectTypeOf(functions.list.visibility).toEqualTypeOf<"public">();
+
+expectTypeOf(privateRefs.mixed.visible).toEqualTypeOf<typeof refs.list>();
+
+// @ts-expect-error Internal actions are absent from the public client API.
+void privateRefs.action;
+
+// @ts-expect-error Namespaces containing only internal functions are omitted.
+void privateRefs.hidden;
+
+// @ts-expect-error Internal nested namespaces are omitted from mixed routers.
+void privateRefs.mixed.hidden;
+
+const mixedRefs = createApi<{
+  records: typeof internalFunctions & {
+    visible: typeof functions.list;
+  };
+}>();
+
+// @ts-expect-error Internal queries are absent even beside public functions.
+void mixedRefs.records.read;
+
+// @ts-expect-error Internal mutations are absent even beside public functions.
+void mixedRefs.records.write;
