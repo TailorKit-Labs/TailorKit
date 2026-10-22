@@ -138,6 +138,7 @@ export const appDeployment = pgTable(
       { onDelete: "restrict" }
     ),
     createdAt: timestamp("created_at").defaultNow().notNull(),
+    hooks: jsonb("hooks").$type<string[]>().notNull().default([]),
     id: uuid("id")
       .default(sql`pg_catalog.gen_random_uuid()`)
       .primaryKey(),
@@ -182,7 +183,31 @@ export const appDeployment = pgTable(
   ]
 );
 
+export const deploymentHooksSchema = z
+  .array(
+    z
+      .string()
+      .min(1)
+      .max(255)
+      .regex(/^[a-zA-Z][a-zA-Z0-9_]{0,63}(?:\.[a-zA-Z][a-zA-Z0-9_]{0,63})*$/u)
+      .refine(
+        (name) =>
+          !name
+            .split(".")
+            .some((part) =>
+              ["constructor", "prototype", "__proto__"].includes(part)
+            ),
+        "Reserved hook name"
+      )
+  )
+  .max(1000)
+  .refine(
+    (names) => new Set(names).size === names.length,
+    "Duplicate hook names"
+  );
+
 const AppDeploymentSchema = createSelectSchema(appDeployment, {
+  hooks: deploymentHooksSchema,
   shortId: z.string().regex(/^[a-z0-9]{12}$/u),
   views: z
     .array(
