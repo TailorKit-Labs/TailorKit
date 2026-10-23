@@ -70,6 +70,15 @@
       "keys": [
         {
           "kty": "EC",
+          "x": "DRoS0JGTeeemauZNCaf6OCD2cD7e0gFdynlz8X6lplE",
+          "y": "jj8QXZ_WHKX89qF9Yo6fn5yo470zjE9uknZ30jja11s",
+          "crv": "P-256",
+          "kid": "patchsmith-runtime-2026-10-23",
+          "alg": "ES256",
+          "use": "sig",
+        },
+        {
+          "kty": "EC",
           "x": "mNmgu9uJ_4uRcvrwoxwqVRGKE5glJsoTz-GSDDYKqkI",
           "y": "Snkr5Pv_fXPHV2qROt2heEK-EWWps-tIjtVnJMIZIgQ",
           "crv": "P-256",
