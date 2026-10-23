@@ -23,6 +23,32 @@ import { project } from "./project";
 import { scopeKeySchema, scopeSchema } from "./scope";
 import type { Scope } from "./scope";
 
+const deploymentViewSchema = z
+  .object({
+    disabled: z.literal(true).optional(),
+    instances: z.literal(true).optional(),
+    path: z.string().startsWith("/").max(1024),
+    slot: z.string().min(1).max(255),
+    staticInstances: z
+      .array(
+        z.object({
+          data: z.unknown(),
+          key: z.string().min(1),
+          metadata: z.record(z.string(), z.unknown()),
+        })
+      )
+      .max(1000)
+      .refine(
+        (items) => new Set(items.map((item) => item.key)).size === items.length,
+        "Instance keys must be unique"
+      )
+      .optional(),
+  })
+  .refine(
+    (view) => view.staticInstances === undefined || view.instances === true,
+    "Static entries require an instance view"
+  );
+
 export const app = pgTable(
   "app",
   {
@@ -165,9 +191,7 @@ export const appDeployment = pgTable(
       .$onUpdate(() => new Date())
       .notNull(),
     views: jsonb("views")
-      .$type<
-        { slot: string; path: string; instances?: true; disabled?: true }[]
-      >()
+      .$type<z.output<typeof deploymentViewSchema>[]>()
       .notNull()
       .default([]),
   },
@@ -209,16 +233,7 @@ export const deploymentHooksSchema = z
 const AppDeploymentSchema = createSelectSchema(appDeployment, {
   hooks: deploymentHooksSchema,
   shortId: z.string().regex(/^[a-z0-9]{12}$/u),
-  views: z
-    .array(
-      z.object({
-        disabled: z.literal(true).optional(),
-        instances: z.literal(true).optional(),
-        path: z.string().startsWith("/").max(1024),
-        slot: z.string().min(1).max(255),
-      })
-    )
-    .max(1000),
+  views: z.array(deploymentViewSchema).max(1000),
 });
 
 export type AppDeployment = z.output<typeof AppDeploymentSchema>;

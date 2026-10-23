@@ -537,6 +537,29 @@
                                     "type": "string",
                                     "minLength": 1,
                                     "maxLength": 255
+                                  },
+                                  "staticInstances": {
+                                    "maxItems": 1000,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "data": {},
+                                        "key": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "metadata": {
+                                          "type": "object",
+                                          "propertyNames": {
+                                            "type": "string"
+                                          },
+                                          "additionalProperties": {}
+                                        }
+                                      },
+                                      "required": ["data", "key", "metadata"],
+                                      "additionalProperties": false
+                                    }
                                   }
                                 },
                                 "required": ["path", "slot"],
@@ -604,6 +627,29 @@
                             "type": "string",
                             "minLength": 1,
                             "maxLength": 255
+                          },
+                          "staticInstances": {
+                            "maxItems": 1000,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "data": {},
+                                "key": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "metadata": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {}
+                                }
+                              },
+                              "required": ["data", "key", "metadata"],
+                              "additionalProperties": false
+                            }
                           }
                         },
                         "required": ["path", "slot"],
@@ -904,6 +950,29 @@
                                     "type": "string",
                                     "minLength": 1,
                                     "maxLength": 255
+                                  },
+                                  "staticInstances": {
+                                    "maxItems": 1000,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "data": {},
+                                        "key": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "metadata": {
+                                          "type": "object",
+                                          "propertyNames": {
+                                            "type": "string"
+                                          },
+                                          "additionalProperties": {}
+                                        }
+                                      },
+                                      "required": ["data", "key", "metadata"],
+                                      "additionalProperties": false
+                                    }
                                   }
                                 },
                                 "required": ["path", "slot"],
@@ -971,6 +1040,29 @@
                             "type": "string",
                             "minLength": 1,
                             "maxLength": 255
+                          },
+                          "staticInstances": {
+                            "maxItems": 1000,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "data": {},
+                                "key": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "metadata": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {}
+                                }
+                              },
+                              "required": ["data", "key", "metadata"],
+                              "additionalProperties": false
+                            }
                           }
                         },
                         "required": ["path", "slot"],
@@ -1396,6 +1488,29 @@
                                     "type": "string",
                                     "minLength": 1,
                                     "maxLength": 255
+                                  },
+                                  "staticInstances": {
+                                    "maxItems": 1000,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "data": {},
+                                        "key": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "metadata": {
+                                          "type": "object",
+                                          "propertyNames": {
+                                            "type": "string"
+                                          },
+                                          "additionalProperties": {}
+                                        }
+                                      },
+                                      "required": ["data", "key", "metadata"],
+                                      "additionalProperties": false
+                                    }
                                   }
                                 },
                                 "required": ["path", "slot"],
@@ -1463,6 +1578,29 @@
                             "type": "string",
                             "minLength": 1,
                             "maxLength": 255
+                          },
+                          "staticInstances": {
+                            "maxItems": 1000,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "data": {},
+                                "key": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "metadata": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {}
+                                }
+                              },
+                              "required": ["data", "key", "metadata"],
+                              "additionalProperties": false
+                            }
                           }
                         },
                         "required": ["path", "slot"],
@@ -1787,6 +1925,29 @@
                                     "type": "string",
                                     "minLength": 1,
                                     "maxLength": 255
+                                  },
+                                  "staticInstances": {
+                                    "maxItems": 1000,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "data": {},
+                                        "key": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "metadata": {
+                                          "type": "object",
+                                          "propertyNames": {
+                                            "type": "string"
+                                          },
+                                          "additionalProperties": {}
+                                        }
+                                      },
+                                      "required": ["data", "key", "metadata"],
+                                      "additionalProperties": false
+                                    }
                                   }
                                 },
                                 "required": ["path", "slot"],
@@ -1854,6 +2015,29 @@
                             "type": "string",
                             "minLength": 1,
                             "maxLength": 255
+                          },
+                          "staticInstances": {
+                            "maxItems": 1000,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "data": {},
+                                "key": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "metadata": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {}
+                                }
+                              },
+                              "required": ["data", "key", "metadata"],
+                              "additionalProperties": false
+                            }
                           }
                         },
                         "required": ["path", "slot"],
@@ -2180,6 +2364,29 @@
                                     "type": "string",
                                     "minLength": 1,
                                     "maxLength": 255
+                                  },
+                                  "staticInstances": {
+                                    "maxItems": 1000,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "data": {},
+                                        "key": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "metadata": {
+                                          "type": "object",
+                                          "propertyNames": {
+                                            "type": "string"
+                                          },
+                                          "additionalProperties": {}
+                                        }
+                                      },
+                                      "required": ["data", "key", "metadata"],
+                                      "additionalProperties": false
+                                    }
                                   }
                                 },
                                 "required": ["path", "slot"],
@@ -2247,6 +2454,29 @@
                             "type": "string",
                             "minLength": 1,
                             "maxLength": 255
+                          },
+                          "staticInstances": {
+                            "maxItems": 1000,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "data": {},
+                                "key": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "metadata": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {}
+                                }
+                              },
+                              "required": ["data", "key", "metadata"],
+                              "additionalProperties": false
+                            }
                           }
                         },
                         "required": ["path", "slot"],
@@ -2546,6 +2776,33 @@
                                           "type": "string",
                                           "minLength": 1,
                                           "maxLength": 255
+                                        },
+                                        "staticInstances": {
+                                          "maxItems": 1000,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "data": {},
+                                              "key": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "metadata": {
+                                                "type": "object",
+                                                "propertyNames": {
+                                                  "type": "string"
+                                                },
+                                                "additionalProperties": {}
+                                              }
+                                            },
+                                            "required": [
+                                              "data",
+                                              "key",
+                                              "metadata"
+                                            ],
+                                            "additionalProperties": false
+                                          }
                                         }
                                       },
                                       "required": ["path", "slot"],
@@ -2613,6 +2870,29 @@
                                   "type": "string",
                                   "minLength": 1,
                                   "maxLength": 255
+                                },
+                                "staticInstances": {
+                                  "maxItems": 1000,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "data": {},
+                                      "key": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "metadata": {
+                                        "type": "object",
+                                        "propertyNames": {
+                                          "type": "string"
+                                        },
+                                        "additionalProperties": {}
+                                      }
+                                    },
+                                    "required": ["data", "key", "metadata"],
+                                    "additionalProperties": false
+                                  }
                                 }
                               },
                               "required": ["path", "slot"],
@@ -3066,6 +3346,33 @@
                                                   "type": "string",
                                                   "minLength": 1,
                                                   "maxLength": 255
+                                                },
+                                                "staticInstances": {
+                                                  "maxItems": 1000,
+                                                  "type": "array",
+                                                  "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "data": {},
+                                                      "key": {
+                                                        "type": "string",
+                                                        "minLength": 1
+                                                      },
+                                                      "metadata": {
+                                                        "type": "object",
+                                                        "propertyNames": {
+                                                          "type": "string"
+                                                        },
+                                                        "additionalProperties": {}
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "data",
+                                                      "key",
+                                                      "metadata"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  }
                                                 }
                                               },
                                               "required": ["path", "slot"],
@@ -3133,6 +3440,33 @@
                                           "type": "string",
                                           "minLength": 1,
                                           "maxLength": 255
+                                        },
+                                        "staticInstances": {
+                                          "maxItems": 1000,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "data": {},
+                                              "key": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "metadata": {
+                                                "type": "object",
+                                                "propertyNames": {
+                                                  "type": "string"
+                                                },
+                                                "additionalProperties": {}
+                                              }
+                                            },
+                                            "required": [
+                                              "data",
+                                              "key",
+                                              "metadata"
+                                            ],
+                                            "additionalProperties": false
+                                          }
                                         }
                                       },
                                       "required": ["path", "slot"],
@@ -3753,6 +4087,29 @@
                                     "type": "string",
                                     "minLength": 1,
                                     "maxLength": 255
+                                  },
+                                  "staticInstances": {
+                                    "maxItems": 1000,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "data": {},
+                                        "key": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "metadata": {
+                                          "type": "object",
+                                          "propertyNames": {
+                                            "type": "string"
+                                          },
+                                          "additionalProperties": {}
+                                        }
+                                      },
+                                      "required": ["data", "key", "metadata"],
+                                      "additionalProperties": false
+                                    }
                                   }
                                 },
                                 "required": ["path", "slot"],
@@ -3820,6 +4177,29 @@
                             "type": "string",
                             "minLength": 1,
                             "maxLength": 255
+                          },
+                          "staticInstances": {
+                            "maxItems": 1000,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "data": {},
+                                "key": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "metadata": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {}
+                                }
+                              },
+                              "required": ["data", "key", "metadata"],
+                              "additionalProperties": false
+                            }
                           }
                         },
                         "required": ["path", "slot"],
@@ -4385,6 +4765,28 @@
                           "type": "string",
                           "minLength": 1,
                           "maxLength": 255
+                        },
+                        "staticInstances": {
+                          "maxItems": 1000,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "data": {},
+                              "key": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "metadata": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {}
+                              }
+                            },
+                            "required": ["data", "key", "metadata"]
+                          }
                         }
                       },
                       "required": ["path", "slot"]
@@ -4627,6 +5029,29 @@
                                 "type": "string",
                                 "minLength": 1,
                                 "maxLength": 255
+                              },
+                              "staticInstances": {
+                                "maxItems": 1000,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "data": {},
+                                    "key": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "metadata": {
+                                      "type": "object",
+                                      "propertyNames": {
+                                        "type": "string"
+                                      },
+                                      "additionalProperties": {}
+                                    }
+                                  },
+                                  "required": ["data", "key", "metadata"],
+                                  "additionalProperties": false
+                                }
                               }
                             },
                             "required": ["path", "slot"],
@@ -5159,6 +5584,29 @@
                             "type": "string",
                             "minLength": 1,
                             "maxLength": 255
+                          },
+                          "staticInstances": {
+                            "maxItems": 1000,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "data": {},
+                                "key": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "metadata": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {}
+                                }
+                              },
+                              "required": ["data", "key", "metadata"],
+                              "additionalProperties": false
+                            }
                           }
                         },
                         "required": ["path", "slot"],
@@ -5407,6 +5855,29 @@
                                   "type": "string",
                                   "minLength": 1,
                                   "maxLength": 255
+                                },
+                                "staticInstances": {
+                                  "maxItems": 1000,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "data": {},
+                                      "key": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "metadata": {
+                                        "type": "object",
+                                        "propertyNames": {
+                                          "type": "string"
+                                        },
+                                        "additionalProperties": {}
+                                      }
+                                    },
+                                    "required": ["data", "key", "metadata"],
+                                    "additionalProperties": false
+                                  }
                                 }
                               },
                               "required": ["path", "slot"],
@@ -5631,6 +6102,29 @@
                             "type": "string",
                             "minLength": 1,
                             "maxLength": 255
+                          },
+                          "staticInstances": {
+                            "maxItems": 1000,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "data": {},
+                                "key": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "metadata": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {}
+                                }
+                              },
+                              "required": ["data", "key", "metadata"],
+                              "additionalProperties": false
+                            }
                           }
                         },
                         "required": ["path", "slot"],
