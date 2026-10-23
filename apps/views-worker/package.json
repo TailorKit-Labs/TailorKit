@@ -1,0 +1,45 @@
+{
+  "name": "@patchsmith/views-worker",
+  "private": true,
+  "license": "BUSL-1.1",
+  "type": "module",
+  "imports": {
+    "#env": "./src/env.ts"
+  },
+  "scripts": {
+    "build": "wrangler deploy --dry-run --outdir dist",
+    "check-types": "tsc --noEmit",
+    "dev": "wrangler dev",
+    "test": "vp test run",
+    "deploy": "wrangler deploy",
+    "lint": "vp lint .",
+    "lint:fix": "vp lint --fix ."
+  },
+  "dependencies": {
+    "@orpc/server": "catalog:",
+    "@patchsmith/api-platform": "workspace:*",
+    "@patchsmith/api-utils": "workspace:*",
+    "@patchsmith/app": "workspace:*",
+    "@patchsmith/auth": "workspace:*",
+    "@patchsmith/db": "workspace:*",
+    "@patchsmith/env": "workspace:*",
+    "@upstash/ratelimit": "^2.2.0",
+    "@upstash/redis": "^1.39.0",
+    "better-auth": "catalog:",
+    "drizzle-orm": "catalog:",
+    "effect": "catalog:",
+    "pg": "^8.23.1",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.10",
+    "@patchsmith/config": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/pg": "catalog:",
+    "typescript": "catalog:",
+    "wrangler": "4.151.1"
+  },
+  "engines": {
+    "node": ">=24.11"
+  }
+}

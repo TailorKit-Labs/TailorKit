@@ -1,0 +1,50 @@
+// Replace the placeholder Hyperdrive ID before deploying; create it with --caching-disabled.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "patchsmith-views-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-23",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "enable_request_signal"
+  ],
+  "workers_dev": true,
+  "preview_urls": false,
+  "placement": {
+    "region": "aws:us-east-1"
+  },
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "00000000000000000000000000000000",
+      "localConnectionString": "postgres://postgres:postgres@localhost:5432/patchsmith"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "STORES",
+        "class_name": "PatchsmithAppInstallation",
+        "script_name": "patchsmith-apps-worker"
+      }
+    ]
+  },
+  "vars": {
+    "ASSET_DOMAIN": "tailorkit.app",
+    "PLATFORM_URL": "https://patchsmith.io/api/platform"
+  },
+  "secrets": {
+    "required": [
+      "AUTH_SECRET",
+      "APP_RUNTIME_SIGNING_KEY",
+      "KV_REST_API_URL",
+      "KV_REST_API_TOKEN"
+    ]
+  },
+  "observability": {
+    "enabled": true,
+    "traces": {
+      "enabled": true
+    }
+  }
+}

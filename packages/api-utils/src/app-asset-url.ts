@@ -22,19 +22,25 @@ export const withAppAssetUrl = <
   },
 >(
   app: T,
-  projectShortId: string
+  projectShortId: string,
+  configuration?: { assetDomain: string; assetBaseUrl?: string }
 ) => {
   const deployment = app.currentDeployment;
 
-  const nodeBaseUrl =
-    env.ASSET_BASE_URL ??
-    (env.NODE_ENV === "development"
-      ? `${getBaseUrl(env)}/api/assets`
-      : undefined);
+  const config = configuration ?? {
+    assetBaseUrl:
+      env.ASSET_BASE_URL ??
+      (env.NODE_ENV === "development"
+        ? `${getBaseUrl(env)}/api/assets`
+        : undefined),
+    assetDomain: env.ASSET_DOMAIN ?? "tailorkit.app",
+  };
+
+  const nodeBaseUrl = config.assetBaseUrl;
 
   const assetBaseUrl = hasText(nodeBaseUrl)
     ? `${nodeBaseUrl.replace(/\/$/u, "")}/p/${projectShortId}`
-    : `https://${projectShortId}.${env.ASSET_DOMAIN}`;
+    : `https://${projectShortId}.${config.assetDomain}`;
 
   let clientPath: string | undefined;
   let logoPaths: { dark?: string; light?: string } | undefined;
