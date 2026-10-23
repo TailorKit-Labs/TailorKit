@@ -1,0 +1,21 @@
+.changeset/full-radius-token.md
+  s_7a86908630e8bb::t_2c30a26cc9da1f 1-5
+packages/core/src/spec/schema-references.test.ts
+  s_7a86908630e8bb::t_6f3dec07df34bb 49-50,52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ed31e0e8f1f87d91801aba63cca95f0d983c9b5d",
+  "prompts": {},
+  "sessions": {
+    "s_7a86908630e8bb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16660-b2ed-7301-935d-713e2e3d6c2f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
