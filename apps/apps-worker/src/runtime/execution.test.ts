@@ -9,8 +9,8 @@ import {
   defineDatabase,
   defineRelations,
 } from "@patchsmith/app-db";
+import { withHooks } from "@patchsmith/app/internal/server";
 import {
-  withHooks,
   createFunctions,
   createFileServer,
   defineRouter,

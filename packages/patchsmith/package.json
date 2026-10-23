@@ -49,6 +49,10 @@
       "types": "./dist/server.d.ts",
       "import": "./dist/server.js"
     },
+    "./internal/server": {
+      "types": "./dist/internal-server.d.ts",
+      "import": "./dist/internal-server.js"
+    },
     "./react": {
       "types": "./dist/react.d.ts",
       "import": "./dist/react.js"

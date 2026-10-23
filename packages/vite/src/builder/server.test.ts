@@ -612,6 +612,8 @@ describe("database app builds", () => {
   it.each([
     "./functions/todos.router",
     "patchsmith/server",
+    "patchsmith/internal/server",
+    "@patchsmith/app/internal/server",
     "patchsmith/db",
     "@patchsmith/app-db",
     "effect",

@@ -28,12 +28,6 @@ export type { ErrorCode } from "./errors";
 
 export type { ApplicationModule, RuntimeManifest } from "./server/bundle";
 
-export { defineHook, withHooks } from "./server/hooks";
+export { defineHook } from "./server/hooks";
 
-export type {
-  PatchsmithHooks,
-  HookName,
-  HookContext,
-  HookDefinition,
-  FileHook,
-} from "./server/hooks";
+export type { PatchsmithHooks, HookName, HookContext } from "./server/hooks";

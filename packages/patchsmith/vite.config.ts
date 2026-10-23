@@ -8,6 +8,7 @@ export default defineConfig({
       "src/index.ts",
       "src/ai-sdk.ts",
       "src/server.ts",
+      "src/internal-server.ts",
       "src/db.ts",
       "src/react.ts",
       "src/client.ts",

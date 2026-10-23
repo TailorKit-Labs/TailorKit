@@ -132,7 +132,8 @@ export const buildServer = async (
         : "app";
 
       return `import app from ${JSON.stringify(functionsEntry)};
-import { withHooks, withInstanceResolvers } from "patchsmith/server";
+import { withHooks } from "patchsmith/internal/server";
+import { withInstanceResolvers } from "patchsmith/server";
 ${instanceServerImports(instances)}
 ${hooks.map((file, index) => `import hook${index} from ${JSON.stringify(file.filename)};`).join("\n")}
 export default ${hooks.length ? `withHooks(${app}, [${hooks.map((file, index) => `{ name: ${JSON.stringify(file.name)}, definition: hook${index} }`).join(",")}])` : app};
@@ -169,7 +170,10 @@ export const runtimeManifest = ${JSON.stringify({ ...runtimeManifest, requires: 
         {
           name: "patchsmith-server-runtime",
           async resolveId(id) {
-            if (id !== "patchsmith/server") {
+            if (
+              id !== "patchsmith/server" &&
+              id !== "patchsmith/internal/server"
+            ) {
               return null;
             }
 

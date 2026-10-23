@@ -326,7 +326,7 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
       name: "patchsmith-browser-server-boundary",
       async resolveId(id, importer) {
         if (
-          /^(?:@patchsmith\/(?:app\/server|app-db)$|patchsmith\/(?:server|db|app\/server)$|effect(?:\/|$))/u.test(
+          /^(?:@patchsmith\/(?:app\/(?:server|internal\/server)|app-db)$|patchsmith\/(?:server|db|app\/server|internal\/server)$|effect(?:\/|$))/u.test(
             id
           ) ||
           (importer !== undefined &&
