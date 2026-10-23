@@ -125,7 +125,7 @@ const fixture = () => {
 it("invokes a hook through the real RPC transport with validated input and a host-scoped session", async () => {
   const { server, platformBodies, invocations } = fixture();
   expect(
-    await server.hooks.sync.invoke({ appId: "app", context, input: "3" })
+    await server.hooks.sync.invoke({ appId: "app", ...context, input: "3" })
   ).toEqual({ processed: 3 });
   expect(platformBodies[0]?.body).toMatchObject({
     hook: "sync",
@@ -141,25 +141,35 @@ it("invokes a hook through the real RPC transport with validated input and a hos
 it("rejects invalid inputs, outputs and caller context", async () => {
   const { server, platformBodies, setOutput } = fixture();
   await expect(
-    server.hooks.sync.invoke({ appId: "app", context, input: "invalid" })
+    server.hooks.sync.invoke({ appId: "app", ...context, input: "invalid" })
   ).rejects.toThrow("Invalid input for hook");
   expect(platformBodies).toHaveLength(0);
   await expect(
     server.hooks.sync.invoke({
       appId: "app",
-      context: { ...context, scopes: {} },
+      ...context,
       input: "3",
+      scopes: {},
     })
   ).rejects.toThrow("at least one scope");
+  await expect(
+    server.hooks.sync.invoke({
+      appId: "app",
+      ...context,
+      input: "3",
+      subjectId: "",
+    })
+  ).rejects.toThrow();
+  expect(platformBodies).toHaveLength(0);
   setOutput({ processed: "wrong" });
   await expect(
-    server.hooks.sync.invoke({ appId: "app", context, input: "3" })
+    server.hooks.sync.invoke({ appId: "app", ...context, input: "3" })
   ).rejects.toThrow("Invalid output for hook");
 });
 
 it("discovers supported installed hooks without issuing an invocation grant", async () => {
   const { server, platformBodies, invocations } = fixture();
-  expect(await server.hooks.sync.list({ context })).toEqual([
+  expect(await server.hooks.sync.list(context)).toEqual([
     { currentDeployment: { hooks: ["sync"], id: "deployment" }, id: "app" },
   ]);
   expect(platformBodies).toHaveLength(1);
@@ -167,12 +177,23 @@ it("discovers supported installed hooks without issuing an invocation grant", as
   expect(invocations).toEqual([]);
 });
 
+it("validates caller fields before discovering hooks", async () => {
+  const { server, platformBodies } = fixture();
+  await expect(
+    server.hooks.sync.list({ ...context, scopes: {} })
+  ).rejects.toThrow("at least one scope");
+  await expect(
+    server.hooks.sync.list({ ...context, subjectId: "" })
+  ).rejects.toThrow();
+  expect(platformBodies).toEqual([]);
+});
+
 it("rejects cancellation before requesting a session", async () => {
   const { server, platformBodies } = fixture();
   await expect(
     server.hooks.sync.invoke({
       appId: "app",
-      context,
+      ...context,
       input: "3",
       signal: AbortSignal.abort(),
     })
@@ -184,16 +205,16 @@ it("preserves omitted input and output through hook transport", async () => {
   const { server, setOutput } = fixture();
   setOutput(undefined);
   await expect(
-    server.hooks.notify.invoke({ appId: "app", context })
+    server.hooks.notify.invoke({ appId: "app", ...context })
   ).resolves.toBeUndefined();
   expect(
-    await server.hooks.optional.invoke({ appId: "app", context })
+    await server.hooks.optional.invoke({ appId: "app", ...context })
   ).toBeUndefined();
   setOutput(4);
   expect(
     await server.hooks.optional.invoke({
       appId: "app",
-      context,
+      ...context,
       input: "cursor",
     })
   ).toBe(4);

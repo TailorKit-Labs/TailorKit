@@ -71,23 +71,22 @@ const patchsmith = createServer({
   projectKey,
 });
 
-const context = {
-  scopes: { team: { id: teamId } },
-  subjectId: "service:sync",
-};
+const scopes = { team: { id: teamId } };
+const subjectId = "service:sync";
 
-const apps = await patchsmith.hooks.sync.list({ context });
+const apps = await patchsmith.hooks.sync.list({ scopes, subjectId });
 
 for (const app of apps) {
   await patchsmith.hooks.sync.invoke({
     appId: app.id,
-    context,
     input: { mode: "incremental" },
+    scopes,
+    subjectId,
   });
 }
 ```
 
-Call these methods from trusted server code, such as a cron handler, verified webhook handler, or authenticated manual operation. The host must resolve the caller's authorized scopes and subject before passing `context`. Both methods accept an optional `signal` for cancellation.
+Call these methods from trusted server code, such as a cron handler, verified webhook handler, or authenticated manual operation. The host must resolve the caller's authorized scopes and subject before passing `scopes` and `subjectId`. Both methods accept an optional `signal` for cancellation.
 
 `list` reads hook names from each installation’s active published deployment metadata, without calling app runtimes. Apps with no declared hooks are omitted. `invoke` targets one installation, validates input before execution, obtains a server-only session granting that hook, and validates its output. Platform project credentials and hook sessions stay on the host. Apps run inside the existing sandbox and use host tools for host data writes.
 

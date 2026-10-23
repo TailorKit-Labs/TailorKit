@@ -21,12 +21,11 @@ import type {
   PatchsmithScopes,
 } from "./types";
 
-interface HookCallerContext<TScopes> {
-  context: PatchsmithHostContext<TScopes>;
+interface HookCallerOptions<TScopes> extends PatchsmithHostContext<TScopes> {
   signal?: AbortSignal;
 }
 
-type InvocationOptions<H, TScopes> = HookCallerContext<TScopes> & {
+type InvocationOptions<H, TScopes> = HookCallerOptions<TScopes> & {
   appId: string;
 } & (undefined extends InferHookInput<H>
     ? { input?: InferHookInput<H> }
@@ -39,7 +38,7 @@ export type HookCallers<T extends ContractHooks, TScopes> = {
     invoke: (
       options: InvocationOptions<T[N], TScopes>
     ) => Promise<InferHookOutput<T[N]>>;
-    list: (options: HookCallerContext<TScopes>) => Promise<InstalledApp[]>;
+    list: (options: HookCallerOptions<TScopes>) => Promise<InstalledApp[]>;
   };
 };
 
@@ -133,7 +132,7 @@ export const createHookCallers = <T extends ContractHooks, TScopes>(options: {
   const caller = (name: string, definition: ContractHook) => ({
     invoke: async (input: InvocationOptions<ContractHook, TScopes>) => {
       input.signal?.throwIfAborted();
-      const scopes = await validateContext(input.context);
+      const scopes = await validateContext(input);
       let payload: unknown;
 
       try {
@@ -150,7 +149,7 @@ export const createHookCallers = <T extends ContractHooks, TScopes>(options: {
       const { backend, close } = await connect(
         input.appId,
         scopes,
-        input.context.subjectId,
+        input.subjectId,
         input.signal,
         name
       );
@@ -181,9 +180,9 @@ export const createHookCallers = <T extends ContractHooks, TScopes>(options: {
       }
     },
     list: async (
-      input: HookCallerContext<TScopes>
+      input: HookCallerOptions<TScopes>
     ): Promise<InstalledApp[]> => {
-      const scopes = await validateContext(input.context);
+      const scopes = await validateContext(input);
 
       const apps = await listApps(
         { platform: options.platform, platformHeaders: await headers() },
