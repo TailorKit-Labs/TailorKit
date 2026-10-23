@@ -1,0 +1,32 @@
+packages/core/src/server/hooks.ts
+  s_c2a0ad27d22dd0::t_f4632494dfa577 24,28,41,135,152,183,185
+packages/core/src/server/hooks.test.ts
+  s_c2a0ad27d22dd0::t_81256e70915866 155-159,161-163,180-188
+  s_c2a0ad27d22dd0::t_f4632494dfa577 128,144,150,166,172,196,208,211,217
+  s_c2a0ad27d22dd0::t_317362ac887ce6 152,160
+  s_c2a0ad27d22dd0::t_b8345b8de7c70a 189-190
+.changeset/host-app-hooks.md
+  s_c2a0ad27d22dd0::t_f4632494dfa577 10
+packages/core/README.md
+  s_c2a0ad27d22dd0::t_f4632494dfa577 74-75,77,83-84,89
+packages/core/src/server/hooks.test-d.ts
+  s_c2a0ad27d22dd0::t_f4632494dfa577 27,34,40,49-51,54-64
+  s_c2a0ad27d22dd0::t_81256e70915866 42,44,46
+  s_c2a0ad27d22dd0::t_4f1df95a14a3e7 45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3979f586ccab05c6dc76ad4adc0cf22ddc0b8a71",
+  "prompts": {},
+  "sessions": {
+    "s_c2a0ad27d22dd0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a167a9-a1ad-79c3-94fe-22a9d7acea06",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
