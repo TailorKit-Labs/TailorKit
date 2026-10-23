@@ -165,6 +165,13 @@ export type AppAgentCreateResponses = {
         instances?: true;
         path: string;
         slot: string;
+        staticInstances?: Array<{
+          data: unknown;
+          key: string;
+          metadata: {
+            [key: string]: unknown;
+          };
+        }>;
       }>;
     } | null;
     logoPaths?: {
@@ -176,6 +183,13 @@ export type AppAgentCreateResponses = {
       instances?: true;
       path: string;
       slot: string;
+      staticInstances?: Array<{
+        data: unknown;
+        key: string;
+        metadata: {
+          [key: string]: unknown;
+        };
+      }>;
     }>;
   };
 };
@@ -245,6 +259,13 @@ export type AppsCreateResponses = {
         instances?: true;
         path: string;
         slot: string;
+        staticInstances?: Array<{
+          data: unknown;
+          key: string;
+          metadata: {
+            [key: string]: unknown;
+          };
+        }>;
       }>;
     } | null;
     logoPaths?: {
@@ -256,6 +277,13 @@ export type AppsCreateResponses = {
       instances?: true;
       path: string;
       slot: string;
+      staticInstances?: Array<{
+        data: unknown;
+        key: string;
+        metadata: {
+          [key: string]: unknown;
+        };
+      }>;
     }>;
   };
 };
@@ -365,6 +393,13 @@ export type AppsDeployResponses = {
         instances?: true;
         path: string;
         slot: string;
+        staticInstances?: Array<{
+          data: unknown;
+          key: string;
+          metadata: {
+            [key: string]: unknown;
+          };
+        }>;
       }>;
     } | null;
     logoPaths?: {
@@ -376,6 +411,13 @@ export type AppsDeployResponses = {
       instances?: true;
       path: string;
       slot: string;
+      staticInstances?: Array<{
+        data: unknown;
+        key: string;
+        metadata: {
+          [key: string]: unknown;
+        };
+      }>;
     }>;
   };
 };
@@ -449,6 +491,13 @@ export type AppsGetResponses = {
         instances?: true;
         path: string;
         slot: string;
+        staticInstances?: Array<{
+          data: unknown;
+          key: string;
+          metadata: {
+            [key: string]: unknown;
+          };
+        }>;
       }>;
     } | null;
     logoPaths?: {
@@ -460,6 +509,13 @@ export type AppsGetResponses = {
       instances?: true;
       path: string;
       slot: string;
+      staticInstances?: Array<{
+        data: unknown;
+        key: string;
+        metadata: {
+          [key: string]: unknown;
+        };
+      }>;
     }>;
   };
 };
@@ -537,6 +593,13 @@ export type AppsInstallResponses = {
         instances?: true;
         path: string;
         slot: string;
+        staticInstances?: Array<{
+          data: unknown;
+          key: string;
+          metadata: {
+            [key: string]: unknown;
+          };
+        }>;
       }>;
     } | null;
     logoPaths?: {
@@ -548,6 +611,13 @@ export type AppsInstallResponses = {
       instances?: true;
       path: string;
       slot: string;
+      staticInstances?: Array<{
+        data: unknown;
+        key: string;
+        metadata: {
+          [key: string]: unknown;
+        };
+      }>;
     }>;
   };
 };
@@ -614,6 +684,13 @@ export type AppsListResponses = {
           instances?: true;
           path: string;
           slot: string;
+          staticInstances?: Array<{
+            data: unknown;
+            key: string;
+            metadata: {
+              [key: string]: unknown;
+            };
+          }>;
         }>;
       } | null;
       logoPaths?: {
@@ -625,6 +702,13 @@ export type AppsListResponses = {
         instances?: true;
         path: string;
         slot: string;
+        staticInstances?: Array<{
+          data: unknown;
+          key: string;
+          metadata: {
+            [key: string]: unknown;
+          };
+        }>;
       }>;
     }>;
     pagination: {
@@ -732,6 +816,13 @@ export type AppsRuntimeResolveResponses = {
             instances?: true;
             path: string;
             slot: string;
+            staticInstances?: Array<{
+              data: unknown;
+              key: string;
+              metadata: {
+                [key: string]: unknown;
+              };
+            }>;
           }>;
         } | null;
         logoPaths?: {
@@ -743,6 +834,13 @@ export type AppsRuntimeResolveResponses = {
           instances?: true;
           path: string;
           slot: string;
+          staticInstances?: Array<{
+            data: unknown;
+            key: string;
+            metadata: {
+              [key: string]: unknown;
+            };
+          }>;
         }>;
       };
       data: unknown;
@@ -890,6 +988,13 @@ export type AppsUpdateResponses = {
         instances?: true;
         path: string;
         slot: string;
+        staticInstances?: Array<{
+          data: unknown;
+          key: string;
+          metadata: {
+            [key: string]: unknown;
+          };
+        }>;
       }>;
     } | null;
     logoPaths?: {
@@ -901,6 +1006,13 @@ export type AppsUpdateResponses = {
       instances?: true;
       path: string;
       slot: string;
+      staticInstances?: Array<{
+        data: unknown;
+        key: string;
+        metadata: {
+          [key: string]: unknown;
+        };
+      }>;
     }>;
   };
 };
@@ -1085,6 +1197,13 @@ export type DeploymentsCreateData = {
       instances?: true;
       path: string;
       slot: string;
+      staticInstances?: Array<{
+        data: unknown;
+        key: string;
+        metadata: {
+          [key: string]: unknown;
+        };
+      }>;
     }>;
   };
   path?: never;
@@ -1133,6 +1252,13 @@ export type DeploymentsCreateResponses = {
         instances?: true;
         path: string;
         slot: string;
+        staticInstances?: Array<{
+          data: unknown;
+          key: string;
+          metadata: {
+            [key: string]: unknown;
+          };
+        }>;
       }>;
     };
     logos?: {
@@ -1234,6 +1360,13 @@ export type DeploymentsGetResponses = {
       instances?: true;
       path: string;
       slot: string;
+      staticInstances?: Array<{
+        data: unknown;
+        key: string;
+        metadata: {
+          [key: string]: unknown;
+        };
+      }>;
     }>;
   };
 };
@@ -1289,6 +1422,13 @@ export type DeploymentsListResponses = {
         instances?: true;
         path: string;
         slot: string;
+        staticInstances?: Array<{
+          data: unknown;
+          key: string;
+          metadata: {
+            [key: string]: unknown;
+          };
+        }>;
       }>;
     }>;
     pagination: {
@@ -1340,6 +1480,13 @@ export type DeploymentsPublishResponses = {
       instances?: true;
       path: string;
       slot: string;
+      staticInstances?: Array<{
+        data: unknown;
+        key: string;
+        metadata: {
+          [key: string]: unknown;
+        };
+      }>;
     }>;
   };
 };
