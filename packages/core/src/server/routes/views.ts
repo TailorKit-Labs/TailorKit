@@ -246,6 +246,7 @@ export const views = o
               },
               client: context.platform,
               headers: context.platformHeaders,
+              redirect: "error",
               responseStyle: "fields",
               signal,
               throwOnError: false,

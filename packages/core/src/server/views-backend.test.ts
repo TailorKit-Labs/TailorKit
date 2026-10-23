@@ -70,6 +70,7 @@ it("routes only resolution to the opt-in backend from an arbitrary host", async 
     "https://views.test/api/platform/apps/runtime/resolve",
     "https://platform.test/api/platform/apps/list",
   ]);
+  expect(requests[0]?.redirect).toBe("error");
   expect(requests[0]?.headers.get("authorization")).toBe(
     "Bearer server-only-key"
   );
