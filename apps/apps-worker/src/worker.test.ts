@@ -131,6 +131,8 @@ const setup = () => {
   );
   let version: string | undefined;
 
+  const facetReady = vi.fn<AppFacet["ready"]>().mockResolvedValue();
+
   const facetQuery = vi.fn<AppFacet["query"]>().mockResolvedValue({
     committed: false,
     result: { ok: true, value: "result" },
@@ -170,7 +172,12 @@ const setup = () => {
     (_name: string, options: () => Parameters<typeof startup>[0]) => {
       startup(options());
 
-      return { action: facetAction, mutate: facetMutate, query: facetQuery };
+      return {
+        action: facetAction,
+        mutate: facetMutate,
+        query: facetQuery,
+        ready: facetReady,
+      };
     }
   );
 
@@ -253,6 +260,7 @@ const setup = () => {
     facetAction,
     facetMutate,
     facetQuery,
+    facetReady,
     get,
     getByName,
     getClass,
@@ -658,6 +666,7 @@ it("warms and persists verified source without invoking application handlers", a
   expect(source.current).toHaveBeenCalledOnce();
   expect(source.code).toHaveBeenCalledOnce();
   expect(fixtures.get).toHaveBeenCalledOnce();
+  expect(fixtures.facetReady).toHaveBeenCalledOnce();
   expect(fixtures.facetQuery).not.toHaveBeenCalled();
   expect(fixtures.facetMutate).not.toHaveBeenCalled();
   expect(fixtures.facetAction).not.toHaveBeenCalled();
