@@ -47,7 +47,7 @@ describe("primitive schema components", () => {
     ["Valibot", valibotPrimitives, valibotDefaults, valibotBreakpoints],
     ["ArkType", arktypePrimitives, arktypeDefaults, arktypeBreakpoints],
   ] as const)(
-    "extends exported defaults when defining a %s contract",
+    "extends exported defaults when defining the %s contract",
     (_name, define, defaults, breakpoints) => {
       const suite = define({
         breakpoints: { ...breakpoints, wide: "120rem" },
@@ -67,11 +67,11 @@ describe("primitive schema components", () => {
         })
       ).toBe(true);
       expect(isValid(suite.Box.fields, { radius: "unknown" })).toBe(false);
-      const unextended = define({ breakpoints: {} });
-      expect(isValid(unextended.Box.fields, { radius: "card" })).toBe(false);
-      expect(isValid(unextended.Box.fields, { width: "128" })).toBe(false);
       expect(defaults.radius.lg).toBe("0.5rem");
-    }
+    },
+    // ArkType compiles every primitive with extended tokens and six breakpoints;
+    // this real contract construction takes more than five seconds on CI.
+    15_000
   );
 
   it.each([
@@ -215,7 +215,9 @@ describe("primitive schema components", () => {
         { margin: "none" },
         { radius: "2xs" },
         { radius: "base" },
+        { radius: "card" },
         { width: "w-12" },
+        { width: "128" },
         { width: 12 },
       ]) {
         expect(isValid(box, invalid)).toBe(false);
