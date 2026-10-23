@@ -11,8 +11,8 @@ export interface PatchsmithTheme {
    * Values are used as CSS `min-width` media queries. Use `default` in style
    * values for the fallback; `default` and names starting with `:` are reserved.
    *
-   * Defaults: `sm: "640px"`, `md: "768px"`,
-   * `lg: "1024px"`, `xl: "1280px"`, `2xl: "1536px"`.
+   * Tailwind v4 defaults: `sm: "40rem"`, `md: "48rem"`,
+   * `lg: "64rem"`, `xl: "80rem"`, `2xl: "96rem"`.
    */
   breakpoints?: ThemeBreakpoints;
   tokens?: {
@@ -55,20 +55,25 @@ export interface PatchsmithTheme {
     /**
      * Corner radius tokens used by the `radius` primitive prop.
      *
-     * Defaults: `none`, `2xs`, `xs`, `sm`, `md`, `lg`, `xl`, `2xl`, `3xl`, `full`.
+     * Tailwind v4 defaults: `none`, `xs`, `sm`, `md`, `lg`, `xl`, `2xl`,
+     * `3xl`, `4xl`, `full`.
      */
     radius?: Record<string, string>;
     /**
      * Width and height tokens used by the `width` and `height` primitive props.
      *
-     * Defaults: `0`, fractions from `1/2` through `11/12`, `full`, `min`,
-     * `max`, and `fit`.
+     * Defaults: the numeric spacing tokens (for example, `12` is `3rem`),
+     * `px`, fractions from `1/2` through `11/12`, `auto`, `full`, `min`,
+     * `max`, and `fit`. Also used by `basis`, `minWidth`, and `minHeight`.
      */
     size?: Record<string, string>;
     /**
      * Spacing tokens used by the `padding`, `margin`, and `gap` primitive props.
      *
-     * Defaults: `none`, `2xs`, `xs`, `sm`, `md`, `lg`, `xl`, `2xl`, `3xl`.
+     * Defaults to `0`, `0.5`, `1`, `1.5`, `2`, `2.5`, `3`,
+     * `3.5`, `4`–`12`, `14`, `16`, `18`, `20`, `24`, `28`, `32`, `36`,
+     * `40`, `44`, `48`, `52`, `56`, `60`, `64`, `72`, `80`, `96`, and `px`.
+     * Numeric tokens use a `0.25rem` unit, so `4` is `1rem`.
      */
     space?: Record<string, string>;
     /**
@@ -102,36 +107,63 @@ export interface PatchsmithTheme {
 }
 
 export const defaultBreakpoints = {
-  "2xl": "1536px",
-  lg: "1024px",
-  md: "768px",
-  sm: "640px",
-  xl: "1280px",
+  "2xl": "96rem",
+  lg: "64rem",
+  md: "48rem",
+  sm: "40rem",
+  xl: "80rem",
 } as const;
 
 export const defaultSpace = {
-  "2xl": "3rem",
-  "2xs": "0.125rem",
-  "3xl": "4.5rem",
-  lg: "1.5rem",
-  md: "1rem",
-  none: "0rem",
-  sm: "0.5rem",
-  xl: "2rem",
-  xs: "0.25rem",
+  "0": "0rem",
+  "0.5": "0.125rem",
+  "1": "0.25rem",
+  "1.5": "0.375rem",
+  "10": "2.5rem",
+  "11": "2.75rem",
+  "12": "3rem",
+  "14": "3.5rem",
+  "16": "4rem",
+  "18": "4.5rem",
+  "2": "0.5rem",
+  "2.5": "0.625rem",
+  "20": "5rem",
+  "24": "6rem",
+  "28": "7rem",
+  "3": "0.75rem",
+  "3.5": "0.875rem",
+  "32": "8rem",
+  "36": "9rem",
+  "4": "1rem",
+  "40": "10rem",
+  "44": "11rem",
+  "48": "12rem",
+  "5": "1.25rem",
+  "52": "13rem",
+  "56": "14rem",
+  "6": "1.5rem",
+  "60": "15rem",
+  "64": "16rem",
+  "7": "1.75rem",
+  "72": "18rem",
+  "8": "2rem",
+  "80": "20rem",
+  "9": "2.25rem",
+  "96": "24rem",
+  px: "1px",
 } as const;
 
 export const defaultRadius = {
-  "2xl": "1.5rem",
-  "2xs": "0.125rem",
-  "3xl": "2rem",
-  full: "100%",
-  lg: "0.75rem",
-  md: "0.5rem",
+  "2xl": "1rem",
+  "3xl": "1.5rem",
+  "4xl": "2rem",
+  full: "calc(infinity * 1px)",
+  lg: "0.5rem",
+  md: "0.375rem",
   none: "0rem",
-  sm: "0.375rem",
-  xl: "1rem",
-  xs: "0.25rem",
+  sm: "0.25rem",
+  xl: "0.75rem",
+  xs: "0.125rem",
 } as const;
 
 export const defaultBorder = {
@@ -156,7 +188,7 @@ export const defaultOverflowWrap = {
 } as const;
 
 export const defaultSize = {
-  "0": "0px",
+  ...defaultSpace,
   "1/12": "8.333333%",
   "1/2": "50%",
   "1/3": "33.333333%",
@@ -183,6 +215,7 @@ export const defaultSize = {
   "7/12": "58.333333%",
   "8/12": "66.666667%",
   "9/12": "75%",
+  auto: "auto",
   fit: "fit-content",
   full: "100%",
   max: "max-content",
@@ -210,7 +243,8 @@ export const defaultTextTransform = {
   uppercase: "uppercase",
 } as const;
 
-const defaultTokenGroups = {
+/** Spread a token group to extend its defaults when defining a host theme. */
+export const primitiveDefaults = {
   border: defaultBorder,
   overflow: defaultOverflow,
   overflowWrap: defaultOverflowWrap,
@@ -220,17 +254,17 @@ const defaultTokenGroups = {
   textAlign: defaultTextAlign,
   textOverflow: defaultTextOverflow,
   textTransform: defaultTextTransform,
-} satisfies PatchsmithTheme["tokens"];
+} as const satisfies PatchsmithTheme["tokens"];
 
-const isTokenName = (name: string): name is keyof typeof defaultTokenGroups =>
-  Object.hasOwn(defaultTokenGroups, name);
+const isTokenName = (name: string): name is keyof typeof primitiveDefaults =>
+  Object.hasOwn(primitiveDefaults, name);
 
 const resolveTokens = (
   theme: PatchsmithTheme | undefined
 ): PatchsmithTheme["tokens"] => {
   const tokens: NonNullable<PatchsmithTheme["tokens"]> = { ...theme?.tokens };
 
-  for (const [key, value] of Object.entries(defaultTokenGroups)) {
+  for (const [key, value] of Object.entries(primitiveDefaults)) {
     if (isTokenName(key)) {
       tokens[key] ??= value;
     }

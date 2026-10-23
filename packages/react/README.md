@@ -60,6 +60,41 @@ Refresh installed-app and view lists after installing or updating an app with `q
 
 Include the active account or workspace in keys when switching between authenticated scopes. On sign-out or account changes, cancel and remove the corresponding TanStack queries and call `patchsmithClient.clearCache()` to reset Patchsmith's cached data and sessions. `clearCache()` does not clear an external query client.
 
+## Primitive scales
+
+Built-in primitive tokens follow Tailwind v4. Spacing uses numeric strings with a `0.25rem` unit: `padding="4"` is `1rem`, and `gap="2"` is `0.5rem`. Width, height, minimum dimensions, and flex basis share those fixed sizes: `width="12"` is `3rem`, and `height="24"` is `6rem`. Common steps through `96`, fractional steps `0.5`, `1.5`, `2.5`, `3.5`, and `px` are included. Size tokens also include `auto`, fractions, `full`, `min`, `max`, and `fit`.
+
+Radius uses `none`, `xs`, `sm`, `md`, `lg`, `xl`, `2xl`, `3xl`, `4xl`, and `full`, matching Tailwind v4 names and values. Default breakpoints use Tailwind's rem values. Custom host token groups replace the corresponding defaults.
+
+Spread `primitiveDefaults` groups to extend a scale or override individual values while keeping its other tokens. Import these defaults alongside `primitives` from `patchsmith/zod`, `patchsmith/valibot`, or `patchsmith/arktype`. Use the same theme for the contract and the host client.
+
+```ts
+import {
+  defaultBreakpoints,
+  primitiveDefaults,
+  primitives,
+} from "patchsmith/zod";
+
+const theme = {
+  breakpoints: { ...defaultBreakpoints, wide: "120rem" },
+  tokens: {
+    radius: { ...primitiveDefaults.radius, card: "0.625rem" },
+    size: { ...primitiveDefaults.size, "128": "32rem" },
+    space: { ...primitiveDefaults.space, "128": "32rem" },
+  },
+};
+
+const components = primitives(theme);
+```
+
+Other exported groups are `border`, `overflow`, `overflowWrap`, `textAlign`, `textOverflow`, and `textTransform`.
+
+```tsx
+<Box width="12" height="12" padding="2" radius="lg">
+  <Icon name="check" size={16} />
+</Box>
+```
+
 ## Pressable
 
 Register the standard `primitives` with the host client and `primitives(theme)` with the contract's Zod, Valibot, or ArkType adapter. Generated extension types expose the same Pressable API for every validator.
@@ -67,13 +102,7 @@ Register the standard `primitives` with the host client and `primitives(theme)` 
 Pressable owns a `<div role="button">` and its layout. `layout` defaults to `"inline"` (`inline-flex`); `"box"`, `"flex"`, and `"grid"` use `block`, `flex`, and `grid`. It accepts existing primitive theme tokens, responsive styles, and layout props, including `align`, `gap`, `padding`, and `columns`.
 
 ```tsx
-<Pressable
-  layout="flex"
-  align="center"
-  gap="sm"
-  padding="md"
-  onPress={openEmail}
->
+<Pressable layout="flex" align="center" gap="2" padding="4" onPress={openEmail}>
   <Box grow="1">
     <Inline>{email.sender}</Inline>
     <Inline>{email.subject}</Inline>

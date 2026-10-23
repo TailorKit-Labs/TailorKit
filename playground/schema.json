@@ -236,16 +236,16 @@
                     "enum": ["auto", "clip", "hidden", "scroll", "visible"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema20"
+                    "$ref": "#/$defs/schema21"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema20"
+                    "$ref": "#/$defs/schema21"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema20"
+                    "$ref": "#/$defs/schema21"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema20"
+                    "$ref": "#/$defs/schema21"
                   }
                 },
                 "additionalProperties": false
@@ -286,16 +286,16 @@
                     "enum": ["anywhere", "breakWord", "normal"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema22"
+                    "$ref": "#/$defs/schema23"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema22"
+                    "$ref": "#/$defs/schema23"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema22"
+                    "$ref": "#/$defs/schema23"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema22"
+                    "$ref": "#/$defs/schema23"
                   }
                 },
                 "additionalProperties": false
@@ -306,7 +306,131 @@
             "$ref": "#/$defs/schema16"
           },
           "radius": {
-            "$ref": "#/$defs/schema16"
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "default": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "2xl": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "lg": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "md": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "sm": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "xl": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  ":active": {
+                    "$ref": "#/$defs/schema25"
+                  },
+                  ":disabled": {
+                    "$ref": "#/$defs/schema25"
+                  },
+                  ":focus-visible": {
+                    "$ref": "#/$defs/schema25"
+                  },
+                  ":hover": {
+                    "$ref": "#/$defs/schema25"
+                  }
+                },
+                "additionalProperties": false
+              }
+            ]
           },
           "shrink": {
             "$ref": "#/$defs/schema12"
@@ -387,16 +511,16 @@
                     ]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema24"
+                    "$ref": "#/$defs/schema27"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema24"
+                    "$ref": "#/$defs/schema27"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema24"
+                    "$ref": "#/$defs/schema27"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema24"
+                    "$ref": "#/$defs/schema27"
                   }
                 },
                 "additionalProperties": false
@@ -437,16 +561,16 @@
                     "enum": ["default", "muted"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema26"
+                    "$ref": "#/$defs/schema29"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema26"
+                    "$ref": "#/$defs/schema29"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema26"
+                    "$ref": "#/$defs/schema29"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema26"
+                    "$ref": "#/$defs/schema29"
                   }
                 },
                 "additionalProperties": false
@@ -487,16 +611,16 @@
                     "enum": ["clip", "ellipsis"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema28"
+                    "$ref": "#/$defs/schema31"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema28"
+                    "$ref": "#/$defs/schema31"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema28"
+                    "$ref": "#/$defs/schema31"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema28"
+                    "$ref": "#/$defs/schema31"
                   }
                 },
                 "additionalProperties": false
@@ -537,16 +661,16 @@
                     "enum": ["capitalize", "lowercase", "none", "uppercase"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema30"
+                    "$ref": "#/$defs/schema33"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema30"
+                    "$ref": "#/$defs/schema33"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema30"
+                    "$ref": "#/$defs/schema33"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema30"
+                    "$ref": "#/$defs/schema33"
                   }
                 },
                 "additionalProperties": false
@@ -604,6 +728,41 @@
             "type": "string",
             "enum": [
               "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "9",
+              "10",
+              "11",
+              "12",
+              "14",
+              "16",
+              "18",
+              "20",
+              "24",
+              "28",
+              "32",
+              "36",
+              "40",
+              "44",
+              "48",
+              "52",
+              "56",
+              "60",
+              "64",
+              "72",
+              "80",
+              "96",
+              "0.5",
+              "1.5",
+              "2.5",
+              "3.5",
+              "px",
               "1/12",
               "1/2",
               "1/3",
@@ -630,6 +789,7 @@
               "7/12",
               "8/12",
               "9/12",
+              "auto",
               "fit",
               "full",
               "max",
@@ -1004,215 +1164,113 @@
               }
             ]
           },
-          "schema19": {
+          "schema17": {
+            "type": "string",
+            "enum": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "9",
+              "10",
+              "11",
+              "12",
+              "14",
+              "16",
+              "18",
+              "20",
+              "24",
+              "28",
+              "32",
+              "36",
+              "40",
+              "44",
+              "48",
+              "52",
+              "56",
+              "60",
+              "64",
+              "72",
+              "80",
+              "96",
+              "0.5",
+              "1.5",
+              "2.5",
+              "3.5",
+              "px"
+            ]
+          },
+          "schema20": {
             "type": "object",
             "properties": {
               "default": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "2xl": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "lg": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "md": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "sm": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "xl": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               }
             },
             "additionalProperties": false
           },
-          "schema18": {
+          "schema19": {
             "anyOf": [
               {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               {
-                "$ref": "#/$defs/schema19"
+                "$ref": "#/$defs/schema20"
               }
             ]
           },
-          "schema17": {
+          "schema18": {
             "type": "object",
             "properties": {
               "default": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "2xl": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "lg": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "md": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "sm": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "xl": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               ":active": {
-                "$ref": "#/$defs/schema18"
+                "$ref": "#/$defs/schema19"
               },
               ":disabled": {
-                "$ref": "#/$defs/schema18"
+                "$ref": "#/$defs/schema19"
               },
               ":focus-visible": {
-                "$ref": "#/$defs/schema18"
+                "$ref": "#/$defs/schema19"
               },
               ":hover": {
-                "$ref": "#/$defs/schema18"
+                "$ref": "#/$defs/schema19"
               }
             },
             "additionalProperties": false
@@ -1220,11 +1278,200 @@
           "schema16": {
             "anyOf": [
               {
+                "$ref": "#/$defs/schema17"
+              },
+              {
+                "$ref": "#/$defs/schema18"
+              }
+            ]
+          },
+          "schema22": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema21": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              {
+                "$ref": "#/$defs/schema22"
+              }
+            ]
+          },
+          "schema24": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema23": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              {
+                "$ref": "#/$defs/schema24"
+              }
+            ]
+          },
+          "schema26": {
+            "type": "object",
+            "properties": {
+              "default": {
                 "type": "string",
                 "enum": [
                   "2xl",
-                  "2xs",
                   "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "lg": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "md": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "sm": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "xl": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema25": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
                   "lg",
                   "md",
                   "none",
@@ -1234,216 +1481,134 @@
                 ]
               },
               {
-                "$ref": "#/$defs/schema17"
+                "$ref": "#/$defs/schema26"
               }
             ]
-          },
-          "schema21": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              }
-            },
-            "additionalProperties": false
-          },
-          "schema20": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              {
-                "$ref": "#/$defs/schema21"
-              }
-            ]
-          },
-          "schema23": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              }
-            },
-            "additionalProperties": false
-          },
-          "schema22": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              {
-                "$ref": "#/$defs/schema23"
-              }
-            ]
-          },
-          "schema25": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              }
-            },
-            "additionalProperties": false
-          },
-          "schema24": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              {
-                "$ref": "#/$defs/schema25"
-              }
-            ]
-          },
-          "schema27": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              }
-            },
-            "additionalProperties": false
-          },
-          "schema26": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              {
-                "$ref": "#/$defs/schema27"
-              }
-            ]
-          },
-          "schema29": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              }
-            },
-            "additionalProperties": false
           },
           "schema28": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["center", "end", "justify", "left", "right", "start"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["center", "end", "justify", "left", "right", "start"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["center", "end", "justify", "left", "right", "start"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["center", "end", "justify", "left", "right", "start"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["center", "end", "justify", "left", "right", "start"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["center", "end", "justify", "left", "right", "start"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema27": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["center", "end", "justify", "left", "right", "start"]
+              },
+              {
+                "$ref": "#/$defs/schema28"
+              }
+            ]
+          },
+          "schema30": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema29": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              {
+                "$ref": "#/$defs/schema30"
+              }
+            ]
+          },
+          "schema32": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema31": {
             "anyOf": [
               {
                 "type": "string",
                 "enum": ["clip", "ellipsis"]
               },
               {
-                "$ref": "#/$defs/schema29"
+                "$ref": "#/$defs/schema32"
               }
             ]
           },
-          "schema31": {
+          "schema34": {
             "type": "object",
             "properties": {
               "default": {
@@ -1473,14 +1638,14 @@
             },
             "additionalProperties": false
           },
-          "schema30": {
+          "schema33": {
             "anyOf": [
               {
                 "type": "string",
                 "enum": ["capitalize", "lowercase", "none", "uppercase"]
               },
               {
-                "$ref": "#/$defs/schema31"
+                "$ref": "#/$defs/schema34"
               }
             ]
           }
@@ -1696,16 +1861,16 @@
                     "enum": ["auto", "clip", "hidden", "scroll", "visible"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema20"
+                    "$ref": "#/$defs/schema21"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema20"
+                    "$ref": "#/$defs/schema21"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema20"
+                    "$ref": "#/$defs/schema21"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema20"
+                    "$ref": "#/$defs/schema21"
                   }
                 },
                 "additionalProperties": false
@@ -1746,16 +1911,16 @@
                     "enum": ["anywhere", "breakWord", "normal"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema22"
+                    "$ref": "#/$defs/schema23"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema22"
+                    "$ref": "#/$defs/schema23"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema22"
+                    "$ref": "#/$defs/schema23"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema22"
+                    "$ref": "#/$defs/schema23"
                   }
                 },
                 "additionalProperties": false
@@ -1766,7 +1931,131 @@
             "$ref": "#/$defs/schema16"
           },
           "radius": {
-            "$ref": "#/$defs/schema16"
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "default": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "2xl": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "lg": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "md": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "sm": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "xl": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  ":active": {
+                    "$ref": "#/$defs/schema25"
+                  },
+                  ":disabled": {
+                    "$ref": "#/$defs/schema25"
+                  },
+                  ":focus-visible": {
+                    "$ref": "#/$defs/schema25"
+                  },
+                  ":hover": {
+                    "$ref": "#/$defs/schema25"
+                  }
+                },
+                "additionalProperties": false
+              }
+            ]
           },
           "shrink": {
             "$ref": "#/$defs/schema12"
@@ -1847,16 +2136,16 @@
                     ]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema24"
+                    "$ref": "#/$defs/schema27"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema24"
+                    "$ref": "#/$defs/schema27"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema24"
+                    "$ref": "#/$defs/schema27"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema24"
+                    "$ref": "#/$defs/schema27"
                   }
                 },
                 "additionalProperties": false
@@ -1897,16 +2186,16 @@
                     "enum": ["default", "muted"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema26"
+                    "$ref": "#/$defs/schema29"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema26"
+                    "$ref": "#/$defs/schema29"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema26"
+                    "$ref": "#/$defs/schema29"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema26"
+                    "$ref": "#/$defs/schema29"
                   }
                 },
                 "additionalProperties": false
@@ -1947,16 +2236,16 @@
                     "enum": ["clip", "ellipsis"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema28"
+                    "$ref": "#/$defs/schema31"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema28"
+                    "$ref": "#/$defs/schema31"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema28"
+                    "$ref": "#/$defs/schema31"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema28"
+                    "$ref": "#/$defs/schema31"
                   }
                 },
                 "additionalProperties": false
@@ -1997,16 +2286,16 @@
                     "enum": ["capitalize", "lowercase", "none", "uppercase"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema30"
+                    "$ref": "#/$defs/schema33"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema30"
+                    "$ref": "#/$defs/schema33"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema30"
+                    "$ref": "#/$defs/schema33"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema30"
+                    "$ref": "#/$defs/schema33"
                   }
                 },
                 "additionalProperties": false
@@ -2019,40 +2308,40 @@
           "align": {
             "anyOf": [
               {
-                "$ref": "#/$defs/schema32"
+                "$ref": "#/$defs/schema35"
               },
               {
                 "type": "object",
                 "properties": {
                   "default": {
-                    "$ref": "#/$defs/schema32"
+                    "$ref": "#/$defs/schema35"
                   },
                   "2xl": {
-                    "$ref": "#/$defs/schema32"
+                    "$ref": "#/$defs/schema35"
                   },
                   "lg": {
-                    "$ref": "#/$defs/schema32"
+                    "$ref": "#/$defs/schema35"
                   },
                   "md": {
-                    "$ref": "#/$defs/schema32"
+                    "$ref": "#/$defs/schema35"
                   },
                   "sm": {
-                    "$ref": "#/$defs/schema32"
+                    "$ref": "#/$defs/schema35"
                   },
                   "xl": {
-                    "$ref": "#/$defs/schema32"
+                    "$ref": "#/$defs/schema35"
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema33"
+                    "$ref": "#/$defs/schema36"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema33"
+                    "$ref": "#/$defs/schema36"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema33"
+                    "$ref": "#/$defs/schema36"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema33"
+                    "$ref": "#/$defs/schema36"
                   }
                 },
                 "additionalProperties": false
@@ -2149,16 +2438,16 @@
                     ]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema35"
+                    "$ref": "#/$defs/schema38"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema35"
+                    "$ref": "#/$defs/schema38"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema35"
+                    "$ref": "#/$defs/schema38"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema35"
+                    "$ref": "#/$defs/schema38"
                   }
                 },
                 "additionalProperties": false
@@ -2171,40 +2460,40 @@
           "justify": {
             "anyOf": [
               {
-                "$ref": "#/$defs/schema37"
+                "$ref": "#/$defs/schema40"
               },
               {
                 "type": "object",
                 "properties": {
                   "default": {
-                    "$ref": "#/$defs/schema37"
+                    "$ref": "#/$defs/schema40"
                   },
                   "2xl": {
-                    "$ref": "#/$defs/schema37"
+                    "$ref": "#/$defs/schema40"
                   },
                   "lg": {
-                    "$ref": "#/$defs/schema37"
+                    "$ref": "#/$defs/schema40"
                   },
                   "md": {
-                    "$ref": "#/$defs/schema37"
+                    "$ref": "#/$defs/schema40"
                   },
                   "sm": {
-                    "$ref": "#/$defs/schema37"
+                    "$ref": "#/$defs/schema40"
                   },
                   "xl": {
-                    "$ref": "#/$defs/schema37"
+                    "$ref": "#/$defs/schema40"
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema38"
+                    "$ref": "#/$defs/schema41"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema38"
+                    "$ref": "#/$defs/schema41"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema38"
+                    "$ref": "#/$defs/schema41"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema38"
+                    "$ref": "#/$defs/schema41"
                   }
                 },
                 "additionalProperties": false
@@ -2329,16 +2618,16 @@
                     ]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema40"
+                    "$ref": "#/$defs/schema43"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema40"
+                    "$ref": "#/$defs/schema43"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema40"
+                    "$ref": "#/$defs/schema43"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema40"
+                    "$ref": "#/$defs/schema43"
                   }
                 },
                 "additionalProperties": false
@@ -2393,6 +2682,41 @@
             "type": "string",
             "enum": [
               "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "9",
+              "10",
+              "11",
+              "12",
+              "14",
+              "16",
+              "18",
+              "20",
+              "24",
+              "28",
+              "32",
+              "36",
+              "40",
+              "44",
+              "48",
+              "52",
+              "56",
+              "60",
+              "64",
+              "72",
+              "80",
+              "96",
+              "0.5",
+              "1.5",
+              "2.5",
+              "3.5",
+              "px",
               "1/12",
               "1/2",
               "1/3",
@@ -2419,6 +2743,7 @@
               "7/12",
               "8/12",
               "9/12",
+              "auto",
               "fit",
               "full",
               "max",
@@ -2793,215 +3118,113 @@
               }
             ]
           },
-          "schema19": {
+          "schema17": {
+            "type": "string",
+            "enum": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "9",
+              "10",
+              "11",
+              "12",
+              "14",
+              "16",
+              "18",
+              "20",
+              "24",
+              "28",
+              "32",
+              "36",
+              "40",
+              "44",
+              "48",
+              "52",
+              "56",
+              "60",
+              "64",
+              "72",
+              "80",
+              "96",
+              "0.5",
+              "1.5",
+              "2.5",
+              "3.5",
+              "px"
+            ]
+          },
+          "schema20": {
             "type": "object",
             "properties": {
               "default": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "2xl": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "lg": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "md": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "sm": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "xl": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               }
             },
             "additionalProperties": false
           },
-          "schema18": {
+          "schema19": {
             "anyOf": [
               {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               {
-                "$ref": "#/$defs/schema19"
+                "$ref": "#/$defs/schema20"
               }
             ]
           },
-          "schema17": {
+          "schema18": {
             "type": "object",
             "properties": {
               "default": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "2xl": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "lg": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "md": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "sm": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "xl": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               ":active": {
-                "$ref": "#/$defs/schema18"
+                "$ref": "#/$defs/schema19"
               },
               ":disabled": {
-                "$ref": "#/$defs/schema18"
+                "$ref": "#/$defs/schema19"
               },
               ":focus-visible": {
-                "$ref": "#/$defs/schema18"
+                "$ref": "#/$defs/schema19"
               },
               ":hover": {
-                "$ref": "#/$defs/schema18"
+                "$ref": "#/$defs/schema19"
               }
             },
             "additionalProperties": false
@@ -3009,11 +3232,200 @@
           "schema16": {
             "anyOf": [
               {
+                "$ref": "#/$defs/schema17"
+              },
+              {
+                "$ref": "#/$defs/schema18"
+              }
+            ]
+          },
+          "schema22": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema21": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              {
+                "$ref": "#/$defs/schema22"
+              }
+            ]
+          },
+          "schema24": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema23": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              {
+                "$ref": "#/$defs/schema24"
+              }
+            ]
+          },
+          "schema26": {
+            "type": "object",
+            "properties": {
+              "default": {
                 "type": "string",
                 "enum": [
                   "2xl",
-                  "2xs",
                   "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "lg": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "md": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "sm": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "xl": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema25": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
                   "lg",
                   "md",
                   "none",
@@ -3023,257 +3435,175 @@
                 ]
               },
               {
-                "$ref": "#/$defs/schema17"
+                "$ref": "#/$defs/schema26"
               }
             ]
-          },
-          "schema21": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              }
-            },
-            "additionalProperties": false
-          },
-          "schema20": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              {
-                "$ref": "#/$defs/schema21"
-              }
-            ]
-          },
-          "schema23": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              }
-            },
-            "additionalProperties": false
-          },
-          "schema22": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              {
-                "$ref": "#/$defs/schema23"
-              }
-            ]
-          },
-          "schema25": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              }
-            },
-            "additionalProperties": false
-          },
-          "schema24": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              {
-                "$ref": "#/$defs/schema25"
-              }
-            ]
-          },
-          "schema27": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              }
-            },
-            "additionalProperties": false
-          },
-          "schema26": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              {
-                "$ref": "#/$defs/schema27"
-              }
-            ]
-          },
-          "schema29": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              }
-            },
-            "additionalProperties": false
           },
           "schema28": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              {
-                "$ref": "#/$defs/schema29"
-              }
-            ]
-          },
-          "schema31": {
             "type": "object",
             "properties": {
               "default": {
                 "type": "string",
-                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+                "enum": ["center", "end", "justify", "left", "right", "start"]
               },
               "2xl": {
                 "type": "string",
-                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+                "enum": ["center", "end", "justify", "left", "right", "start"]
               },
               "lg": {
                 "type": "string",
-                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+                "enum": ["center", "end", "justify", "left", "right", "start"]
               },
               "md": {
                 "type": "string",
-                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+                "enum": ["center", "end", "justify", "left", "right", "start"]
               },
               "sm": {
                 "type": "string",
-                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+                "enum": ["center", "end", "justify", "left", "right", "start"]
               },
               "xl": {
                 "type": "string",
-                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+                "enum": ["center", "end", "justify", "left", "right", "start"]
               }
             },
             "additionalProperties": false
           },
-          "schema30": {
+          "schema27": {
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+                "enum": ["center", "end", "justify", "left", "right", "start"]
               },
               {
-                "$ref": "#/$defs/schema31"
+                "$ref": "#/$defs/schema28"
+              }
+            ]
+          },
+          "schema30": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema29": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              {
+                "$ref": "#/$defs/schema30"
               }
             ]
           },
           "schema32": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema31": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              {
+                "$ref": "#/$defs/schema32"
+              }
+            ]
+          },
+          "schema34": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema33": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+              },
+              {
+                "$ref": "#/$defs/schema34"
+              }
+            ]
+          },
+          "schema35": {
             "anyOf": [
               {
                 "type": "string",
@@ -3293,41 +3623,41 @@
               }
             ]
           },
-          "schema34": {
+          "schema37": {
             "type": "object",
             "properties": {
               "default": {
-                "$ref": "#/$defs/schema32"
+                "$ref": "#/$defs/schema35"
               },
               "2xl": {
-                "$ref": "#/$defs/schema32"
+                "$ref": "#/$defs/schema35"
               },
               "lg": {
-                "$ref": "#/$defs/schema32"
+                "$ref": "#/$defs/schema35"
               },
               "md": {
-                "$ref": "#/$defs/schema32"
+                "$ref": "#/$defs/schema35"
               },
               "sm": {
-                "$ref": "#/$defs/schema32"
+                "$ref": "#/$defs/schema35"
               },
               "xl": {
-                "$ref": "#/$defs/schema32"
+                "$ref": "#/$defs/schema35"
               }
             },
             "additionalProperties": false
-          },
-          "schema33": {
-            "anyOf": [
-              {
-                "$ref": "#/$defs/schema32"
-              },
-              {
-                "$ref": "#/$defs/schema34"
-              }
-            ]
           },
           "schema36": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/schema35"
+              },
+              {
+                "$ref": "#/$defs/schema37"
+              }
+            ]
+          },
+          "schema39": {
             "type": "object",
             "properties": {
               "default": {
@@ -3405,7 +3735,7 @@
             },
             "additionalProperties": false
           },
-          "schema35": {
+          "schema38": {
             "anyOf": [
               {
                 "anyOf": [
@@ -3420,11 +3750,11 @@
                 ]
               },
               {
-                "$ref": "#/$defs/schema36"
+                "$ref": "#/$defs/schema39"
               }
             ]
           },
-          "schema37": {
+          "schema40": {
             "anyOf": [
               {
                 "type": "string",
@@ -3444,41 +3774,41 @@
               }
             ]
           },
-          "schema39": {
+          "schema42": {
             "type": "object",
             "properties": {
               "default": {
-                "$ref": "#/$defs/schema37"
+                "$ref": "#/$defs/schema40"
               },
               "2xl": {
-                "$ref": "#/$defs/schema37"
+                "$ref": "#/$defs/schema40"
               },
               "lg": {
-                "$ref": "#/$defs/schema37"
+                "$ref": "#/$defs/schema40"
               },
               "md": {
-                "$ref": "#/$defs/schema37"
+                "$ref": "#/$defs/schema40"
               },
               "sm": {
-                "$ref": "#/$defs/schema37"
+                "$ref": "#/$defs/schema40"
               },
               "xl": {
-                "$ref": "#/$defs/schema37"
+                "$ref": "#/$defs/schema40"
               }
             },
             "additionalProperties": false
           },
-          "schema38": {
+          "schema41": {
             "anyOf": [
               {
-                "$ref": "#/$defs/schema37"
+                "$ref": "#/$defs/schema40"
               },
               {
-                "$ref": "#/$defs/schema39"
+                "$ref": "#/$defs/schema42"
               }
             ]
           },
-          "schema41": {
+          "schema44": {
             "type": "object",
             "properties": {
               "default": {
@@ -3580,7 +3910,7 @@
             },
             "additionalProperties": false
           },
-          "schema40": {
+          "schema43": {
             "anyOf": [
               {
                 "anyOf": [
@@ -3599,7 +3929,7 @@
                 ]
               },
               {
-                "$ref": "#/$defs/schema41"
+                "$ref": "#/$defs/schema44"
               }
             ]
           }
@@ -3815,16 +4145,16 @@
                     "enum": ["auto", "clip", "hidden", "scroll", "visible"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema20"
+                    "$ref": "#/$defs/schema21"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema20"
+                    "$ref": "#/$defs/schema21"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema20"
+                    "$ref": "#/$defs/schema21"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema20"
+                    "$ref": "#/$defs/schema21"
                   }
                 },
                 "additionalProperties": false
@@ -3865,16 +4195,16 @@
                     "enum": ["anywhere", "breakWord", "normal"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema22"
+                    "$ref": "#/$defs/schema23"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema22"
+                    "$ref": "#/$defs/schema23"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema22"
+                    "$ref": "#/$defs/schema23"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema22"
+                    "$ref": "#/$defs/schema23"
                   }
                 },
                 "additionalProperties": false
@@ -3885,7 +4215,131 @@
             "$ref": "#/$defs/schema16"
           },
           "radius": {
-            "$ref": "#/$defs/schema16"
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "default": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "2xl": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "lg": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "md": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "sm": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "xl": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  ":active": {
+                    "$ref": "#/$defs/schema25"
+                  },
+                  ":disabled": {
+                    "$ref": "#/$defs/schema25"
+                  },
+                  ":focus-visible": {
+                    "$ref": "#/$defs/schema25"
+                  },
+                  ":hover": {
+                    "$ref": "#/$defs/schema25"
+                  }
+                },
+                "additionalProperties": false
+              }
+            ]
           },
           "shrink": {
             "$ref": "#/$defs/schema12"
@@ -3966,16 +4420,16 @@
                     ]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema24"
+                    "$ref": "#/$defs/schema27"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema24"
+                    "$ref": "#/$defs/schema27"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema24"
+                    "$ref": "#/$defs/schema27"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema24"
+                    "$ref": "#/$defs/schema27"
                   }
                 },
                 "additionalProperties": false
@@ -4016,16 +4470,16 @@
                     "enum": ["default", "muted"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema26"
+                    "$ref": "#/$defs/schema29"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema26"
+                    "$ref": "#/$defs/schema29"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema26"
+                    "$ref": "#/$defs/schema29"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema26"
+                    "$ref": "#/$defs/schema29"
                   }
                 },
                 "additionalProperties": false
@@ -4066,16 +4520,16 @@
                     "enum": ["clip", "ellipsis"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema28"
+                    "$ref": "#/$defs/schema31"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema28"
+                    "$ref": "#/$defs/schema31"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema28"
+                    "$ref": "#/$defs/schema31"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema28"
+                    "$ref": "#/$defs/schema31"
                   }
                 },
                 "additionalProperties": false
@@ -4116,16 +4570,16 @@
                     "enum": ["capitalize", "lowercase", "none", "uppercase"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema30"
+                    "$ref": "#/$defs/schema33"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema30"
+                    "$ref": "#/$defs/schema33"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema30"
+                    "$ref": "#/$defs/schema33"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema30"
+                    "$ref": "#/$defs/schema33"
                   }
                 },
                 "additionalProperties": false
@@ -4138,40 +4592,40 @@
           "columns": {
             "anyOf": [
               {
-                "$ref": "#/$defs/schema32"
+                "$ref": "#/$defs/schema35"
               },
               {
                 "type": "object",
                 "properties": {
                   "default": {
-                    "$ref": "#/$defs/schema32"
+                    "$ref": "#/$defs/schema35"
                   },
                   "2xl": {
-                    "$ref": "#/$defs/schema32"
+                    "$ref": "#/$defs/schema35"
                   },
                   "lg": {
-                    "$ref": "#/$defs/schema32"
+                    "$ref": "#/$defs/schema35"
                   },
                   "md": {
-                    "$ref": "#/$defs/schema32"
+                    "$ref": "#/$defs/schema35"
                   },
                   "sm": {
-                    "$ref": "#/$defs/schema32"
+                    "$ref": "#/$defs/schema35"
                   },
                   "xl": {
-                    "$ref": "#/$defs/schema32"
+                    "$ref": "#/$defs/schema35"
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema33"
+                    "$ref": "#/$defs/schema36"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema33"
+                    "$ref": "#/$defs/schema36"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema33"
+                    "$ref": "#/$defs/schema36"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema33"
+                    "$ref": "#/$defs/schema36"
                   }
                 },
                 "additionalProperties": false
@@ -4229,6 +4683,41 @@
             "type": "string",
             "enum": [
               "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "9",
+              "10",
+              "11",
+              "12",
+              "14",
+              "16",
+              "18",
+              "20",
+              "24",
+              "28",
+              "32",
+              "36",
+              "40",
+              "44",
+              "48",
+              "52",
+              "56",
+              "60",
+              "64",
+              "72",
+              "80",
+              "96",
+              "0.5",
+              "1.5",
+              "2.5",
+              "3.5",
+              "px",
               "1/12",
               "1/2",
               "1/3",
@@ -4255,6 +4744,7 @@
               "7/12",
               "8/12",
               "9/12",
+              "auto",
               "fit",
               "full",
               "max",
@@ -4629,215 +5119,113 @@
               }
             ]
           },
-          "schema19": {
+          "schema17": {
+            "type": "string",
+            "enum": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "9",
+              "10",
+              "11",
+              "12",
+              "14",
+              "16",
+              "18",
+              "20",
+              "24",
+              "28",
+              "32",
+              "36",
+              "40",
+              "44",
+              "48",
+              "52",
+              "56",
+              "60",
+              "64",
+              "72",
+              "80",
+              "96",
+              "0.5",
+              "1.5",
+              "2.5",
+              "3.5",
+              "px"
+            ]
+          },
+          "schema20": {
             "type": "object",
             "properties": {
               "default": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "2xl": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "lg": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "md": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "sm": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "xl": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               }
             },
             "additionalProperties": false
           },
-          "schema18": {
+          "schema19": {
             "anyOf": [
               {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               {
-                "$ref": "#/$defs/schema19"
+                "$ref": "#/$defs/schema20"
               }
             ]
           },
-          "schema17": {
+          "schema18": {
             "type": "object",
             "properties": {
               "default": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "2xl": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "lg": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "md": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "sm": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "xl": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               ":active": {
-                "$ref": "#/$defs/schema18"
+                "$ref": "#/$defs/schema19"
               },
               ":disabled": {
-                "$ref": "#/$defs/schema18"
+                "$ref": "#/$defs/schema19"
               },
               ":focus-visible": {
-                "$ref": "#/$defs/schema18"
+                "$ref": "#/$defs/schema19"
               },
               ":hover": {
-                "$ref": "#/$defs/schema18"
+                "$ref": "#/$defs/schema19"
               }
             },
             "additionalProperties": false
@@ -4845,11 +5233,200 @@
           "schema16": {
             "anyOf": [
               {
+                "$ref": "#/$defs/schema17"
+              },
+              {
+                "$ref": "#/$defs/schema18"
+              }
+            ]
+          },
+          "schema22": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema21": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              {
+                "$ref": "#/$defs/schema22"
+              }
+            ]
+          },
+          "schema24": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema23": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              {
+                "$ref": "#/$defs/schema24"
+              }
+            ]
+          },
+          "schema26": {
+            "type": "object",
+            "properties": {
+              "default": {
                 "type": "string",
                 "enum": [
                   "2xl",
-                  "2xs",
                   "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "lg": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "md": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "sm": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "xl": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema25": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
                   "lg",
                   "md",
                   "none",
@@ -4859,257 +5436,175 @@
                 ]
               },
               {
-                "$ref": "#/$defs/schema17"
+                "$ref": "#/$defs/schema26"
               }
             ]
-          },
-          "schema21": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              }
-            },
-            "additionalProperties": false
-          },
-          "schema20": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              {
-                "$ref": "#/$defs/schema21"
-              }
-            ]
-          },
-          "schema23": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              }
-            },
-            "additionalProperties": false
-          },
-          "schema22": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              {
-                "$ref": "#/$defs/schema23"
-              }
-            ]
-          },
-          "schema25": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              }
-            },
-            "additionalProperties": false
-          },
-          "schema24": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              {
-                "$ref": "#/$defs/schema25"
-              }
-            ]
-          },
-          "schema27": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              }
-            },
-            "additionalProperties": false
-          },
-          "schema26": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              {
-                "$ref": "#/$defs/schema27"
-              }
-            ]
-          },
-          "schema29": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              }
-            },
-            "additionalProperties": false
           },
           "schema28": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              {
-                "$ref": "#/$defs/schema29"
-              }
-            ]
-          },
-          "schema31": {
             "type": "object",
             "properties": {
               "default": {
                 "type": "string",
-                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+                "enum": ["center", "end", "justify", "left", "right", "start"]
               },
               "2xl": {
                 "type": "string",
-                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+                "enum": ["center", "end", "justify", "left", "right", "start"]
               },
               "lg": {
                 "type": "string",
-                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+                "enum": ["center", "end", "justify", "left", "right", "start"]
               },
               "md": {
                 "type": "string",
-                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+                "enum": ["center", "end", "justify", "left", "right", "start"]
               },
               "sm": {
                 "type": "string",
-                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+                "enum": ["center", "end", "justify", "left", "right", "start"]
               },
               "xl": {
                 "type": "string",
-                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+                "enum": ["center", "end", "justify", "left", "right", "start"]
               }
             },
             "additionalProperties": false
           },
-          "schema30": {
+          "schema27": {
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+                "enum": ["center", "end", "justify", "left", "right", "start"]
               },
               {
-                "$ref": "#/$defs/schema31"
+                "$ref": "#/$defs/schema28"
+              }
+            ]
+          },
+          "schema30": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema29": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              {
+                "$ref": "#/$defs/schema30"
               }
             ]
           },
           "schema32": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema31": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              {
+                "$ref": "#/$defs/schema32"
+              }
+            ]
+          },
+          "schema34": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema33": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+              },
+              {
+                "$ref": "#/$defs/schema34"
+              }
+            ]
+          },
+          "schema35": {
             "anyOf": [
               {
                 "type": "number",
@@ -5137,37 +5632,37 @@
               }
             ]
           },
-          "schema34": {
+          "schema37": {
             "type": "object",
             "properties": {
               "default": {
-                "$ref": "#/$defs/schema32"
+                "$ref": "#/$defs/schema35"
               },
               "2xl": {
-                "$ref": "#/$defs/schema32"
+                "$ref": "#/$defs/schema35"
               },
               "lg": {
-                "$ref": "#/$defs/schema32"
+                "$ref": "#/$defs/schema35"
               },
               "md": {
-                "$ref": "#/$defs/schema32"
+                "$ref": "#/$defs/schema35"
               },
               "sm": {
-                "$ref": "#/$defs/schema32"
+                "$ref": "#/$defs/schema35"
               },
               "xl": {
-                "$ref": "#/$defs/schema32"
+                "$ref": "#/$defs/schema35"
               }
             },
             "additionalProperties": false
           },
-          "schema33": {
+          "schema36": {
             "anyOf": [
               {
-                "$ref": "#/$defs/schema32"
+                "$ref": "#/$defs/schema35"
               },
               {
-                "$ref": "#/$defs/schema34"
+                "$ref": "#/$defs/schema37"
               }
             ]
           }
@@ -5318,16 +5813,16 @@
                     "enum": ["anywhere", "breakWord", "normal"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema9"
+                    "$ref": "#/$defs/schema10"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema9"
+                    "$ref": "#/$defs/schema10"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema9"
+                    "$ref": "#/$defs/schema10"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema9"
+                    "$ref": "#/$defs/schema10"
                   }
                 },
                 "additionalProperties": false
@@ -5338,7 +5833,131 @@
             "$ref": "#/$defs/schema5"
           },
           "radius": {
-            "$ref": "#/$defs/schema5"
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "default": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "2xl": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "lg": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "md": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "sm": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "xl": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  ":active": {
+                    "$ref": "#/$defs/schema12"
+                  },
+                  ":disabled": {
+                    "$ref": "#/$defs/schema12"
+                  },
+                  ":focus-visible": {
+                    "$ref": "#/$defs/schema12"
+                  },
+                  ":hover": {
+                    "$ref": "#/$defs/schema12"
+                  }
+                },
+                "additionalProperties": false
+              }
+            ]
           },
           "textAlign": {
             "anyOf": [
@@ -5416,16 +6035,16 @@
                     ]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema11"
+                    "$ref": "#/$defs/schema14"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema11"
+                    "$ref": "#/$defs/schema14"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema11"
+                    "$ref": "#/$defs/schema14"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema11"
+                    "$ref": "#/$defs/schema14"
                   }
                 },
                 "additionalProperties": false
@@ -5466,16 +6085,16 @@
                     "enum": ["default", "muted"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema13"
+                    "$ref": "#/$defs/schema16"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema13"
+                    "$ref": "#/$defs/schema16"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema13"
+                    "$ref": "#/$defs/schema16"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema13"
+                    "$ref": "#/$defs/schema16"
                   }
                 },
                 "additionalProperties": false
@@ -5516,16 +6135,16 @@
                     "enum": ["clip", "ellipsis"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema15"
+                    "$ref": "#/$defs/schema18"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema15"
+                    "$ref": "#/$defs/schema18"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema15"
+                    "$ref": "#/$defs/schema18"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema15"
+                    "$ref": "#/$defs/schema18"
                   }
                 },
                 "additionalProperties": false
@@ -5566,16 +6185,16 @@
                     "enum": ["capitalize", "lowercase", "none", "uppercase"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema17"
+                    "$ref": "#/$defs/schema20"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema17"
+                    "$ref": "#/$defs/schema20"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema17"
+                    "$ref": "#/$defs/schema20"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema17"
+                    "$ref": "#/$defs/schema20"
                   }
                 },
                 "additionalProperties": false
@@ -5667,215 +6286,113 @@
               }
             ]
           },
-          "schema8": {
+          "schema6": {
+            "type": "string",
+            "enum": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "9",
+              "10",
+              "11",
+              "12",
+              "14",
+              "16",
+              "18",
+              "20",
+              "24",
+              "28",
+              "32",
+              "36",
+              "40",
+              "44",
+              "48",
+              "52",
+              "56",
+              "60",
+              "64",
+              "72",
+              "80",
+              "96",
+              "0.5",
+              "1.5",
+              "2.5",
+              "3.5",
+              "px"
+            ]
+          },
+          "schema9": {
             "type": "object",
             "properties": {
               "default": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema6"
               },
               "2xl": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema6"
               },
               "lg": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema6"
               },
               "md": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema6"
               },
               "sm": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema6"
               },
               "xl": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema6"
               }
             },
             "additionalProperties": false
           },
-          "schema7": {
+          "schema8": {
             "anyOf": [
               {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema6"
               },
               {
-                "$ref": "#/$defs/schema8"
+                "$ref": "#/$defs/schema9"
               }
             ]
           },
-          "schema6": {
+          "schema7": {
             "type": "object",
             "properties": {
               "default": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema6"
               },
               "2xl": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema6"
               },
               "lg": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema6"
               },
               "md": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema6"
               },
               "sm": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema6"
               },
               "xl": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema6"
               },
               ":active": {
-                "$ref": "#/$defs/schema7"
+                "$ref": "#/$defs/schema8"
               },
               ":disabled": {
-                "$ref": "#/$defs/schema7"
+                "$ref": "#/$defs/schema8"
               },
               ":focus-visible": {
-                "$ref": "#/$defs/schema7"
+                "$ref": "#/$defs/schema8"
               },
               ":hover": {
-                "$ref": "#/$defs/schema7"
+                "$ref": "#/$defs/schema8"
               }
             },
             "additionalProperties": false
@@ -5883,11 +6400,159 @@
           "schema5": {
             "anyOf": [
               {
+                "$ref": "#/$defs/schema6"
+              },
+              {
+                "$ref": "#/$defs/schema7"
+              }
+            ]
+          },
+          "schema11": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema10": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              {
+                "$ref": "#/$defs/schema11"
+              }
+            ]
+          },
+          "schema13": {
+            "type": "object",
+            "properties": {
+              "default": {
                 "type": "string",
                 "enum": [
                   "2xl",
-                  "2xs",
                   "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "lg": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "md": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "sm": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "xl": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema12": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
                   "lg",
                   "md",
                   "none",
@@ -5897,175 +6562,134 @@
                 ]
               },
               {
-                "$ref": "#/$defs/schema6"
+                "$ref": "#/$defs/schema13"
               }
             ]
-          },
-          "schema10": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              }
-            },
-            "additionalProperties": false
-          },
-          "schema9": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              {
-                "$ref": "#/$defs/schema10"
-              }
-            ]
-          },
-          "schema12": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              }
-            },
-            "additionalProperties": false
-          },
-          "schema11": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              {
-                "$ref": "#/$defs/schema12"
-              }
-            ]
-          },
-          "schema14": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              }
-            },
-            "additionalProperties": false
-          },
-          "schema13": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              {
-                "$ref": "#/$defs/schema14"
-              }
-            ]
-          },
-          "schema16": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              }
-            },
-            "additionalProperties": false
           },
           "schema15": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["center", "end", "justify", "left", "right", "start"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["center", "end", "justify", "left", "right", "start"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["center", "end", "justify", "left", "right", "start"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["center", "end", "justify", "left", "right", "start"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["center", "end", "justify", "left", "right", "start"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["center", "end", "justify", "left", "right", "start"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema14": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["center", "end", "justify", "left", "right", "start"]
+              },
+              {
+                "$ref": "#/$defs/schema15"
+              }
+            ]
+          },
+          "schema17": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema16": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              {
+                "$ref": "#/$defs/schema17"
+              }
+            ]
+          },
+          "schema19": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema18": {
             "anyOf": [
               {
                 "type": "string",
                 "enum": ["clip", "ellipsis"]
               },
               {
-                "$ref": "#/$defs/schema16"
+                "$ref": "#/$defs/schema19"
               }
             ]
           },
-          "schema18": {
+          "schema21": {
             "type": "object",
             "properties": {
               "default": {
@@ -6095,14 +6719,14 @@
             },
             "additionalProperties": false
           },
-          "schema17": {
+          "schema20": {
             "anyOf": [
               {
                 "type": "string",
                 "enum": ["capitalize", "lowercase", "none", "uppercase"]
               },
               {
-                "$ref": "#/$defs/schema18"
+                "$ref": "#/$defs/schema21"
               }
             ]
           }
@@ -6320,16 +6944,16 @@
                     "enum": ["auto", "clip", "hidden", "scroll", "visible"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema20"
+                    "$ref": "#/$defs/schema21"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema20"
+                    "$ref": "#/$defs/schema21"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema20"
+                    "$ref": "#/$defs/schema21"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema20"
+                    "$ref": "#/$defs/schema21"
                   }
                 },
                 "additionalProperties": false
@@ -6370,16 +6994,16 @@
                     "enum": ["anywhere", "breakWord", "normal"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema22"
+                    "$ref": "#/$defs/schema23"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema22"
+                    "$ref": "#/$defs/schema23"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema22"
+                    "$ref": "#/$defs/schema23"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema22"
+                    "$ref": "#/$defs/schema23"
                   }
                 },
                 "additionalProperties": false
@@ -6390,7 +7014,131 @@
             "$ref": "#/$defs/schema16"
           },
           "radius": {
-            "$ref": "#/$defs/schema16"
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "default": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "2xl": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "lg": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "md": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "sm": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  "xl": {
+                    "type": "string",
+                    "enum": [
+                      "2xl",
+                      "3xl",
+                      "4xl",
+                      "full",
+                      "lg",
+                      "md",
+                      "none",
+                      "sm",
+                      "xl",
+                      "xs"
+                    ]
+                  },
+                  ":active": {
+                    "$ref": "#/$defs/schema25"
+                  },
+                  ":disabled": {
+                    "$ref": "#/$defs/schema25"
+                  },
+                  ":focus-visible": {
+                    "$ref": "#/$defs/schema25"
+                  },
+                  ":hover": {
+                    "$ref": "#/$defs/schema25"
+                  }
+                },
+                "additionalProperties": false
+              }
+            ]
           },
           "shrink": {
             "$ref": "#/$defs/schema12"
@@ -6471,16 +7219,16 @@
                     ]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema24"
+                    "$ref": "#/$defs/schema27"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema24"
+                    "$ref": "#/$defs/schema27"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema24"
+                    "$ref": "#/$defs/schema27"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema24"
+                    "$ref": "#/$defs/schema27"
                   }
                 },
                 "additionalProperties": false
@@ -6521,16 +7269,16 @@
                     "enum": ["default", "muted"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema26"
+                    "$ref": "#/$defs/schema29"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema26"
+                    "$ref": "#/$defs/schema29"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema26"
+                    "$ref": "#/$defs/schema29"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema26"
+                    "$ref": "#/$defs/schema29"
                   }
                 },
                 "additionalProperties": false
@@ -6571,16 +7319,16 @@
                     "enum": ["clip", "ellipsis"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema28"
+                    "$ref": "#/$defs/schema31"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema28"
+                    "$ref": "#/$defs/schema31"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema28"
+                    "$ref": "#/$defs/schema31"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema28"
+                    "$ref": "#/$defs/schema31"
                   }
                 },
                 "additionalProperties": false
@@ -6621,16 +7369,16 @@
                     "enum": ["capitalize", "lowercase", "none", "uppercase"]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema30"
+                    "$ref": "#/$defs/schema33"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema30"
+                    "$ref": "#/$defs/schema33"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema30"
+                    "$ref": "#/$defs/schema33"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema30"
+                    "$ref": "#/$defs/schema33"
                   }
                 },
                 "additionalProperties": false
@@ -6643,40 +7391,40 @@
           "align": {
             "anyOf": [
               {
-                "$ref": "#/$defs/schema32"
+                "$ref": "#/$defs/schema35"
               },
               {
                 "type": "object",
                 "properties": {
                   "default": {
-                    "$ref": "#/$defs/schema32"
+                    "$ref": "#/$defs/schema35"
                   },
                   "2xl": {
-                    "$ref": "#/$defs/schema32"
+                    "$ref": "#/$defs/schema35"
                   },
                   "lg": {
-                    "$ref": "#/$defs/schema32"
+                    "$ref": "#/$defs/schema35"
                   },
                   "md": {
-                    "$ref": "#/$defs/schema32"
+                    "$ref": "#/$defs/schema35"
                   },
                   "sm": {
-                    "$ref": "#/$defs/schema32"
+                    "$ref": "#/$defs/schema35"
                   },
                   "xl": {
-                    "$ref": "#/$defs/schema32"
+                    "$ref": "#/$defs/schema35"
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema33"
+                    "$ref": "#/$defs/schema36"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema33"
+                    "$ref": "#/$defs/schema36"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema33"
+                    "$ref": "#/$defs/schema36"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema33"
+                    "$ref": "#/$defs/schema36"
                   }
                 },
                 "additionalProperties": false
@@ -6773,16 +7521,16 @@
                     ]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema35"
+                    "$ref": "#/$defs/schema38"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema35"
+                    "$ref": "#/$defs/schema38"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema35"
+                    "$ref": "#/$defs/schema38"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema35"
+                    "$ref": "#/$defs/schema38"
                   }
                 },
                 "additionalProperties": false
@@ -6795,40 +7543,40 @@
           "justify": {
             "anyOf": [
               {
-                "$ref": "#/$defs/schema37"
+                "$ref": "#/$defs/schema40"
               },
               {
                 "type": "object",
                 "properties": {
                   "default": {
-                    "$ref": "#/$defs/schema37"
+                    "$ref": "#/$defs/schema40"
                   },
                   "2xl": {
-                    "$ref": "#/$defs/schema37"
+                    "$ref": "#/$defs/schema40"
                   },
                   "lg": {
-                    "$ref": "#/$defs/schema37"
+                    "$ref": "#/$defs/schema40"
                   },
                   "md": {
-                    "$ref": "#/$defs/schema37"
+                    "$ref": "#/$defs/schema40"
                   },
                   "sm": {
-                    "$ref": "#/$defs/schema37"
+                    "$ref": "#/$defs/schema40"
                   },
                   "xl": {
-                    "$ref": "#/$defs/schema37"
+                    "$ref": "#/$defs/schema40"
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema38"
+                    "$ref": "#/$defs/schema41"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema38"
+                    "$ref": "#/$defs/schema41"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema38"
+                    "$ref": "#/$defs/schema41"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema38"
+                    "$ref": "#/$defs/schema41"
                   }
                 },
                 "additionalProperties": false
@@ -6953,16 +7701,16 @@
                     ]
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema40"
+                    "$ref": "#/$defs/schema43"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema40"
+                    "$ref": "#/$defs/schema43"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema40"
+                    "$ref": "#/$defs/schema43"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema40"
+                    "$ref": "#/$defs/schema43"
                   }
                 },
                 "additionalProperties": false
@@ -6972,40 +7720,40 @@
           "columns": {
             "anyOf": [
               {
-                "$ref": "#/$defs/schema42"
+                "$ref": "#/$defs/schema45"
               },
               {
                 "type": "object",
                 "properties": {
                   "default": {
-                    "$ref": "#/$defs/schema42"
+                    "$ref": "#/$defs/schema45"
                   },
                   "2xl": {
-                    "$ref": "#/$defs/schema42"
+                    "$ref": "#/$defs/schema45"
                   },
                   "lg": {
-                    "$ref": "#/$defs/schema42"
+                    "$ref": "#/$defs/schema45"
                   },
                   "md": {
-                    "$ref": "#/$defs/schema42"
+                    "$ref": "#/$defs/schema45"
                   },
                   "sm": {
-                    "$ref": "#/$defs/schema42"
+                    "$ref": "#/$defs/schema45"
                   },
                   "xl": {
-                    "$ref": "#/$defs/schema42"
+                    "$ref": "#/$defs/schema45"
                   },
                   ":active": {
-                    "$ref": "#/$defs/schema43"
+                    "$ref": "#/$defs/schema46"
                   },
                   ":disabled": {
-                    "$ref": "#/$defs/schema43"
+                    "$ref": "#/$defs/schema46"
                   },
                   ":focus-visible": {
-                    "$ref": "#/$defs/schema43"
+                    "$ref": "#/$defs/schema46"
                   },
                   ":hover": {
-                    "$ref": "#/$defs/schema43"
+                    "$ref": "#/$defs/schema46"
                   }
                 },
                 "additionalProperties": false
@@ -7086,6 +7834,41 @@
             "type": "string",
             "enum": [
               "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "9",
+              "10",
+              "11",
+              "12",
+              "14",
+              "16",
+              "18",
+              "20",
+              "24",
+              "28",
+              "32",
+              "36",
+              "40",
+              "44",
+              "48",
+              "52",
+              "56",
+              "60",
+              "64",
+              "72",
+              "80",
+              "96",
+              "0.5",
+              "1.5",
+              "2.5",
+              "3.5",
+              "px",
               "1/12",
               "1/2",
               "1/3",
@@ -7112,6 +7895,7 @@
               "7/12",
               "8/12",
               "9/12",
+              "auto",
               "fit",
               "full",
               "max",
@@ -7486,215 +8270,113 @@
               }
             ]
           },
-          "schema19": {
+          "schema17": {
+            "type": "string",
+            "enum": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "9",
+              "10",
+              "11",
+              "12",
+              "14",
+              "16",
+              "18",
+              "20",
+              "24",
+              "28",
+              "32",
+              "36",
+              "40",
+              "44",
+              "48",
+              "52",
+              "56",
+              "60",
+              "64",
+              "72",
+              "80",
+              "96",
+              "0.5",
+              "1.5",
+              "2.5",
+              "3.5",
+              "px"
+            ]
+          },
+          "schema20": {
             "type": "object",
             "properties": {
               "default": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "2xl": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "lg": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "md": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "sm": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "xl": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               }
             },
             "additionalProperties": false
           },
-          "schema18": {
+          "schema19": {
             "anyOf": [
               {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               {
-                "$ref": "#/$defs/schema19"
+                "$ref": "#/$defs/schema20"
               }
             ]
           },
-          "schema17": {
+          "schema18": {
             "type": "object",
             "properties": {
               "default": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "2xl": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "lg": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "md": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "sm": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               "xl": {
-                "type": "string",
-                "enum": [
-                  "2xl",
-                  "2xs",
-                  "3xl",
-                  "lg",
-                  "md",
-                  "none",
-                  "sm",
-                  "xl",
-                  "xs"
-                ]
+                "$ref": "#/$defs/schema17"
               },
               ":active": {
-                "$ref": "#/$defs/schema18"
+                "$ref": "#/$defs/schema19"
               },
               ":disabled": {
-                "$ref": "#/$defs/schema18"
+                "$ref": "#/$defs/schema19"
               },
               ":focus-visible": {
-                "$ref": "#/$defs/schema18"
+                "$ref": "#/$defs/schema19"
               },
               ":hover": {
-                "$ref": "#/$defs/schema18"
+                "$ref": "#/$defs/schema19"
               }
             },
             "additionalProperties": false
@@ -7702,11 +8384,200 @@
           "schema16": {
             "anyOf": [
               {
+                "$ref": "#/$defs/schema17"
+              },
+              {
+                "$ref": "#/$defs/schema18"
+              }
+            ]
+          },
+          "schema22": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema21": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
+              },
+              {
+                "$ref": "#/$defs/schema22"
+              }
+            ]
+          },
+          "schema24": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema23": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["anywhere", "breakWord", "normal"]
+              },
+              {
+                "$ref": "#/$defs/schema24"
+              }
+            ]
+          },
+          "schema26": {
+            "type": "object",
+            "properties": {
+              "default": {
                 "type": "string",
                 "enum": [
                   "2xl",
-                  "2xs",
                   "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "lg": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "md": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "sm": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              },
+              "xl": {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
+                  "lg",
+                  "md",
+                  "none",
+                  "sm",
+                  "xl",
+                  "xs"
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema25": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "2xl",
+                  "3xl",
+                  "4xl",
+                  "full",
                   "lg",
                   "md",
                   "none",
@@ -7716,257 +8587,175 @@
                 ]
               },
               {
-                "$ref": "#/$defs/schema17"
+                "$ref": "#/$defs/schema26"
               }
             ]
-          },
-          "schema21": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              }
-            },
-            "additionalProperties": false
-          },
-          "schema20": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["auto", "clip", "hidden", "scroll", "visible"]
-              },
-              {
-                "$ref": "#/$defs/schema21"
-              }
-            ]
-          },
-          "schema23": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              }
-            },
-            "additionalProperties": false
-          },
-          "schema22": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["anywhere", "breakWord", "normal"]
-              },
-              {
-                "$ref": "#/$defs/schema23"
-              }
-            ]
-          },
-          "schema25": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              }
-            },
-            "additionalProperties": false
-          },
-          "schema24": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["center", "end", "justify", "left", "right", "start"]
-              },
-              {
-                "$ref": "#/$defs/schema25"
-              }
-            ]
-          },
-          "schema27": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["default", "muted"]
-              }
-            },
-            "additionalProperties": false
-          },
-          "schema26": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["default", "muted"]
-              },
-              {
-                "$ref": "#/$defs/schema27"
-              }
-            ]
-          },
-          "schema29": {
-            "type": "object",
-            "properties": {
-              "default": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "2xl": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "lg": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "md": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "sm": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              "xl": {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              }
-            },
-            "additionalProperties": false
           },
           "schema28": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["clip", "ellipsis"]
-              },
-              {
-                "$ref": "#/$defs/schema29"
-              }
-            ]
-          },
-          "schema31": {
             "type": "object",
             "properties": {
               "default": {
                 "type": "string",
-                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+                "enum": ["center", "end", "justify", "left", "right", "start"]
               },
               "2xl": {
                 "type": "string",
-                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+                "enum": ["center", "end", "justify", "left", "right", "start"]
               },
               "lg": {
                 "type": "string",
-                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+                "enum": ["center", "end", "justify", "left", "right", "start"]
               },
               "md": {
                 "type": "string",
-                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+                "enum": ["center", "end", "justify", "left", "right", "start"]
               },
               "sm": {
                 "type": "string",
-                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+                "enum": ["center", "end", "justify", "left", "right", "start"]
               },
               "xl": {
                 "type": "string",
-                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+                "enum": ["center", "end", "justify", "left", "right", "start"]
               }
             },
             "additionalProperties": false
           },
-          "schema30": {
+          "schema27": {
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+                "enum": ["center", "end", "justify", "left", "right", "start"]
               },
               {
-                "$ref": "#/$defs/schema31"
+                "$ref": "#/$defs/schema28"
+              }
+            ]
+          },
+          "schema30": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["default", "muted"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema29": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["default", "muted"]
+              },
+              {
+                "$ref": "#/$defs/schema30"
               }
             ]
           },
           "schema32": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema31": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["clip", "ellipsis"]
+              },
+              {
+                "$ref": "#/$defs/schema32"
+              }
+            ]
+          },
+          "schema34": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+              },
+              "2xl": {
+                "type": "string",
+                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+              },
+              "lg": {
+                "type": "string",
+                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+              },
+              "md": {
+                "type": "string",
+                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+              },
+              "sm": {
+                "type": "string",
+                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+              },
+              "xl": {
+                "type": "string",
+                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema33": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["capitalize", "lowercase", "none", "uppercase"]
+              },
+              {
+                "$ref": "#/$defs/schema34"
+              }
+            ]
+          },
+          "schema35": {
             "anyOf": [
               {
                 "type": "string",
@@ -7986,41 +8775,41 @@
               }
             ]
           },
-          "schema34": {
+          "schema37": {
             "type": "object",
             "properties": {
               "default": {
-                "$ref": "#/$defs/schema32"
+                "$ref": "#/$defs/schema35"
               },
               "2xl": {
-                "$ref": "#/$defs/schema32"
+                "$ref": "#/$defs/schema35"
               },
               "lg": {
-                "$ref": "#/$defs/schema32"
+                "$ref": "#/$defs/schema35"
               },
               "md": {
-                "$ref": "#/$defs/schema32"
+                "$ref": "#/$defs/schema35"
               },
               "sm": {
-                "$ref": "#/$defs/schema32"
+                "$ref": "#/$defs/schema35"
               },
               "xl": {
-                "$ref": "#/$defs/schema32"
+                "$ref": "#/$defs/schema35"
               }
             },
             "additionalProperties": false
-          },
-          "schema33": {
-            "anyOf": [
-              {
-                "$ref": "#/$defs/schema32"
-              },
-              {
-                "$ref": "#/$defs/schema34"
-              }
-            ]
           },
           "schema36": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/schema35"
+              },
+              {
+                "$ref": "#/$defs/schema37"
+              }
+            ]
+          },
+          "schema39": {
             "type": "object",
             "properties": {
               "default": {
@@ -8098,7 +8887,7 @@
             },
             "additionalProperties": false
           },
-          "schema35": {
+          "schema38": {
             "anyOf": [
               {
                 "anyOf": [
@@ -8113,11 +8902,11 @@
                 ]
               },
               {
-                "$ref": "#/$defs/schema36"
+                "$ref": "#/$defs/schema39"
               }
             ]
           },
-          "schema37": {
+          "schema40": {
             "anyOf": [
               {
                 "type": "string",
@@ -8137,41 +8926,41 @@
               }
             ]
           },
-          "schema39": {
+          "schema42": {
             "type": "object",
             "properties": {
               "default": {
-                "$ref": "#/$defs/schema37"
+                "$ref": "#/$defs/schema40"
               },
               "2xl": {
-                "$ref": "#/$defs/schema37"
+                "$ref": "#/$defs/schema40"
               },
               "lg": {
-                "$ref": "#/$defs/schema37"
+                "$ref": "#/$defs/schema40"
               },
               "md": {
-                "$ref": "#/$defs/schema37"
+                "$ref": "#/$defs/schema40"
               },
               "sm": {
-                "$ref": "#/$defs/schema37"
+                "$ref": "#/$defs/schema40"
               },
               "xl": {
-                "$ref": "#/$defs/schema37"
+                "$ref": "#/$defs/schema40"
               }
             },
             "additionalProperties": false
-          },
-          "schema38": {
-            "anyOf": [
-              {
-                "$ref": "#/$defs/schema37"
-              },
-              {
-                "$ref": "#/$defs/schema39"
-              }
-            ]
           },
           "schema41": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/schema40"
+              },
+              {
+                "$ref": "#/$defs/schema42"
+              }
+            ]
+          },
+          "schema44": {
             "type": "object",
             "properties": {
               "default": {
@@ -8273,7 +9062,7 @@
             },
             "additionalProperties": false
           },
-          "schema40": {
+          "schema43": {
             "anyOf": [
               {
                 "anyOf": [
@@ -8292,11 +9081,11 @@
                 ]
               },
               {
-                "$ref": "#/$defs/schema41"
+                "$ref": "#/$defs/schema44"
               }
             ]
           },
-          "schema42": {
+          "schema45": {
             "anyOf": [
               {
                 "type": "number",
@@ -8324,37 +9113,37 @@
               }
             ]
           },
-          "schema44": {
+          "schema47": {
             "type": "object",
             "properties": {
               "default": {
-                "$ref": "#/$defs/schema42"
+                "$ref": "#/$defs/schema45"
               },
               "2xl": {
-                "$ref": "#/$defs/schema42"
+                "$ref": "#/$defs/schema45"
               },
               "lg": {
-                "$ref": "#/$defs/schema42"
+                "$ref": "#/$defs/schema45"
               },
               "md": {
-                "$ref": "#/$defs/schema42"
+                "$ref": "#/$defs/schema45"
               },
               "sm": {
-                "$ref": "#/$defs/schema42"
+                "$ref": "#/$defs/schema45"
               },
               "xl": {
-                "$ref": "#/$defs/schema42"
+                "$ref": "#/$defs/schema45"
               }
             },
             "additionalProperties": false
           },
-          "schema43": {
+          "schema46": {
             "anyOf": [
               {
-                "$ref": "#/$defs/schema42"
+                "$ref": "#/$defs/schema45"
               },
               {
-                "$ref": "#/$defs/schema44"
+                "$ref": "#/$defs/schema47"
               }
             ]
           }

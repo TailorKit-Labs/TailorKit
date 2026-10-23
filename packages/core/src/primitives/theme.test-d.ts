@@ -1,7 +1,7 @@
 import { expectTypeOf } from "vite-plus/test";
 
 import { primitives as arktypePrimitives } from "./arktype";
-import { resolveTheme } from "./theme";
+import { primitiveDefaults, defaultBreakpoints, resolveTheme } from "./theme";
 import type { PatchsmithTheme } from "./theme";
 import { primitives as valibotPrimitives } from "./valibot";
 import { primitives as zodPrimitives } from "./zod";
@@ -15,6 +15,29 @@ zodPrimitives(theme);
 valibotPrimitives(theme);
 
 arktypePrimitives(theme);
+
+const extendedTheme = {
+  breakpoints: { ...defaultBreakpoints, wide: "120rem" },
+  tokens: {
+    radius: { ...primitiveDefaults.radius, card: "0.625rem" },
+    size: { ...primitiveDefaults.size, "128": "32rem" },
+    space: { ...primitiveDefaults.space, "128": "32rem" },
+  },
+};
+
+expectTypeOf(extendedTheme).toExtend<PatchsmithTheme>();
+
+expectTypeOf(primitiveDefaults.radius.md).toEqualTypeOf<"0.375rem">();
+
+expectTypeOf<keyof typeof extendedTheme.tokens.radius>().toEqualTypeOf<
+  keyof typeof primitiveDefaults.radius | "card"
+>();
+
+zodPrimitives(extendedTheme);
+
+valibotPrimitives(extendedTheme);
+
+arktypePrimitives(extendedTheme);
 
 const reservedDefault = { breakpoints: { default: "0px" } };
 const reservedState = { breakpoints: { ":hover": "640px" } };

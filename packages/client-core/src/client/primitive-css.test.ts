@@ -1,3 +1,7 @@
+import {
+  primitiveDefaults,
+  resolveTheme,
+} from "@patchsmith/core/primitives/theme";
 import { expect, it } from "vite-plus/test";
 
 import { buildThemeCss, buildPrimitiveCss } from "./primitive-css";
@@ -38,6 +42,78 @@ it("builds view-scoped theme variables", () => {
   expect(css).toContain(
     "--patchsmith-textColor-muted: var(--muted-foreground);"
   );
+});
+
+it("emits Tailwind v4 default spacing, sizing, and radius values without legacy aliases", () => {
+  const css = buildThemeCss("view", {});
+
+  expect(css).toContain("--patchsmith-space-4: 1rem;");
+  expect(css).toContain("--patchsmith-size-12: 3rem;");
+  expect(css).toContain("--patchsmith-size-96: 24rem;");
+  expect(css).toContain("--patchsmith-size-px: 1px;");
+  expect(css).toContain("--patchsmith-size-auto: auto;");
+  expect(css).toContain("--patchsmith-radius-xs: 0.125rem;");
+  expect(css).toContain("--patchsmith-radius-sm: 0.25rem;");
+  expect(css).toContain("--patchsmith-radius-md: 0.375rem;");
+  expect(css).toContain("--patchsmith-radius-lg: 0.5rem;");
+  expect(css).toContain("--patchsmith-radius-xl: 0.75rem;");
+  expect(css).toContain("--patchsmith-radius-2xl: 1rem;");
+  expect(css).toContain("--patchsmith-radius-3xl: 1.5rem;");
+  expect(css).toContain("--patchsmith-radius-4xl: 2rem;");
+  expect(css).toContain("--patchsmith-radius-full: calc(infinity * 1px);");
+  expect(css).not.toContain("--patchsmith-space-md:");
+  expect(css).not.toContain("--patchsmith-space-none:");
+  expect(css).not.toContain("--patchsmith-radius-2xs:");
+});
+
+it("uses numeric size and space tokens in responsive and state styles", () => {
+  const css = buildPrimitiveCss({
+    display: "flex",
+    nodeId: "node",
+    props: {
+      basis: "24",
+      gap: "2",
+      height: "12",
+      minHeight: "0",
+      minWidth: "px",
+      padding: { ":hover": "6", default: "4" },
+      radius: "lg",
+      width: { default: "12", lg: "24" },
+    },
+    theme: resolveTheme({}),
+    viewId: "view",
+  });
+
+  expect(css).toContain("flex-basis: var(--patchsmith-size-24);");
+  expect(css).toContain("gap: var(--patchsmith-space-2);");
+  expect(css).toContain("height: var(--patchsmith-size-12);");
+  expect(css).toContain("min-height: var(--patchsmith-size-0);");
+  expect(css).toContain("min-width: var(--patchsmith-size-px);");
+  expect(css).toContain("padding: var(--patchsmith-space-4);");
+  expect(css).toContain(":hover { padding: var(--patchsmith-space-6); }");
+  expect(css).toContain("border-radius: var(--patchsmith-radius-lg);");
+  expect(css).toContain("width: var(--patchsmith-size-12);");
+  expect(css).toContain(
+    '@media (min-width: 64rem) { [data-patchsmith-view="view"] [data-patchsmith-node="node"] { width: var(--patchsmith-size-24); } }'
+  );
+});
+
+it("renders extended defaults and host overrides without changing other tokens", () => {
+  const css = buildThemeCss("view", {
+    tokens: {
+      radius: { ...primitiveDefaults.radius, card: "0.625rem", lg: "1rem" },
+      size: { ...primitiveDefaults.size, "128": "32rem" },
+      space: { ...primitiveDefaults.space, "128": "32rem" },
+    },
+  });
+
+  expect(css).toContain("--patchsmith-radius-card: 0.625rem;");
+  expect(css).toContain("--patchsmith-radius-lg: 1rem;");
+  expect(css).toContain("--patchsmith-radius-md: 0.375rem;");
+  expect(css).toContain("--patchsmith-size-128: 32rem;");
+  expect(css).toContain("--patchsmith-size-12: 3rem;");
+  expect(css).toContain("--patchsmith-space-128: 32rem;");
+  expect(css).toContain("--patchsmith-space-4: 1rem;");
 });
 
 it("builds responsive primitive CSS without rendering a component", () => {

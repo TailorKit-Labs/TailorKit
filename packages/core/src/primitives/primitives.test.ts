@@ -6,9 +6,21 @@ import { createPatchsmithSchema } from "#schema/schema";
 import { resolveJsonSchema } from "#spec/schema-references";
 import { PatchsmithSchemaSpec } from "#spec/spec";
 
-import { primitives as arktypePrimitives } from "./arktype";
-import { primitives as valibotPrimitives } from "./valibot";
-import { primitives as zodPrimitives } from "./zod";
+import {
+  defaultBreakpoints as arktypeBreakpoints,
+  primitiveDefaults as arktypeDefaults,
+  primitives as arktypePrimitives,
+} from "./arktype";
+import {
+  defaultBreakpoints as valibotBreakpoints,
+  primitiveDefaults as valibotDefaults,
+  primitives as valibotPrimitives,
+} from "./valibot";
+import {
+  defaultBreakpoints as zodBreakpoints,
+  primitiveDefaults as zodDefaults,
+  primitives as zodPrimitives,
+} from "./zod";
 
 const isValid = (
   schema: StandardSchemaV1 | undefined,
@@ -30,6 +42,38 @@ const isValid = (
 };
 
 describe("primitive schema components", () => {
+  it.each([
+    ["Zod", zodPrimitives, zodDefaults, zodBreakpoints],
+    ["Valibot", valibotPrimitives, valibotDefaults, valibotBreakpoints],
+    ["ArkType", arktypePrimitives, arktypeDefaults, arktypeBreakpoints],
+  ] as const)(
+    "extends exported defaults when defining the %s contract",
+    (_name, define, defaults, breakpoints) => {
+      const suite = define({
+        breakpoints: { ...breakpoints, wide: "120rem" },
+        tokens: {
+          radius: { ...defaults.radius, card: "0.625rem", lg: "0.625rem" },
+          size: { ...defaults.size, "128": "32rem" },
+          space: { ...defaults.space, "128": "32rem" },
+        },
+      });
+
+      expect(
+        isValid(suite.Box.fields, {
+          height: "12",
+          padding: { default: "4", wide: "128" },
+          radius: { default: "lg", sm: "card" },
+          width: "128",
+        })
+      ).toBe(true);
+      expect(isValid(suite.Box.fields, { radius: "unknown" })).toBe(false);
+      expect(defaults.radius.lg).toBe("0.5rem");
+    },
+    // ArkType compiles every primitive with extended tokens and six breakpoints;
+    // this real contract construction takes more than five seconds on CI.
+    15_000
+  );
+
   it.each([
     ["Zod", zodPrimitives],
     ["Valibot", valibotPrimitives],
@@ -132,44 +176,76 @@ describe("primitive schema components", () => {
     expect(pressable?.fields).not.toHaveProperty("properties.states");
   });
 
-  it("validates default primitive tokens", () => {
-    const defaultSchema = createPatchsmithSchema({
-      components: {
-        ...zodPrimitives(),
-      },
-    });
+  it.each([
+    ["Zod", zodPrimitives],
+    ["Valibot", valibotPrimitives],
+    ["ArkType", arktypePrimitives],
+  ] as const)(
+    "validates Tailwind v4 default tokens with %s",
+    (_name, define) => {
+      const defaultSchema = createPatchsmithSchema({
+        components: {
+          ...define(),
+        },
+      });
 
-    const box = defaultSchema.$internal.components.Box.fields;
+      const box = defaultSchema.$internal.components.Box.fields;
 
-    expect(
-      isValid(box, { border: "solid", padding: "2xs", radius: "3xl" })
-    ).toBe(true);
-    expect(
-      isValid(box, { height: "min", width: { default: "full", xl: "1/2" } })
-    ).toBe(true);
-    expect(isValid(box, { overflow: { default: "hidden", lg: "auto" } })).toBe(
-      true
-    );
-    expect(
-      isValid(box, { overflowWrap: "breakWord", textOverflow: "ellipsis" })
-    ).toBe(true);
-    expect(
-      isValid(box, { textAlign: { default: "start", lg: "center" } })
-    ).toBe(true);
-    expect(
-      isValid(box, { textTransform: { default: "none", lg: "uppercase" } })
-    ).toBe(true);
-    expect(isValid(box, { textColor: "foreground" })).toBe(false);
-    expect(isValid(box, { height: "100px", width: "unknown" })).toBe(false);
-    expect(isValid(box, { overflow: "overlay" })).toBe(false);
-    expect(isValid(box, { overflowWrap: "break-word" })).toBe(false);
-    expect(isValid(box, { textOverflow: "fade" })).toBe(false);
-    expect(isValid(box, { textAlign: "middle" })).toBe(false);
-    expect(isValid(box, { textTransform: "titlecase" })).toBe(false);
-    expect(isValid(box, { padding: { default: "none", xl: "2xl" } })).toBe(
-      true
-    );
-  });
+      expect(
+        isValid(box, { border: "solid", padding: "0.5", radius: "4xl" })
+      ).toBe(true);
+      expect(
+        isValid(box, { height: "min", width: { default: "full", xl: "1/2" } })
+      ).toBe(true);
+      expect(
+        isValid(box, { overflow: { default: "hidden", lg: "auto" } })
+      ).toBe(true);
+      expect(
+        isValid(box, { overflowWrap: "breakWord", textOverflow: "ellipsis" })
+      ).toBe(true);
+      expect(
+        isValid(box, { textAlign: { default: "start", lg: "center" } })
+      ).toBe(true);
+      expect(
+        isValid(box, { textTransform: { default: "none", lg: "uppercase" } })
+      ).toBe(true);
+
+      for (const invalid of [
+        { padding: "sm" },
+        { margin: "none" },
+        { radius: "2xs" },
+        { radius: "base" },
+        { radius: "card" },
+        { width: "w-12" },
+        { width: "128" },
+        { width: 12 },
+      ]) {
+        expect(isValid(box, invalid)).toBe(false);
+      }
+
+      expect(
+        isValid(defaultSchema.$internal.components.Flex.fields, { gap: "md" })
+      ).toBe(false);
+      expect(
+        isValid(box, {
+          basis: "24",
+          height: "12",
+          minHeight: "0",
+          minWidth: "px",
+          width: { default: "3.5", lg: "96" },
+        })
+      ).toBe(true);
+      expect(isValid(box, { height: "auto", width: "auto" })).toBe(true);
+      expect(isValid(box, { textColor: "foreground" })).toBe(false);
+      expect(isValid(box, { height: "100px", width: "unknown" })).toBe(false);
+      expect(isValid(box, { overflow: "overlay" })).toBe(false);
+      expect(isValid(box, { overflowWrap: "break-word" })).toBe(false);
+      expect(isValid(box, { textOverflow: "fade" })).toBe(false);
+      expect(isValid(box, { textAlign: "middle" })).toBe(false);
+      expect(isValid(box, { textTransform: "titlecase" })).toBe(false);
+      expect(isValid(box, { padding: { default: "0", xl: "12" } })).toBe(true);
+    }
+  );
 
   it("validates Pressable styles and callbacks with every validator", () => {
     for (const suite of [
@@ -324,13 +400,13 @@ it("keeps default styles independent of user-defined breakpoint names", () => {
 
     expect(
       isValid(suite.Box.fields, {
-        padding: { ":hover": "xl", default: "sm", desktop: "md", hover: "lg" },
+        padding: { ":hover": "8", default: "2", desktop: "4", hover: "6" },
       })
     ).toBe(true);
-    expect(isValid(suite.Box.fields, { padding: { lg: "md" } })).toBe(false);
+    expect(isValid(suite.Box.fields, { padding: { lg: "4" } })).toBe(false);
     expect(
       isValid(create({ breakpoints: {} }).Box.fields, {
-        padding: { default: "sm" },
+        padding: { default: "2" },
       })
     ).toBe(true);
   }

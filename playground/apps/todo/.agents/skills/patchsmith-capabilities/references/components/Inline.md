@@ -10,10 +10,10 @@ Exact contract: [generated bindings](../../../../../src/patchsmith.gen.ts); sear
 | --- | --- | --- |
 | background | no | "hover", "muted", "pressed", "surface"; also accepts a responsive/state object (see [styling](../styling.md)) |
 | borderColor | no | "default", "focus"; also accepts a responsive/state object (see [styling](../styling.md)) |
-| margin | no | "2xl", "2xs", "3xl", "lg", "md", "none", "sm", "xl", "xs"; also accepts a responsive/state object (see [styling](../styling.md)) |
+| margin | no | "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "14", "16", "18", "20", "24", "28", "32", "36", "40", "44", "48", "52", "56", "60", "64", "72", "80", "96", "0.5", "1.5", "2.5", "3.5", "px"; also accepts a responsive/state object (see [styling](../styling.md)) |
 | overflowWrap | no | "anywhere", "breakWord", "normal"; also accepts a responsive/state object (see [styling](../styling.md)) |
-| padding | no | "2xl", "2xs", "3xl", "lg", "md", "none", "sm", "xl", "xs"; also accepts a responsive/state object (see [styling](../styling.md)) |
-| radius | no | "2xl", "2xs", "3xl", "lg", "md", "none", "sm", "xl", "xs"; also accepts a responsive/state object (see [styling](../styling.md)) |
+| padding | no | "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "14", "16", "18", "20", "24", "28", "32", "36", "40", "44", "48", "52", "56", "60", "64", "72", "80", "96", "0.5", "1.5", "2.5", "3.5", "px"; also accepts a responsive/state object (see [styling](../styling.md)) |
+| radius | no | "2xl", "3xl", "4xl", "full", "lg", "md", "none", "sm", "xl", "xs"; also accepts a responsive/state object (see [styling](../styling.md)) |
 | textAlign | no | "center", "end", "justify", "left", "right", "start"; also accepts a responsive/state object (see [styling](../styling.md)) |
 | textColor | no | "default", "muted"; also accepts a responsive/state object (see [styling](../styling.md)) |
 | textOverflow | no | "clip", "ellipsis"; also accepts a responsive/state object (see [styling](../styling.md)) |

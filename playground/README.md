@@ -38,6 +38,8 @@ The host contract exposes these components: the standard `Box`, `Flex`, `Grid`, 
 
 The Todo panel includes Pressable examples with inline, box, flex, and grid layouts, an email row with nested layout children, an icon-only action with an explicit name, and a disable toggle. Try hover, hold, Tab / Shift+Tab, Enter, and Space.
 
+The built-in scales follow Tailwind v4: spacing uses numeric strings (`padding="4"` is `1rem`), and width and height share the same fixed sizes (`width="12"` is `3rem`). Radius names match `rounded-*`, including `xs` through `4xl`, `none`, and `full`.
+
 Every primitive style prop accepts a token string or a conditional object:
 
 ```tsx
@@ -48,7 +50,7 @@ Every primitive style prop accepts a token string or a conditional object:
     ":active": { default: "pressed", lg: "hover" },
   }}
   borderColor={{ default: "default", ":focus-visible": "focus" }}
-  padding={{ default: "sm", lg: "md" }}
+  padding={{ default: "2", lg: "4" }}
   textColor={{ ":disabled": "muted" }}
   onPress={openProject}
 >
@@ -65,13 +67,7 @@ Enabled Pressables use `tabIndex={0}` and have a visible focus outline. Enter ac
 The email row demonstrates nested layout children:
 
 ```tsx
-<Pressable
-  layout="flex"
-  align="center"
-  gap="sm"
-  padding="md"
-  onPress={openEmail}
->
+<Pressable layout="flex" align="center" gap="2" padding="4" onPress={openEmail}>
   <Box grow="1">
     <Inline>{email.sender}</Inline>
     <Inline>{email.subject}</Inline>
