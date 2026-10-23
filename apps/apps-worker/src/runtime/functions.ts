@@ -91,6 +91,10 @@ export const prepareFunction = (
   freezeIdentity(identity);
 
   if (input.name === "_patchsmith.hooks.invoke") {
+    if (access === "internal") {
+      throw new AppError("FORBIDDEN", "Hooks can only be invoked by the host");
+    }
+
     const hook = z.object({ hook: z.string() }).safeParse(input.args);
 
     if (!hook.success || identity.hook !== hook.data.hook) {

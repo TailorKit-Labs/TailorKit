@@ -186,7 +186,7 @@ Internal functions are omitted from the typed client `api`, including namespaces
 
 `.internal()` preserves input/output schemas and database capabilities, and can appear anywhere before `.handler()`. Action dependencies may include queries, mutations, and actions.
 
-New backend builds require the `internal-functions` runtime capability. Deploy the updated apps worker before using the updated SDK and builder; older workers reject these bundles as incompatible.
+New backend builds require the `internal-functions` and `nested-actions` runtime capabilities, including apps without hooks. Deploy the updated apps worker before using the updated SDK and builder; older workers reject these bundles as incompatible.
 
 ## Host hooks
 
@@ -218,6 +218,6 @@ The example assumes the app server registers `customers.sync`. Hook handlers rec
 
 Hook files are discovered automatically and bundled only into the private server bundle. Hook files do not need manual registration. Watch builds discover added, renamed, and removed hook files. Deployment typechecks include discovered hooks.
 
-Only host-issued sessions granting the named hook can invoke its handler. Browser backend sessions cannot invoke hooks. Nested actions retain the caller's identity and cancellation; their query and mutation access follows their own `.functions(...)` declarations. Calls after completion or cancellation fail.
+Only host-issued sessions granting the named hook can invoke its handler. Browser backend sessions cannot invoke hooks. Actions and other hooks cannot dispatch hooks through nested action calls. Nested actions retain the caller's identity and cancellation; their query and mutation access follows their own `.functions(...)` declarations. Calls after completion or cancellation fail.
 
 Hooks use the existing action lifetime and execution limits. Invocation waits for completion and does not automatically retry, schedule continuations, or provide durable execution. Keep sync batches bounded and make host writes safe to repeat.

@@ -691,3 +691,39 @@ it("enforces hook grants in the runtime even if app code replaces the generated 
     )
   ).toBe("must not run");
 });
+
+it("rejects nested hook dispatch even with a matching host hook grant", async () => {
+  const invoke = action({
+    args: z.object({ hook: z.string() }),
+    handler: () => "host invocation",
+  });
+
+  const hooks = { _patchsmith: { hooks: { invoke } } };
+
+  const parent = action({
+    args: z.undefined(),
+    functions: hooks,
+    handler: async ({ actions }) =>
+      await actions._patchsmith.hooks.invoke({ hook: "sync" }),
+  });
+
+  const run = createActionExecution({ functions: { ...hooks, parent } });
+  const caller = { ...identity, hook: "sync" };
+
+  const calls: ActionCalls = {
+    mutate: async () => await Promise.resolve(null),
+    query: async () => await Promise.resolve(null),
+  };
+
+  await expect(run({ name: "parent" }, caller, calls)).rejects.toMatchObject({
+    code: "FORBIDDEN",
+    message: "Hooks can only be invoked by the host",
+  });
+  await expect(
+    run(
+      { args: { hook: "sync" }, name: "_patchsmith.hooks.invoke" },
+      caller,
+      calls
+    )
+  ).resolves.toBe("host invocation");
+});

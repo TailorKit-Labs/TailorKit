@@ -73,6 +73,7 @@ export const runtimeManifest = {
     "database-relations",
     "tools",
     "internal-functions",
+    "nested-actions",
   ],
 } as const satisfies RuntimeManifest;
 
@@ -138,7 +139,7 @@ ${instanceServerImports(instances)}
 ${hooks.map((file, index) => `import hook${index} from ${JSON.stringify(file.filename)};`).join("\n")}
 export default ${hooks.length ? `withHooks(${app}, [${hooks.map((file, index) => `{ name: ${JSON.stringify(file.name)}, definition: hook${index} }`).join(",")}])` : app};
 export { default as migrations } from "patchsmith:migrations";
-export const runtimeManifest = ${JSON.stringify({ ...runtimeManifest, requires: [...runtimeManifest.requires, ...(hooks.length ? ["hooks", "nested-actions"] : [])] })};
+export const runtimeManifest = ${JSON.stringify({ ...runtimeManifest, requires: [...runtimeManifest.requires, ...(hooks.length ? ["hooks"] : [])] })};
 `;
     };
 

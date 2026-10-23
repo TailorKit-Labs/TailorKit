@@ -312,9 +312,7 @@ it("builds file routes with discovered functions and blocks server imports from 
     );
 
     expect(application.runtimeManifest).toEqual(runtimeManifest);
-    expect(application.runtimeManifest.requires).not.toContain(
-      "nested-actions"
-    );
+    expect(application.runtimeManifest.requires).toContain("nested-actions");
     expect(application.runtimeManifest.requires).not.toContain("hooks");
     expect(application.runtimeManifest.requires).toContain(
       "internal-functions"
