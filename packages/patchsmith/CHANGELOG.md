@@ -1,5 +1,35 @@
 # patchsmith
 
+## 0.1.0-beta.65
+
+### Minor Changes
+
+- 416cd4c: Align built-in primitive scales with Tailwind CSS v4. Radius now uses `xs` through `4xl` with matching values, and `full` produces pill-shaped corners. Breakpoints use Tailwind's rem values. Spacing and fixed dimensions share numeric tokens based on a `0.25rem` unit, including `width="12"` and `height="12"` for `3rem`, plus `px` and `auto` sizing.
+
+  Export `primitiveDefaults` and `defaultBreakpoints` alongside `primitives` from the Zod, Valibot, and ArkType entry points. Spread groups such as `primitiveDefaults.radius`, `primitiveDefaults.space`, and `primitiveDefaults.size` to extend or override the built-in scales in a host theme.
+
+  This is a breaking change with no compatibility aliases. Replace built-in spacing names with numeric strings: `none` → `0`, `2xs` → `0.5`, `xs` → `1`, `sm` → `2`, `md` → `4`, `lg` → `6`, `xl` → `8`, `2xl` → `12`, and `3xl` → `18`. To preserve radius values, use `2xs` → `xs`, `xs` → `sm`, `sm` → `md`, `md` → `lg`, `lg` → `xl`, `xl` → `2xl`, `2xl` → `3xl`, and `3xl` → `4xl`. Regenerate extension bindings after updating host contracts. Custom host token groups continue to replace defaults, and enum names such as `breakWord` remain camel case.
+
+- 92fd903: Add host-defined hooks with typed app handlers discovered from `src/hooks/**/*.hook.ts`. Hosts can discover supporting installations and invoke hooks with validated inputs, outputs, scopes, and hook-specific sessions. Hooks can only be invoked by the host, not through nested action calls. Both hook methods accept `scopes` and `subjectId` directly in their options. App authors use `defineHook`; hook registration stays in the builder-only internal server entry point. Handlers can call registered app queries, mutations, actions, and host server tools. Actions can also call other declared actions with the same identity and cancellation lifetime.
+
+  Synchronous schema serialization treats asynchronous validators as required in generated hook and view bindings.
+
+  Hook names are stored on deployments and exposed through installation metadata, so hosts can discover support without calling app runtimes. Existing deployments and older uploaders default to no hooks; rebuild and republish to advertise hook support.
+
+  All rebuilt server bundles require a runtime supporting `nested-actions`; hook-enabled builds also require `hooks`. Older runtimes reject these bundles, including apps without hooks. Deploy the database migration first, then the updated platform and app runtime before publishing the updated SDK or rebuilding apps. Scheduling and durable retries remain controlled by the host.
+
+### Patch Changes
+
+- Updated dependencies [416cd4c]
+- Updated dependencies [92fd903]
+  - @patchsmith/core@0.1.0-beta.65
+  - @patchsmith/app@0.1.0-beta.65
+  - @patchsmith/vite@0.1.0-beta.65
+  - @patchsmith/cli@0.1.0-beta.65
+  - @patchsmith/ai-sdk@0.1.0-beta.65
+  - @patchsmith/react@0.1.0-beta.65
+  - @patchsmith/app-db@0.1.0-beta.65
+
 ## 0.1.0-beta.64
 
 ### Minor Changes
