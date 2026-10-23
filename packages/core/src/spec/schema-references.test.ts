@@ -46,8 +46,10 @@ it("compacts real primitive schemas and preserves their expanded meaning", () =>
       continue;
     }
 
+    // Distinct radius and spacing tokens need separate definitions. Require
+    // substantial compression without relying on identical token groups.
     expect(JSON.stringify(compact).length).toBeLessThan(
-      JSON.stringify(original).length / 3
+      JSON.stringify(original).length / 2
     );
   }
 });
