@@ -1,0 +1,25 @@
+packages/api-platform/openapi.json
+  s_ebb152472b7239::t_badcf34aacafcf 540-562,630-652,953-975,1043-1065,1491-1513,1581-1603,1928-1950,2018-2040,2367-2389,2457-2479,2779-2805,2873-2895,3349-3375,3443-3469,4090-4112,4180-4202,4768-4789,5032-5054,5587-5609,5858-5880,6105-6127
+packages/api-platform/src/runtime/deployment-views.test.ts
+  s_ebb152472b7239::t_4d06a56f55d644 1-30
+packages/client-platform/src/client/types.gen.ts
+  s_ebb152472b7239::t_d58c84a9a83e33 168-174,186-192,262-268,280-286,396-402,414-420,494-500,512-518,596-602,614-620,687-693,705-711,819-825,837-843,991-997,1009-1015,1200-1206,1255-1261,1363-1369,1425-1431,1483-1489
+packages/db/src/schema/apps.ts
+  s_ebb152472b7239::t_4f2405e4538a9c 26-51,194,236
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "32bff4b8938126b392b90deb526655def335ad80",
+  "prompts": {},
+  "sessions": {
+    "s_ebb152472b7239": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16876-2efe-76f1-927d-a763e7a8b250",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
