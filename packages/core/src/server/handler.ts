@@ -81,6 +81,7 @@ export const createPatchsmithServer = <
     InferPatchsmithServerTools<TOptions>
   >({
     components: options.components,
+    hooks: options.hooks,
     scopes: options.scopes,
     slots: options.slots,
     tools: options.tools,

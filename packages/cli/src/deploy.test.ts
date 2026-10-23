@@ -106,6 +106,7 @@ beforeEach(async () => {
     path.join(root, ".patchsmith/patchsmith-upload.json"),
     JSON.stringify({
       assets: { client: "client/client.js", server: "server/server.js" },
+      hooks: ["sync", "billing.updated"],
       version: 1,
       views: [
         { instances: true, path: "/", slot: "page" },
@@ -154,6 +155,7 @@ it("uploads gzip server and client code with metadata matching the stored bytes"
   await runDeploy({ cwd: root });
   expect(mocks.create.mock.calls[0]?.[0]).toMatchObject({
     assets: [{ objectKey: "client.js" }],
+    hooks: ["sync", "billing.updated"],
     server: { objectKey: "server.js" },
     views: [
       { instances: true, path: "/", slot: "page" },

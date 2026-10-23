@@ -267,16 +267,18 @@ const typecheckAppEntries = async (
     return undefined;
   }
 
-  const { getClientSourceFiles, discoverFunctionFiles } =
+  const { getClientSourceFiles, discoverFunctionFiles, discoverHooks } =
     await import("@patchsmith/vite/builder");
 
   const clientFiles = await getClientSourceFiles(loaded.root);
+  const hookFiles = await discoverHooks(loaded.root);
 
   const functionFiles = await discoverFunctionFiles(loaded.root);
 
   const entryFiles = [
     ...clientFiles,
     ...functionFiles.map(({ filename }) => filename),
+    ...hookFiles.map((hook) => hook.filename),
   ];
 
   // Check UI entries and every discovered function module with the project compiler options.
@@ -529,6 +531,7 @@ export const runDeploy = async (
             objectKey: "client.js" as const,
           },
         ],
+        hooks: manifest.hooks,
         logos:
           logoAssets.length > 0
             ? Object.fromEntries(

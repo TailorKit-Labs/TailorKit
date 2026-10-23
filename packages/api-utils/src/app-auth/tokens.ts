@@ -55,6 +55,7 @@ const access = z.object({
   appShortId: z.string().min(1).max(256),
   deploymentId: z.string().min(1).max(256),
   exp: z.number().int(),
+  hook: z.string().min(1).max(255).optional(),
   iat: z.number().int(),
   installationId: z.string().min(1).max(256),
   projectId: z.string().min(1).max(256),
@@ -125,6 +126,7 @@ export const issueAppTokenEffect = (
           appShortId: identity.appShortId,
           deploymentId: identity.deploymentId,
           exp: now + lifetime,
+          hook: identity.hook,
           iat: now,
           installationId: identity.installationId,
           projectId: identity.projectId,
@@ -151,6 +153,7 @@ export const issueAppTokenEffect = (
           appId: identity.appId,
           appShortId: identity.appShortId,
           deploymentId: identity.deploymentId,
+          hook: identity.hook,
           installationId: identity.installationId,
           projectId: identity.projectId,
           projectShortId: identity.projectShortId,
@@ -250,7 +253,14 @@ export const appTokenVerifierEffect = (trust: AppTokenTrust) => {
         return yield* Effect.fail(invalidToken());
       }
 
+      const hookGrant: Pick<z.infer<typeof access>, "hook"> = {};
+
+      if (claims.hook !== undefined) {
+        hookGrant.hook = claims.hook;
+      }
+
       return Object.freeze({
+        ...hookGrant,
         appId: claims.appId,
         appShortId: claims.appShortId,
         deploymentId: claims.deploymentId,

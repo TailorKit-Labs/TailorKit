@@ -27,3 +27,7 @@ export { AppError } from "./errors";
 export type { ErrorCode } from "./errors";
 
 export type { ApplicationModule, RuntimeManifest } from "./server/bundle";
+
+export { defineHook } from "./server/hooks";
+
+export type { PatchsmithHooks, HookName, HookContext } from "./server/hooks";

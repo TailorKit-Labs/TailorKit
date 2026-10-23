@@ -312,6 +312,8 @@ it("builds file routes with discovered functions and blocks server imports from 
     );
 
     expect(application.runtimeManifest).toEqual(runtimeManifest);
+    expect(application.runtimeManifest.requires).toContain("nested-actions");
+    expect(application.runtimeManifest.requires).not.toContain("hooks");
     expect(application.runtimeManifest.requires).toContain(
       "internal-functions"
     );
@@ -608,6 +610,8 @@ describe("database app builds", () => {
   it.each([
     "./functions/todos.router",
     "patchsmith/server",
+    "patchsmith/internal/server",
+    "@patchsmith/app/internal/server",
     "patchsmith/db",
     "@patchsmith/app-db",
     "effect",

@@ -14,6 +14,7 @@ export default defineConfig({
       index: "src/index.ts",
       protocol: "src/protocol.ts",
       server: "src/server.ts",
+      "server-internal": "src/server/internal.ts",
     },
     fixedExtension: false,
     format: "esm",

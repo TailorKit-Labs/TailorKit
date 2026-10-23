@@ -16,6 +16,31 @@ export const patchsmithUploadManifestSchema = v.object({
     ),
     server: v.optional(v.literal("server/server.js")),
   }),
+  hooks: v.optional(
+    v.pipe(
+      v.array(
+        v.pipe(
+          v.string(),
+          v.minLength(1),
+          v.maxLength(255),
+          v.regex(
+            /^[a-zA-Z][a-zA-Z0-9_]{0,63}(?:\.[a-zA-Z][a-zA-Z0-9_]{0,63})*$/u
+          ),
+          v.check(
+            (name) =>
+              !name
+                .split(".")
+                .some((part) =>
+                  ["constructor", "prototype", "__proto__"].includes(part)
+                )
+          )
+        )
+      ),
+      v.maxLength(1000),
+      v.check((names) => new Set(names).size === names.length)
+    ),
+    () => []
+  ),
   version: v.literal(1),
   views: v.optional(
     v.pipe(
@@ -40,7 +65,8 @@ export const createPatchsmithUploadManifest = (
   logos?: PatchsmithUploadManifest["assets"]["logos"],
   server = false,
   views?: PatchsmithUploadManifest["views"],
-  appId?: string
+  appId?: string,
+  hooks: string[] = []
 ): PatchsmithUploadManifest => {
   const assets: PatchsmithUploadManifest["assets"] = {
     client: "client/client.js",
@@ -57,6 +83,7 @@ export const createPatchsmithUploadManifest = (
   return v.parse(patchsmithUploadManifestSchema, {
     appId,
     assets,
+    hooks,
     version: 1,
     views,
   });

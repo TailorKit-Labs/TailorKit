@@ -643,3 +643,34 @@ describe("JSON Schema type generation", () => {
     }
   });
 });
+
+it("generates hook names, payloads and omitted-value types from the host contract", () => {
+  const source = renderGeneratedTypes({
+    hooks: {
+      notify: {},
+      optional: {
+        input: { type: "string" },
+        inputOptional: true,
+        output: { type: "number" },
+        outputOptional: true,
+      },
+      sync: {
+        input: {
+          additionalProperties: false,
+          properties: { cursor: { type: "string" } },
+          required: ["cursor"],
+          type: "object",
+        },
+        output: { type: "number" },
+      },
+    },
+  });
+
+  expect(source).toContain('declare module "patchsmith/server"');
+  expect(source).toContain('"sync": { input: {');
+  expect(source).toContain("cursor: string;");
+  expect(source).toContain('"notify": { input: undefined; output: void }');
+  expect(source).toContain(
+    '"optional": { input: string | undefined; output: number | undefined }'
+  );
+});

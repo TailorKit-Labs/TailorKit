@@ -15,6 +15,8 @@ export type EmptyFunctions = Record<never, never>;
 
 export interface Identity {
   readonly subjectId: string;
+  /** Present only on a host-issued session authorizing this hook. */
+  readonly hook?: string;
   readonly scope: {
     name: string;
     value: Record<string, JsonValue>;
@@ -39,7 +41,7 @@ export type FunctionResult<D> = D extends {
     ? Awaited<O>
     : never;
 
-export type FunctionCalls<F, K extends "query" | "mutation"> = {
+export type FunctionCalls<F, K extends FunctionKind> = {
   readonly [
     N in keyof F as F[N] extends { kind: FunctionKind }
       ? F[N] extends { kind: K }
@@ -80,6 +82,7 @@ export interface ActionContext<F extends Functions = EmptyFunctions> {
   readonly signal: AbortSignal;
   readonly queries: FunctionCalls<F, "query">;
   readonly mutations: FunctionCalls<F, "mutation">;
+  readonly actions: FunctionCalls<F, "action">;
 }
 
 export interface FunctionDefinition<

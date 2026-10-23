@@ -1,4 +1,4 @@
-export { tool, defineContract } from "@patchsmith/core/schema";
+export { hook, tool, defineContract } from "@patchsmith/core/schema";
 
 export { experimental_canvas } from "@patchsmith/core/schema";
 
@@ -9,6 +9,10 @@ export type {
 } from "@patchsmith/core/schema";
 
 export type {
+  ContractHook,
+  ContractHooks,
+  InferHookInput,
+  InferHookOutput,
   ContractTool,
   ContractTools,
   ToolCallers,

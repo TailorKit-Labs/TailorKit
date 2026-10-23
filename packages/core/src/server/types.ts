@@ -5,6 +5,7 @@ import type {
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
 import type {
+  ContractHooks,
   ContractTools,
   ComponentDefinitions,
   NoComponentFieldCallbackConflicts,
@@ -89,6 +90,7 @@ export interface PatchsmithServerBaseOptions<
     /** Override only /apps/runtime/resolve, for the Cloudflare experiment. Server-side only. */
     runtimeResolveBaseUrl?: string;
     platformFetch?: typeof fetch;
+    runtimeFetch?: typeof fetch;
     platformHeaders?: PatchsmithPlatformOptions["headers"];
   };
 }
@@ -105,6 +107,7 @@ export interface PatchsmithServerSchemaOptions<
 }
 
 export interface PatchsmithServerInputOptions extends PatchsmithServerBaseOptions {
+  hooks?: ContractHooks;
   slots?: SlotDefinitions;
   tools?: ContractTools;
   components: ComponentDefinitions;

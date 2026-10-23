@@ -12,6 +12,7 @@ export const sessionSchema = v.object({
     appId: v.string(),
     deploymentId: v.string(),
     expiresAt: v.pipe(v.number(), v.finite()),
+    hook: v.optional(v.string()),
     installationId: v.string(),
     projectId: v.string(),
     scope: v.object({

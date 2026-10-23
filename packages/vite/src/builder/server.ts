@@ -1,7 +1,16 @@
-import { mkdir, mkdtemp, writeFile, cp, rm } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  writeFile,
+  cp,
+  rm,
+  realpath,
+  readFile,
+} from "node:fs/promises";
 import path from "node:path";
 
 import type { RuntimeManifest } from "@patchsmith/app/server";
+import * as v from "valibot";
 import { build } from "vite";
 import type { UserConfig } from "vite";
 
@@ -9,6 +18,8 @@ import type { LoadedPatchsmithConfig } from "#config/loader";
 
 import { appDatabasePaths } from "./database-paths";
 import { isMissingFile } from "./fs-errors";
+import { discoverHooks, hookFilesPlugin } from "./hooks";
+import type { HookFile } from "./hooks";
 import {
   instanceServerBindings,
   instanceServerImports,
@@ -17,6 +28,7 @@ import {
 import type { InstanceModule, InstanceRegistration } from "./instances";
 import { readAppMigrations } from "./migrations";
 import { checkAppSchema } from "./schema-check";
+import { patchsmithUploadManifestSchema } from "./upload-manifest";
 
 const containsImplementation = (parent: string, child: string) => {
   const relative = path.relative(parent, child);
@@ -61,6 +73,7 @@ export const runtimeManifest = {
     "database-relations",
     "tools",
     "internal-functions",
+    "nested-actions",
   ],
 } as const satisfies RuntimeManifest;
 
@@ -112,17 +125,25 @@ export const buildServer = async (
     : undefined;
 
   try {
-    await writeFile(
-      entry,
-      `${
-        instances.length
-          ? `import app from ${JSON.stringify(functionsEntry)};\nimport { withInstanceResolvers } from "patchsmith/server";\n${instanceServerImports(instances)}\nexport default withInstanceResolvers(app, ${instanceServerBindings(instances, registrations)});`
-          : `export { default } from ${JSON.stringify(functionsEntry)};`
-      }
+    const sourceRoot = await realpath(loaded.root);
+
+    const renderEntry = (hooks: HookFile[]) => {
+      const app = instances.length
+        ? `withInstanceResolvers(app, ${instanceServerBindings(instances, registrations)})`
+        : "app";
+
+      return `import app from ${JSON.stringify(functionsEntry)};
+import { withHooks } from "patchsmith/internal/server";
+import { withInstanceResolvers } from "patchsmith/server";
+${instanceServerImports(instances)}
+${hooks.map((file, index) => `import hook${index} from ${JSON.stringify(file.filename)};`).join("\n")}
+export default ${hooks.length ? `withHooks(${app}, [${hooks.map((file, index) => `{ name: ${JSON.stringify(file.name)}, definition: hook${index} }`).join(",")}])` : app};
 export { default as migrations } from "patchsmith:migrations";
-export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
-`
-    );
+export const runtimeManifest = ${JSON.stringify({ ...runtimeManifest, requires: [...runtimeManifest.requires, ...(hooks.length ? ["hooks"] : [])] })};
+`;
+    };
+
+    await writeFile(entry, renderEntry(await discoverHooks(loaded.root)));
 
     const result = await build({
       build: {
@@ -150,7 +171,10 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
         {
           name: "patchsmith-server-runtime",
           async resolveId(id) {
-            if (id !== "patchsmith/server") {
+            if (
+              id !== "patchsmith/server" &&
+              id !== "patchsmith/internal/server"
+            ) {
               return null;
             }
 
@@ -165,6 +189,7 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
           },
         },
         instanceServerPlugin(loaded.root, instances),
+        hookFilesPlugin(sourceRoot, entry, renderEntry, watch),
         {
           closeWatcher: async () => {
             await rm(temporary, { force: true, recursive: true });
@@ -208,6 +233,36 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
             id === "patchsmith:migrations"
               ? "\0patchsmith:migrations"
               : undefined,
+          async writeBundle() {
+            const manifestPath = path.join(output, "patchsmith-upload.json");
+
+            const source = await readFile(manifestPath, "utf-8").catch(
+              (error: ErrorOptions["cause"]) => {
+                if (isMissingFile(error)) {
+                  return null;
+                }
+
+                throw error;
+              }
+            );
+
+            if (source === null) {
+              return;
+            }
+
+            const manifest = v.parse(
+              patchsmithUploadManifestSchema,
+              JSON.parse(source)
+            );
+
+            const hookFiles = await discoverHooks(sourceRoot);
+
+            manifest.hooks = hookFiles.map(({ name }) => name);
+            await writeFile(
+              manifestPath,
+              `${JSON.stringify(manifest, null, 2)}\n`
+            );
+          },
         },
       ],
       resolve: viteConfig.resolve,

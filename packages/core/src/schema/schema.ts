@@ -6,8 +6,14 @@ import type {
   ResolvedComponentMetadata,
 } from "./components";
 import { resolveComponentMetadata } from "./components";
+import type { ContractHooks } from "./hooks";
+import { serializeHooks, validateHooks } from "./hooks";
 import type { EmptyDefinitionMap, Schema, SchemaSerializer } from "./shared";
-import { jsonSchemaSerializer, serializeSchema } from "./shared";
+import {
+  jsonSchemaSerializer,
+  serializeSchema,
+  schemaMayBeOmitted,
+} from "./shared";
 import type { ContractTools } from "./tools";
 import { serializeTools } from "./tools";
 import type {
@@ -56,33 +62,12 @@ export interface PatchsmithSchema<
   serialize: (schemaSerializer?: SchemaSerializer) => PatchsmithSchemaSpec;
 }
 
-// JSON Schema cannot represent undefined at its root. Preserve that information
-// separately before sending the schema to app type generation.
-const contextMayBeOmitted = (schema: Schema): boolean => {
-  // oxlint-disable-next-line unicorn/no-useless-undefined -- Probe whether the schema accepts an omitted context.
-  const result = schema["~standard"].validate(undefined);
-
-  if (result instanceof Promise) {
-    // Serialization is synchronous; conservatively allow omission for async schemas.
-    void (async () => {
-      try {
-        await result;
-      } catch {
-        /* Intentionally no action is needed. */
-      }
-    })();
-
-    return true;
-  }
-
-  return !result.issues;
-};
-
 export function createPatchsmithSchema<
   const TComponents extends Record<string, unknown>,
   const TViews extends ContextDefinitions = Record<string, never>,
   const TTools extends ContractTools = EmptyToolMap,
 >(schema: {
+  hooks?: ContractHooks;
   slots?: SlotDefinitions<keyof NoInfer<TViews> & string>;
   scopes?: Record<string, Schema>;
   tools?: TTools;
@@ -91,12 +76,15 @@ export function createPatchsmithSchema<
   views?: TViews & ViewContextHierarchy<NoInfer<TViews>>;
 }): PatchsmithSchema<TComponents, TViews, TTools>;
 export function createPatchsmithSchema(schema: {
+  hooks?: ContractHooks;
   slots?: SlotDefinitions;
   scopes?: Record<string, Schema>;
   tools?: ContractTools;
   components: object;
   views?: ContextDefinitions;
 }) {
+  validateHooks(schema.hooks ?? {});
+
   for (const [name, slot] of Object.entries(schema.slots ?? {})) {
     if (slot.description !== undefined && !isStringValue(slot.description)) {
       throw new TypeError(`Slot "${name}" description must be a string.`);
@@ -168,13 +156,14 @@ export function createPatchsmithSchema(schema: {
         context: serializeSchema(metadata.context, schemaSerializer),
       };
 
-      if (metadata.context && contextMayBeOmitted(metadata.context)) {
+      if (metadata.context && schemaMayBeOmitted(metadata.context)) {
         serializedViews[name].contextOptional = true;
       }
     }
 
     const serialized: PatchsmithSchemaSpec = {
       components: serializedComponents,
+      hooks: serializeHooks(schema.hooks ?? {}, schemaSerializer),
 
       slots: Object.fromEntries(
         Object.entries(schema.slots ?? {}).map(([name, slot]) => {

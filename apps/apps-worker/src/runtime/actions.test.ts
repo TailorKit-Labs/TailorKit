@@ -609,3 +609,121 @@ it("binds backend tool calls to the active verified execution and closes escaped
     void requireValue(escaped)();
   }).toThrow("Action has ended");
 });
+
+it("ends nested action capabilities when their parent completes", async () => {
+  const deferred = Promise.withResolvers<ReturnType<() => void>>();
+  let retained: (() => Promise<number>) | undefined;
+  let childPromise: Promise<number> | undefined;
+
+  const child = action({
+    args: z.undefined(),
+    functions,
+    handler: async ({ queries, signal }) => {
+      retained = async () => await queries.read({});
+      await deferred.promise;
+      expect(signal.aborted).toBe(true);
+
+      return await queries.read({});
+    },
+  });
+
+  const parent = action({
+    args: z.undefined(),
+    functions: { child },
+    handler: ({ actions }) => {
+      childPromise = actions.child();
+      // Drain the deliberately unawaited child while testing its parent ending.
+      void childPromise.catch(() => {});
+
+      return "finished";
+    },
+  });
+
+  const run = createActionExecution({
+    functions: { ...functions, child, parent },
+  });
+
+  expect(
+    await run({ name: "parent" }, identity, {
+      mutate: async () => await Promise.resolve(1),
+      query: async () => await Promise.resolve(1),
+    })
+  ).toBe("finished");
+  await expect(requireValue(retained)()).rejects.toThrow("Action has ended");
+  deferred.resolve();
+  await expect(childPromise).rejects.toMatchObject({ code: "UNAVAILABLE" });
+});
+
+it("enforces hook grants in the runtime even if app code replaces the generated handler", async () => {
+  const invoke = action({
+    args: z.object({ hook: z.string() }),
+    handler: () => "must not run",
+  });
+
+  const run = createActionExecution({
+    functions: { _patchsmith: { hooks: { invoke } } },
+  });
+
+  const calls: ActionCalls = {
+    mutate: async () => await Promise.resolve(null),
+    query: async () => await Promise.resolve(null),
+  };
+
+  await expect(
+    run(
+      { args: { hook: "sync" }, name: "_patchsmith.hooks.invoke" },
+      identity,
+      calls
+    )
+  ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  await expect(
+    run(
+      { args: { hook: "sync" }, name: "_patchsmith.hooks.invoke" },
+      { ...identity, hook: "other" },
+      calls
+    )
+  ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  expect(
+    await run(
+      { args: { hook: "sync" }, name: "_patchsmith.hooks.invoke" },
+      { ...identity, hook: "sync" },
+      calls
+    )
+  ).toBe("must not run");
+});
+
+it("rejects nested hook dispatch even with a matching host hook grant", async () => {
+  const invoke = action({
+    args: z.object({ hook: z.string() }),
+    handler: () => "host invocation",
+  });
+
+  const hooks = { _patchsmith: { hooks: { invoke } } };
+
+  const parent = action({
+    args: z.undefined(),
+    functions: hooks,
+    handler: async ({ actions }) =>
+      await actions._patchsmith.hooks.invoke({ hook: "sync" }),
+  });
+
+  const run = createActionExecution({ functions: { ...hooks, parent } });
+  const caller = { ...identity, hook: "sync" };
+
+  const calls: ActionCalls = {
+    mutate: async () => await Promise.resolve(null),
+    query: async () => await Promise.resolve(null),
+  };
+
+  await expect(run({ name: "parent" }, caller, calls)).rejects.toMatchObject({
+    code: "FORBIDDEN",
+    message: "Hooks can only be invoked by the host",
+  });
+  await expect(
+    run(
+      { args: { hook: "sync" }, name: "_patchsmith.hooks.invoke" },
+      caller,
+      calls
+    )
+  ).resolves.toBe("host invocation");
+});

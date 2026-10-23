@@ -1,3 +1,4 @@
+import { createClient } from "@patchsmith/client-platform/client/client/index";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
 import type { PatchsmithContract } from "#schema/contract";
@@ -9,7 +10,9 @@ import { flattenTools } from "#schema/tools";
 
 import { normalizeBaseUrl } from "./base-url";
 import { createPatchsmithServer, defaultPlatformBaseUrl } from "./handler";
+import { createHookCallers } from "./hooks";
 import { createToolExecutor, getImplementation } from "./routes/tools";
+import { validatePatchsmithScopeSchemas } from "./scope";
 import type {
   PatchsmithServerBaseOptions,
   PatchsmithHandlerOptions,
@@ -76,17 +79,23 @@ export const createServer = <const T extends PatchsmithContract>(
     tools: T["tools"];
   };
 
+  const platformHeaders =
+    configuration.$internal?.platformHeaders ??
+    (configuration.projectKey !== undefined && configuration.projectKey !== ""
+      ? { authorization: `Bearer ${configuration.projectKey}` }
+      : undefined);
+
+  const platformUrl =
+    configuration.$internal?.platformBaseUrl ?? defaultPlatformBaseUrl;
+
+  const toolUrl = `${publicOrigin + basePath}/tools/execute`;
+
   const executeTool = createToolExecutor({
     contract,
-    platformHeaders:
-      configuration.$internal?.platformHeaders ??
-      (configuration.projectKey !== undefined && configuration.projectKey !== ""
-        ? { authorization: `Bearer ${configuration.projectKey}` }
-        : undefined),
-    platformUrl:
-      configuration.$internal?.platformBaseUrl ?? defaultPlatformBaseUrl,
+    platformHeaders,
+    platformUrl,
     requestPlatform: configuration.$internal?.platformFetch ?? globalThis.fetch,
-    toolUrl: `${publicOrigin + basePath}/tools/execute`,
+    toolUrl,
     tools,
   });
 
@@ -133,6 +142,17 @@ export const createServer = <const T extends PatchsmithContract>(
       // SAFETY: ContractScopes derives each scope input from the same contract passed to createPatchsmithServer.
       return await server.handler(request, handlerOptions);
     },
+    hooks: createHookCallers<T["hooks"], Partial<ContractScopes<T>>>({
+      hooks: contract.hooks,
+      platform: createClient({
+        baseUrl: platformUrl,
+        fetch: configuration.$internal?.platformFetch,
+      }),
+      platformHeaders,
+      runtimeFetch: configuration.$internal?.runtimeFetch,
+      scopeSchemas: validatePatchsmithScopeSchemas(contract.scopes),
+      toolUrl,
+    }),
     mcp: {
       transport: async (
         optionsValue: PatchsmithHostContext<Partial<ContractScopes<T>>>

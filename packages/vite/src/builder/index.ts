@@ -17,3 +17,5 @@ export {
   renderFunctionTypes,
   type FunctionFile,
 } from "./file-functions";
+
+export { discoverHooks } from "./hooks";
