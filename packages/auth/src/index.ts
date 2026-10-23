@@ -287,6 +287,9 @@ const buildAuth = () => {
       apiKey({
         configId: "project-host",
         defaultPrefix: "tk_proj_",
+        // Uses advanced.backgroundTasks (Vercel waitUntil) for expired-key cleanup.
+        // Database-backed quota/rate-limit claims remain synchronous in 1.7.10.
+        deferUpdates: true,
         enableMetadata: true,
         keyExpiration: {
           defaultExpiresIn: null,
