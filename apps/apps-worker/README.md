@@ -180,7 +180,7 @@ The public routes and `ASSET_DOMAIN` remain `tailorkit.app`. Production resource
 
 - `BUNDLES`: private R2 bucket `patchsmith-app-assets-prod`. Set the platform's `BLOB_BUCKET` to this same bucket and grant its S3 credentials access to it.
 - `STORES`: `PatchsmithAppInstallation`, which creates a fresh Durable Object namespace under `patchsmith-apps-worker`. The `AppInstallation` deletion tombstone retires the previous namespace and its data when this configuration deploys.
-- Signing key: `patchsmith-runtime-2026-10-20`. The platform's `APP_RUNTIME_SIGNING_KEY` must contain the matching private JWK; only its public key belongs in this repository.
+- Signing key: `patchsmith-runtime-2026-10-23`, with `patchsmith-runtime-2026-10-20` retained during rotation. The platform's `APP_RUNTIME_SIGNING_KEY` must contain the matching private JWK; only public keys belong in this repository.
 
 The rebrand deliberately starts with an empty asset bucket and installation databases. Old bundles and app data are not migrated. Republish apps after deploying the worker and platform. Stage the new public key on the running worker before the platform begins issuing tokens with it; keep the old public key accepted until existing tokens have expired. The committed configuration completes that rotation on the next worker deployment. Platform environment changes apply to its next deployment, so deploy both sides together and verify a fresh upload, publication, and app call.
 
