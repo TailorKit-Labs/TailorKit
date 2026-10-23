@@ -12,6 +12,7 @@ import {
 import { Effect } from "effect";
 
 import assets from "./assets";
+import { installationDiagnostic } from "./diagnostics";
 import { validateDeploymentPublication } from "./publication";
 import { appError } from "./runtime/errors";
 import { verifier } from "./supervisor/auth";
@@ -26,6 +27,18 @@ export default {
     ctx: ExecutionContext
   ): Promise<Response> => {
     const domain = env.ASSET_DOMAIN;
+
+    const diagnostic = installationDiagnostic(request, {
+      assetDomain: domain,
+      installation: (objectId) =>
+        env.STORES.get(env.STORES.idFromString(objectId)),
+      serviceToken: env.RUNTIME_SERVICE_TOKEN,
+    });
+
+    if (diagnostic) {
+      return await diagnostic;
+    }
+
     const publication = parseDeploymentPublicationRoute(request, domain);
     const appRoute = parseHostedAppRoute(request, domain);
 

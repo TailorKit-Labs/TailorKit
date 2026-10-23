@@ -7,6 +7,8 @@ import { Effect, Semaphore } from "effect";
 import { catch as catchEffect } from "effect/Effect";
 
 import bootstrap from "../.generated/bootstrap.txt";
+import { probeLocation } from "./diagnostics";
+import type { InstallationLocation } from "./diagnostics";
 import type { AppFacet } from "./dynamic-workers/facet";
 import { abortable, cancellationStream } from "./runtime/cancellation";
 import { appError, resultEffect } from "./runtime/errors";
@@ -51,6 +53,34 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
       ),
     this.#queue
   );
+
+  /** Internal diagnostic RPC; app handlers and their bindings never receive this method. */
+  async diagnoseLocation(requestId: string): Promise<InstallationLocation> {
+    const started = performance.now();
+
+    const version = this.ctx.storage.kv.get<string>("version");
+
+    if (version === undefined || version === null || version === "") {
+      throw new AppError("NOT_FOUND", "Supervisor has no prepared deployment");
+    }
+
+    const probeStarted = performance.now();
+    const colo = await probeLocation();
+    const probeMs = performance.now() - probeStarted;
+
+    const result: InstallationLocation = {
+      colo,
+      installationMs: performance.now() - started,
+      objectId: this.ctx.id.toString(),
+      probeMs,
+      requestId,
+      source: "outbound-trace",
+    };
+
+    console.info("Supervisor location probe", result);
+
+    return result;
+  }
 
   /** Only the trusted gateway's service-authenticated publication route calls this RPC. */
   async warm(metadata: ServerDeployment): Promise<void> {

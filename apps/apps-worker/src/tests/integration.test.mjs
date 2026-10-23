@@ -121,6 +121,7 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
   /** @type {Promise<void> | undefined} */
   let pendingExternal;
   let metadataReads = 0;
+  let locationProbes = 0;
 
   const dist = path.resolve(import.meta.dirname, "../../dist");
 
@@ -146,6 +147,13 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
     /** @param {Request} request Outbound request made by the isolated worker. */
     // oxlint-disable-next-line eslint/complexity -- Keep this validation or rendering lifecycle together: its guards share the same state, cleanup, and error handling.
     outboundService: async (request) => {
+      if (request.url === "https://www.cloudflare.com/cdn-cgi/trace") {
+        locationProbes += 1;
+        assert.equal(request.headers.get("authorization"), null);
+
+        return new Response("ip=private\ncolo=IAD\nloc=US\n");
+      }
+
       if (request.url === "https://host.test/api/patchsmith/tools/execute") {
         const { path: toolPath, input, requestId } = await request.json();
         assert.match(requestId, /^[0-9a-f-]{36}$/u);
@@ -1073,6 +1081,63 @@ export const migrations = ${JSON.stringify(history)};`;
     assert.deepEqual(one.bindings, []);
     assert.equal(one.token, null);
     assert.equal(one.identity.installationId, "one");
+
+    const namespace = await mf.getDurableObjectNamespace("STORES");
+
+    const objectId = namespace
+      .idFromName(JSON.stringify([signing.issuer, projectId, "app", "one"]))
+      .toString();
+
+    const diagnosticUrl =
+      "https://internal.tailorkit.app/diagnostics/installation";
+
+    const diagnosticHeaders = {
+      authorization: `Bearer ${"x".repeat(32)}`,
+      "content-type": "application/json",
+    };
+
+    const beforeDiagnostic = metadataReads;
+
+    const unauthorizedDiagnostic = await mf.dispatchFetch(diagnosticUrl, {
+      body: JSON.stringify({ objectId }),
+      method: "POST",
+    });
+
+    assert.equal(unauthorizedDiagnostic.status, 401);
+    assert.equal(locationProbes, 0);
+
+    const diagnostic = await mf.dispatchFetch(diagnosticUrl, {
+      body: JSON.stringify({ objectId }),
+      headers: diagnosticHeaders,
+      method: "POST",
+    });
+
+    assert.equal(diagnostic.status, 200, await diagnostic.clone().text());
+    assert.equal(diagnostic.headers.get("cache-control"), "no-store");
+    const location = await diagnostic.json();
+    assert.equal(location.objectId, objectId);
+    assert.equal(location.colo, "IAD");
+    assert.equal(location.source, "outbound-trace");
+    assert.equal(
+      location.requestId,
+      diagnostic.headers.get("x-patchsmith-request-id")
+    );
+    assert.equal(locationProbes, 1);
+    assert.equal(metadataReads, beforeDiagnostic);
+    assert.ok(!JSON.stringify(location).includes("private"));
+
+    const emptyDiagnostic = await mf.dispatchFetch(diagnosticUrl, {
+      body: JSON.stringify({ objectId: namespace.newUniqueId().toString() }),
+      headers: diagnosticHeaders,
+      method: "POST",
+    });
+
+    assert.equal(
+      emptyDiagnostic.status,
+      404,
+      await emptyDiagnostic.clone().text()
+    );
+    assert.equal(locationProbes, 1);
 
     const two = await (
       await invoke("two")
