@@ -19,17 +19,8 @@ const requireValue = <T>(value: T | null | undefined): T => {
 
 export type ServerDeployment = AppDeploymentMetadata;
 
-/** Deployment selects code, never the database. Issuer also separates trusted hosts. */
-export const installationName = (
-  identity: Pick<Identity, "projectId" | "appId" | "installationId">,
-  issuer: string
-) =>
-  JSON.stringify([
-    issuer,
-    identity.projectId,
-    identity.appId,
-    identity.installationId,
-  ]);
+// Preserve the existing internal entry point for installation routing.
+export { installationName } from "@patchsmith/api-utils/app-auth";
 
 export const metadataRevalidateMs = 60 * 60 * 1000;
 

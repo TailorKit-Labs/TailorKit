@@ -2,10 +2,10 @@ import { handlerGen, middlewareGen } from "@orpc/experimental-effect";
 import { openapi } from "@orpc/openapi";
 import { ORPCError } from "@orpc/server";
 import { db } from "@patchsmith/db";
-import { App, app, AppDeployment } from "@patchsmith/db/schema/apps";
+import { App, app } from "@patchsmith/db/schema/apps";
 import { createShortId } from "@patchsmith/db/short-id";
 import { eq } from "drizzle-orm";
-import { Clock, Effect } from "effect";
+import { Effect } from "effect";
 import { z } from "zod";
 
 import { appSelectorSchema } from "#app-selector";
@@ -20,33 +20,21 @@ import {
   requireAppInScopes,
 } from "#procedures";
 import {
-  resolveRuntimeViews,
-  runtimeViewContexts,
-  runtimeViewWarning,
-} from "#runtime/view-resolution";
-import { ViewResolutionTimings } from "#runtime/view-timing";
+  AppWithCurrentDeployment,
+  discoverApps as discoverRuntimeApps,
+} from "#runtime/discovery";
 import {
-  canonicalizeScope,
-  canonicalizeScopes,
-  scopeSchema,
-  scopesSchema,
-} from "#scope";
+  resolveAppViews,
+  runtimeResolveInput,
+  runtimeResolveOutput,
+} from "#runtime/resolve";
+import { canonicalizeScope, scopeSchema, scopesSchema } from "#scope";
 
 import {
   createRuntimeSession,
   publishRuntimeMetadata,
   runtimeSession,
-  runtimeViewerSchema,
 } from "./runtime";
-
-export const AppWithCurrentDeployment = App.omit({ scopeKey: true }).extend({
-  clientPath: z.url().optional(),
-  currentDeployment: AppDeployment.nullable(),
-  logoPaths: z
-    .object({ dark: z.url().optional(), light: z.url().optional() })
-    .optional(),
-  views: AppDeployment.shape.views,
-});
 
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
@@ -70,51 +58,8 @@ const createUniqueAppShortId = async (projectId: string) => {
 
 const discoverApps = async (
   projectId: string,
-  input: z.infer<typeof paginationQuery> & {
-    scopes: z.infer<typeof scopesSchema>;
-    appIds?: string[];
-  }
-) => {
-  const { page, pageSize } = input;
-  const scopes = canonicalizeScopes(input.scopes);
-
-  // Browser app filters may include missing or malformed IDs; never send those to a UUID column.
-  const appIds = input.appIds?.filter(
-    (id) => App.shape.id.safeParse(id).success
-  );
-
-  return await db.query.app.findMany({
-    limit: pageSize + 1,
-    offset: (page - 1) * pageSize,
-    orderBy: {
-      createdAt: "desc",
-      id: "desc",
-    },
-    where: {
-      RAW: (fields, { and, eq: eqValue, or }) =>
-        and(
-          eqValue(fields.projectId, projectId),
-          or(
-            ...scopes.map(({ scope, scopeKey }) =>
-              and(
-                eqValue(fields.scopeKey, scopeKey),
-                eqValue(fields.scope, scope)
-              )
-            )
-          )
-        ) ?? eqValue(fields.projectId, projectId),
-      id: appIds === undefined ? undefined : { in: appIds },
-    },
-    with: {
-      currentDeployment: {
-        where: {
-          status: "published",
-        },
-        with: { app: { columns: { shortId: true } } },
-      },
-    },
-  });
-};
+  input: Parameters<typeof discoverRuntimeApps>[2]
+) => await discoverRuntimeApps(db, projectId, input);
 
 const listApps = cliRouter
   .meta(
@@ -143,6 +88,9 @@ const listApps = cliRouter
     };
   });
 
+// Preserve the existing route entry point for platform consumers.
+export { AppWithCurrentDeployment } from "#runtime/discovery";
+
 /** Resolve all authorized installations near the app runtime, independently of host geography. */
 const runtimeResolve = protectedRouter
   .meta(openapi({ method: "POST", path: "/apps/runtime/resolve" }))
@@ -157,110 +105,17 @@ const runtimeResolve = protectedRouter
       return yield* next();
     })
   )
-  .input(
-    z.object({
-      body: z.strictObject({
-        ...runtimeViewerSchema.shape,
-        appIds: z.array(z.string().min(1).max(256)).optional(),
-        contexts: runtimeViewContexts,
-        scopes: scopesSchema,
-        slot: z.string().min(1).max(255),
-      }),
-    })
-  )
-  .output(
-    z.object({
-      body: z.discriminatedUnion("status", [
-        z.object({ status: z.literal("loading") }),
-        z.object({
-          data: z.array(
-            z.object({
-              app: AppWithCurrentDeployment,
-              data: z.unknown(),
-              key: z.string(),
-              metadata: z.record(z.string(), z.unknown()),
-            })
-          ),
-          status: z.literal("ready"),
-          warnings: z.array(runtimeViewWarning),
-        }),
-      ]),
-      headers: z.object({
-        "cache-control": z.literal("no-store"),
-        "server-timing": z.string(),
-      }),
-    })
-  )
+  .input(z.object({ body: runtimeResolveInput }))
+  .output(runtimeResolveOutput)
   .handler(
     handlerGen(function* runtimeResolve({ context, input }) {
-      const discoveryStarted = yield* Clock.currentTimeMillis;
-      const apps = new Map<string, z.infer<typeof AppWithCurrentDeployment>>();
-      let page = 1;
-      const pageSize = 100;
-
-      for (;;) {
-        const currentPage = page;
-
-        const installations = yield* Effect.tryPromise({
-          catch: (cause) =>
-            new ORPCError("INTERNAL_SERVER_ERROR", {
-              cause,
-              message: "Unable to discover views",
-            }),
-          try: async () =>
-            await discoverApps(context.project.id, {
-              ...input.body,
-              page: currentPage,
-              pageSize,
-            }),
-        });
-
-        for (const appValue of installations.slice(0, pageSize)) {
-          apps.set(
-            appValue.id,
-            withAppAssetUrl(appValue, context.project.shortId)
-          );
-        }
-
-        if (installations.length <= pageSize) {
-          break;
-        }
-
-        page += 1;
-      }
-
-      const instancesStarted = yield* Clock.currentTimeMillis;
-      const discoveryMs = instancesStarted - discoveryStarted;
-      const runtimeTimings = new ViewResolutionTimings();
-
-      const result = yield* resolveRuntimeViews(
-        [...apps.values()],
-        input.body,
-        {
-          createSession: async (appValue) =>
-            await runtimeTimings.session(
-              async () =>
-                await createRuntimeSession(context, appValue, input.body)
-            ),
-          fetch: runtimeTimings.fetch,
-        }
-      );
-
-      const instancesMs = (yield* Clock.currentTimeMillis) - instancesStarted;
-
-      return {
-        body: result,
-        headers: {
-          "cache-control": "no-store" as const,
-          "server-timing": [
-            `views_discovery;dur=${discoveryMs.toFixed(1)}`,
-            `views_instances;dur=${instancesMs.toFixed(1)}`,
-            runtimeTimings.header(),
-          ]
-            .filter(Boolean)
-            .join(", "),
-        },
-      };
+      return yield* resolveAppViews(input.body, {
+        assets: (appValue) =>
+          withAppAssetUrl(appValue, context.project.shortId),
+        discover: async (body) => await discoverApps(context.project.id, body),
+        session: async (appValue, body) =>
+          await createRuntimeSession(context, appValue, body),
+      });
     })
   );
 

@@ -1,0 +1,19 @@
+# Cloudflare view resolution experiment — 23 October 2026
+
+The new backend has a repeatable post-idle penalty. Its warm runtime round trip is short, but the first host-to-Worker call often contains hundreds of milliseconds outside the measured Worker handler. Database setup and cleanup are small in the instrumented samples.
+
+A 20-request sequential burst from Chrome incognito in Melbourne returned HTTP 200 and one Doom instance for every request. It used the real page request payload from `/contacts`, the same existing demo installation, `cache: no-store`, and measured through response-body consumption. The median was 436.3 ms and nearest-rank p95 861.1 ms. The first two requests took 938.5 and 861.1 ms. The remaining 18 had a 434.3 ms median and 387.3–533.8 ms range. Their median instance/runtime round trip was 37 ms; median authorization phase was 50 ms, discovery 7 ms, and the host-to-backend call 155.3 ms. These are overlapping phase medians, not additive components.
+
+Three additional idle pairs returned 989/461, 940/459, and 1083/430 ms. The second and third pairs followed 20-second pauses. Headers were not retained for these pairs due to a probe parsing error, so they establish the latency pattern only.
+
+Timing-only instrumentation was deployed as Worker version `b18b39bd-42e3-441c-8fa4-ab00ea399dcf`. Nine more calls, in three groups of three separated by 20 seconds, measured database connect, database close, and the whole fetch handler. All returned 200 with one instance. Connect measured 2–8 ms; close reported 0 ms. Cloudflare clocks advance with I/O, so zero is not proof of literally no CPU work.
+
+The first calls of those groups took 878, 1005, and 907 ms in the browser. Their host-to-Worker durations were 583.2, 691.9, and 619.7 ms, while the whole measured Worker handler took 188, 201, and 153 ms. The differences were 395.2, 490.9, and 466.7 ms. The immediate next calls took 485, 482, and 428 ms. A third request in one group also spiked to 772 ms, so the problem is not confined to the first call.
+
+A representative 1005 ms call spent 5 ms connecting, 124 ms in authorization, 19 ms in discovery, and 53 ms in instance resolution. The whole Worker handler measured 201 ms. The host measured 691.9 ms calling the backend, and its own handler measured 701.4 ms. The residuals include host work, DNS/TCP/TLS and connection reuse, Cloudflare ingress/placement dispatch, isolate startup, response transfer, and scheduling. These probes do not isolate those components, and do not establish that all missing time is network latency.
+
+Earlier Vercel-backend samples showed both warm requests in the 400–500 ms range and first-after-idle requests around 619–807 ms. The new warm burst is not slower than that historical group, but its post-idle outliers are concerning. This is not a controlled A/B comparison: host commits, SDK versions, installation identities, and collection times differ. No Vercel rollback or demo configuration change was made for this investigation.
+
+The next measurement should capture host-side DNS/connect/TLS/response phases and Worker startup/dispatch telemetry for the same request, then alternate both backends using the same authorized input and installation. The timings do not support further database cache tuning as the first response to these spikes. The experiment's source now retains `platform_connect`, `platform_close`, `platform_request`, and an ingress-colo description so this boundary remains visible. Ingress metadata must not be interpreted as the placed Worker's or Durable Object's physical location.
+
+Data: `2026-10-23-cloudflare-views.json`. All samples exclude cookies, project keys, runtime tokens, and response bodies. The initial null-context and invalid-context probes were excluded because they do not exercise resolution. No production app data was modified.

@@ -66,12 +66,16 @@ export const createEnv = <const T extends EnvFields>({
   scope,
   schema: environmentFields,
   warnings = {},
+  values,
 }: {
   scope: string;
   schema: T;
+  /** Explicit Worker bindings bypass process.env and local dotenv files. */
+  // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- Native Worker bindings enter through this I/O boundary and each declared field is parsed by its own validator below.
+  values?: Readonly<Record<string, unknown>>;
   warnings?: Partial<Record<keyof T & string, string>>;
 }): Partial<z.output<z.ZodObject<T>>> => {
-  const source = readEnvironment();
+  const source = values ?? readEnvironment();
 
   const missingWarnings = new Map<string, string | undefined>(
     Object.entries(warnings)

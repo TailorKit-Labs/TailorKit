@@ -1,4 +1,3 @@
-import { apiKey } from "@better-auth/api-key";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import { dash } from "@better-auth/infra";
 import { passkey } from "@better-auth/passkey";
@@ -29,6 +28,7 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { checkBotId } from "botid/server";
 
 import { env } from "#env";
+import { projectHostKeys } from "#project-host";
 
 import { captchaEndpoints } from "./lib/captcha-endpoints";
 import { ac, roles } from "./lib/permissions";
@@ -284,25 +284,7 @@ const buildAuth = () => {
           });
         },
       }),
-      apiKey({
-        configId: "project-host",
-        defaultPrefix: "tk_proj_",
-        enableMetadata: true,
-        keyExpiration: {
-          defaultExpiresIn: null,
-          maxExpiresIn: 3650,
-          minExpiresIn: 0,
-        },
-        references: "organization",
-        ...(secondaryStorage
-          ? {
-              fallbackToDatabase: true,
-              storage: "secondary-storage" as const,
-            }
-          : {
-              storage: "database" as const,
-            }),
-      }),
+      projectHostKeys(secondaryStorage),
       ...(env.BETTER_AUTH_API_KEY !== undefined &&
       env.BETTER_AUTH_API_KEY !== null &&
       env.BETTER_AUTH_API_KEY !== ""

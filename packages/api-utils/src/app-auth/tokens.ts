@@ -14,6 +14,18 @@ export type AppTokenIdentity = Omit<Identity, "expiresAt"> & {
 export type VerifiedAppTokenIdentity = Identity &
   Pick<AppTokenIdentity, "projectShortId" | "appShortId">;
 
+/** Shared namespace identity: changing deployments never changes installation storage. */
+export const installationName = (
+  identity: Pick<Identity, "projectId" | "appId" | "installationId">,
+  issuer: string
+) =>
+  JSON.stringify([
+    issuer,
+    identity.projectId,
+    identity.appId,
+    identity.installationId,
+  ]);
+
 export const appRuntimeIssuer = (platformUrl: string) => {
   const url = new URL(platformUrl);
 
