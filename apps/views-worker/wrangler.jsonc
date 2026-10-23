@@ -1,4 +1,4 @@
-// Replace the placeholder Hyperdrive ID before deploying; create it with --caching-disabled.
+// Shared platform Postgres through Hyperdrive, with query caching disabled.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "patchsmith-views-worker",
@@ -16,7 +16,7 @@
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",
-      "id": "00000000000000000000000000000000",
+      "id": "325f3c2afdff4a3face8971e67334b40",
       "localConnectionString": "postgres://postgres:postgres@localhost:5432/patchsmith"
     }
   ],

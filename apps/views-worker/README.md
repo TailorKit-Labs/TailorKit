@@ -1,6 +1,6 @@
 # Cloudflare view resolution experiment
 
-The publishable SDK support is in [PR #399](https://github.com/patchsmith-io/patchsmith/pull/399). Merge and release that PR independently, then deploy this Worker from its branch to test it without merging the Worker experiment.
+The publishable SDK support from [PR #399](https://github.com/patchsmith-io/patchsmith/pull/399) is available in `0.1.0-beta.64`. Deploy this Worker from its branch to test it without merging the Worker experiment.
 
 This optional backend serves `POST /api/platform/apps/runtime/resolve`. The host still authenticates its own users, validates view context, and provides authorized scopes. Hosts can run on any provider. Vercel continues to serve the platform's other routes and remains the default resolution backend.
 
@@ -17,14 +17,14 @@ The Worker reuses the platform's discovery, session, view selection, resolution 
 ## Configure and deploy
 
 1. Build dependencies with `pnpm exec turbo run build --filter=@patchsmith/views-worker^...`.
-2. Create a Hyperdrive configuration for the **same Postgres database** used by the platform, with **query caching disabled**. Use Wrangler's `hyperdrive create patchsmith-views --caching-disabled` and supply connection details through your normal private credential workflow. Replace the all-zero Hyperdrive ID in `wrangler.jsonc` with the resulting configuration ID. See [Hyperdrive query caching](https://developers.cloudflare.com/hyperdrive/concepts/query-caching/). Authorization, revocation, and deployment selection must see fresh data.
+2. The checked-in Hyperdrive configuration `325f3c2afdff4a3face8971e67334b40` connects to the platform Postgres database with query caching disabled. Keep **query caching disabled** for authorization, revocation, and deployment selection. For another environment, replace this ID with a configuration for that environment's database. See [Hyperdrive query caching](https://developers.cloudflare.com/hyperdrive/concepts/query-caching/).
 3. Configure Worker secrets through `wrangler secret put`:
    - `AUTH_SECRET`: the platform's existing Better Auth secret.
    - `APP_RUNTIME_SIGNING_KEY`: the platform's **same active ES256 private JWK**, including `kid`; the existing runtime must trust its public key.
    - `KV_REST_API_URL` and `KV_REST_API_TOKEN`: the **same Upstash database** used by the platform, to share API-key state, invalidation, and organization rate limits. Do not use a separate Redis database for this experiment.
 4. Keep `PLATFORM_URL` equal to the existing runtime issuer (`https://patchsmith.io/api/platform`). Changing it would change object names and break token trust. Keep `ASSET_DOMAIN` aligned with the runtime.
 5. Deploy the new Worker with `pnpm --filter @patchsmith/views-worker deploy`. The existing apps Worker must already be deployed in the same account. No migration or redeployment of its Durable Objects is required. Cross-script bindings use [`script_name`](https://developers.cloudflare.com/durable-objects/reference/environments/).
-6. On a host server using the SDK beta published from PR #399, opt in:
+6. On a host server using SDK `0.1.0-beta.64` or later, opt in:
 
    ```ts
    createPatchsmithServer({
