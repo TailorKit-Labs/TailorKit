@@ -43,6 +43,7 @@
     "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
+    "@opentelemetry/api": "catalog:",
     "@orpc/experimental-effect": "catalog:",
     "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
@@ -67,6 +68,7 @@
   "devDependencies": {
     "@electric-sql/pglite": "0.5.10",
     "@modelcontextprotocol/client": "2.3.1",
+    "@opentelemetry/sdk-trace-base": "catalog:",
     "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "tsx": "catalog:",

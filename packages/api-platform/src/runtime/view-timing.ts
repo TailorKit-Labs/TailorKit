@@ -1,4 +1,7 @@
+import { SpanStatusCode } from "@opentelemetry/api";
 import { withSpan } from "@patchsmith/observability";
+
+import { RuntimeResponseError } from "./runtime-response-error";
 
 interface RuntimeTransportAttributes {
   "http.response.status_code": number;
@@ -118,23 +121,37 @@ export class ViewResolutionTimings {
     }
   }
 
-  readonly fetch: typeof fetch = async (input, init) =>
-    await withSpan("runtime.views.fetch", async (span) => {
-      const started = this.#now();
-      const response = await this.#fetch(input, init);
-      const roundtripMs = this.#now() - started;
-      this.#record("runtime_roundtrip", roundtripMs);
+  readonly fetch: typeof fetch = async (input, init) => {
+    try {
+      return await withSpan("runtime.views.fetch", async (span) => {
+        const started = this.#now();
+        const response = await this.#fetch(input, init);
+        const roundtripMs = this.#now() - started;
+        this.#record("runtime_roundtrip", roundtripMs);
 
-      for (const [name, duration] of runtimeDurations(response.headers)) {
-        this.#record(name, duration);
+        for (const [name, duration] of runtimeDurations(response.headers)) {
+          this.#record(name, duration);
+        }
+
+        // Record unsuccessful responses too: resolution errors omit timing headers
+        // from the host response, but the server trace must retain the evidence.
+        span.setAttributes(runtimeTransportAttributes(response, roundtripMs));
+
+        if (response.status >= 500) {
+          span.setStatus({ code: SpanStatusCode.ERROR });
+          throw new RuntimeResponseError(response);
+        }
+
+        return response;
+      });
+    } catch (error) {
+      if (error instanceof RuntimeResponseError) {
+        return error.response;
       }
 
-      // Record unsuccessful responses too: resolution errors omit timing headers
-      // from the host response, but the server trace must retain the evidence.
-      span.setAttributes(runtimeTransportAttributes(response, roundtripMs));
-
-      return response;
-    });
+      throw error;
+    }
+  };
 
   header() {
     return [...this.#maxima]

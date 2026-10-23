@@ -1,10 +1,28 @@
+import { SpanStatusCode, trace } from "@opentelemetry/api";
+import {
+  BasicTracerProvider,
+  InMemorySpanExporter,
+  SimpleSpanProcessor,
+} from "@opentelemetry/sdk-trace-base";
 import { asyncFixture } from "@patchsmith/config/testing";
-import { expect, it } from "vite-plus/test";
+import { afterEach, expect, it } from "vite-plus/test";
 
 import {
   runtimeTransportAttributes,
   ViewResolutionTimings,
 } from "./view-timing";
+
+const exporter = new InMemorySpanExporter();
+
+const provider = new BasicTracerProvider({
+  spanProcessors: [new SimpleSpanProcessor(exporter)],
+});
+
+afterEach(async () => {
+  trace.disable();
+  await provider.forceFlush();
+  exporter.reset();
+});
 
 it("keeps runtime phase maxima and session timing without forwarding arbitrary headers", async () => {
   let now = 0;
@@ -85,17 +103,58 @@ it("rejects malformed correlation headers and unbounded timing input", () => {
   });
 });
 
-it("keeps an unsuccessful fetch response and its timing available to the caller", async () => {
-  const failure = new Response("Unauthorized", {
-    headers: { "server-timing": "runtime_gateway;dur=2.0" },
-    status: 401,
-  });
+it.each([401, 503])(
+  "keeps an HTTP %s response and records its finished span",
+  async (status) => {
+    expect(trace.setGlobalTracerProvider(provider)).toBe(true);
+    let now = 0;
 
-  const timings = new ViewResolutionTimings(asyncFixture(() => failure));
-  const response = await timings.fetch("https://runtime.test");
+    const failure = new Response("Unauthorized", {
+      headers: { "server-timing": "runtime_gateway;dur=2.0" },
+      status,
+    });
 
-  expect(response).toBe(failure);
-  expect(response.status).toBe(401);
-  expect(await response.text()).toBe("Unauthorized");
-  expect(timings.header()).toContain("runtime_gateway_max;dur=2.0");
+    const timings = new ViewResolutionTimings(
+      asyncFixture(() => {
+        now += 10;
+
+        return failure;
+      }),
+      () => now
+    );
+
+    const response = await timings.fetch("https://runtime.test");
+
+    expect(response).toBe(failure);
+    expect(response.status).toBe(status);
+    expect(await response.text()).toBe("Unauthorized");
+    expect(timings.header()).toContain("runtime_gateway_max;dur=2.0");
+
+    await provider.forceFlush();
+    const spans = exporter.getFinishedSpans();
+    expect(spans).toHaveLength(1);
+    const [span] = spans;
+    expect(span?.name).toBe("runtime.views.fetch");
+    expect(span?.attributes).toMatchObject({
+      "http.response.status_code": status,
+      "patchsmith.runtime.roundtrip_ms": 10,
+      "patchsmith.runtime.runtime_gateway_ms": 2,
+      "patchsmith.runtime.transport_dispatch_ms": 8,
+    });
+    expect(span?.status.code).toBe(
+      status >= 500 ? SpanStatusCode.ERROR : SpanStatusCode.OK
+    );
+  }
+);
+
+it("preserves fetch rejections instead of treating them as HTTP responses", async () => {
+  const failure = new Error("Connection failed");
+
+  const timings = new ViewResolutionTimings(
+    asyncFixture(() => {
+      throw failure;
+    })
+  );
+
+  await expect(timings.fetch("https://runtime.test")).rejects.toBe(failure);
 });
