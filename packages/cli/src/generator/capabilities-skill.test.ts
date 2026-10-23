@@ -321,7 +321,8 @@ it("keeps responsive primitive references small without dropping the host's keys
     bindingsPath: "../../../src/patchsmith.gen.ts",
   });
 
-  expect(files["components/Box.md"]?.length).toBeLessThan(6000);
+  // Numeric spacing and size tokens expand the contract's literal value lists.
+  expect(files["components/Box.md"]?.length).toBeLessThan(8000);
   expect(files["components/Box.md"]).toContain('"accent", "surface"');
   expect(files["components/Box.md"]).toContain("responsive/state object");
   expect(files["styling.md"]).toContain('"md"');

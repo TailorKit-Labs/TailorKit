@@ -12,6 +12,8 @@ import type { PrimitiveName, PrimitivePropDefinition } from "./definition";
 import { resolveTheme } from "./theme";
 import type { PatchsmithTheme } from "./theme";
 
+export { defaultBreakpoints, primitiveDefaults } from "./theme";
+
 type Schema = v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>;
 
 type FieldValidators = Record<string, Schema>;

@@ -24,22 +24,22 @@ export const PressablePrototype = () => {
   const textColor = { ":disabled": "muted" } as const;
 
   return (
-    <Flex direction="column" gap="sm">
+    <Flex direction="column" gap="2">
       <Box>Pressable layouts</Box>
       <Box textColor="muted">
         Use Tab / Shift+Tab to focus. Enter activates on press; Space activates
         on release. Disabled examples leave the tab order. Pressed {presses}{" "}
         times.
       </Box>
-      <Flex align="center" gap="sm" wrap="wrap">
+      <Flex align="center" gap="2" wrap="wrap">
         <Pressable
           background={background}
           border="solid"
           borderColor={borderColor}
           disabled={disabled}
           onPress={countPress}
-          padding="sm"
-          radius="md"
+          padding="2"
+          radius="lg"
           textColor={textColor}
         >
           Inline action
@@ -48,8 +48,8 @@ export const PressablePrototype = () => {
           onPress={() => {
             setDisabled((value) => !value);
           }}
-          padding="sm"
-          radius="md"
+          padding="2"
+          radius="lg"
           background={{ ":hover": "hover" }}
         >
           {disabled ? "Enable examples" : "Disable examples"}
@@ -59,8 +59,8 @@ export const PressablePrototype = () => {
           background={background}
           disabled={disabled}
           onPress={countPress}
-          padding="sm"
-          radius="md"
+          padding="2"
+          radius="lg"
           textColor={textColor}
         >
           →
@@ -73,8 +73,8 @@ export const PressablePrototype = () => {
         disabled={disabled}
         layout="box"
         onPress={countPress}
-        padding={{ default: "sm", lg: "md" }}
-        radius="md"
+        padding={{ default: "2", lg: "4" }}
+        radius="lg"
         textColor={textColor}
         width="full"
       >
@@ -87,12 +87,12 @@ export const PressablePrototype = () => {
         border="solid"
         borderColor={borderColor}
         disabled={disabled}
-        gap="sm"
+        gap="2"
         justify="between"
         layout="flex"
         onPress={countPress}
-        padding="md"
-        radius="md"
+        padding="4"
+        radius="lg"
         textColor={textColor}
         width="full"
       >
@@ -108,11 +108,11 @@ export const PressablePrototype = () => {
         borderColor={borderColor}
         columns={2}
         disabled={disabled}
-        gap="sm"
+        gap="2"
         layout="grid"
         onPress={countPress}
-        padding="md"
-        radius="md"
+        padding="4"
+        radius="lg"
         textColor={textColor}
         width="full"
       >

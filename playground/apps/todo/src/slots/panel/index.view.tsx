@@ -117,16 +117,16 @@ const TodoPanel = () => {
   };
 
   return (
-    <Box padding="md" width="full">
-      <Flex direction="column" gap="lg">
-        <Flex direction="column" gap="xs">
+    <Box padding="4" width="full">
+      <Flex direction="column" gap="6">
+        <Flex direction="column" gap="1">
           <Box>Quick todos</Box>
           <Box textColor="muted">
             A small team checklist for the current workspace.
           </Box>
         </Flex>
 
-        <Flex align="center" gap="sm">
+        <Flex align="center" gap="2">
           <Input
             onValueChange={({ value }) => {
               setTitle(value);
@@ -154,9 +154,9 @@ const TodoPanel = () => {
           <Box textColor="muted">No todos yet.</Box>
         ) : null}
 
-        <Flex direction="column" gap="sm">
+        <Flex direction="column" gap="2">
           {todos.map((todo) => (
-            <Flex align="center" gap="sm" key={todo.id}>
+            <Flex align="center" gap="2" key={todo.id}>
               <Box grow="1">{todo.done ? `✓ ${todo.title}` : todo.title}</Box>
               <Button
                 disabled={pending}

@@ -163,9 +163,9 @@ export const CanvasPrototype = () => {
   const [instanceCount, setInstanceCount] = useState(0);
 
   return (
-    <Flex direction="column" gap="sm">
+    <Flex direction="column" gap="2">
       <Box>Experimental sandbox canvas · Chart.js {ChartJS.version}</Box>
-      <Flex gap="sm" wrap="wrap">
+      <Flex gap="2" wrap="wrap">
         <Button
           onClick={() => {
             setContinuous((value) => !value);

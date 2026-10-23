@@ -12,6 +12,8 @@ import type { PrimitiveName, PrimitivePropDefinition } from "./definition";
 import { resolveTheme } from "./theme";
 import type { PatchsmithTheme } from "./theme";
 
+export { defaultBreakpoints, primitiveDefaults } from "./theme";
+
 const isNumberValue = <TValue>(value: TValue): value is TValue & number =>
   typeof value === "number";
 
