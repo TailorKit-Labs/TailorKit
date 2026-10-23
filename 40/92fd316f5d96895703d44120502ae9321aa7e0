@@ -1,0 +1,77 @@
+.changeset/cloudflare-view-resolution.md
+  s_4db27b78bdf702::t_ffd2c01f60e89e 1-5
+apps/apps-worker/src/supervisor/source.ts
+  s_4db27b78bdf702::t_fc83e00afe1201 22-23
+apps/views-worker/README.md
+  s_4db27b78bdf702::t_ad1a385f34fd03 1-61
+apps/views-worker/package.json
+  s_4db27b78bdf702::t_5c3ba83f649672 1-45
+apps/views-worker/src/env.ts
+  s_4db27b78bdf702::t_e58241bc6508d5 1-54
+apps/views-worker/src/handler.test.ts
+  s_4db27b78bdf702::t_c01548dcb5fe37 1-394
+apps/views-worker/src/handler.ts
+  s_4db27b78bdf702::t_8e4bf0b2521f65 1-194
+apps/views-worker/src/index.ts
+  s_4db27b78bdf702::t_46cbcf105ac274 1-92
+apps/views-worker/src/runtime.ts
+  s_4db27b78bdf702::t_cad81719eb46db 1-53
+apps/views-worker/src/storage.ts
+  s_4db27b78bdf702::t_8103ae0b4a0d76 1-52
+apps/views-worker/tsconfig.json
+  s_4db27b78bdf702::t_8ac2581eb15a8d 1-15
+apps/views-worker/wrangler.jsonc
+  s_4db27b78bdf702::t_1c13e10a1e31bb 1-50
+packages/api-platform/package.json
+  s_4db27b78bdf702::t_80075fbd47bc57 38
+packages/api-platform/src/routes/apps.ts
+  s_4db27b78bdf702::t_4952838f657c7a 5,8,23-25,27-31,61-62,91-93,108-109,112-118
+packages/api-platform/src/routes/runtime.ts
+  s_4db27b78bdf702::t_61fd3738e7c10b 16-24,59-64
+packages/api-platform/src/runtime/discovery.ts
+  s_4db27b78bdf702::t_a3e21dc2055cd6 1-65
+packages/api-platform/src/runtime/resolve.ts
+  s_4db27b78bdf702::t_a6eca766dfe3f0 1-127
+packages/api-platform/src/runtime/session.ts
+  s_4db27b78bdf702::t_e46efc3d2d1469 1-116
+packages/api-utils/src/app-asset-url.ts
+  s_4db27b78bdf702::t_3fe213a3c67896 25-26,30-39,43
+packages/api-utils/src/app-auth/tokens.ts
+  s_4db27b78bdf702::t_a25699b94232b8 17-28
+packages/auth/package.json
+  s_4db27b78bdf702::t_165e19b66f24c5 30
+packages/auth/src/index.ts
+  s_4db27b78bdf702::t_90ab11c36722fe 31,287
+packages/auth/src/project-host.ts
+  s_4db27b78bdf702::t_9a4140829ebc41 1-42
+packages/core/src/server/context.ts
+  s_4db27b78bdf702::t_a501ba0c251925 32,58,89
+packages/core/src/server/handler.ts
+  s_4db27b78bdf702::t_70db64101650a1 90-111,193
+packages/core/src/server/routes/views.ts
+  s_4db27b78bdf702::t_4d38f9ba499a86 235-237
+packages/core/src/server/types.ts
+  s_4db27b78bdf702::t_93233258a97460 89-90
+packages/core/src/server/views-backend.test.ts
+  s_4db27b78bdf702::t_73120d6703aa0a 1-82
+packages/env/src/index.ts
+  s_4db27b78bdf702::t_1b0d1ae56273c1 69,73-75,78
+pnpm-lock.yaml
+  s_4db27b78bdf702::t_367dd41162f2ad 436-499
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4092fd316f5d96895703d44120502ae9321aa7e0",
+  "prompts": {},
+  "sessions": {
+    "s_4db27b78bdf702": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a165f1-6250-7f32-8922-4178f00a23c0",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
