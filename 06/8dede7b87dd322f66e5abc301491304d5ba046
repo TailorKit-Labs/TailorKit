@@ -1,0 +1,27 @@
+apps/apps-worker/README.md
+  s_4db27b78bdf702::t_dc83403029356f 217
+apps/apps-worker/src/dynamic-workers/facet.ts
+  s_4db27b78bdf702::t_32f3530f1ebdcf 37-41
+apps/apps-worker/src/installation.ts
+  s_4db27b78bdf702::t_30a6a9d7e94595 38,77,82-90,416
+apps/apps-worker/src/tests/integration.test.mjs
+  s_4db27b78bdf702::t_28bb8f88a422eb 239-244,283-290,974-986,988-989
+apps/apps-worker/src/worker.test.ts
+  s_4db27b78bdf702::t_57ea917ca6cd7e 134-135,175-180,263,669
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "068dede7b87dd322f66e5abc301491304d5ba046",
+  "prompts": {},
+  "sessions": {
+    "s_4db27b78bdf702": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a165f1-6250-7f32-8922-4178f00a23c0",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
