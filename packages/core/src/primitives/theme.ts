@@ -55,7 +55,7 @@ export interface PatchsmithTheme {
     /**
      * Corner radius tokens used by the `radius` primitive prop.
      *
-     * Defaults: `none`, `2xs`, `xs`, `sm`, `md`, `lg`, `xl`, `2xl`, `3xl`.
+     * Defaults: `none`, `2xs`, `xs`, `sm`, `md`, `lg`, `xl`, `2xl`, `3xl`, `full`.
      */
     radius?: Record<string, string>;
     /**
@@ -125,6 +125,7 @@ export const defaultRadius = {
   "2xl": "1.5rem",
   "2xs": "0.125rem",
   "3xl": "2rem",
+  full: "100%",
   lg: "0.75rem",
   md: "0.5rem",
   none: "0rem",
