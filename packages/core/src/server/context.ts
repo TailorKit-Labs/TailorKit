@@ -29,6 +29,7 @@ export interface Context {
     input: ToolExecutionInput
   ) => Promise<Response>;
   agentInstructions?: string;
+  runtimeResolveBaseUrl?: string;
   platform: PlatformClient;
   platformHeaders: Record<string, string>;
   request: Request;
@@ -54,6 +55,7 @@ export interface CreateContextOptions {
   schemaSerializer?: SchemaSerializer;
   cliAuthSignInPath?: `/${string}`;
   agentInstructions?: string;
+  runtimeResolveBaseUrl?: string;
   platform: PlatformClient;
   platformHeaders?: PatchsmithPlatformOptions["headers"];
   request: Request;
@@ -84,6 +86,7 @@ export const createContext = async (
     platformHeaders,
     publicOrigin: options.publicOrigin,
     request: options.request,
+    runtimeResolveBaseUrl: options.runtimeResolveBaseUrl,
     schema: options.schema,
     schemaSerializer: options.schemaSerializer,
     scopeSchemas: options.scopeSchemas,

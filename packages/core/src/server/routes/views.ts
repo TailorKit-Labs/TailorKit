@@ -232,6 +232,9 @@ export const views = o
             }),
           try: async (signal) =>
             await appsRuntimeResolve({
+              baseUrl:
+                context.runtimeResolveBaseUrl ??
+                context.platform.getConfig().baseUrl,
               body: {
                 appIds:
                   input.appIds === undefined ? undefined : [...input.appIds],

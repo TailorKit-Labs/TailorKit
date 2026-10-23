@@ -87,6 +87,28 @@ export const createPatchsmithServer = <
     views: options.views,
   });
 
+  const runtimeResolveBaseUrl = options.$internal?.runtimeResolveBaseUrl;
+
+  if (runtimeResolveBaseUrl !== undefined) {
+    const target = new URL(runtimeResolveBaseUrl);
+
+    const local =
+      target.protocol === "http:" &&
+      ["localhost", "127.0.0.1", "[::1]"].includes(target.hostname);
+
+    if (
+      (!local && target.protocol !== "https:") ||
+      target.username ||
+      target.password ||
+      target.search ||
+      target.hash
+    ) {
+      throw new Error(
+        "Runtime resolution base URL requires HTTPS and no credentials, query, or fragment"
+      );
+    }
+  }
+
   const platformBaseUrl =
     options.$internal?.platformBaseUrl ?? defaultPlatformBaseUrl;
 
@@ -168,6 +190,7 @@ export const createPatchsmithServer = <
       platformHeaders,
       publicOrigin,
       request,
+      runtimeResolveBaseUrl,
       schema,
       schemaSerializer: options.schemaSerializer,
       scopeSchemas,
