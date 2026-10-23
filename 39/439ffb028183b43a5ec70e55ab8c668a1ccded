@@ -1,0 +1,19 @@
+packages/core/src/primitives/primitives.test.ts
+  s_e6f85ecb8d5a09::t_927d7f4b871052 50,71-74,218,220
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "39439ffb028183b43a5ec70e55ab8c668a1ccded",
+  "prompts": {},
+  "sessions": {
+    "s_e6f85ecb8d5a09": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a167ae-b95e-7800-9b72-bafbaa4f1935",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
