@@ -1,0 +1,45 @@
+packages/app/vite.config.ts
+  s_c2a0ad27d22dd0::t_86913586e7cead 17
+packages/patchsmith/src/internal-server.ts
+  s_c2a0ad27d22dd0::t_6b13faf9743859 1-4
+  s_c2a0ad27d22dd0::t_86913586e7cead 5
+packages/patchsmith/vite.config.ts
+  s_c2a0ad27d22dd0::t_86913586e7cead 11
+packages/vite/src/builder/server.test.ts
+  s_c2a0ad27d22dd0::t_86913586e7cead 615-616
+packages/vite/src/index.ts
+  s_c2a0ad27d22dd0::t_86913586e7cead 329
+.changeset/host-app-hooks.md
+  s_c2a0ad27d22dd0::t_86913586e7cead 10
+packages/app/src/server.ts
+  s_c2a0ad27d22dd0::t_86913586e7cead 31,33
+packages/patchsmith/package.json
+  s_c2a0ad27d22dd0::t_86913586e7cead 52-55
+packages/app/package.json
+  s_c2a0ad27d22dd0::t_86913586e7cead 51-54
+packages/app/src/server/internal.ts
+  s_c2a0ad27d22dd0::t_86913586e7cead 1-17,22-89
+  s_c2a0ad27d22dd0::t_6b13faf9743859 18-21
+packages/vite/src/builder/server.ts
+  s_c2a0ad27d22dd0::t_86913586e7cead 135-136,173-176
+packages/app/src/server/hooks.ts
+  s_c2a0ad27d22dd0::t_86913586e7cead 3
+apps/apps-worker/src/runtime/execution.test.ts
+  s_c2a0ad27d22dd0::t_074efd69535186 12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5e8d941c0edbdb4159cb890c6c490b21675c4cbb",
+  "prompts": {},
+  "sessions": {
+    "s_c2a0ad27d22dd0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a167a9-a1ad-79c3-94fe-22a9d7acea06",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
