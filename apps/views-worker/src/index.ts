@@ -17,7 +17,7 @@ import { sharedStorage } from "./storage";
 
 export default {
   async fetch(
-    request: Request,
+    request: Request & { cf?: { colo?: string } },
     bindings: Parameters<typeof readEnv>[0]
   ): Promise<Response> {
     if (new URL(request.url).pathname !== resolutionPath) {
@@ -31,7 +31,11 @@ export default {
       });
     }
 
+    const started = performance.now();
     let client: Client | undefined;
+    let connectMs = 0;
+    let closeMs = 0;
+    let response: Response;
 
     try {
       projectKey(request);
@@ -49,7 +53,9 @@ export default {
         connectionTimeoutMillis: 5000,
         query_timeout: 5000,
       });
+      const connectStarted = performance.now();
       await client.connect();
+      connectMs = performance.now() - connectStarted;
       const database = drizzle({ client, relations });
 
       const auth = createProjectHostVerifier({
@@ -59,7 +65,7 @@ export default {
         secret: env.AUTH_SECRET,
       });
 
-      return await resolveRequest(request, input, {
+      response = await resolveRequest(request, input, {
         assetDomain: env.ASSET_DOMAIN,
         database,
         limit: storage.limit,
@@ -76,17 +82,34 @@ export default {
       });
     } catch (error) {
       if (error instanceof ORPCError) {
-        return errorResponse(error);
+        response = errorResponse(error);
+      } else {
+        // Do not log a Postgres connection string, project key, or private signing material.
+        console.error("Cloudflare view resolution failed");
+        response = errorResponse(new ORPCError("SERVICE_UNAVAILABLE"));
       }
-
-      // Do not log a Postgres connection string, project key, or private signing material.
-      console.error("Cloudflare view resolution failed");
-
-      return errorResponse(new ORPCError("SERVICE_UNAVAILABLE"));
     } finally {
+      const closeStarted = performance.now();
       await client?.end().catch(() => {
         console.error("Could not close view resolution database client");
       });
+      closeMs = performance.now() - closeStarted;
     }
+
+    response.headers.append(
+      "server-timing",
+      `platform_connect;dur=${connectMs.toFixed(1)}, platform_close;dur=${closeMs.toFixed(1)}, platform_request;dur=${(performance.now() - started).toFixed(1)}`
+    );
+
+    const ingress = request.cf?.colo;
+
+    if (ingress !== undefined && /^[A-Z]{3}$/u.test(ingress)) {
+      response.headers.append(
+        "server-timing",
+        `platform_ingress;desc="${ingress}"`
+      );
+    }
+
+    return response;
   },
 };
