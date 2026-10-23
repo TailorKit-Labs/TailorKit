@@ -86,6 +86,8 @@ export interface PatchsmithServerBaseOptions<
       input: ToolExecutionInput
     ) => Promise<Response>;
     platformBaseUrl?: PatchsmithPlatformOptions["baseUrl"];
+    /** Override only /apps/runtime/resolve, for the Cloudflare experiment. Server-side only. */
+    runtimeResolveBaseUrl?: string;
     platformFetch?: typeof fetch;
     platformHeaders?: PatchsmithPlatformOptions["headers"];
   };

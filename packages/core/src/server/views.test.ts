@@ -129,6 +129,7 @@ it("makes one platform request with authenticated scopes and validated composed 
   expect(requests[0]?.url).toBe(
     "https://patchsmith.io/api/platform/apps/runtime/resolve"
   );
+  expect(requests[0]?.redirect).toBe("error");
   expect(requests[0]?.headers.get("authorization")).toBe("Bearer project-key");
   expect(await requests[0]?.json()).toEqual({
     contexts: [
