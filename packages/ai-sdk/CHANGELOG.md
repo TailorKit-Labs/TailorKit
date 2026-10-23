@@ -1,5 +1,14 @@
 # @patchsmith/ai-sdk
 
+## 0.1.0-beta.64
+
+### Patch Changes
+
+- Updated dependencies [cb4001c]
+- Updated dependencies [39bb8e4]
+- Updated dependencies [ed31e0e]
+  - @patchsmith/core@0.1.0-beta.64
+
 ## 0.1.0-beta.63
 
 ### Patch Changes
