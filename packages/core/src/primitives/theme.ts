@@ -70,7 +70,7 @@ export interface PatchsmithTheme {
     /**
      * Spacing tokens used by the `padding`, `margin`, and `gap` primitive props.
      *
-     * Tailwind spacing tokens: `0`, `0.5`, `1`, `1.5`, `2`, `2.5`, `3`,
+     * Defaults to `0`, `0.5`, `1`, `1.5`, `2`, `2.5`, `3`,
      * `3.5`, `4`–`12`, `14`, `16`, `18`, `20`, `24`, `28`, `32`, `36`,
      * `40`, `44`, `48`, `52`, `56`, `60`, `64`, `72`, `80`, `96`, and `px`.
      * Numeric tokens use a `0.25rem` unit, so `4` is `1rem`.
