@@ -34,7 +34,7 @@ interface SerializedDomViewProps extends ViewDataFields {
 }
 
 interface CompiledViewMetadata {
-  instances?: { resolver: string };
+  instances?: { cache?: "static"; resolver: string };
 }
 
 export interface ViewInstance<TData = unknown> {
@@ -50,18 +50,27 @@ export interface InstanceResolverContext<TPath extends AppViewPath> {
   queries: FunctionCalls<PatchsmithServerFunctions, "query">;
 }
 
-export interface ViewInstances<
+/** Static instances are evaluated during the build and published with the deployment. */
+export type ViewInstances<
   TPath extends AppViewPath,
   TSchema extends StandardSchemaV1,
-> {
-  dataSchema: TSchema;
-  /** Runs on the app server. Only registered queries are available. */
-  resolve: (
-    context: InstanceResolverContext<TPath>
-  ) =>
-    | ViewInstance<StandardSchemaV1.InferInput<TSchema>>[]
-    | Promise<ViewInstance<StandardSchemaV1.InferInput<TSchema>>[]>;
-}
+> = { dataSchema: TSchema } & (
+  | {
+      cache: "static";
+      resolve: () =>
+        | ViewInstance<StandardSchemaV1.InferInput<TSchema>>[]
+        | Promise<ViewInstance<StandardSchemaV1.InferInput<TSchema>>[]>;
+    }
+  | {
+      cache?: "none";
+      /** Runs on the app server. Only registered queries are available. */
+      resolve: (
+        context: InstanceResolverContext<TPath>
+      ) =>
+        | ViewInstance<StandardSchemaV1.InferInput<TSchema>>[]
+        | Promise<ViewInstance<StandardSchemaV1.InferInput<TSchema>>[]>;
+    }
+);
 
 // oxlint-disable-next-line typescript/no-redundant-type-constituents -- Declaration merging may add symbol or numeric keys; the public view and slot names remain string keys.
 export type SlotName = keyof PatchsmithSlots & string;
@@ -121,7 +130,7 @@ export interface ViewDefinition<
   /** The selected instance, with data inferred from instances.dataSchema. */
   useInstance: () => ViewInstance<TData>;
   /** Build-only lookup key connecting this view to its extracted server implementation. */
-  instances?: { resolver: string };
+  instances?: { cache?: "static"; resolver: string };
 }
 
 export type SlotView<TSlot extends SlotName> = PatchsmithSlots[TSlot] extends {
@@ -134,7 +143,7 @@ type SlotInstanceDefinition<TSlot extends SlotName> =
   PatchsmithSlots[TSlot] extends {
     multiple: true;
   }
-    ? { instances: { resolver: string } }
+    ? { instances: { cache?: "static"; resolver: string } }
     : { instances?: never };
 
 type SlotDefinitions = {
@@ -232,7 +241,7 @@ export function defineView<
   // SAFETY: Generated bindings associate this view path with its context and instance schema; the adapter retains that relationship while erasing renderer generics.
   const instances =
     /* oxlint-disable typescript/no-unsafe-type-assertion -- Generated bindings associate this view path with its context and instance schema; the adapter retains that relationship while erasing renderer generics. */
-    options.instances as { resolver?: string } | undefined;
+    options.instances as { cache?: "static"; resolver?: string } | undefined;
 
   /* oxlint-enable typescript/no-unsafe-type-assertion */
   if (
@@ -287,6 +296,10 @@ export function defineView<
     instances?.resolver !== ""
   ) {
     instanceMetadata.instances = { resolver: instances.resolver };
+
+    if (instances.cache === "static") {
+      instanceMetadata.instances.cache = "static";
+    }
   }
 
   // SAFETY: Generated bindings associate this view path with its context and instance schema; the adapter retains that relationship while erasing renderer generics.

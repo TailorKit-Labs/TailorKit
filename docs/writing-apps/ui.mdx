@@ -81,6 +81,7 @@ const view = defineView({
   view: "/",
   component: Tile,
   instances: {
+    cache: "static",
     dataSchema: z.object({ title: z.string(), value: z.number() }),
     resolve: () => [
       {
@@ -105,7 +106,17 @@ function Tile() {
 export default view;
 ```
 
-`resolve` runs on the app server. It can use the current context and registered queries to load entries. `useInstance()` reads the selected entry in the UI. The surrounding dashboard decides how to use `position` metadata.
+`useInstance()` reads the selected entry in the UI. The surrounding dashboard decides how to use `position` metadata.
+
+### Choose when instances resolve
+
+Use `cache: "static"` for fixed entries like the example above. The build calls the resolver once, validates each entry with `dataSchema`, and stores the parsed results in the deployment manifest. The platform returns those entries during discovery without issuing an app session or calling the Cloudflare app runtime. A new deployment replaces the snapshot.
+
+Static resolvers can be async and can import build-time helpers. They take no arguments: request context, identity, registered queries, and cancellation signals are unavailable. Keep their parsed data and metadata JSON-compatible. Dates, big integers, functions, cycles, and `undefined` values fail the build. Each resolver can return up to 1,000 entries with unique, nonempty keys; an empty array is a valid static snapshot. Resolver errors and invalid output fail the build without falling back to runtime execution.
+
+Static output is deployment metadata shared by installations of that deployment. Keep private values out of the returned entries. Host authentication, scope filtering, view selection, and context readiness checks still apply. Queries made by the rendered UI still use the app runtime.
+
+For entries that depend on a request or app data, omit `cache` or set `cache: "none"`. The resolver then runs on the app server and can use the current context, identity, and registered queries. `"none"` controls server-side resolver execution; the host client's existing response cache still applies independently. Runtime cache lifetime objects are not supported yet.
 
 For a repeatable page slot, use the same pattern with keys such as `reports` and `activity`, and metadata such as `{ label: "Reports", icon: "chart" }` for sidebar links.
 
@@ -120,7 +131,8 @@ Import `defineView` from `patchsmith/client`. The build discovers `.view.tsx` fi
 | `component` | Required. The UI component; use `view.useContext()` to read its context. |
 | `instances` | Required for `multiple: true` slots; omitted for single-instance slots. |
 | `instances.dataSchema` | Validates each entry's data. |
-| `instances.resolve` | Runs on the app server and returns entries, or a promise of entries. |
+| `instances.cache` | `"none"` (default) resolves on the app server; `"static"` resolves during the build. |
+| `instances.resolve` | Returns entries or a promise of entries. Static resolvers take no arguments. |
 
 The resolver receives `{ context, identity, signal, queries }`. It can call registered queries; actions and mutations are unavailable there.
 

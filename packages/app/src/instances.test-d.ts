@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { defineRouter, fn } from "./server";
 import { defineView } from "./views";
+import type { InstanceResolverContext } from "./views";
 
 const server = defineRouter({
   reports: {
@@ -100,3 +101,57 @@ const _rawCount: string = selected.data.count;
 
 // @ts-expect-error instance data fields are inferred from the schema
 void selected.data.missing;
+
+const staticView = defineView({
+  component: () => null,
+  instances: {
+    cache: "static",
+    dataSchema: z.object({ reportId: z.string() }),
+    resolve: () => [
+      { data: { reportId: "reports" }, key: "reports", metadata: {} },
+    ],
+  },
+  slot: "page",
+  view: "/",
+});
+
+const staticId: string = staticView.useInstance().data.reportId;
+
+void staticId;
+
+defineView({
+  component: () => null,
+  instances: {
+    cache: "none",
+    dataSchema: z.object({ id: z.string() }),
+    resolve: ({ identity }) => [
+      { data: { id: identity.installationId }, key: "reports", metadata: {} },
+    ],
+  },
+  slot: "page",
+  view: "/",
+});
+
+defineView({
+  component: () => null,
+  // @ts-expect-error Static resolvers have no request context or query capabilities.
+  instances: {
+    cache: "static",
+    dataSchema: z.object({}),
+    resolve: (_context: InstanceResolverContext<"/">) => [],
+  },
+  slot: "page",
+  view: "/",
+});
+
+defineView({
+  component: () => null,
+  instances: {
+    cache: "static",
+    dataSchema: z.object({ id: z.string() }),
+    // @ts-expect-error Static data must match the input of dataSchema.
+    resolve: () => [{ data: { id: 42 }, key: "reports", metadata: {} }],
+  },
+  slot: "page",
+  view: "/",
+});

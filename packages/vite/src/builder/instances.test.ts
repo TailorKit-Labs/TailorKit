@@ -157,3 +157,55 @@ it("rejects dynamic definitions rather than leaving a resolver in the browser", 
     )
   ).rejects.toThrow("module scope");
 });
+
+it("extracts an explicit static policy while retaining runtime behavior for none", async () => {
+  const staticSource = source
+    .replace("dataSchema:", 'cache: "static", dataSchema:')
+    .replace("async ({ queries, context }) => {", "async () => {")
+    .replace(
+      "const rows = await queries.reports.list({ user: context.user.id });",
+      'const rows = [{ id: "reports" }];'
+    );
+
+  const result = await extractInstances(
+    "/app/src/page.tsx",
+    staticSource,
+    "/app"
+  );
+
+  expect(result?.browser).toContain('cache: "static"');
+  expect(result?.browser).not.toContain("SERVER_ONLY_SECRET");
+  expect(result?.server).toContain("SERVER_ONLY_SECRET");
+
+  const runtime = await extractInstances(
+    "/app/src/page.tsx",
+    source.replace("dataSchema:", 'cache: "none", dataSchema:'),
+    "/app"
+  );
+
+  expect(runtime?.browser).not.toContain("cache:");
+  expect(runtime?.server).toContain("queries.reports.list");
+});
+
+it.each(['"infinity"', "policy", "{}", "undefined"])(
+  "rejects unsupported or nonliteral cache policies: %s",
+  async (cache) => {
+    await expect(
+      extractInstances(
+        "/app/src/page.tsx",
+        source.replace("dataSchema:", `cache: ${cache}, dataSchema:`),
+        "/app"
+      )
+    ).rejects.toThrow('instances.cache must be the literal "none" or "static"');
+  }
+);
+
+it("rejects request arguments in static resolvers", async () => {
+  await expect(
+    extractInstances(
+      "/app/src/page.tsx",
+      source.replace("dataSchema:", 'cache: "static", dataSchema:'),
+      "/app"
+    )
+  ).rejects.toThrow("cannot receive runtime arguments");
+});

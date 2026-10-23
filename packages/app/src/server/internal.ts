@@ -87,3 +87,5 @@ export const withHooks = (
     }),
   });
 };
+
+export { resolveStaticInstances } from "./instances";

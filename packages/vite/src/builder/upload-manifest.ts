@@ -1,5 +1,20 @@
 import * as v from "valibot";
 
+export const staticInstancesSchema = v.pipe(
+  v.array(
+    v.object({
+      data: v.unknown(),
+      key: v.pipe(v.string(), v.minLength(1)),
+      metadata: v.record(v.string(), v.unknown()),
+    })
+  ),
+  v.maxLength(1000),
+  v.check(
+    (items) => new Set(items.map((item) => item.key)).size === items.length,
+    "Instance keys must be unique"
+  )
+);
+
 export const patchsmithUploadManifestSchema = v.object({
   appId: v.optional(v.pipe(v.string(), v.minLength(1))),
   assets: v.object({
@@ -45,12 +60,20 @@ export const patchsmithUploadManifestSchema = v.object({
   views: v.optional(
     v.pipe(
       v.array(
-        v.object({
-          disabled: v.optional(v.literal(true)),
-          instances: v.optional(v.literal(true)),
-          path: v.pipe(v.string(), v.startsWith("/"), v.maxLength(1024)),
-          slot: v.pipe(v.string(), v.minLength(1), v.maxLength(255)),
-        })
+        v.pipe(
+          v.object({
+            disabled: v.optional(v.literal(true)),
+            instances: v.optional(v.literal(true)),
+            path: v.pipe(v.string(), v.startsWith("/"), v.maxLength(1024)),
+            slot: v.pipe(v.string(), v.minLength(1), v.maxLength(255)),
+            staticInstances: v.optional(staticInstancesSchema),
+          }),
+          v.check(
+            (view) =>
+              view.staticInstances === undefined || view.instances === true,
+            "Static entries require an instance view"
+          )
+        )
       ),
       v.maxLength(1000)
     )

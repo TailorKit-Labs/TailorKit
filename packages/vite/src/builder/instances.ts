@@ -42,6 +42,7 @@ interface Resolver {
   instances: Property;
   resolve: Property;
   schema: Property;
+  cache?: "static";
 }
 
 export interface InstanceModule {
@@ -50,6 +51,7 @@ export interface InstanceModule {
 }
 
 export interface InstanceRegistration {
+  cache?: "static";
   slot: string;
   path: string;
   resolver: string;
@@ -495,6 +497,62 @@ const renderImports = (
     })
     .join("\n");
 
+const readInstanceConfig = (
+  config: ESTree.ObjectExpression,
+  fail: (message: string) => never
+) => {
+  if (
+    config.properties.some(
+      (p) => p.type !== "Property" || p.computed || p.kind !== "init"
+    )
+  ) {
+    fail(
+      "Instance options cannot contain spreads, getters or computed properties."
+    );
+  }
+
+  const resolve = property(config, "resolve");
+  const schema = property(config, "dataSchema");
+
+  if (
+    !resolve ||
+    !schema ||
+    resolve.method ||
+    !["ArrowFunctionExpression", "FunctionExpression"].includes(
+      resolve.value.type
+    )
+  ) {
+    fail("instances requires dataSchema and an inline resolve function.");
+  }
+
+  const cache = property(config, "cache")?.value;
+
+  if (
+    cache &&
+    (cache.type !== "Literal" ||
+      !["none", "static"].includes(String(cache.value)))
+  ) {
+    fail('instances.cache must be the literal "none" or "static".');
+  }
+
+  const isStatic = cache?.type === "Literal" && cache.value === "static";
+
+  if (
+    isStatic &&
+    (resolve.value.type === "ArrowFunctionExpression" ||
+      resolve.value.type === "FunctionExpression") &&
+    resolve.value.params.length
+  ) {
+    fail("Static instance resolvers cannot receive runtime arguments.");
+  }
+
+  return {
+    cache: isStatic ? ("static" as const) : undefined,
+    resolve: requireValue(resolve),
+    schema: requireValue(schema),
+  };
+};
+
 export const extractInstances = async (
   filename: string,
   initialSource: string,
@@ -558,31 +616,10 @@ export const extractInstances = async (
       fail("instances must be an inline object with dataSchema and resolve.");
     }
 
-    const config = instances.value;
-
-    if (
-      config.properties.some(
-        (p) => p.type !== "Property" || p.computed || p.kind !== "init"
-      )
-    ) {
-      fail(
-        "Instance options cannot contain spreads, getters or computed properties."
-      );
-    }
-
-    const resolve = property(config, "resolve");
-    const schema = property(config, "dataSchema");
-
-    if (
-      !resolve ||
-      !schema ||
-      resolve.method ||
-      !["ArrowFunctionExpression", "FunctionExpression"].includes(
-        resolve.value.type
-      )
-    ) {
-      fail("instances requires dataSchema and an inline resolve function.");
-    }
+    const { cache, resolve, schema } = readInstanceConfig(
+      instances.value,
+      fail
+    );
 
     const name = `i${createHash("sha256")
       .update(
@@ -600,6 +637,7 @@ export const extractInstances = async (
     }
 
     resolvers.push({
+      cache,
       call: node,
       instances,
       name,
@@ -674,7 +712,7 @@ export const extractInstances = async (
     browserSource = `${browserSource.slice(
       0,
       r.instances.value.start
-    )}{ resolver: ${JSON.stringify(r.name)} }${browserSource.slice(
+    )}{ ${r.cache === "static" ? 'cache: "static", ' : ""}resolver: ${JSON.stringify(r.name)} }${browserSource.slice(
       r.instances.value.end
     )}`;
   }

@@ -637,3 +637,115 @@ it("does not turn interruption after a completed app into a partial success", as
     }).pipe(Effect.provide(TestClock.layer()))
   );
 });
+
+it("returns populated and empty static snapshots without issuing sessions or contacting the runtime", async () => {
+  const options = setup();
+
+  const staticApp = {
+    ...app,
+    views: [{ ...customerView, staticInstances: [instance] }],
+  };
+
+  const emptyApp = {
+    ...app,
+    id: "empty",
+    views: [{ ...customerView, staticInstances: [] }],
+  };
+
+  expect(
+    await resolveRuntimeViews([staticApp, emptyApp], input, options)
+  ).toEqual({
+    data: [{ ...instance, app: staticApp }],
+    status: "ready",
+    warnings: [],
+  });
+  expect(options.createSession).not.toHaveBeenCalled();
+  expect(options.fetch).not.toHaveBeenCalled();
+});
+
+it("uses the nearest enabled view when mixing static and runtime declarations", async () => {
+  const options = setup();
+
+  const staticRoot = {
+    ...rootView,
+    staticInstances: [{ ...instance, key: "static" }],
+  };
+
+  const installation = { ...app, views: [staticRoot, customerView] };
+  expect(
+    await resolveRuntimeViews([installation], input, options)
+  ).toMatchObject({ data: [{ key: "report" }], status: "ready" });
+  expect(options.createSession).toHaveBeenCalledOnce();
+
+  const disabled = {
+    ...app,
+    views: [staticRoot, { ...customerView, disabled: true as const }],
+  };
+
+  expect(await resolveRuntimeViews([disabled], input, options)).toMatchObject({
+    data: [{ key: "static" }],
+    status: "ready",
+  });
+  expect(options.createSession).toHaveBeenCalledOnce();
+});
+
+it.each(["loading", "error"] as const)(
+  "preserves selected context %s checks for static entries",
+  async (status) => {
+    const options = setup();
+
+    const staticApp = {
+      ...app,
+      views: [{ ...customerView, staticInstances: [instance] }],
+    };
+
+    const run = resolveRuntimeViews(
+      [staticApp],
+      { ...input, contexts: [{ path: "/customers", status }] },
+      options
+    );
+
+    if (status === "loading") {
+      expect(await run).toEqual({ status: "loading" });
+    } else {
+      await expect(run).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    }
+
+    expect(options.createSession).not.toHaveBeenCalled();
+  }
+);
+
+it.each([{ entries: [] }, { entries: [instance] }])(
+  "retains a completed static snapshot when a dynamic sibling times out: %j",
+  async ({ entries }) => {
+    const options = setup();
+    options.createSession.mockReturnValue(
+      Promise.withResolvers<Session>().promise
+    );
+
+    const staticApp = {
+      ...app,
+      id: "static",
+      views: [{ ...customerView, staticInstances: entries }],
+    };
+
+    await runPromise(
+      Effect.gen(function* staticDeadlineTest() {
+        const fiber = yield* resolveRuntimeViewsEffect(
+          [staticApp, app],
+          input,
+          options
+        ).pipe(Effect.forkChild);
+
+        yield* TestClock.adjust(1000);
+        expect(yield* Fiber.join(fiber)).toEqual({
+          data: entries.map((entry) => ({ ...entry, app: staticApp })),
+          status: "ready",
+          warnings: [warning(app.id)],
+        });
+        expect(options.createSession).toHaveBeenCalledExactlyOnceWith(app);
+        expect(options.fetch).not.toHaveBeenCalled();
+      }).pipe(Effect.provide(TestClock.layer()))
+    );
+  }
+);

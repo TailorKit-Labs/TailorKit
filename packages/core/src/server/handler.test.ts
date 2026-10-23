@@ -1113,7 +1113,24 @@ describe("createPatchsmithServer", () => {
     });
 
     const views = [
-      { instances: true as const, path: "/", slot: "page" },
+      {
+        instances: true as const,
+        path: "/",
+        slot: "page",
+        staticInstances: [
+          {
+            data: { section: "reports" },
+            key: "reports",
+            metadata: { label: "Reports" },
+          },
+        ],
+      },
+      {
+        instances: true as const,
+        path: "/empty",
+        slot: "page",
+        staticInstances: [],
+      },
       { path: "/", slot: "panel" },
       { disabled: true as const, path: "/disabled", slot: "page" },
     ];

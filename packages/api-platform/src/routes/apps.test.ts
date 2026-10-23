@@ -379,6 +379,90 @@ describe("platform appRouter", () => {
     }
   });
 
+  it("discovers authorized static entries and follows deployment changes without runtime configuration", async () => {
+    const entry = {
+      data: { section: "reports" },
+      key: "reports",
+      metadata: { label: "Reports" },
+    };
+
+    const views = [
+      {
+        instances: true as const,
+        path: "/",
+        slot: "page",
+        staticInstances: [entry],
+      },
+    ];
+
+    const installation = await seedRuntimeApp("staticresolve", views);
+    await seedRuntimeApp("staticstage", views, stagingScope);
+    await seedRuntimeApp(
+      "staticforeign",
+      views,
+      productionScope,
+      createContext({
+        project: { ...createContext().project, id: otherProjectId },
+      })
+    );
+
+    const input = {
+      body: {
+        contexts: [{ context: {}, path: "/", status: "ready" as const }],
+        scopes: [productionScope],
+        slot: "page",
+        subjectId: "principal",
+        toolUrl: "https://host.test/api/patchsmith/tools/execute",
+      },
+    };
+
+    const result = await call(appRouter.runtimeResolve, input, {
+      context: createContext(),
+    });
+
+    expect(result.body).toMatchObject({
+      data: [{ ...entry, app: { id: installation.app.id } }],
+      status: "ready",
+      warnings: [],
+    });
+    expect(JSON.stringify(result.body)).not.toContain("staticInstances");
+    expect(testState.issueToken).not.toHaveBeenCalled();
+
+    const [next] = await db
+      .insert(appDeployment)
+      .values({
+        appId: installation.app.id,
+        shortId: "staticnext00",
+        status: "published",
+        views: [
+          {
+            ...views[0],
+            instances: true,
+            path: "/",
+            slot: "page",
+            staticInstances: [],
+          },
+        ],
+      })
+      .returning();
+
+    if (!next) {
+      throw new Error("Expected next deployment");
+    }
+
+    await db
+      .update(appTable)
+      .set({ currentDeploymentId: next.id })
+      .where(eq(appTable.id, installation.app.id));
+
+    const empty = await call(appRouter.runtimeResolve, input, {
+      context: createContext(),
+    });
+
+    expect(empty.body).toEqual({ data: [], status: "ready", warnings: [] });
+    expect(testState.issueToken).not.toHaveBeenCalled();
+  });
+
   it("returns a sanitized 504 and cancels the resolver when its one-second budget expires", async () => {
     await seedRuntimeApp("timeoutmatch", [
       { instances: true, path: "/", slot: "page" },

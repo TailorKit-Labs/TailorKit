@@ -17,6 +17,7 @@ import { discoverHooks } from "./builder/hooks";
 import { instanceExtractionPlugin } from "./builder/instances";
 import type { InstanceModule } from "./builder/instances";
 import { buildServer, validateServerBuildOutput } from "./builder/server";
+import { buildStaticInstances } from "./builder/static-instances";
 import { createPatchsmithUploadManifest } from "./builder/upload-manifest";
 import { loadPatchsmithConfig } from "./config/loader";
 import type { LoadedPatchsmithConfig } from "./config/loader";
@@ -111,7 +112,9 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
     await functionEntry?.close();
   };
 
-  const writeBuildExtras = async (): Promise<void> => {
+  const writeBuildExtras = async (
+    addWatchFile: (filename: string) => void
+  ): Promise<void> => {
     const { views, instanceResolvers } = await readClientManifest(
       path.join(clientOutDir, "client.js")
     );
@@ -145,19 +148,63 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
 
     const hooks = await discoverHooks(loaded.root);
 
+    const viteConfig = {
+      define: resolved.define,
+      mode: resolved.mode,
+      plugins: customPlugins,
+      resolve: resolved.resolve,
+    };
+
+    const staticRegistrations = instanceResolvers.filter(
+      (entry) => entry.cache === "static"
+    );
+
+    const runtimeRegistrations = instanceResolvers.filter(
+      (entry) => entry.cache !== "static"
+    );
+
+    const selectModules = (registrations: typeof instanceResolvers) => {
+      const names = new Set(registrations.map((entry) => entry.resolver));
+
+      return activeModules.flatMap((module) => {
+        const selected = module.names.filter((name) => names.has(name));
+
+        return selected.length ? [{ ...module, names: selected }] : [];
+      });
+    };
+
+    const snapshots = await buildStaticInstances(
+      loaded.root,
+      resolvedOutDir,
+      selectModules(staticRegistrations),
+      staticRegistrations,
+      viteConfig,
+      addWatchFile
+    );
+
+    for (const registration of staticRegistrations) {
+      const view = views.find(
+        (entry) =>
+          entry.slot === registration.slot && entry.path === registration.path
+      );
+
+      const entries = snapshots[registration.resolver];
+
+      if (!view || entries === undefined) {
+        throw new Error("Static instance snapshot missing from the app build.");
+      }
+
+      view.staticInstances = entries;
+    }
+
     serverWatcher = await buildServer(
       loaded,
       requireValue(functionEntry).entry,
       watching,
       resolvedOutDir,
-      activeModules,
-      instanceResolvers,
-      {
-        define: resolved.define,
-        mode: resolved.mode,
-        plugins: customPlugins,
-        resolve: resolved.resolve,
-      }
+      selectModules(runtimeRegistrations),
+      runtimeRegistrations,
+      viteConfig
     );
 
     interface LogoManifest {
@@ -315,8 +362,10 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
       },
       enforce: "pre",
       name: "patchsmith",
-      writeBundle: async () => {
-        await writeBuildExtras();
+      async writeBundle() {
+        await writeBuildExtras((filename) => {
+          this.addWatchFile(filename);
+        });
       },
     },
     fileRoutesPlugin(() => loaded.root),

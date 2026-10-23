@@ -432,3 +432,30 @@ it("preserves successful data and per-app timeout warnings from the platform", a
   expect(await response.json()).toEqual(partial);
   expect(runtimeFetch).not.toHaveBeenCalled();
 });
+
+it("preserves static deployment metadata returned by platform resolution", async () => {
+  const { run, reply, runtimeFetch } = setup();
+
+  const staticApp = {
+    ...app,
+    views: [
+      { instances: true, path: "/", slot: "page", staticInstances: [instance] },
+    ],
+  };
+
+  reply.mockResolvedValueOnce(
+    Response.json({
+      data: [{ ...instance, app: staticApp }],
+      status: "ready",
+      warnings: [],
+    })
+  );
+  const response = await run();
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({
+    data: [{ ...instance, app: staticApp }],
+    status: "ready",
+    warnings: [],
+  });
+  expect(runtimeFetch).not.toHaveBeenCalled();
+});
