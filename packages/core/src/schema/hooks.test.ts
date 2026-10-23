@@ -1,3 +1,4 @@
+import * as v from "valibot";
 import { expect, it } from "vite-plus/test";
 import { z } from "zod";
 
@@ -53,3 +54,40 @@ it("rejects invalid hook names and keeps hook builders immutable", () => {
     );
   }
 });
+
+it.each([
+  {
+    name: "required sync",
+    optional: false,
+    schema: v.object({ id: v.string() }),
+  },
+  {
+    name: "optional sync",
+    optional: true,
+    schema: v.optional(v.object({ id: v.string() })),
+  },
+  {
+    name: "required async",
+    optional: false,
+    schema: v.objectAsync({ id: v.string() }),
+  },
+  {
+    name: "optional async",
+    optional: false,
+    schema: v.optionalAsync(v.objectAsync({ id: v.string() })),
+  },
+])(
+  "only infers omission after synchronous validation: $name",
+  ({ optional, schema }) => {
+    const serialized = createPatchsmithSchema({
+      components: {},
+      hooks: { sync: hook().input(schema).output(schema) },
+      views: { "/": schema },
+    }).serialize(() => ({ type: "object" }));
+
+    const expected = optional ? true : undefined;
+    expect(serialized.hooks.sync?.inputOptional).toBe(expected);
+    expect(serialized.hooks.sync?.outputOptional).toBe(expected);
+    expect(serialized.views["/"]?.contextOptional).toBe(expected);
+  }
+);

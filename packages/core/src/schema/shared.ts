@@ -107,7 +107,7 @@ export const schemaMayBeOmitted = (schema: Schema): boolean => {
   const result = schema["~standard"].validate(undefined);
 
   if (result instanceof Promise) {
-    // Serialization is synchronous; conservatively allow omission for async schemas.
+    // Serialization is synchronous; only allow omission after synchronous validation.
     void (async () => {
       try {
         await result;
@@ -116,7 +116,7 @@ export const schemaMayBeOmitted = (schema: Schema): boolean => {
       }
     })();
 
-    return true;
+    return false;
   }
 
   return !result.issues;
