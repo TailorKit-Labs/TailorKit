@@ -35,7 +35,7 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
   #prepared:
     | {
         version: string;
-        facet: Pick<AppFacet, "query" | "mutate" | "action">;
+        facet: Pick<AppFacet, "query" | "mutate" | "action" | "ready">;
       }
     | undefined;
 
@@ -74,11 +74,20 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
             try: async () => await this.#source.refresh(metadata),
           });
 
-          yield* this.#prepareFacet(
+          const { facet } = yield* this.#prepareFacet(
             deployment,
             { expiresAt: Number.MAX_SAFE_INTEGER },
             new RuntimeTimings()
           );
+
+          yield* Effect.tryPromise({
+            catch: appError,
+            try: async () => {
+              await this.#callFacet(facet, async () => {
+                await facet.ready();
+              });
+            },
+          });
         })
       )
     );
@@ -404,7 +413,7 @@ export class PatchsmithAppInstallation extends DurableObject<Env> {
             return {
               class: worker.getDurableObjectClass<AppFacet>("AppFacet"),
             };
-          }) as Pick<AppFacet, "query" | "mutate" | "action">;
+          }) as Pick<AppFacet, "query" | "mutate" | "action" | "ready">;
 
           // Runtime results have already passed JSON validation; CF's RPC types cannot describe unknown values.
           this.#prepared = { facet, version };

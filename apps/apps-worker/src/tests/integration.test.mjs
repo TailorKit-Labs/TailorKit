@@ -236,9 +236,12 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
 
   const bundle = bundleImplementation;
 
-  /** @param {number} version Fixture deployment to publish. */
-  const publish = async (version) => {
-    const code = bundle(version);
+  /**
+   * @param {number} version Fixture deployment to publish.
+   * @param {{ code?: string, initializationFails?: boolean }} [fixture] Application initialization fixture.
+   */
+  const publish = async (version, fixture = {}) => {
+    const code = fixture.code ?? bundle(version);
     const objectKey = `projects/${projectShortId}/apps/${appShortId}/deployments/deploy00000${version}/server/server.js`;
     const bucket = await mf.getR2Bucket("BUNDLES");
     const bytes = version === 1 ? Buffer.from(code) : gzipSync(code);
@@ -277,7 +280,14 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
       }
     );
 
-    assert.equal(response.status, 204, await response.text());
+    if (fixture.initializationFails === true) {
+      assert.ok(
+        [409, 500].includes(response.status),
+        `Expected initialization failure, got ${response.status}: ${await response.text()}`
+      );
+    } else {
+      assert.equal(response.status, 204, await response.text());
+    }
   };
 
   const defaultProbe = { name: "probe" };
@@ -961,7 +971,22 @@ export const migrations = ${JSON.stringify(history)};`;
 
   try {
     mf = new Miniflare(convertV4MiniflareOptions(options));
+
+    // Publication must await real application initialization, before any app handler runs.
+    await publish(0, {
+      code: bundle(0).replace("apiVersion: 1", "apiVersion: 2"),
+      initializationFails: true,
+    });
     await publish(1);
+
+    const warmed = await (await invoke("app")).json();
+    assert.equal(warmed.json.globals, 1);
+    assert.equal(warmed.json.version, 1);
+
+    // Repeated warm-up preserves the running app and never increments handler state.
+    await publish(1);
+    const rewarmed = await (await invoke("app")).json();
+    assert.equal(rewarmed.json.globals, 2);
 
     // Assets and app code share one R2 binding, but public routes cannot expose server code.
     const assets = await mf.getR2Bucket("BUNDLES");

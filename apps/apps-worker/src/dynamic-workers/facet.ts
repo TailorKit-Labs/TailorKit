@@ -34,6 +34,11 @@ export class AppFacet extends DurableObject<Record<string, never>> {
     });
   });
 
+  /** Trusted supervisor readiness check; never invokes an application handler. */
+  async ready(): Promise<void> {
+    await this.#execution;
+  }
+
   async query(input: Invocation, identity: Identity) {
     const execution = await this.#execution;
 
