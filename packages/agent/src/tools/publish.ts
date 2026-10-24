@@ -2,13 +2,16 @@ import { createHash } from "node:crypto";
 import { promisify } from "node:util";
 import { gzip } from "node:zlib";
 
-import { patchsmithUploadManifestSchema } from "@patchsmith/vite/upload-manifest";
+import {
+  assertDeploymentSize,
+  maxDeploymentBytes,
+  patchsmithUploadManifestSchema,
+} from "@patchsmith/vite/upload-manifest";
 import type { Sandbox } from "@vercel/sandbox";
 import * as v from "valibot";
 import { z } from "zod";
 
 export const deploymentDirectory = "/tmp/patchsmith-deployment";
-const maxAssetBytes = 3 * 1024 * 1024;
 const gzipAsync = promisify(gzip);
 
 const claimsSchema = z.object({
@@ -62,7 +65,7 @@ const readAsset = async (sandbox: ReadArtifact, filename: string) => {
     path: `${deploymentDirectory}/${filename}`,
   });
 
-  if (content === null || content.byteLength > maxAssetBytes) {
+  if (content === null || content.byteLength > maxDeploymentBytes) {
     throw new Error(`Missing or oversized deployment asset: ${filename}`);
   }
 
@@ -70,7 +73,7 @@ const readAsset = async (sandbox: ReadArtifact, filename: string) => {
 };
 
 const describeAsset = (content: Buffer) => {
-  if (content.byteLength > maxAssetBytes) {
+  if (content.byteLength > maxDeploymentBytes) {
     throw new Error("Deployment asset exceeds the size limit.");
   }
 
@@ -106,13 +109,14 @@ export const publishDeployment = async (
     JSON.parse(manifestContent.toString("utf-8"))
   );
 
-  const clientCode = await gzipAsync(
-    await readAsset(sandbox, manifest.assets.client)
-  );
+  const clientAsset = await readAsset(sandbox, manifest.assets.client);
 
-  const serverCode = manifest.assets.server
-    ? await gzipAsync(await readAsset(sandbox, manifest.assets.server))
+  const serverAsset = manifest.assets.server
+    ? await readAsset(sandbox, manifest.assets.server)
     : undefined;
+
+  const clientCode = await gzipAsync(clientAsset);
+  const serverCode = serverAsset ? await gzipAsync(serverAsset) : undefined;
 
   const logos = [];
 
@@ -133,6 +137,22 @@ export const publishDeployment = async (
 
     logos.push({ content, contentType: logoTypes[extension], variant });
   }
+
+  const logoBytes = logos.reduce(
+    (total, { content }) => total + content.byteLength,
+    0
+  );
+
+  assertDeploymentSize([
+    clientAsset.byteLength,
+    serverAsset?.byteLength ?? 0,
+    logoBytes,
+  ]);
+  assertDeploymentSize([
+    clientCode.byteLength,
+    serverCode?.byteLength ?? 0,
+    logoBytes,
+  ]);
 
   const request = async (pathname: string, body: string) => {
     const response = await fetchImplementation(
@@ -200,7 +220,7 @@ export const publishDeployment = async (
     content: Buffer,
     encoding?: "gzip"
   ) => {
-    if (destination === undefined || content.byteLength > maxAssetBytes) {
+    if (destination === undefined || content.byteLength > maxDeploymentBytes) {
       throw new Error(
         "Missing upload destination or oversized deployment asset."
       );

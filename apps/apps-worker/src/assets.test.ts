@@ -391,7 +391,7 @@ it.each(["GET", "HEAD"])(
 );
 
 it.each(["R2", "cache"])(
-  "caps inflated bytes from %s at 3 MiB",
+  "caps inflated bytes from %s at 10 MiB",
   async (source) => {
     const stored = gzipObject("a".repeat(maxDeploymentBytes + 1));
     expect(stored.size).toBeLessThan(maxDeploymentBytes);
@@ -424,7 +424,7 @@ it.each(["R2", "cache"])(
   }
 );
 
-it("serves a gzip bundle whose decoded size is exactly 3 MiB", async () => {
+it("serves a gzip bundle whose decoded size is exactly 10 MiB", async () => {
   get.mockResolvedValueOnce(gzipObject("a".repeat(maxDeploymentBytes)));
   const response = await fetchAsset(new Request(url));
   const awaitedResult1 = await response.arrayBuffer();

@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 
+import { maxDeploymentBytes } from "@patchsmith/asset-delivery";
 import { asyncFixture } from "@patchsmith/config/testing";
 import { Effect } from "effect";
 import { afterEach, expect, it, vi } from "vite-plus/test";
@@ -280,7 +281,10 @@ it("verifies compressed server bytes before inflating and caches the decoded cod
   expect(awaitedResult7._tag).toBe("Failure");
 });
 
-it.each([Buffer.from("not gzip"), gzipSync("x".repeat(3 * 1024 * 1024 + 1))])(
+it.each([
+  Buffer.from("not gzip"),
+  gzipSync("x".repeat(maxDeploymentBytes + 1)),
+])(
   "rejects invalid gzip and inflated code exceeding the deployment limit",
   async (bytes) => {
     const metadata = {
@@ -299,9 +303,9 @@ it.each([Buffer.from("not gzip"), gzipSync("x".repeat(3 * 1024 * 1024 + 1))])(
 );
 
 it.each(["utf-8", "gzip"] as const)(
-  "loads %s server code exactly at the 3 MiB limit",
+  "loads %s server code exactly at the 10 MiB limit",
   async (encoding) => {
-    const content = "x".repeat(3 * 1024 * 1024);
+    const content = "x".repeat(maxDeploymentBytes);
 
     const bytes =
       encoding === "gzip" ? gzipSync(content) : Buffer.from(content);
@@ -320,9 +324,13 @@ it.each(["utf-8", "gzip"] as const)(
             contentLength: bytes.byteLength,
           };
 
-    expect(await Effect.runPromise(setup(bytes).source.code(metadata))).toBe(
+    const first = setup(bytes);
+    expect(await Effect.runPromise(first.source.code(metadata))).toBe(content);
+    const restarted = setup(null, first.storage);
+    expect(await Effect.runPromise(restarted.source.code(metadata))).toBe(
       content
     );
+    expect(restarted.get).not.toHaveBeenCalled();
   }
 );
 

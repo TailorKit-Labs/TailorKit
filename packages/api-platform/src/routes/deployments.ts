@@ -42,7 +42,7 @@ const uploadUrlExpiresInSeconds = 15 * 60;
 
 const logoInspectionTimeoutMs = 10_000;
 
-const clientInspectionTimeoutMs = 10_000;
+const bundleInspectionTimeoutMs = 10_000;
 
 const logoExtensionByContentType = {
   "image/png": "png",
@@ -100,11 +100,14 @@ const createDeploymentInput = z
     }
   )
   .refine(
-    ({ assets }) =>
-      assets.reduce((total, asset) => total + asset.contentLength, 0) <=
+    ({ assets, server, logos }) =>
+      assets.reduce((total, asset) => total + asset.contentLength, 0) +
+        (server?.contentLength ?? 0) +
+        (logos?.dark?.contentLength ?? 0) +
+        (logos?.light?.contentLength ?? 0) <=
       maxDeploymentBytes,
     {
-      message: `Combined client assets cannot exceed ${maxDeploymentBytes} bytes.`,
+      message: `Combined deployment assets cannot exceed ${maxDeploymentBytes} bytes.`,
     }
   );
 
@@ -177,9 +180,10 @@ const hasMatchingLogo = async (
   }
 };
 
-const inspectCompressedClient = async (
+const inspectCompressedBundle = async (
   storage: Context["storage"],
-  objectKey: string
+  objectKey: string,
+  remainingBytes: number
 ) => {
   const download = await storage.createDownloadUrl({
     expiresInSeconds: 60,
@@ -189,14 +193,14 @@ const inspectCompressedClient = async (
   const downloadUrl = new URL(download.url);
 
   if (downloadUrl.protocol !== "https:") {
-    throw new Error("Client bundle download URL must use HTTPS.");
+    throw new Error("Bundle download URL must use HTTPS.");
   }
 
   const controller = new AbortController();
 
   const timeout = setTimeout(() => {
     controller.abort();
-  }, clientInspectionTimeoutMs);
+  }, bundleInspectionTimeoutMs);
 
   try {
     const response = await fetch(downloadUrl, {
@@ -205,7 +209,7 @@ const inspectCompressedClient = async (
     });
 
     if (!response.ok || !response.body) {
-      throw new Error("Failed to inspect uploaded client bundle.");
+      throw new Error("Failed to inspect uploaded bundle.");
     }
 
     // Node fetch decodes R2's Content-Encoding before exposing the response body.
@@ -215,16 +219,18 @@ const inspectCompressedClient = async (
     for await (const value of response.body) {
       contentLength += value.byteLength;
 
-      if (contentLength > maxDeploymentBytes) {
+      if (contentLength > remainingBytes) {
         throw new Error(
-          `Decompressed client assets cannot exceed ${maxDeploymentBytes} bytes.`
+          `Combined deployment assets cannot exceed ${maxDeploymentBytes} bytes after decompression.`
         );
       }
     }
 
     if (contentLength === 0) {
-      throw new Error("Failed to inspect uploaded client bundle.");
+      throw new Error("Failed to inspect uploaded bundle.");
     }
+
+    return contentLength;
   } finally {
     controller.abort();
     clearTimeout(timeout);
@@ -713,6 +719,26 @@ const publishAppDeployment = cliRouter
       });
     }
 
+    // Logo variants count toward the budget even when they share one stored file.
+    const fileCopies = (fileId: string) =>
+      fileId === deployment.logoDarkFileId &&
+      fileId === deployment.logoLightFileId
+        ? 2
+        : 1;
+
+    const storedBytes = files.reduce(
+      (total, file) => total + file.contentLength * fileCopies(file.id),
+      0
+    );
+
+    if (storedBytes > maxDeploymentBytes) {
+      throw new ORPCError("BAD_REQUEST", {
+        message: `Combined deployment assets cannot exceed ${maxDeploymentBytes} bytes.`,
+      });
+    }
+
+    let deploymentBytes = 0;
+
     await db
       .update(appDeployment)
       .set({ status: "verifying" })
@@ -762,11 +788,23 @@ const publishAppDeployment = cliRouter
           );
         }
 
-        if (
-          file.encoding === "gzip" &&
-          file.objectKey.endsWith("/client/client.js")
-        ) {
-          await inspectCompressedClient(context.storage, file.objectKey);
+        const copies = fileCopies(file.id);
+
+        const decodedBytes =
+          file.encoding === "gzip"
+            ? await inspectCompressedBundle(
+                context.storage,
+                file.objectKey,
+                Math.floor((maxDeploymentBytes - deploymentBytes) / copies)
+              )
+            : contentLength;
+
+        deploymentBytes += decodedBytes * copies;
+
+        if (deploymentBytes > maxDeploymentBytes) {
+          throw new Error(
+            `Combined deployment assets cannot exceed ${maxDeploymentBytes} bytes after decompression.`
+          );
         }
 
         if (file.contentType !== "application/javascript") {
