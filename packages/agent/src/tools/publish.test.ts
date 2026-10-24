@@ -27,6 +27,7 @@ const manifest = {
     server: "server/server.js",
     static: [logoArtifact],
   },
+  hooks: ["billing.updated"],
   version: 1,
   views: [{ path: "/", slot: "panel" }],
 };
@@ -402,7 +403,7 @@ it("uploads data on the host and keeps authorization out of signed asset request
   );
   expect(Buffer.from(await logoUpload.arrayBuffer())).toEqual(logo);
   expect(await create.json()).toMatchObject({
-    appId: authorization.appId,
+    app: { id: authorization.appId },
     assets: [
       {
         checksum: createHash("sha256").update(clientBytes).digest("hex"),
@@ -410,6 +411,7 @@ it("uploads data on the host and keeps authorization out of signed asset request
         encoding: "gzip",
       },
     ],
+    hooks: manifest.hooks,
     scope,
     views: manifest.views,
   });

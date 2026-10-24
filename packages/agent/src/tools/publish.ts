@@ -185,7 +185,7 @@ export const publishDeployment = async (
     await request(
       "/deployments",
       JSON.stringify({
-        appId,
+        app: { id: appId },
         assets: [
           {
             ...describeAsset(clientCode),
@@ -194,6 +194,7 @@ export const publishDeployment = async (
             objectKey: "client.js",
           },
         ],
+        hooks: manifest.hooks,
         logos: manifest.assets.logos,
         scope,
         server: serverCode
