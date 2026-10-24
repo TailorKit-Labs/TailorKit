@@ -81,15 +81,9 @@ A slot with `multiple: true` displays separate instances of a view, such as one 
 
 Declare inline `instances` in a module-level `defineView`. The `resolve` arrow/function expression returns items; `dataSchema` validates their data. Single-instance slots omit `instances`. No backend entry file is needed, including when the app has no functions.
 
-### Choose when instances resolve
+Set `instances.cache: "static"` for hardcoded or build-time instance lists fixed until redeployment. Its zero-argument resolver runs at build time; discovery serves the snapshot without the app runtime. Return public, JSON-compatible data and metadata shared across installations. Static instances can still render live queries.
 
-Set `instances.cache: "static"` whenever the complete instance list (keys, metadata, and data) is hardcoded or can be computed at build time and remain unchanged until the next deployment. Use a zero-argument resolver, such as `resolve: () => [{ key: "overview", metadata: {}, data: { title: "Overview" } }]`, with a matching `dataSchema`. The build runs the resolver once, validates its output, and stores the snapshot in the deployment manifest. Discovery returns that snapshot without calling the app runtime; a new deployment replaces it.
-
-Static resolvers can be async and use build-time helpers. They have no request context, identity, signal, or registered queries. Return JSON-compatible data and metadata with no private values: the snapshot is shared across installations of the deployment. Static instances can still render components that query live data; choose caching based on the instance list itself.
-
-For instances that depend on the current context, identity, or live app data, omit `instances.cache` or set it to `"none"`. The resolver runs on the backend with `{ context, identity, signal, queries }`. Read saved records through registered queries and enforce access there. Keep resolver dependencies backend-safe. Instance lists refresh through the host separately from query subscriptions; `"none"` leaves the host client's response cache independent.
-
-Read the selected item's data with `definition.useInstance()` inside the view.
+For context-, identity-, or live-data-dependent lists, omit `cache` or use `"none"`. The resolver runs on the backend with `{ context, identity, signal, queries }`. Read saved records through registered queries and enforce access there. Keep resolver dependencies backend-safe. Instance lists refresh through the host separately from query subscriptions. Read the selected item's data with `definition.useInstance()` inside the view.
 
 For a repeated `tile` at `/`, `notes.list` from `patchsmith-functions` supplies each item:
 
