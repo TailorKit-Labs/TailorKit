@@ -51,6 +51,23 @@ const { deploymentRouter, mapReturnedFilesByAssetPath } =
 
 const { canonicalizeScope } = await import("#scope");
 
+const { staticAssetsInput } = await import("./static-assets");
+
+it.each([256, 257])(
+  "enforces the platform static asset cap for %i files",
+  (count) => {
+    expect(
+      staticAssetsInput.safeParse(
+        Array.from({ length: count }, (_, index) => ({
+          checksum: "a".repeat(64),
+          contentLength: 1,
+          path: `asset-${index}.bin`,
+        }))
+      ).success
+    ).toBe(count === 256);
+  }
+);
+
 const describeFile = (bytes: Buffer) => ({
   checksum: createHash("sha256").update(bytes).digest("hex"),
   contentLength: bytes.byteLength,

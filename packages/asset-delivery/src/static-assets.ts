@@ -2,9 +2,8 @@
 export {
   maxDeploymentBytes as maxStaticAssetBytes,
   maxDeploymentBytes as maxStaticDeploymentBytes,
+  maxStaticAssets,
 } from "./deployment-limits";
-
-export const maxStaticAssets = 1000;
 
 const assetPathPattern =
   /^[a-zA-Z0-9][a-zA-Z0-9._-]*(?:\/[a-zA-Z0-9][a-zA-Z0-9._-]*)*$/u;
