@@ -179,7 +179,8 @@ it.each([false, true])(
         expect(request.headers.has("authorization")).toBe(false);
 
         if (request.url.endsWith("doom.wad")) {
-          expect(Buffer.from(await request.arrayBuffer())).toEqual(content);
+          const uploadedContent = Buffer.from(await request.arrayBuffer());
+          expect(uploadedContent.equals(content)).toBe(true);
           expect(request.headers.has("content-encoding")).toBe(false);
         }
 
