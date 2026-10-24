@@ -41,6 +41,76 @@ const reader = (overrides: Record<string, Buffer> = {}) => {
   };
 };
 
+it.each([false, true])(
+  "publishes hashed static files from sandbox output and reuses existing uploads: %s",
+  async (reuse) => {
+    const content = Buffer.alloc(4 * 1024 * 1024, 2);
+    const checksum = createHash("sha256").update(content).digest("hex");
+
+    const artifact = {
+      checksum,
+      contentLength: content.byteLength,
+      path: "doom.wad",
+    };
+
+    const uploads: string[] = [];
+
+    const send: typeof fetch = async (input, init) => {
+      const request = new Request(input, init);
+
+      if (request.url.endsWith("/deployments")) {
+        expect(await request.json()).toMatchObject({
+          staticAssets: [artifact],
+        });
+
+        return Response.json({
+          assets: [{ uploadUrl: "https://storage.test/client" }],
+          deployment: { id: "created" },
+          staticAssets: [
+            {
+              file: { checksum, path: "doom.wad" },
+              headers: { "content-type": "application/octet-stream" },
+              uploadUrl: reuse ? undefined : "https://storage.test/doom.wad",
+            },
+          ],
+        });
+      }
+
+      if (request.method === "PUT") {
+        uploads.push(request.url);
+        expect(request.headers.has("authorization")).toBe(false);
+
+        if (request.url.endsWith("doom.wad")) {
+          expect(Buffer.from(await request.arrayBuffer())).toEqual(content);
+          expect(request.headers.has("content-encoding")).toBe(false);
+        }
+
+        return new Response(null, { status: 200 });
+      }
+
+      return Response.json({ id: "published" });
+    };
+
+    expect(
+      await publishDeployment(
+        reader({
+          "assets/doom.wad": content,
+          "patchsmith-upload.json": Buffer.from(
+            JSON.stringify({
+              assets: { client: "client/client.js", static: [artifact] },
+              version: 1,
+            })
+          ),
+        }),
+        authorization,
+        undefined,
+        send
+      )
+    ).toBe("Deployment: published");
+    expect(uploads).toHaveLength(reuse ? 1 : 2);
+  }
+);
+
 it("uploads data on the host and keeps authorization out of signed asset requests", async () => {
   const requests: Request[] = [];
   const { signal } = new AbortController();

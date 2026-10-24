@@ -1,7 +1,11 @@
 import { Effect } from "effect";
 import { catch as catchEffect } from "effect/Effect";
 
-import type { LogoContentType } from "./logo-validation";
+import {
+  isStaticAssetPath,
+  maxStaticAssetBytes,
+  staticAssetContentType,
+} from "./static-assets";
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -20,6 +24,12 @@ const deploymentAssetPath = new RegExp(
 );
 
 const nodeAssetPath = new RegExp(`^/api/assets/p/(${shortId})(/a/.*)$`, "u");
+
+const staticAssetPath = new RegExp(
+  `^/a/(${shortId})/assets/([a-f0-9]{64})/(.+)$`,
+  "u"
+);
+
 const methods = new Set(["GET", "HEAD", "OPTIONS"]);
 
 export const maxDeploymentBytes = 3 * 1024 * 1024;
@@ -27,10 +37,12 @@ export const maxAssetBytes = maxDeploymentBytes;
 
 export interface AssetIdentity {
   appShortId: string;
-  deploymentShortId: string;
+  deploymentShortId?: string;
+  immutable?: true;
+  maxBytes?: number;
   projectShortId: string;
   key: string;
-  contentType: "application/javascript" | LogoContentType;
+  contentType: string;
 }
 
 const getAssetContentType = (
@@ -57,6 +69,28 @@ const createIdentity = (
 ): AssetIdentity | undefined => {
   if (!shortIdPattern.test(projectShortId)) {
     return undefined;
+  }
+
+  const staticMatch = staticAssetPath.exec(pathname);
+
+  if (staticMatch) {
+    const [, appMatch, checksumMatch, pathMatch] = staticMatch;
+    const assetPath = requireValue(pathMatch);
+
+    if (!isStaticAssetPath(assetPath)) {
+      return undefined;
+    }
+
+    const appShortId = requireValue(appMatch);
+
+    return {
+      appShortId,
+      contentType: staticAssetContentType(assetPath),
+      immutable: true,
+      key: `projects/${projectShortId}/apps/${appShortId}/assets/${requireValue(checksumMatch)}/${assetPath}`,
+      maxBytes: maxStaticAssetBytes,
+      projectShortId,
+    };
   }
 
   const match = deploymentAssetPath.exec(pathname);
@@ -124,8 +158,10 @@ export const parseNodeAssetRequest = (
 
 export const isAssetMethod = (method: string): boolean => methods.has(method);
 
-export const isValidAssetSize = (size: number | undefined): size is number =>
-  size !== undefined && size >= 1 && size <= maxAssetBytes;
+export const isValidAssetSize = (
+  size: number | undefined,
+  maxBytes = maxAssetBytes
+): size is number => size !== undefined && size >= 1 && size <= maxBytes;
 
 export const assetFailure = (status: number): Response =>
   new Response(null, {
@@ -151,10 +187,14 @@ export const assetHeaders = (input: {
   contentEncoding?: string;
   contentType?: AssetIdentity["contentType"];
   etag?: string;
+  immutable?: boolean;
 }): Headers => {
   const headers = new Headers({
     "Access-Control-Allow-Origin": "*",
-    "Cache-Control": "public, max-age=86400",
+    "Cache-Control":
+      input.immutable === true
+        ? "public, max-age=31536000, immutable"
+        : "public, max-age=86400",
     "Content-Length": String(input.contentLength),
     "Content-Security-Policy": "default-src 'none'; sandbox",
     "Content-Type":
@@ -266,7 +306,8 @@ export class AssetDeliveryError extends Error {
 
 /** Bound decoded bytes, including objects that have not passed publication checks. */
 export const limitAssetBody = (
-  body: ReadableStream<Uint8Array>
+  body: ReadableStream<Uint8Array>,
+  maxBytes = maxAssetBytes
 ): ReadableStream<Uint8Array> => {
   let contentLength = 0;
 
@@ -275,7 +316,7 @@ export const limitAssetBody = (
       transform: (chunk, controller) => {
         contentLength += chunk.byteLength;
 
-        if (contentLength > maxAssetBytes) {
+        if (contentLength > maxBytes) {
           controller.error(new AssetDeliveryError(404));
 
           return;
@@ -313,9 +354,9 @@ export const nodeAssetRequest = (request: Request) =>
     return identity;
   });
 
-export const assetSize = (size: number | undefined) =>
+export const assetSize = (size: number | undefined, maxBytes = maxAssetBytes) =>
   Effect.gen(function* assetSizeValue() {
-    if (!isValidAssetSize(size)) {
+    if (!isValidAssetSize(size, maxBytes)) {
       return yield* Effect.fail(new AssetDeliveryError(404));
     }
 

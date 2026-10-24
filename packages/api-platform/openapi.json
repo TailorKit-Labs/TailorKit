@@ -4741,6 +4741,28 @@
                       "objectKey"
                     ]
                   },
+                  "staticAssets": {
+                    "maxItems": 1000,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "checksum": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "contentLength": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 52428800
+                        },
+                        "path": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["checksum", "contentLength", "path"]
+                    }
+                  },
                   "views": {
                     "maxItems": 1000,
                     "type": "array",
@@ -5403,6 +5425,94 @@
                       },
                       "required": ["file", "uploadUrl"],
                       "additionalProperties": false
+                    },
+                    "staticAssets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "file": {
+                            "type": "object",
+                            "properties": {
+                              "appId": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "checksum": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "contentLength": {
+                                "type": "integer",
+                                "minimum": -2147483648,
+                                "maximum": 2147483647
+                              },
+                              "contentType": {
+                                "type": "string"
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "x-native-type": "date"
+                              },
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "objectKey": {
+                                "type": "string"
+                              },
+                              "path": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "uploading",
+                                  "verifying",
+                                  "verified",
+                                  "failed"
+                                ]
+                              },
+                              "updatedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "x-native-type": "date"
+                              }
+                            },
+                            "required": [
+                              "appId",
+                              "checksum",
+                              "contentLength",
+                              "contentType",
+                              "createdAt",
+                              "id",
+                              "objectKey",
+                              "path",
+                              "status",
+                              "updatedAt"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "headers": {
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {
+                              "type": "string"
+                            }
+                          },
+                          "uploadUrl": {
+                            "type": "string",
+                            "format": "uri"
+                          }
+                        },
+                        "required": ["file"],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": ["assets", "deployment"],
@@ -5612,6 +5722,74 @@
                         "required": ["path", "slot"],
                         "additionalProperties": false
                       }
+                    },
+                    "staticAssets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "appId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "checksum": {
+                            "type": "string",
+                            "maxLength": 64
+                          },
+                          "contentLength": {
+                            "type": "integer",
+                            "minimum": -2147483648,
+                            "maximum": 2147483647
+                          },
+                          "contentType": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "x-native-type": "date"
+                          },
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "objectKey": {
+                            "type": "string"
+                          },
+                          "path": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "uploading",
+                              "verifying",
+                              "verified",
+                              "failed"
+                            ]
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "x-native-type": "date"
+                          }
+                        },
+                        "required": [
+                          "appId",
+                          "checksum",
+                          "contentLength",
+                          "contentType",
+                          "createdAt",
+                          "id",
+                          "objectKey",
+                          "path",
+                          "status",
+                          "updatedAt"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -5627,7 +5805,8 @@
                     "shortId",
                     "status",
                     "updatedAt",
-                    "views"
+                    "views",
+                    "staticAssets"
                   ],
                   "additionalProperties": false
                 }

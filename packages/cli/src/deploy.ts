@@ -61,6 +61,9 @@ interface DeploymentLogoUpload {
 }
 
 interface DeploymentCreateResult {
+  staticAssets?: (DeploymentLogoUpload & {
+    file: { path: string; checksum: string };
+  })[];
   assets: DeploymentAssetUpload[];
   server?: DeploymentAssetUpload;
   deployment: {
@@ -92,6 +95,13 @@ const deploymentCreateSchema = z.object({
     })
     .optional(),
   server: assetUploadSchema.optional(),
+  staticAssets: z
+    .array(
+      logoUploadSchema.extend({
+        file: z.object({ checksum: z.string(), path: z.string() }),
+      })
+    )
+    .optional(),
 });
 
 const deploymentPublishSchema = z.object({
@@ -189,7 +199,8 @@ const sha256Hex = (content: Buffer): string =>
 const uploadAsset = async (
   asset: DeploymentAssetUpload | DeploymentLogoUpload,
   content: Buffer,
-  contentEncoding?: "gzip"
+  contentEncoding?: "gzip",
+  maxBytes = maxDeploymentBytes
 ): Promise<void> => {
   if (
     !(
@@ -201,8 +212,8 @@ const uploadAsset = async (
     return;
   }
 
-  if (content.byteLength > maxDeploymentBytes) {
-    throw new Error(`Deployment asset exceeds ${maxDeploymentBytes} bytes.`);
+  if (content.byteLength > maxBytes) {
+    throw new Error(`Deployment asset exceeds ${maxBytes} bytes.`);
   }
 
   const headers = new Headers(asset.headers);
@@ -413,6 +424,22 @@ export const runDeploy = async (
   );
 
   const clientAssetPath = path.join(outDir, manifest.assets.client);
+
+  const staticAssets = await Promise.all(
+    (manifest.assets.static ?? []).map(async (asset) => {
+      const content = await readFile(path.join(outDir, "assets", asset.path));
+
+      if (
+        content.byteLength !== asset.contentLength ||
+        sha256Hex(content) !== asset.checksum
+      ) {
+        throw new Error(`Built asset changed after hashing: ${asset.path}`);
+      }
+
+      return { ...asset, content };
+    })
+  );
+
   const clientAsset = await readFile(clientAssetPath);
   const clientAssetGzip = await gzipAsync(clientAsset);
 
@@ -554,6 +581,9 @@ export const runDeploy = async (
               objectKey: "server.js" as const,
             }
           : undefined,
+        staticAssets: staticAssets.length
+          ? staticAssets.map(({ content: _content, ...asset }) => asset)
+          : undefined,
         views: manifest.views,
       })
     );
@@ -583,7 +613,28 @@ export const runDeploy = async (
     );
   }
 
+  const staticUploads = new Map(
+    (created.staticAssets ?? []).map((upload) => [upload.file.path, upload])
+  );
+
+  for (const asset of staticAssets) {
+    if (staticUploads.get(asset.path)?.file.checksum !== asset.checksum) {
+      throw new Error(
+        `Deployment did not accept static asset ${asset.path}. Upgrade the Patchsmith host and platform before deploying assets.`
+      );
+    }
+  }
+
   await Promise.all([
+    ...staticAssets.map(async (asset) => {
+      const upload = staticUploads.get(asset.path);
+
+      if (!upload) {
+        throw new Error(`Missing static asset upload: ${asset.path}`);
+      }
+
+      await uploadAsset(upload, asset.content, undefined, 50 * 1024 * 1024);
+    }),
     ...(serverAssetGzip && created.server
       ? [uploadAsset(created.server, serverAssetGzip, "gzip")]
       : []),
@@ -668,6 +719,11 @@ export const runDeploy = async (
       },
       ...uploadedServer,
       ...uploadedLogos,
+      ...staticAssets.map((asset) => ({
+        gzipSize: asset.contentLength,
+        path: `assets/${asset.path}`,
+        size: asset.contentLength,
+      })),
     ],
   };
 };

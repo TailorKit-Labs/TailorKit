@@ -30,6 +30,40 @@ export const patchsmithUploadManifestSchema = v.object({
       })
     ),
     server: v.optional(v.literal("server/server.js")),
+    static: v.optional(
+      v.pipe(
+        v.array(
+          v.object({
+            checksum: v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/u)),
+            contentLength: v.pipe(
+              v.number(),
+              v.integer(),
+              v.minValue(1),
+              v.maxValue(50 * 1024 * 1024)
+            ),
+            path: v.pipe(
+              v.string(),
+              v.maxLength(512),
+              v.regex(
+                /^[a-zA-Z0-9][a-zA-Z0-9._-]*(?:\/[a-zA-Z0-9][a-zA-Z0-9._-]*)*$/u
+              )
+            ),
+          })
+        ),
+        v.maxLength(1000),
+        v.check(
+          (assets) =>
+            new Set(assets.map((asset) => asset.path)).size === assets.length,
+          "Asset paths must be unique"
+        ),
+        v.check(
+          (assets) =>
+            assets.reduce((size, asset) => size + asset.contentLength, 0) <=
+            100 * 1024 * 1024,
+          "Static assets exceed the deployment size limit"
+        )
+      )
+    ),
   }),
   hooks: v.optional(
     v.pipe(
@@ -89,11 +123,16 @@ export const createPatchsmithUploadManifest = (
   server = false,
   views?: PatchsmithUploadManifest["views"],
   appId?: string,
-  hooks: string[] = []
+  hooks: string[] = [],
+  staticAssets: PatchsmithUploadManifest["assets"]["static"] = []
 ): PatchsmithUploadManifest => {
   const assets: PatchsmithUploadManifest["assets"] = {
     client: "client/client.js",
   };
+
+  if (staticAssets.length > 0) {
+    assets.static = staticAssets;
+  }
 
   if (server) {
     assets.server = "server/server.js";

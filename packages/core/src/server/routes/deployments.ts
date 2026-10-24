@@ -115,6 +115,29 @@ export const deploymentRouter = {
         ),
         logos: deploymentLogosInput,
         server: v.optional(serverAssetInput),
+        staticAssets: v.optional(
+          v.pipe(
+            v.array(
+              v.object({
+                checksum: v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/u)),
+                contentLength: v.pipe(
+                  v.number(),
+                  v.integer(),
+                  v.minValue(1),
+                  v.maxValue(50 * 1024 * 1024)
+                ),
+                path: v.pipe(
+                  v.string(),
+                  v.maxLength(512),
+                  v.regex(
+                    /^[a-zA-Z0-9][a-zA-Z0-9._-]*(?:\/[a-zA-Z0-9][a-zA-Z0-9._-]*)*$/u
+                  )
+                ),
+              })
+            ),
+            v.maxLength(1000)
+          )
+        ),
         views: v.optional(
           v.pipe(
             v.array(
@@ -149,6 +172,7 @@ export const deploymentRouter = {
             logos: input.logos,
             scope: getPatchsmithScope(context),
             server: input.server,
+            staticAssets: input.staticAssets,
             views: input.views,
           },
           client: context.platform,

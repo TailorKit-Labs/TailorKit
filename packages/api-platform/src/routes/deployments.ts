@@ -9,6 +9,7 @@ import {
 import { db } from "@patchsmith/db";
 import {
   app,
+  AppAsset,
   AppDeployment,
   appDeployment,
   AppDeploymentFile,
@@ -34,6 +35,13 @@ import {
 } from "#scope";
 
 import { getRuntimeBundle, publishRuntimeMetadata } from "./runtime";
+import {
+  deploymentStaticAssets,
+  linkStaticAssets,
+  prepareStaticAssets,
+  staticAssetsInput,
+  verifyStaticAssets,
+} from "./static-assets";
 
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
   typeof value === "object" && value !== null;
@@ -91,6 +99,7 @@ const createDeploymentInput = z
       .optional(),
     scope: scopeSchema,
     server: createDeploymentServerInput.optional(),
+    staticAssets: staticAssetsInput.optional(),
     views: AppDeployment.shape.views.optional(),
   })
   .refine(
@@ -386,7 +395,11 @@ const getAppDeployment = cliRouter
       params: z.object({ deploymentId: z.string() }),
     })
   )
-  .output(z.object({ body: AppDeployment }))
+  .output(
+    z.object({
+      body: AppDeployment.extend({ staticAssets: z.array(AppAsset) }),
+    })
+  )
   .use(
     requireDeployment.adaptInput(
       ({ params: { deploymentId }, body: { scopes } }) => ({
@@ -395,7 +408,12 @@ const getAppDeployment = cliRouter
       })
     )
   )
-  .handler(({ context }) => ({ body: context.deployment }));
+  .handler(async ({ context }) => ({
+    body: {
+      ...context.deployment,
+      staticAssets: await deploymentStaticAssets(context.deployment.id),
+    },
+  }));
 
 const createAppDeployment = cliRouter
   .meta(
@@ -416,6 +434,15 @@ const createAppDeployment = cliRouter
         deployment: AppDeployment,
         logos: deploymentLogoUploads.optional(),
         server: deploymentAssetUpload.optional(),
+        staticAssets: z
+          .array(
+            z.object({
+              file: AppAsset,
+              headers: z.record(z.string(), z.string()).optional(),
+              uploadUrl: z.url().optional(),
+            })
+          )
+          .optional(),
       }),
     })
   )
@@ -423,6 +450,11 @@ const createAppDeployment = cliRouter
   .handler(async ({ context, input }) => {
     const deploymentId = crypto.randomUUID();
     const deploymentShortId = createShortId();
+
+    const preparedStaticAssets = await prepareStaticAssets(
+      context,
+      input.body.staticAssets ?? []
+    );
 
     const requestedLogos = Object.entries(input.body.logos ?? {}).map(
       ([variant, logo]) => ({
@@ -563,7 +595,18 @@ const createAppDeployment = cliRouter
         });
       }
 
-      return { createdDeployment: updatedDeployment, createdFiles: files };
+      const staticAssets = await linkStaticAssets(
+        tx,
+        context.app.id,
+        deployment.id,
+        preparedStaticAssets
+      );
+
+      return {
+        createdDeployment: updatedDeployment,
+        createdFiles: files,
+        staticAssets,
+      };
     });
 
     const { createdDeployment, createdFiles } = created;
@@ -669,6 +712,7 @@ const createAppDeployment = cliRouter
         ...optionalUploads,
         assets: uploadedAssets,
         deployment: createdDeployment,
+        staticAssets: created.staticAssets,
       },
     };
   });
@@ -831,6 +875,16 @@ const publishAppDeployment = cliRouter
         });
       }
     });
+
+    try {
+      await verifyStaticAssets(context.storage, deployment.id);
+    } catch (error) {
+      await db
+        .update(appDeployment)
+        .set({ status: "uploading" })
+        .where(eq(appDeployment.id, deployment.id));
+      throw error;
+    }
 
     const [publishedDeployment] = await db
       .update(appDeployment)

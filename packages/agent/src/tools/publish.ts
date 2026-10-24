@@ -42,6 +42,13 @@ const createdSchema = z.object({
     .object({ dark: uploadSchema.optional(), light: uploadSchema.optional() })
     .optional(),
   server: uploadSchema.extend({ uploadUrl: z.url() }).optional(),
+  staticAssets: z
+    .array(
+      uploadSchema.extend({
+        file: z.object({ checksum: z.string(), path: z.string() }),
+      })
+    )
+    .optional(),
 });
 
 const publishedSchema = z.object({ id: z.string().min(1) });
@@ -57,12 +64,16 @@ const logoTypes = {
   webp: "image/webp",
 } as const;
 
-const readAsset = async (sandbox: ReadArtifact, filename: string) => {
+const readAsset = async (
+  sandbox: ReadArtifact,
+  filename: string,
+  maxBytes = maxAssetBytes
+) => {
   const content = await sandbox.readFileToBuffer({
     path: `${deploymentDirectory}/${filename}`,
   });
 
-  if (content === null || content.byteLength > maxAssetBytes) {
+  if (content === null || content.byteLength > maxBytes) {
     throw new Error(`Missing or oversized deployment asset: ${filename}`);
   }
 
@@ -113,6 +124,25 @@ export const publishDeployment = async (
   const serverCode = manifest.assets.server
     ? await gzipAsync(await readAsset(sandbox, manifest.assets.server))
     : undefined;
+
+  const staticAssets = await Promise.all(
+    (manifest.assets.static ?? []).map(async (asset) => {
+      const content = await readAsset(
+        sandbox,
+        `assets/${asset.path}`,
+        50 * 1024 * 1024
+      );
+
+      if (
+        content.byteLength !== asset.contentLength ||
+        createHash("sha256").update(content).digest("hex") !== asset.checksum
+      ) {
+        throw new Error(`Built asset changed after hashing: ${asset.path}`);
+      }
+
+      return { ...asset, content };
+    })
+  );
 
   const logos = [];
 
@@ -190,6 +220,9 @@ export const publishDeployment = async (
               objectKey: "server.js",
             }
           : undefined,
+        staticAssets: staticAssets.length
+          ? staticAssets.map(({ content: _content, ...asset }) => asset)
+          : undefined,
         views: manifest.views,
       })
     )
@@ -198,15 +231,16 @@ export const publishDeployment = async (
   const upload = async (
     destination: z.infer<typeof uploadSchema> | undefined,
     content: Buffer,
-    encoding?: "gzip"
+    encoding?: "gzip",
+    maxBytes = maxAssetBytes
   ) => {
-    if (destination === undefined || content.byteLength > maxAssetBytes) {
+    if (destination === undefined || content.byteLength > maxBytes) {
       throw new Error(
         "Missing upload destination or oversized deployment asset."
       );
     }
 
-    // An existing content-addressed logo has no upload URL.
+    // Existing content-addressed assets have no upload URL.
     if (destination.uploadUrl === undefined) {
       return;
     }
@@ -233,6 +267,30 @@ export const publishDeployment = async (
       throw new Error(`Asset upload failed with ${response.status}.`);
     }
   };
+
+  const staticUploads = new Map(
+    (created.staticAssets ?? []).map((destination) => [
+      destination.file.path,
+      destination,
+    ])
+  );
+
+  for (const asset of staticAssets) {
+    if (staticUploads.get(asset.path)?.file.checksum !== asset.checksum) {
+      throw new Error(`Deployment did not accept static asset ${asset.path}.`);
+    }
+  }
+
+  await Promise.all(
+    staticAssets.map(async (asset) => {
+      await upload(
+        staticUploads.get(asset.path),
+        asset.content,
+        undefined,
+        50 * 1024 * 1024
+      );
+    })
+  );
 
   await upload(created.assets[0], clientCode, "gzip");
 

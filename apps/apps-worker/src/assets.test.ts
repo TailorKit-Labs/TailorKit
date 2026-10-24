@@ -79,6 +79,52 @@ afterEach(() => {
 });
 
 describe("project asset gateway", () => {
+  it("streams hashed assets above the bundle limit and keeps immutable browser caching on cache hits and HEAD", async () => {
+    const hash = "a".repeat(64);
+    const assetUrl = `https://${projectId}.tailorkit.app/a/${appId}/assets/${hash}/game/doom.wasm`;
+    const assetKey = `projects/${projectId}/apps/${appId}/assets/${hash}/game/doom.wasm`;
+    const bytes = new Uint8Array(maxDeploymentBytes + 1);
+    get.mockResolvedValueOnce({
+      body: new Response(bytes).body,
+      httpEtag: '"wasm"',
+      size: bytes.byteLength,
+    });
+    const response = await fetchAsset(new Request(assetUrl));
+    expect(response.status).toBe(200);
+    expect(get).toHaveBeenCalledWith(assetKey);
+    expect(response.headers.get("Content-Type")).toBe("application/wasm");
+    expect(response.headers.get("Cache-Control")).toBe(
+      "public, max-age=31536000, immutable"
+    );
+    const body = await response.arrayBuffer();
+    expect(body.byteLength).toBe(bytes.byteLength);
+    match.mockResolvedValueOnce(
+      new Response(bytes, {
+        headers: assetHeaders({
+          contentLength: bytes.byteLength,
+          contentType: "application/wasm",
+        }),
+      })
+    );
+    const cached = await fetchAsset(new Request(assetUrl));
+    expect(cached.headers.get("Cache-Control")).toBe(
+      "public, max-age=31536000, immutable"
+    );
+    head.mockResolvedValueOnce({ httpEtag: '"wasm"', size: bytes.byteLength });
+
+    const metadata = await fetchAsset(
+      new Request(assetUrl, { method: "HEAD" })
+    );
+
+    expect(metadata.headers.get("Cache-Control")).toBe(
+      "public, max-age=31536000, immutable"
+    );
+    expect(metadata.headers.get("Content-Length")).toBe(
+      String(bytes.byteLength)
+    );
+    expect(await metadata.text()).toBe("");
+  });
+
   it("never serves server bundles, manifests or migrations publicly", async () => {
     await Promise.all(
       [

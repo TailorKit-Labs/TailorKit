@@ -53,6 +53,11 @@ const mocks = vi.hoisted(() => ({
         { headers?: Record<string, string>; uploadUrl: string }
       >;
       server?: { uploadUrl: string };
+      staticAssets?: {
+        file: { checksum: string; path: string };
+        headers?: Record<string, string>;
+        uploadUrl?: string;
+      }[];
     }>
   >(),
   load: vi.fn<
@@ -145,6 +150,87 @@ afterEach(async () => {
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
   await rm(root, { force: true, recursive: true });
+});
+
+it.each([false, true])(
+  "uploads raw static files above the bundle limit and skips reused uploads: %s",
+  async (reuse) => {
+    const content = Buffer.alloc(4 * 1024 * 1024, 3);
+    const checksum = createHash("sha256").update(content).digest("hex");
+    await mkdir(path.join(root, ".patchsmith/assets"));
+    await writeFile(path.join(root, ".patchsmith/assets/doom.wad"), content);
+    await writeFile(
+      path.join(root, ".patchsmith/patchsmith-upload.json"),
+      JSON.stringify({
+        assets: {
+          client: "client/client.js",
+          static: [
+            { checksum, contentLength: content.byteLength, path: "doom.wad" },
+          ],
+        },
+        version: 1,
+      })
+    );
+    mocks.create.mockResolvedValue({
+      assets: [{ uploadUrl: "https://uploads.example/client" }],
+      deployment: { id: "deployment" },
+      staticAssets: [
+        {
+          file: { checksum, path: "doom.wad" },
+          headers: { "content-type": "application/octet-stream" },
+          uploadUrl: reuse ? undefined : "https://uploads.example/doom.wad",
+        },
+      ],
+    });
+
+    const fetch = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(null, { status: 200 }));
+
+    await runDeploy({ cwd: root });
+    expect(mocks.create.mock.calls[0]?.[0].staticAssets).toEqual([
+      { checksum, contentLength: content.byteLength, path: "doom.wad" },
+    ]);
+    expect(fetch).toHaveBeenCalledTimes(reuse ? 1 : 2);
+
+    if (!reuse) {
+      const uploaded = fetch.mock.calls.find(
+        ([url]) => url === "https://uploads.example/doom.wad"
+      );
+
+      expect(requireBytes(uploaded?.[1]?.body)).toEqual(
+        new Uint8Array(content)
+      );
+      expect(
+        new Headers(uploaded?.[1]?.headers).get("Content-Encoding")
+      ).toBeNull();
+    }
+
+    expect(mocks.publish).toHaveBeenCalledOnce();
+  }
+);
+
+it("rejects hosts that discard static asset metadata instead of publishing a broken app", async () => {
+  const content = Buffer.from("game-data");
+  const checksum = createHash("sha256").update(content).digest("hex");
+  await mkdir(path.join(root, ".patchsmith/assets"));
+  await writeFile(path.join(root, ".patchsmith/assets/doom.wad"), content);
+  await writeFile(
+    path.join(root, ".patchsmith/patchsmith-upload.json"),
+    JSON.stringify({
+      assets: {
+        client: "client/client.js",
+        static: [
+          { checksum, contentLength: content.byteLength, path: "doom.wad" },
+        ],
+      },
+      version: 1,
+    })
+  );
+  await expect(runDeploy({ cwd: root })).rejects.toThrow(
+    "Upgrade the Patchsmith host and platform"
+  );
+  expect(mocks.publish).not.toHaveBeenCalled();
 });
 
 it("uploads gzip server and client code with metadata matching the stored bytes", async () => {

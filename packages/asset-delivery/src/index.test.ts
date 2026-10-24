@@ -10,6 +10,7 @@ import {
   parseHostedAssetRequest,
   parseNodeAssetRequest,
 } from "./index";
+import { maxStaticAssetBytes } from "./static-assets";
 
 const projectId = "proj00000001";
 const appId = "app000000001";
@@ -18,6 +19,51 @@ const assetPath = `/a/${appId}/d/${deploymentId}/client/client.js`;
 const logoHash = "b".repeat(64);
 const localUrl = `http://localhost:3000/api/assets/p/${projectId}${assetPath}`;
 const hostedUrl = `https://${projectId}.tailorkit.app${assetPath}`;
+
+it("serves content-addressed static files through matching local and hosted routes", () => {
+  const hash = "a".repeat(64);
+  const pathname = `/a/${appId}/assets/${hash}/game/doom.wasm`;
+
+  const hosted = parseHostedAssetRequest(
+    new Request(`https://${projectId}.tailorkit.app${pathname}`),
+    "tailorkit.app"
+  );
+
+  const local = parseNodeAssetRequest(
+    new Request(`http://localhost:3000/api/assets/p/${projectId}${pathname}`)
+  );
+
+  expect(hosted).toEqual(local);
+  expect(hosted).toEqual({
+    appShortId: appId,
+    contentType: "application/wasm",
+    immutable: true,
+    key: `projects/${projectId}/apps/${appId}/assets/${hash}/game/doom.wasm`,
+    maxBytes: maxStaticAssetBytes,
+    projectShortId: projectId,
+  });
+  expect(
+    assetHeaders({
+      contentLength: 5,
+      contentType: hosted?.contentType,
+      immutable: hosted?.immutable,
+    }).get("Cache-Control")
+  ).toBe("public, max-age=31536000, immutable");
+  expect(
+    parseHostedAssetRequest(
+      new Request(`https://${projectId}.tailorkit.app${pathname}?other=1`),
+      "tailorkit.app"
+    )
+  ).toBeUndefined();
+  expect(
+    parseHostedAssetRequest(
+      new Request(
+        `https://${projectId}.tailorkit.app/a/${appId}/assets/${hash}/%2e%2e/secret`
+      ),
+      "tailorkit.app"
+    )
+  ).toBeUndefined();
+});
 
 describe("gzip content negotiation", () => {
   it.each([

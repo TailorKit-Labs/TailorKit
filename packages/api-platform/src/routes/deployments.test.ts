@@ -6,7 +6,9 @@ import { maxDeploymentBytes } from "@patchsmith/asset-delivery";
 import { asyncFixture } from "@patchsmith/config/testing";
 import {
   app as appTable,
+  appAsset,
   appDeployment,
+  appDeploymentAsset,
   appDeploymentFile,
 } from "@patchsmith/db/schema/apps";
 import { organization } from "@patchsmith/db/schema/auth";
@@ -164,6 +166,164 @@ describe("platform deployment uploads", () => {
   };
 
   const publishContext = publishContextImplementation;
+
+  it("reuses hashed files between deployments, lists their references, and preserves shared files on deletion", async () => {
+    const context = publishContext("https://private.example/file");
+    const currentApp = requireValue(await db.query.app.findFirst());
+    const checksum = "a".repeat(64);
+
+    const stored = new Map<
+      string,
+      {
+        key: string;
+        contentLength: number;
+        contentType: string;
+        checksumSha256: string;
+      }
+    >();
+
+    const uploads: string[] = [];
+    context.storage.head = async ({ key }) => {
+      const object = stored.get(key);
+
+      if (!object) {
+        throw Object.assign(new Error("Not found"), { name: "NotFound" });
+      }
+
+      return await Promise.resolve(object);
+    };
+
+    context.storage.createUploadUrl = async (input) => {
+      uploads.push(input.key);
+
+      return await Promise.resolve({
+        headers: {
+          "content-type": input.contentType ?? "application/octet-stream",
+        },
+        key: input.key,
+        uploadUrl: `https://uploads.example/${input.key}`,
+      });
+    };
+
+    const create = async (hash: string) =>
+      await call(
+        deploymentRouter.create,
+        {
+          body: {
+            app: { id: currentApp.id },
+            assets: [
+              {
+                checksum: logoChecksum,
+                contentLength: 11,
+                contentType: "application/javascript",
+                encoding: "utf-8",
+                objectKey: "client.js",
+              },
+            ],
+            scope: productionScope,
+            staticAssets: [
+              { checksum: hash, contentLength: 11, path: "game/doom.wad" },
+            ],
+          },
+        },
+        { context }
+      );
+
+    const first = await create(checksum);
+    const firstAsset = requireValue(first.body.staticAssets?.[0]);
+    expect(firstAsset.uploadUrl).toBeDefined();
+    stored.set(firstAsset.file.objectKey, {
+      checksumSha256: Buffer.from(checksum, "hex").toString("base64"),
+      contentLength: 11,
+      contentType: "application/octet-stream",
+      key: firstAsset.file.objectKey,
+    });
+    const second = await create(checksum);
+    expect(second.body.staticAssets?.[0]?.file.id).toBe(firstAsset.file.id);
+    expect(second.body.staticAssets?.[0]?.uploadUrl).toBeUndefined();
+    expect(uploads.filter((key) => key.includes("/assets/"))).toHaveLength(1);
+    expect(await db.select().from(appAsset)).toHaveLength(1);
+    expect(await db.select().from(appDeploymentAsset)).toHaveLength(2);
+
+    const listed = await call(
+      deploymentRouter.get,
+      {
+        body: { scopes: [productionScope] },
+        params: { deploymentId: second.body.deployment.id },
+      },
+      { context }
+    );
+
+    expect(listed.body.staticAssets[0]?.checksum).toBe(checksum);
+    await expect(
+      db.delete(appAsset).where(eq(appAsset.id, firstAsset.file.id))
+    ).rejects.toThrow();
+    await db
+      .delete(appDeployment)
+      .where(eq(appDeployment.id, first.body.deployment.id));
+    expect(await db.select().from(appAsset)).toHaveLength(1);
+    expect(await db.select().from(appDeploymentAsset)).toHaveLength(1);
+    const changed = await create("c".repeat(64));
+    expect(changed.body.staticAssets?.[0]?.file.objectKey).not.toBe(
+      firstAsset.file.objectKey
+    );
+
+    await expect(
+      call(
+        deploymentRouter.publish,
+        {
+          body: { rollout: false, scope: productionScope },
+          params: { deploymentId: second.body.deployment.id },
+        },
+        { context }
+      )
+    ).rejects.toThrow();
+    stored.set(requireValue(second.body.assets[0]).file.objectKey, {
+      checksumSha256: logoChecksumBase64,
+      contentLength: 11,
+      contentType: "application/javascript",
+      key: requireValue(second.body.assets[0]).file.objectKey,
+    });
+    stored.set(firstAsset.file.objectKey, {
+      checksumSha256: logoChecksumBase64,
+      contentLength: 11,
+      contentType: "application/octet-stream",
+      key: firstAsset.file.objectKey,
+    });
+    await expect(
+      call(
+        deploymentRouter.publish,
+        {
+          body: { rollout: false, scope: productionScope },
+          params: { deploymentId: second.body.deployment.id },
+        },
+        { context }
+      )
+    ).rejects.toThrow("Failed to verify asset");
+    stored.set(firstAsset.file.objectKey, {
+      checksumSha256: Buffer.from(checksum, "hex").toString("base64"),
+      contentLength: 11,
+      contentType: "application/octet-stream",
+      key: firstAsset.file.objectKey,
+    });
+
+    const published = await call(
+      deploymentRouter.publish,
+      {
+        body: { rollout: false, scope: productionScope },
+        params: { deploymentId: second.body.deployment.id },
+      },
+      { context }
+    );
+
+    expect(published.body.status).toBe("published");
+
+    const verified = await db.query.appAsset.findFirst({
+      where: { id: firstAsset.file.id },
+    });
+
+    expect(verified?.status).toBe("verified");
+  });
 
   it("hides a deployment when its app has a malformed stored scope", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});

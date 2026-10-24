@@ -1192,6 +1192,11 @@ export type DeploymentsCreateData = {
       encoding: 'utf-8' | 'gzip';
       objectKey: 'server.js';
     };
+    staticAssets?: Array<{
+      checksum: string;
+      contentLength: number;
+      path: string;
+    }>;
     views?: Array<{
       disabled?: true;
       instances?: true;
@@ -1317,6 +1322,24 @@ export type DeploymentsCreateResponses = {
       };
       uploadUrl: string;
     };
+    staticAssets?: Array<{
+      file: {
+        appId: string;
+        checksum: string;
+        contentLength: number;
+        contentType: string;
+        createdAt: string;
+        id: string;
+        objectKey: string;
+        path: string;
+        status: 'uploading' | 'verifying' | 'verified' | 'failed';
+        updatedAt: string;
+      };
+      headers?: {
+        [key: string]: string;
+      };
+      uploadUrl?: string;
+    }>;
   };
 };
 
@@ -1367,6 +1390,18 @@ export type DeploymentsGetResponses = {
           [key: string]: unknown;
         };
       }>;
+    }>;
+    staticAssets: Array<{
+      appId: string;
+      checksum: string;
+      contentLength: number;
+      contentType: string;
+      createdAt: string;
+      id: string;
+      objectKey: string;
+      path: string;
+      status: 'uploading' | 'verifying' | 'verified' | 'failed';
+      updatedAt: string;
     }>;
   };
 };
