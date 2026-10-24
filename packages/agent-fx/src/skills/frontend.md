@@ -4,6 +4,8 @@ App frontend code runs in a hidden, sandboxed iframe. Patchsmith serializes the 
 
 Import UI components and host tools from `#patchsmith`. The generated capability pages list each control's props, callbacks, children, and styling options. Compose those controls with Preact; use their layout, spacing, color, and accessibility props.
 
+When the user hasn't specified a style and you're unsure about details such as button size or text color, use the host components' defaults. Focus on the simplest design that solves the user's problem.
+
 ## Forms and callbacks
 
 Host callbacks send serialized payloads back to the app's Preact code in the iframe; UI updates travel back to the host. This messaging is asynchronous and adds latency, even with synchronous handlers.
