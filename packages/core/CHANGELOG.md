@@ -1,5 +1,12 @@
 # @patchsmith/core
 
+## 0.1.0-beta.67
+
+### Patch Changes
+
+- @patchsmith/app@0.1.0-beta.67
+  - @patchsmith/client-platform@0.1.0-beta.67
+
 ## 0.1.0-beta.66
 
 ### Patch Changes
