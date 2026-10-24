@@ -10,6 +10,10 @@ import { gzip } from "node:zlib";
 import type { PatchsmithUploadManifest } from "@patchsmith/vite/builder";
 import type { LoadedPatchsmithConfig } from "@patchsmith/vite/config/loader";
 import { loadPatchsmithConfig } from "@patchsmith/vite/config/loader";
+import {
+  assertDeploymentSize,
+  maxDeploymentBytes,
+} from "@patchsmith/vite/upload-manifest";
 import * as v from "valibot";
 import { z } from "zod";
 
@@ -121,7 +125,6 @@ interface UploadedFileSummary {
   size: number;
 }
 
-const maxDeploymentBytes = 3 * 1024 * 1024;
 const gzipAsync = promisify(gzip);
 
 const logoContentTypeByExtension = new Map<
@@ -449,24 +452,21 @@ export const runDeploy = async (
     })
   );
 
-  if (clientAsset.byteLength > maxDeploymentBytes) {
-    throw new Error(
-      `Combined client assets are ${clientAsset.byteLength} bytes and cannot exceed ${maxDeploymentBytes} bytes.`
-    );
-  }
+  const logoBytes = logoAssets.reduce(
+    (total, { content }) => total + content.byteLength,
+    0
+  );
 
-  if (serverAsset && serverAsset.byteLength > maxDeploymentBytes) {
-    throw new Error(`Server asset exceeds ${maxDeploymentBytes} bytes.`);
-  }
-
-  if (
-    clientAssetGzip.byteLength > maxDeploymentBytes ||
-    (serverAssetGzip && serverAssetGzip.byteLength > maxDeploymentBytes)
-  ) {
-    throw new Error(
-      `Compressed deployment asset exceeds ${maxDeploymentBytes} bytes.`
-    );
-  }
+  assertDeploymentSize([
+    clientAsset.byteLength,
+    serverAsset?.byteLength ?? 0,
+    logoBytes,
+  ]);
+  assertDeploymentSize([
+    clientAssetGzip.byteLength,
+    serverAssetGzip?.byteLength ?? 0,
+    logoBytes,
+  ]);
 
   const client = createCliClient({
     token: storedAuth.deployToken,

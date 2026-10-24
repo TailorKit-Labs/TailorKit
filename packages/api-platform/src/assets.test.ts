@@ -267,7 +267,7 @@ it("limits decoded gzip assets and cancels the upstream stream on overflow", asy
   });
 });
 
-it("serves decoded gzip assets at exactly the 3 MiB limit", async () => {
+it("serves decoded gzip assets at exactly the 10 MiB limit", async () => {
   const backend = storage();
   vi.mocked(backend.head).mockResolvedValue({
     contentEncoding: "gzip",

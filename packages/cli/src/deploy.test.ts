@@ -15,6 +15,7 @@ import { gunzipSync } from "node:zlib";
 import { asyncFixture } from "@patchsmith/config/testing";
 import type { createPatchsmithClient } from "@patchsmith/core/server";
 import type { loadPatchsmithConfig } from "@patchsmith/vite/config/loader";
+import { maxDeploymentBytes } from "@patchsmith/vite/upload-manifest";
 import { SignJWT } from "jose";
 import { Liquid } from "liquidjs";
 import { afterEach, beforeEach, assert, expect, it, vi } from "vite-plus/test";
@@ -614,7 +615,7 @@ it.each(["client", "server"])(
   async (kind) => {
     await writeFile(
       path.join(root, `.patchsmith/${kind}/${kind}.js`),
-      "x".repeat(3 * 1024 * 1024 + 1)
+      "x".repeat(maxDeploymentBytes + 1)
     );
     await expect(runDeploy({ cwd: root })).rejects.toThrow(/exceed/u);
     expect(mocks.create).not.toHaveBeenCalled();
@@ -686,9 +687,9 @@ it("preserves signed upload headers and uploads logos without gzip encoding", as
 });
 
 it.each(["client", "server"])(
-  "accepts %s code exactly at the 3 MiB limit",
+  "accepts %s code exactly at the 10 MiB limit",
   async (kind) => {
-    const size = 3 * 1024 * 1024;
+    const size = maxDeploymentBytes - "server-code".length;
     await writeFile(
       path.join(root, `.patchsmith/${kind}/${kind}.js`),
       "x".repeat(size)
@@ -700,6 +701,63 @@ it.each(["client", "server"])(
     expect(result.uploadedFiles).toContainEqual(
       expect.objectContaining({ path: `${kind}/${kind}.js`, size })
     );
+    expect(mocks.publish).toHaveBeenCalledOnce();
+  }
+);
+
+it.each([0, 1])(
+  "checks client, server, and both logos together (%i bytes over the limit)",
+  async (extraBytes) => {
+    const logo = '<svg xmlns="http://www.w3.org/2000/svg"/>';
+    await writeFile(
+      path.join(root, ".patchsmith/client/client.js"),
+      "x".repeat(6 * 1024 * 1024)
+    );
+    await writeFile(
+      path.join(root, ".patchsmith/server/server.js"),
+      "y".repeat(4 * 1024 * 1024 - 2 * logo.length + extraBytes)
+    );
+    await writeFile(path.join(root, ".patchsmith/client/logo-dark.svg"), logo);
+    await writeFile(path.join(root, ".patchsmith/client/logo-light.svg"), logo);
+    await writeFile(
+      path.join(root, ".patchsmith/patchsmith-upload.json"),
+      JSON.stringify({
+        assets: {
+          client: "client/client.js",
+          logos: {
+            dark: "client/logo-dark.svg",
+            light: "client/logo-light.svg",
+          },
+          server: "server/server.js",
+        },
+        version: 1,
+      })
+    );
+    mocks.create.mockResolvedValue({
+      assets: [{ uploadUrl: "https://uploads.example/client" }],
+      deployment: { id: "deployment" },
+      logos: {
+        dark: { uploadUrl: "https://uploads.example/logo-dark" },
+        light: { uploadUrl: "https://uploads.example/logo-light" },
+      },
+      server: { uploadUrl: "https://uploads.example/server" },
+    });
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(null, { status: 200 })
+    );
+
+    const deploy = runDeploy({ cwd: root });
+
+    if (extraBytes > 0) {
+      await expect(deploy).rejects.toThrow(
+        "Combined deployment assets cannot exceed"
+      );
+      expect(mocks.create).not.toHaveBeenCalled();
+
+      return;
+    }
+
+    await expect(deploy).resolves.toMatchObject({ status: "published" });
     expect(mocks.publish).toHaveBeenCalledOnce();
   }
 );

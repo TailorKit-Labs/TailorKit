@@ -1,7 +1,10 @@
 import { Effect } from "effect";
 import { catch as catchEffect } from "effect/Effect";
 
+import { maxDeploymentBytes } from "./deployment-limits";
 import type { LogoContentType } from "./logo-validation";
+
+export { maxDeploymentBytes } from "./deployment-limits";
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -22,7 +25,6 @@ const deploymentAssetPath = new RegExp(
 const nodeAssetPath = new RegExp(`^/api/assets/p/(${shortId})(/a/.*)$`, "u");
 const methods = new Set(["GET", "HEAD", "OPTIONS"]);
 
-export const maxDeploymentBytes = 3 * 1024 * 1024;
 export const maxAssetBytes = maxDeploymentBytes;
 
 export interface AssetIdentity {

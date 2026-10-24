@@ -1,5 +1,10 @@
 import * as v from "valibot";
 
+export {
+  assertDeploymentSize,
+  maxDeploymentBytes,
+} from "@patchsmith/asset-delivery/deployment-limits";
+
 export const staticInstancesSchema = v.pipe(
   v.array(
     v.object({
