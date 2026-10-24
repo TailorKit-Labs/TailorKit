@@ -1168,16 +1168,8 @@ export type DeploymentsCreateData = {
     ];
     hooks?: Array<string>;
     logos?: {
-      dark?: {
-        checksum: string;
-        contentLength: number;
-        contentType: 'image/svg+xml' | 'image/png' | 'image/webp';
-      };
-      light?: {
-        checksum: string;
-        contentLength: number;
-        contentType: 'image/svg+xml' | 'image/png' | 'image/webp';
-      };
+      dark?: string;
+      light?: string;
     };
     scope: {
       name: string;
@@ -1265,44 +1257,6 @@ export type DeploymentsCreateResponses = {
           };
         }>;
       }>;
-    };
-    logos?: {
-      dark?: {
-        file: {
-          appDeploymentId: string;
-          checksum: string | null;
-          contentLength: number;
-          contentType: 'image/svg+xml' | 'image/png' | 'image/webp';
-          createdAt: string;
-          encoding: 'utf-8' | 'gzip' | null;
-          id: string;
-          objectKey: string;
-          status: 'uploading' | 'verifying' | 'verified' | 'failed';
-          updatedAt: string;
-        };
-        headers?: {
-          [key: string]: string;
-        };
-        uploadUrl?: string;
-      };
-      light?: {
-        file: {
-          appDeploymentId: string;
-          checksum: string | null;
-          contentLength: number;
-          contentType: 'image/svg+xml' | 'image/png' | 'image/webp';
-          createdAt: string;
-          encoding: 'utf-8' | 'gzip' | null;
-          id: string;
-          objectKey: string;
-          status: 'uploading' | 'verifying' | 'verified' | 'failed';
-          updatedAt: string;
-        };
-        headers?: {
-          [key: string]: string;
-        };
-        uploadUrl?: string;
-      };
     };
     server?: {
       file: {

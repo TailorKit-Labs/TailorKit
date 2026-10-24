@@ -41,9 +41,6 @@ const uploadSchema = z.object({
 const createdSchema = z.object({
   assets: z.array(uploadSchema.extend({ uploadUrl: z.url() })).length(1),
   deployment: z.object({ id: z.string().min(1) }),
-  logos: z
-    .object({ dark: uploadSchema.optional(), light: uploadSchema.optional() })
-    .optional(),
   server: uploadSchema.extend({ uploadUrl: z.url() }).optional(),
   staticAssets: z
     .array(
@@ -60,12 +57,6 @@ type ReadArtifact = Pick<
   ReturnType<Sandbox["currentSession"]>,
   "readFileToBuffer"
 >;
-
-const logoTypes = {
-  png: "image/png",
-  svg: "image/svg+xml",
-  webp: "image/webp",
-} as const;
 
 const readAsset = async (sandbox: ReadArtifact, filename: string) => {
   const content = await sandbox.readFileToBuffer({
@@ -118,31 +109,6 @@ const readDeploymentAssets = async (
   const clientCode = await gzipAsync(clientAsset);
   const serverCode = serverAsset ? await gzipAsync(serverAsset) : undefined;
 
-  const logos = [];
-
-  for (const variant of ["dark", "light"] as const) {
-    const filename = manifest.assets.logos?.[variant];
-
-    if (filename === undefined) {
-      continue;
-    }
-
-    // oxlint-disable-next-line eslint/no-await-in-loop -- Validate each of the two optional logos before creating a deployment.
-    const content = await readAsset(sandbox, filename);
-    const extension = filename.split(".").at(-1);
-
-    if (extension !== "png" && extension !== "svg" && extension !== "webp") {
-      throw new Error("Unsupported deployment logo format.");
-    }
-
-    logos.push({ content, contentType: logoTypes[extension], variant });
-  }
-
-  const logoBytes = logos.reduce(
-    (total, { content }) => total + content.byteLength,
-    0
-  );
-
   const staticBytes = staticAssets.reduce(
     (total, asset) => total + asset.content.byteLength,
     0
@@ -151,17 +117,15 @@ const readDeploymentAssets = async (
   assertDeploymentSize([
     clientAsset.byteLength,
     serverAsset?.byteLength ?? 0,
-    logoBytes,
     staticBytes,
   ]);
   assertDeploymentSize([
     clientCode.byteLength,
     serverCode?.byteLength ?? 0,
-    logoBytes,
     staticBytes,
   ]);
 
-  return { clientCode, logos, serverCode, staticAssets };
+  return { clientCode, serverCode, staticAssets };
 };
 
 /** Only the host publishes; sandbox output is parsed as data and never executed here. */
@@ -190,8 +154,10 @@ export const publishDeployment = async (
     JSON.parse(manifestContent.toString("utf-8"))
   );
 
-  const { clientCode, logos, serverCode, staticAssets } =
-    await readDeploymentAssets(sandbox, manifest);
+  const { clientCode, serverCode, staticAssets } = await readDeploymentAssets(
+    sandbox,
+    manifest
+  );
 
   const request = async (pathname: string, body: string) => {
     const response = await fetchImplementation(
@@ -228,18 +194,7 @@ export const publishDeployment = async (
             objectKey: "client.js",
           },
         ],
-        logos:
-          logos.length > 0
-            ? Object.fromEntries(
-                logos.map((logo) => [
-                  logo.variant,
-                  {
-                    ...describeAsset(logo.content),
-                    contentType: logo.contentType,
-                  },
-                ])
-              )
-            : undefined,
+        logos: manifest.assets.logos,
         scope,
         server: serverCode
           ? {
@@ -320,12 +275,6 @@ export const publishDeployment = async (
   if (serverCode !== undefined) {
     await upload(created.server, serverCode, "gzip");
   }
-
-  await Promise.all(
-    logos.map(async (logo) => {
-      await upload(created.logos?.[logo.variant], logo.content);
-    })
-  );
 
   const published = publishedSchema.parse(
     await request(

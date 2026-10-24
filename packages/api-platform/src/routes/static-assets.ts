@@ -1,5 +1,9 @@
 import { ORPCError } from "@orpc/server";
 import {
+  logoContentTypes,
+  validateLogoAsset,
+} from "@patchsmith/asset-delivery/logo-validation";
+import {
   isStaticAssetPath,
   maxStaticAssetBytes,
   maxStaticAssets,
@@ -153,7 +157,8 @@ export const deploymentStaticAssets = async (deploymentId: string) => {
 /** Signed uploads bind SHA-256 to the bytes; publication also verifies R2 metadata. */
 export const verifyStaticAssets = async (
   storage: Context["storage"],
-  deploymentId: string
+  deploymentId: string,
+  logoPaths: (string | null)[] = []
 ) => {
   await forEachSequential(
     await deploymentStaticAssets(deploymentId),
@@ -173,6 +178,51 @@ export const verifyStaticAssets = async (
           );
         }
 
+        if (logoPaths.includes(`assets/${asset.checksum}/${asset.path}`)) {
+          const contentType = logoContentTypes.find(
+            (value) => value === asset.contentType
+          );
+
+          if (!contentType) {
+            throw new Error("Unsupported logo format.");
+          }
+
+          const download = await storage.createDownloadUrl({
+            expiresInSeconds: 60,
+            key: asset.objectKey,
+          });
+
+          const url = new URL(download.url);
+
+          if (url.protocol !== "https:") {
+            throw new Error("Logo download URL must use HTTPS.");
+          }
+
+          const controller = new AbortController();
+
+          const timeout = setTimeout(() => {
+            controller.abort();
+          }, 10_000);
+
+          try {
+            const response = await fetch(url, {
+              redirect: "error",
+              signal: controller.signal,
+            });
+
+            if (!response.ok) {
+              throw new Error("Failed to inspect uploaded logo.");
+            }
+
+            validateLogoAsset(
+              new Uint8Array(await response.arrayBuffer()),
+              contentType
+            );
+          } finally {
+            clearTimeout(timeout);
+          }
+        }
+
         await db
           .update(appAsset)
           .set({ status: "verified" })
@@ -180,7 +230,7 @@ export const verifyStaticAssets = async (
       } catch (error) {
         throw new ORPCError("BAD_REQUEST", {
           cause: error,
-          message: `Failed to verify asset ${asset.path}.`,
+          message: `Failed to verify asset ${asset.path}.${error instanceof Error ? ` ${error.message}` : ""}`,
         });
       }
     }

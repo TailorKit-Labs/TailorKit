@@ -37,3 +37,47 @@ it.each([
     }).success
   ).toBe(false);
 });
+
+it("references one static asset for both logo variants", () => {
+  const asset = {
+    checksum: "a".repeat(64),
+    contentLength: 64,
+    path: "brand/logo.svg",
+  };
+
+  expect(
+    createPatchsmithUploadManifest(
+      { dark: asset.path, light: asset.path },
+      false,
+      undefined,
+      undefined,
+      [],
+      [asset]
+    ).assets
+  ).toMatchObject({
+    logos: { dark: asset.path, light: asset.path },
+    static: [asset],
+  });
+});
+
+it.each([
+  "../logo.svg",
+  "./logo.svg",
+  "assets/logo.svg",
+  "/logo.svg",
+  "logo.js",
+  "missing.svg",
+])("rejects invalid or missing logo asset references: %s", (logo) => {
+  expect(
+    v.safeParse(patchsmithUploadManifestSchema, {
+      assets: {
+        client: "client/client.js",
+        logos: { light: logo },
+        static: [
+          { checksum: "a".repeat(64), contentLength: 64, path: "logo.svg" },
+        ],
+      },
+      version: 1,
+    }).success
+  ).toBe(false);
+});

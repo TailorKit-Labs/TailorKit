@@ -14,11 +14,18 @@ const clientCode = Buffer.from("export const client = true;");
 const serverCode = Buffer.from("export const server = true;");
 const logo = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>');
 
+const logoArtifact = {
+  checksum: createHash("sha256").update(logo).digest("hex"),
+  contentLength: logo.byteLength,
+  path: "logo.svg",
+};
+
 const manifest = {
   assets: {
     client: "client/client.js",
-    logos: { dark: "client/logo-dark.svg" },
+    logos: { dark: "logo.svg" },
     server: "server/server.js",
+    static: [logoArtifact],
   },
   version: 1,
   views: [{ path: "/", slot: "panel" }],
@@ -27,8 +34,8 @@ const manifest = {
 const reader = (overrides: Record<string, Buffer> = {}) => {
   const files = new Map<string, Buffer>(
     Object.entries({
+      "assets/logo.svg": logo,
       "client/client.js": clientCode,
-      "client/logo-dark.svg": logo,
       "patchsmith-upload.json": Buffer.from(JSON.stringify(manifest)),
       "server/server.js": serverCode,
       ...overrides,
@@ -229,13 +236,14 @@ it("uploads data on the host and keeps authorization out of signed asset request
             },
           ],
           deployment: { id: "created-deployment" },
-          logos: {
-            dark: {
+          server: { uploadUrl: "https://storage.test/server" },
+          staticAssets: [
+            {
+              file: logoArtifact,
               headers: { "content-type": "image/svg+xml" },
               uploadUrl: "https://storage.test/logo",
             },
-          },
-          server: { uploadUrl: "https://storage.test/server" },
+          ],
         })
       );
     }
@@ -271,12 +279,12 @@ it("uploads data on the host and keeps authorization out of signed asset request
   ).toBe("Deployment: published-deployment");
   expect(requests.map((request) => request.url)).toEqual([
     "https://platform.test/api/platform/deployments",
+    "https://storage.test/logo",
     "https://storage.test/client",
     "https://storage.test/server",
-    "https://storage.test/logo",
     "https://platform.test/api/platform/deployments/created-deployment",
   ]);
-  const [create, clientUpload, serverUpload, logoUpload, publish] = requests;
+  const [create, logoUpload, clientUpload, serverUpload, publish] = requests;
 
   if (!create || !clientUpload || !serverUpload || !logoUpload || !publish) {
     throw new Error("Expected create, uploads, and publication.");
@@ -393,8 +401,8 @@ it.each([0, 1])(
         return Response.json({
           assets: [{ uploadUrl: "https://storage.test/client" }],
           deployment: { id: "created" },
-          logos: { dark: {}, light: {} },
           server: { uploadUrl: "https://storage.test/server" },
+          staticAssets: [{ file: logoArtifact }],
         });
       }
 
@@ -408,21 +416,20 @@ it.each([0, 1])(
     const publish = publishDeployment(
       reader({
         "client/client.js": Buffer.alloc(6 * 1024 * 1024, 120),
-        "client/logo-light.svg": logo,
         "patchsmith-upload.json": Buffer.from(
           JSON.stringify({
             ...manifest,
             assets: {
               ...manifest.assets,
               logos: {
-                dark: "client/logo-dark.svg",
-                light: "client/logo-light.svg",
+                dark: "logo.svg",
+                light: "logo.svg",
               },
             },
           })
         ),
         "server/server.js": Buffer.alloc(
-          4 * 1024 * 1024 - 2 * logo.byteLength + extraBytes,
+          4 * 1024 * 1024 - logo.byteLength + extraBytes,
           121
         ),
       }),

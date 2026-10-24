@@ -49,10 +49,6 @@ const mocks = vi.hoisted(() => ({
     ) => Promise<{
       deployment: { id: string };
       assets: { headers?: Record<string, string>; uploadUrl: string }[];
-      logos?: Record<
-        string,
-        { headers?: Record<string, string>; uploadUrl: string }
-      >;
       server?: { uploadUrl: string };
       staticAssets?: {
         file: { checksum: string; path: string };
@@ -284,9 +280,9 @@ it.each([false, true])(
         ([url]) => url === "https://uploads.example/doom.wad"
       );
 
-      expect(requireBytes(uploaded?.[1]?.body)).toEqual(
-        new Uint8Array(content)
-      );
+      expect(
+        Buffer.from(requireBytes(uploaded?.[1]?.body)).equals(content)
+      ).toBe(true);
       expect(
         new Headers(uploaded?.[1]?.headers).get("Content-Encoding")
       ).toBeNull();
@@ -881,7 +877,15 @@ it.each(["client", "server"])(
 
 it("preserves signed upload headers and uploads logos without gzip encoding", async () => {
   const logo = '<svg xmlns="http://www.w3.org/2000/svg"/>';
-  await writeFile(path.join(root, ".patchsmith/client/logo-light.svg"), logo);
+  await mkdir(path.join(root, ".patchsmith/assets"));
+  await writeFile(path.join(root, ".patchsmith/assets/logo-light.svg"), logo);
+
+  const artifact = {
+    checksum: createHash("sha256").update(logo).digest("hex"),
+    contentLength: Buffer.byteLength(logo),
+    path: "logo-light.svg",
+  };
+
   const manifestPath = path.join(root, ".patchsmith/patchsmith-upload.json");
 
   const manifest = z
@@ -890,11 +894,21 @@ it("preserves signed upload headers and uploads logos without gzip encoding", as
         client: z.string(),
         logos: z.record(z.string(), z.string()).optional(),
         server: z.string().optional(),
+        static: z
+          .array(
+            z.object({
+              checksum: z.string(),
+              contentLength: z.number(),
+              path: z.string(),
+            })
+          )
+          .optional(),
       }),
     })
     .parse(JSON.parse(await readFile(manifestPath, "utf-8")));
 
-  manifest.assets.logos = { light: "client/logo-light.svg" };
+  manifest.assets.logos = { light: "logo-light.svg" };
+  manifest.assets.static = [artifact];
   await writeFile(manifestPath, JSON.stringify(manifest));
   mocks.create.mockResolvedValue({
     assets: [
@@ -907,13 +921,14 @@ it("preserves signed upload headers and uploads logos without gzip encoding", as
       },
     ],
     deployment: { id: "deployment" },
-    logos: {
-      light: {
+    server: { uploadUrl: "https://uploads.example/server" },
+    staticAssets: [
+      {
+        file: artifact,
         headers: { "content-type": "image/svg+xml" },
         uploadUrl: "https://uploads.example/logo",
       },
-    },
-    server: { uploadUrl: "https://uploads.example/server" },
+    ],
   });
 
   const fetch = vi
@@ -971,20 +986,28 @@ it.each([0, 1])(
     );
     await writeFile(
       path.join(root, ".patchsmith/server/server.js"),
-      "y".repeat(4 * 1024 * 1024 - 2 * logo.length + extraBytes)
+      "y".repeat(4 * 1024 * 1024 - logo.length + extraBytes)
     );
-    await writeFile(path.join(root, ".patchsmith/client/logo-dark.svg"), logo);
-    await writeFile(path.join(root, ".patchsmith/client/logo-light.svg"), logo);
+    await mkdir(path.join(root, ".patchsmith/assets"));
+    await writeFile(path.join(root, ".patchsmith/assets/logo.svg"), logo);
+
+    const artifact = {
+      checksum: createHash("sha256").update(logo).digest("hex"),
+      contentLength: Buffer.byteLength(logo),
+      path: "logo.svg",
+    };
+
     await writeFile(
       path.join(root, ".patchsmith/patchsmith-upload.json"),
       JSON.stringify({
         assets: {
           client: "client/client.js",
           logos: {
-            dark: "client/logo-dark.svg",
-            light: "client/logo-light.svg",
+            dark: "logo.svg",
+            light: "logo.svg",
           },
           server: "server/server.js",
+          static: [artifact],
         },
         version: 1,
       })
@@ -992,11 +1015,10 @@ it.each([0, 1])(
     mocks.create.mockResolvedValue({
       assets: [{ uploadUrl: "https://uploads.example/client" }],
       deployment: { id: "deployment" },
-      logos: {
-        dark: { uploadUrl: "https://uploads.example/logo-dark" },
-        light: { uploadUrl: "https://uploads.example/logo-light" },
-      },
       server: { uploadUrl: "https://uploads.example/server" },
+      staticAssets: [
+        { file: artifact, uploadUrl: "https://uploads.example/logo" },
+      ],
     });
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(null, { status: 200 })

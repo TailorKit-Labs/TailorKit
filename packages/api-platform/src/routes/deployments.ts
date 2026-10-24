@@ -2,10 +2,10 @@ import { openapi } from "@orpc/openapi";
 import { ORPCError } from "@orpc/server";
 import { maxDeploymentBytes } from "@patchsmith/asset-delivery";
 import {
-  logoContentTypes,
   maxLogoBytes,
-  validateLogoAsset,
+  logoContentTypes,
 } from "@patchsmith/asset-delivery/logo-validation";
+import { isStaticAssetPath } from "@patchsmith/asset-delivery/static-assets";
 import { db } from "@patchsmith/db";
 import {
   app,
@@ -43,22 +43,9 @@ import {
   verifyStaticAssets,
 } from "./static-assets";
 
-const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
-  typeof value === "object" && value !== null;
-
 const uploadUrlExpiresInSeconds = 15 * 60;
 
-const logoInspectionTimeoutMs = 10_000;
-
 const bundleInspectionTimeoutMs = 10_000;
-
-const logoExtensionByContentType = {
-  "image/png": "png",
-  "image/svg+xml": "svg",
-  "image/webp": "webp",
-} as const;
-
-const logoContentType = z.enum(logoContentTypes);
 
 const deploymentFileMetadataFields = {
   checksum: z
@@ -80,10 +67,13 @@ const createDeploymentServerInput = createDeploymentAssetInput.extend({
   objectKey: z.literal("server.js"),
 });
 
-const createDeploymentLogoInput = z.object({
-  ...deploymentFileMetadataFields,
-  contentLength: z.number().int().min(1).max(maxLogoBytes),
-  contentType: logoContentType,
+const logoPathSchema = z
+  .string()
+  .refine(isStaticAssetPath, "Invalid logo asset path");
+
+const deploymentLogos = z.object({
+  dark: logoPathSchema.optional(),
+  light: logoPathSchema.optional(),
 });
 
 const createDeploymentInput = z
@@ -91,12 +81,7 @@ const createDeploymentInput = z
     app: appSelectorSchema,
     assets: z.tuple([createDeploymentAssetInput]),
     hooks: AppDeployment.shape.hooks.optional(),
-    logos: z
-      .object({
-        dark: createDeploymentLogoInput.optional(),
-        light: createDeploymentLogoInput.optional(),
-      })
-      .optional(),
+    logos: deploymentLogos.optional(),
     scope: scopeSchema,
     server: createDeploymentServerInput.optional(),
     staticAssets: staticAssetsInput.optional(),
@@ -109,11 +94,9 @@ const createDeploymentInput = z
     }
   )
   .refine(
-    ({ assets, server, logos, staticAssets }) =>
+    ({ assets, server, staticAssets }) =>
       assets.reduce((total, asset) => total + asset.contentLength, 0) +
         (server?.contentLength ?? 0) +
-        (logos?.dark?.contentLength ?? 0) +
-        (logos?.light?.contentLength ?? 0) +
         (staticAssets ?? []).reduce(
           (total, asset) => total + asset.contentLength,
           0
@@ -130,37 +113,6 @@ const deploymentAssetUpload = z.object({
   uploadUrl: z.url(),
 });
 
-const deploymentLogoUpload = deploymentAssetUpload.extend({
-  file: AppDeploymentFile.extend({ contentType: logoContentType }),
-  uploadUrl: z.url().optional(),
-});
-
-const deploymentLogoUploads = z.object({
-  dark: deploymentLogoUpload.optional(),
-  light: deploymentLogoUpload.optional(),
-});
-
-const isNotFound = (cause: unknown) => {
-  if (!isObjectValue(cause)) {
-    return false;
-  }
-
-  const parsed = z
-    .object({
-      $metadata: z.object({ httpStatusCode: z.number().optional() }).optional(),
-      name: z.string().optional(),
-    })
-    .safeParse(cause);
-
-  const value = parsed.success ? parsed.data : undefined;
-
-  return (
-    value?.name === "NoSuchKey" ||
-    value?.name === "NotFound" ||
-    value?.$metadata?.httpStatusCode === 404
-  );
-};
-
 const hexToBase64 = (hex: string): string => {
   const bytes = new Uint8Array(hex.length / 2);
 
@@ -169,28 +121,6 @@ const hexToBase64 = (hex: string): string => {
   }
 
   return Buffer.from(bytes).toString("base64");
-};
-
-const hasMatchingLogo = async (
-  storage: Context["storage"],
-  logo: z.output<typeof createDeploymentLogoInput>,
-  objectKey: string
-) => {
-  try {
-    const object = await storage.head({ key: objectKey });
-
-    return (
-      object.contentLength === logo.contentLength &&
-      object.contentType === logo.contentType &&
-      object.checksumSha256 === hexToBase64(logo.checksum)
-    );
-  } catch (error) {
-    if (isNotFound(error)) {
-      return false;
-    }
-
-    throw error;
-  }
 };
 
 const inspectCompressedBundle = async (
@@ -442,7 +372,6 @@ const createAppDeployment = cliRouter
       body: z.object({
         assets: z.array(deploymentAssetUpload),
         deployment: AppDeployment,
-        logos: deploymentLogoUploads.optional(),
         server: deploymentAssetUpload.optional(),
         staticAssets: z
           .array(
@@ -466,29 +395,30 @@ const createAppDeployment = cliRouter
       input.body.staticAssets ?? []
     );
 
-    const requestedLogos = Object.entries(input.body.logos ?? {}).map(
-      ([variant, logo]) => ({
-        asset: {
-          ...logo,
-          encoding: null,
-          objectKey: `logos/${logo.checksum}.${logoExtensionByContentType[logo.contentType]}`,
-        },
-        variant,
-      })
-    );
+    const logoPaths = Object.values(input.body.logos ?? {});
 
-    const uniqueLogoAssets = [
-      ...new Map(
-        requestedLogos.map(({ asset }) => [asset.objectKey, asset])
-      ).values(),
-    ];
+    for (const logoPath of logoPaths) {
+      const asset = preparedStaticAssets.find(
+        (entry) => entry.path === logoPath
+      );
+
+      if (
+        !asset ||
+        !logoContentTypes.some((type) => type === asset.contentType) ||
+        asset.contentLength > maxLogoBytes
+      ) {
+        throw new ORPCError("BAD_REQUEST", {
+          message:
+            "Logos must reference SVG, PNG, or WebP assets within the logo size limit.",
+        });
+      }
+    }
 
     const requestedAssets = [
       ...input.body.assets.map((asset) => ({ asset, kind: "client" as const })),
       ...(input.body.server
         ? [{ asset: input.body.server, kind: "server" as const }]
         : []),
-      ...uniqueLogoAssets.map((asset) => ({ asset, kind: "logo" as const })),
     ];
 
     const assets = await Promise.all(
@@ -496,32 +426,20 @@ const createAppDeployment = cliRouter
         const fileId = crypto.randomUUID();
         const appBaseKey = `projects/${context.project.shortId}/apps/${context.app.shortId}`;
 
-        const objectKey =
-          kind === "logo"
-            ? `${appBaseKey}/${asset.objectKey}`
-            : `${appBaseKey}/deployments/${deploymentShortId}/${kind}/${asset.objectKey}`;
+        const objectKey = `${appBaseKey}/deployments/${deploymentShortId}/${kind}/${asset.objectKey}`;
 
-        const shouldReuse =
-          kind === "logo" &&
-          (await hasMatchingLogo(context.storage, asset, objectKey));
-
-        const uploadUrl = shouldReuse
-          ? undefined
-          : await context.storage.createUploadUrl({
-              checksumSha256: hexToBase64(asset.checksum),
-              contentEncoding: asset.encoding === "gzip" ? "gzip" : undefined,
-              contentType: asset.contentType,
-              expiresInSeconds: uploadUrlExpiresInSeconds,
-              key: objectKey,
-              metadata:
-                kind === "logo"
-                  ? { appId: context.app.id, checksum: asset.checksum }
-                  : {
-                      appDeploymentId: deploymentId,
-                      appId: context.app.id,
-                      fileId,
-                    },
-            });
+        const uploadUrl = await context.storage.createUploadUrl({
+          checksumSha256: hexToBase64(asset.checksum),
+          contentEncoding: asset.encoding === "gzip" ? "gzip" : undefined,
+          contentType: asset.contentType,
+          expiresInSeconds: uploadUrlExpiresInSeconds,
+          key: objectKey,
+          metadata: {
+            appDeploymentId: deploymentId,
+            appId: context.app.id,
+            fileId,
+          },
+        });
 
         return { asset, fileId, objectKey, uploadUrl };
       })
@@ -569,32 +487,20 @@ const createAppDeployment = cliRouter
 
       const fileByAssetPath = mapReturnedFilesByAssetPath(assets, files);
 
-      const logoDarkPath = requestedLogos.find(
-        ({ variant }) => variant === "dark"
-      )?.asset.objectKey;
+      const logoAssetPath = (variant: "dark" | "light") => {
+        const asset = preparedStaticAssets.find(
+          (entry) => entry.path === input.body.logos?.[variant]
+        );
 
-      const logoLightPath = requestedLogos.find(
-        ({ variant }) => variant === "light"
-      )?.asset.objectKey;
+        return asset ? `assets/${asset.checksum}/${asset.path}` : null;
+      };
 
       const [updatedDeployment] = await tx
         .update(appDeployment)
         .set({
           clientEntryFileId: fileByAssetPath.get("client.js")?.id,
-          logoDarkFileId:
-            logoDarkPath !== undefined &&
-            logoDarkPath !== null &&
-            logoDarkPath !== ""
-              ? fileByAssetPath.get(logoDarkPath)?.id
-              : undefined,
-          logoDarkPath,
-          logoLightFileId:
-            logoLightPath !== undefined &&
-            logoLightPath !== null &&
-            logoLightPath !== ""
-              ? fileByAssetPath.get(logoLightPath)?.id
-              : undefined,
-          logoLightPath,
+          logoDarkPath: logoAssetPath("dark"),
+          logoLightPath: logoAssetPath("light"),
         })
         .where(eq(appDeployment.id, deployment.id))
         .returning();
@@ -681,50 +587,27 @@ const createAppDeployment = cliRouter
       });
     }
 
-    const uploadedLogos = Object.fromEntries(
-      requestedLogos.map(({ asset, variant }) => {
-        const upload = uploadedAssetByName.get(asset.objectKey);
-
-        if (!upload) {
-          throw new ORPCError("BAD_REQUEST", {
-            message: "Failed to resolve deployment asset.",
-          });
-        }
-
-        return [variant, upload];
-      })
-    );
-
     interface DeploymentUploads {
+      assets: typeof uploadedAssets;
+      deployment: typeof createdDeployment;
+      staticAssets: typeof created.staticAssets;
       server?: typeof serverUpload & { uploadUrl: string };
-      logos?: typeof uploadedLogos;
     }
 
-    const optionalUploads: DeploymentUploads = {};
+    const body: DeploymentUploads = {
+      assets: uploadedAssets,
+      deployment: createdDeployment,
+      staticAssets: created.staticAssets,
+    };
 
     if (
       serverUpload?.uploadUrl !== undefined &&
-      serverUpload?.uploadUrl !== null &&
-      serverUpload?.uploadUrl !== ""
+      serverUpload.uploadUrl !== ""
     ) {
-      optionalUploads.server = {
-        ...serverUpload,
-        uploadUrl: serverUpload.uploadUrl,
-      };
+      body.server = { ...serverUpload, uploadUrl: serverUpload.uploadUrl };
     }
 
-    if (Object.keys(uploadedLogos).length > 0) {
-      optionalUploads.logos = uploadedLogos;
-    }
-
-    return {
-      body: {
-        ...optionalUploads,
-        assets: uploadedAssets,
-        deployment: createdDeployment,
-        staticAssets: created.staticAssets,
-      },
-    };
+    return { body };
   });
 
 const publishAppDeployment = cliRouter
@@ -767,13 +650,6 @@ const publishAppDeployment = cliRouter
       });
     }
 
-    // Logo variants count toward the budget even when they share one stored file.
-    const fileCopies = (fileId: string) =>
-      fileId === deployment.logoDarkFileId &&
-      fileId === deployment.logoLightFileId
-        ? 2
-        : 1;
-
     const staticAssets = await deploymentStaticAssets(deployment.id);
 
     const staticBytes = staticAssets.reduce(
@@ -783,10 +659,7 @@ const publishAppDeployment = cliRouter
 
     const storedBytes =
       staticBytes +
-      files.reduce(
-        (total, file) => total + file.contentLength * fileCopies(file.id),
-        0
-      );
+      files.reduce((total, file) => total + file.contentLength, 0);
 
     if (storedBytes > maxDeploymentBytes) {
       throw new ORPCError("BAD_REQUEST", {
@@ -845,62 +718,21 @@ const publishAppDeployment = cliRouter
           );
         }
 
-        const copies = fileCopies(file.id);
-
         const decodedBytes =
           file.encoding === "gzip"
             ? await inspectCompressedBundle(
                 context.storage,
                 file.objectKey,
-                Math.floor((maxDeploymentBytes - deploymentBytes) / copies)
+                maxDeploymentBytes - deploymentBytes
               )
             : contentLength;
 
-        deploymentBytes += decodedBytes * copies;
+        deploymentBytes += decodedBytes;
 
         if (deploymentBytes > maxDeploymentBytes) {
           throw new Error(
             `Combined deployment assets cannot exceed ${maxDeploymentBytes} bytes after decompression.`
           );
-        }
-
-        if (file.contentType !== "application/javascript") {
-          const download = await context.storage.createDownloadUrl({
-            expiresInSeconds: 60,
-            key: file.objectKey,
-          });
-
-          const downloadUrl = new URL(download.url);
-
-          if (downloadUrl.protocol !== "https:") {
-            throw new Error("Logo download URL must use HTTPS.");
-          }
-
-          const controller = new AbortController();
-
-          const timeout = setTimeout(() => {
-            controller.abort();
-          }, logoInspectionTimeoutMs);
-
-          try {
-            const response = await fetch(downloadUrl, {
-              redirect: "error",
-              signal: controller.signal,
-            });
-
-            if (!response.ok) {
-              throw new Error("Failed to inspect uploaded logo.");
-            }
-
-            validateLogoAsset(
-              new Uint8Array(await response.arrayBuffer()),
-              z
-                .enum(["image/png", "image/svg+xml", "image/webp"])
-                .parse(file.contentType)
-            );
-          } finally {
-            clearTimeout(timeout);
-          }
         }
 
         await db
@@ -928,7 +760,10 @@ const publishAppDeployment = cliRouter
     });
 
     try {
-      await verifyStaticAssets(context.storage, deployment.id);
+      await verifyStaticAssets(context.storage, deployment.id, [
+        deployment.logoDarkPath,
+        deployment.logoLightPath,
+      ]);
     } catch (error) {
       await db
         .update(appDeployment)

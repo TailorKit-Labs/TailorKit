@@ -1,4 +1,4 @@
-import { readFile, realpath, writeFile } from "node:fs/promises";
+import { realpath, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 
@@ -6,8 +6,6 @@ import { validateLogoAsset } from "@patchsmith/asset-delivery/logo-validation";
 import type { LogoContentType } from "@patchsmith/asset-delivery/logo-validation";
 import * as v from "valibot";
 import type { Plugin, PluginOption, ResolvedConfig } from "vite";
-
-import { forEachSequential } from "#for-each-sequential";
 
 import { readClientManifest } from "./builder/client-views";
 import { getBuildEnvironment } from "./builder/env";
@@ -218,7 +216,8 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
     }
 
     const logoManifest: LogoManifest = {};
-    await forEachSequential(["light", "dark"] as const, async (variant) => {
+
+    for (const variant of ["light", "dark"] as const) {
       const configuredPath = loaded.config.logos?.[variant];
 
       if (
@@ -228,7 +227,7 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
           configuredPath !== ""
         )
       ) {
-        return;
+        continue;
       }
 
       const extension = path.extname(configuredPath).toLowerCase().slice(1);
@@ -245,13 +244,18 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
         );
       }
 
-      const content = await readFile(path.resolve(loaded.root, configuredPath));
-      validateLogoAsset(content, contentType);
-      const filename = `logo-${variant}.${extension}`;
+      const asset = staticAssets.find((entry) => entry.path === configuredPath);
 
-      await writeFile(path.join(clientOutDir, filename), content);
-      logoManifest[variant] = `client/${filename}`;
-    });
+      if (!asset) {
+        throw new Error(
+          `The ${variant} logo must reference a file in assets/: ${configuredPath}`
+        );
+      }
+
+      validateLogoAsset(asset.content, contentType);
+      logoManifest[variant] = configuredPath;
+    }
+
     await writeFile(
       path.join(clientOutDir, "views.json"),
       `${JSON.stringify(views)}\n`

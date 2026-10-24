@@ -59,23 +59,19 @@ interface DeploymentAssetUpload {
   uploadUrl: string;
 }
 
-interface DeploymentLogoUpload {
+interface StaticAssetUpload {
   headers?: Record<string, string>;
   uploadUrl?: string;
 }
 
 interface DeploymentCreateResult {
-  staticAssets?: (DeploymentLogoUpload & {
+  staticAssets?: (StaticAssetUpload & {
     file: { path: string; checksum: string };
   })[];
   assets: DeploymentAssetUpload[];
   server?: DeploymentAssetUpload;
   deployment: {
     id: string;
-  };
-  logos?: {
-    dark?: DeploymentLogoUpload;
-    light?: DeploymentLogoUpload;
   };
 }
 
@@ -84,7 +80,7 @@ const assetUploadSchema = z.object({
   uploadUrl: z.string(),
 });
 
-const logoUploadSchema = z.object({
+const staticUploadSchema = z.object({
   headers: z.record(z.string(), z.string()).optional(),
   uploadUrl: z.string().optional(),
 });
@@ -92,16 +88,10 @@ const logoUploadSchema = z.object({
 const deploymentCreateSchema = z.object({
   assets: z.array(assetUploadSchema),
   deployment: z.object({ id: z.string() }),
-  logos: z
-    .object({
-      dark: logoUploadSchema.optional(),
-      light: logoUploadSchema.optional(),
-    })
-    .optional(),
   server: assetUploadSchema.optional(),
   staticAssets: z
     .array(
-      logoUploadSchema.extend({
+      staticUploadSchema.extend({
         file: z.object({ checksum: z.string(), path: z.string() }),
       })
     )
@@ -136,15 +126,6 @@ interface UploadedFileSummary {
 }
 
 const gzipAsync = promisify(gzip);
-
-const logoContentTypeByExtension = new Map<
-  string,
-  "image/png" | "image/svg+xml" | "image/webp"
->([
-  ["png", "image/png"],
-  ["svg", "image/svg+xml"],
-  ["webp", "image/webp"],
-]);
 
 const unwrapRpcResult = <TSchema extends z.ZodType>(
   schema: TSchema,
@@ -200,7 +181,7 @@ const sha256Hex = (content: Buffer): string =>
   createHash("sha256").update(content).digest("hex");
 
 const uploadAsset = async (
-  asset: DeploymentAssetUpload | DeploymentLogoUpload,
+  asset: DeploymentAssetUpload | StaticAssetUpload,
   content: Buffer,
   contentEncoding?: "gzip"
 ): Promise<void> => {
@@ -456,36 +437,6 @@ export const runDeploy = async (
     ? await gzipAsync(serverAsset)
     : undefined;
 
-  const logoEntries = Object.entries(manifest.assets.logos ?? {}).flatMap<{
-    filename: string;
-    variant: "dark" | "light";
-  }>(([variant, filename]) => {
-    if (variant === "dark" || variant === "light") {
-      return [{ filename, variant }];
-    }
-
-    return [];
-  });
-
-  const logoAssets = await Promise.all(
-    logoEntries.map(async ({ variant, filename }) => {
-      const content = await readFile(path.join(outDir, filename));
-      const extension = path.extname(filename).slice(1);
-      const contentType = logoContentTypeByExtension.get(extension);
-
-      if (!contentType) {
-        throw new Error(`Unsupported ${variant} logo format.`);
-      }
-
-      return { content, contentType, filename, variant };
-    })
-  );
-
-  const logoBytes = logoAssets.reduce(
-    (total, { content }) => total + content.byteLength,
-    0
-  );
-
   const staticBytes = staticAssets.reduce(
     (total, asset) => total + asset.content.byteLength,
     0
@@ -494,13 +445,11 @@ export const runDeploy = async (
   assertDeploymentSize([
     clientAsset.byteLength,
     serverAsset?.byteLength ?? 0,
-    logoBytes,
     staticBytes,
   ]);
   assertDeploymentSize([
     clientAssetGzip.byteLength,
     serverAssetGzip?.byteLength ?? 0,
-    logoBytes,
     staticBytes,
   ]);
 
@@ -568,19 +517,7 @@ export const runDeploy = async (
           },
         ],
         hooks: manifest.hooks,
-        logos:
-          logoAssets.length > 0
-            ? Object.fromEntries(
-                logoAssets.map((asset) => [
-                  asset.variant,
-                  {
-                    checksum: sha256Hex(asset.content),
-                    contentLength: asset.content.byteLength,
-                    contentType: asset.contentType,
-                  },
-                ])
-              )
-            : undefined,
+        logos: manifest.assets.logos,
         server: serverAssetGzip
           ? {
               checksum: sha256Hex(serverAssetGzip),
@@ -653,17 +590,6 @@ export const runDeploy = async (
       ? [uploadAsset(created.server, serverAssetGzip, "gzip")]
       : []),
     uploadAsset(created.assets[0], clientAssetGzip, "gzip"),
-    ...logoAssets.map(async (logo) => {
-      const upload = created.logos?.[logo.variant];
-
-      if (!upload) {
-        throw new Error(
-          `Deployment did not return an upload URL for the ${logo.variant} logo.`
-        );
-      }
-
-      await uploadAsset(upload, logo.content);
-    }),
   ]);
 
   const { description, name } = loaded.config;
@@ -697,18 +623,6 @@ export const runDeploy = async (
     })
   );
 
-  const uploadedLogos = await Promise.all(
-    logoAssets.map(async (asset) => {
-      const compressed = await gzipAsync(asset.content);
-
-      return {
-        gzipSize: compressed.byteLength,
-        path: asset.filename,
-        size: asset.content.byteLength,
-      };
-    })
-  );
-
   const uploadedServer = [];
 
   if (serverAsset && serverAssetGzip && manifest.assets.server) {
@@ -732,7 +646,6 @@ export const runDeploy = async (
         size: clientAsset.byteLength,
       },
       ...uploadedServer,
-      ...uploadedLogos,
       ...staticAssets.map((asset) => ({
         gzipSize: asset.contentLength,
         path: `assets/${asset.path}`,

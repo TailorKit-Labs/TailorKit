@@ -22,7 +22,7 @@ const shortId = "[0-9a-z]{12}";
 const shortIdPattern = /^[0-9a-z]{12}$/u;
 
 const deploymentAssetPath = new RegExp(
-  `^/a/(${shortId})/d/(${shortId})/(?:client/(client\\.js)|logos/([a-f0-9]{64}\\.(?:svg|png|webp)))$`,
+  `^/a/(${shortId})/d/(${shortId})/client/client\\.js$`,
   "u"
 );
 
@@ -46,24 +46,6 @@ export interface AssetIdentity {
   key: string;
   contentType: string;
 }
-
-const getAssetContentType = (
-  filename: string
-): AssetIdentity["contentType"] => {
-  if (filename.endsWith(".svg")) {
-    return "image/svg+xml";
-  }
-
-  if (filename.endsWith(".png")) {
-    return "image/png";
-  }
-
-  if (filename.endsWith(".webp")) {
-    return "image/webp";
-  }
-
-  return "application/javascript";
-};
 
 const createIdentity = (
   projectShortId: string,
@@ -101,20 +83,15 @@ const createIdentity = (
     return undefined;
   }
 
-  const [, appMatch, deploymentMatch, clientFilename, logoFilename] = match;
+  const [, appMatch, deploymentMatch] = match;
   const appShortId = requireValue(appMatch);
   const deploymentShortId = requireValue(deploymentMatch);
-  const filename = requireValue(clientFilename ?? logoFilename);
-  const appKey = `projects/${projectShortId}/apps/${appShortId}`;
 
   return {
     appShortId,
-    contentType: getAssetContentType(filename),
+    contentType: "application/javascript",
     deploymentShortId,
-    key:
-      clientFilename === undefined
-        ? `${appKey}/logos/${filename}`
-        : `${appKey}/deployments/${deploymentShortId}/client/${filename}`,
+    key: `projects/${projectShortId}/apps/${appShortId}/deployments/${deploymentShortId}/client/client.js`,
     projectShortId,
   };
 };

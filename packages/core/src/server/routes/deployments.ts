@@ -41,23 +41,12 @@ const serverAssetInput = v.object({
   objectKey: v.literal("server.js"),
 });
 
-const logoAssetInput = v.object({
-  checksum: v.string(),
-  contentLength: v.pipe(
-    v.number(),
-    v.integer(),
-    v.minValue(1),
-    v.maxValue(256 * 1024)
-  ),
-  contentType: v.picklist(["image/svg+xml", "image/png", "image/webp"]),
-});
-
 const deploymentAssetsInput = v.tuple([clientAssetInput]);
 
 const deploymentLogosInput = v.optional(
   v.object({
-    dark: v.optional(logoAssetInput),
-    light: v.optional(logoAssetInput),
+    dark: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(512))),
+    light: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(512))),
   })
 );
 

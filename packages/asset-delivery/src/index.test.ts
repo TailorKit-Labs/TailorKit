@@ -103,7 +103,7 @@ describe("asset delivery contract", () => {
   });
 
   it("maps content-addressed app logos to shared storage keys", () => {
-    const logoPath = `/a/${appId}/d/${deploymentId}/logos/${logoHash}.webp`;
+    const logoPath = `/a/${appId}/assets/${logoHash}/logo.webp`;
     expect(
       parseNodeAssetRequest(
         new Request(
@@ -113,8 +113,9 @@ describe("asset delivery contract", () => {
     ).toEqual({
       appShortId: appId,
       contentType: "image/webp",
-      deploymentShortId: deploymentId,
-      key: `projects/${projectId}/apps/${appId}/logos/${logoHash}.webp`,
+      immutable: true,
+      key: `projects/${projectId}/apps/${appId}/assets/${logoHash}/logo.webp`,
+      maxBytes: maxStaticAssetBytes,
       projectShortId: projectId,
     });
     expect(
@@ -124,7 +125,7 @@ describe("asset delivery contract", () => {
       )
     ).toEqual(
       expect.objectContaining({
-        key: `projects/${projectId}/apps/${appId}/logos/${logoHash}.webp`,
+        key: `projects/${projectId}/apps/${appId}/assets/${logoHash}/logo.webp`,
       })
     );
   });
