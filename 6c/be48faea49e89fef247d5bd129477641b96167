@@ -1,0 +1,78 @@
+packages/cli/src/deploy.ts
+  s_adf6c59eceb8ab::t_3fa15038beb4d2 455-458
+  s_adf6c59eceb8ab::t_e8e8d971714c18 13-14,16,460-462,464-467,469
+  s_adf6c59eceb8ab::t_04b3c621eade2c 15,463,468
+packages/vite/src/builder/upload-manifest.ts
+  s_adf6c59eceb8ab::t_3fa15038beb4d2 7
+  s_adf6c59eceb8ab::t_e8e8d971714c18 3-4,6
+  s_adf6c59eceb8ab::t_a2f95434ae43f6 5
+apps/apps-worker/src/supervisor/source.test.ts
+  s_adf6c59eceb8ab::t_e6e9286ef86f35 4,306,308,327-329,333
+  s_adf6c59eceb8ab::t_64baed9d367e91 284-287,330
+packages/agent/src/tools/publish.test.ts
+  s_adf6c59eceb8ab::t_64baed9d367e91 241-265,268-270
+  s_adf6c59eceb8ab::t_e8e8d971714c18 4,221,239
+  s_adf6c59eceb8ab::t_3335311c0810de 215-219,222-228,231-238,266-267,271-278
+  s_adf6c59eceb8ab::t_e6e9286ef86f35 5,192
+  s_adf6c59eceb8ab::t_b26f4d0bd0aeae 220,229-230,240
+packages/api-platform/openapi.json
+  s_adf6c59eceb8ab::t_2d305a189e2f69 4721
+packages/cli/README.md
+  s_adf6c59eceb8ab::t_3335311c0810de 7-10
+apps/apps-worker/src/supervisor/source.ts
+  s_adf6c59eceb8ab::t_64baed9d367e91 55-59
+packages/cli/src/deploy.test.ts
+  s_adf6c59eceb8ab::t_e6e9286ef86f35 18,618,690,692
+  s_adf6c59eceb8ab::t_3335311c0810de 708-711,720-721,736-738,744,748-751,755-764
+  s_adf6c59eceb8ab::t_e0cd9ed9994942 739-742
+  s_adf6c59eceb8ab::t_64baed9d367e91 712-719,722-730,732-735,745-747,752-754
+  s_adf6c59eceb8ab::t_a583ae510810b9 731,743
+.changeset/ten-mib-deployment-budget.md
+  s_adf6c59eceb8ab::t_4c3b90a5ffff0c 2-3
+  s_adf6c59eceb8ab::t_3335311c0810de 1,4-6
+packages/agent/src/tools/publish.ts
+  s_adf6c59eceb8ab::t_e8e8d971714c18 6,146-148,150-153,155
+  s_adf6c59eceb8ab::t_3fa15038beb4d2 5,7-9,68,76,112,114-115,118-120,141-144,223
+  s_adf6c59eceb8ab::t_e85c608881c1f9 145,149,154,156
+packages/api-platform/src/routes/deployments.ts
+  s_adf6c59eceb8ab::t_66d537f18b2826 45,103-107,110,183,185-186,196,203,212,222,224,230,232-233,722-741,791-807
+packages/api-platform/src/assets.test.ts
+  s_adf6c59eceb8ab::t_e6e9286ef86f35 270
+packages/api-platform/src/routes/deployments.test.ts
+  s_adf6c59eceb8ab::t_0290756f9cf5f8 601-602,606-609,952
+  s_adf6c59eceb8ab::t_4c3b90a5ffff0c 52-56,246,250,256,335
+  s_adf6c59eceb8ab::t_e8e8d971714c18 323-325,327-328
+  s_adf6c59eceb8ab::t_e0df05069d9a70 173-203,211-229,233-245,257-260,295,333,355,365-367,371-374
+  s_adf6c59eceb8ab::t_64baed9d367e91 204-210,230-232,248-249,251-254,261-294,296-322,329-332,334,336-354,356-363,368-370
+  s_adf6c59eceb8ab::t_e6e9286ef86f35 537,786,813,1074
+  s_adf6c59eceb8ab::t_baa620cc2f7496 610
+  s_adf6c59eceb8ab::t_159739852e8250 247,255,326,364
+packages/asset-delivery/src/index.test.ts
+  s_adf6c59eceb8ab::t_e6e9286ef86f35 10,118,120
+packages/asset-delivery/package.json
+  s_adf6c59eceb8ab::t_3fa15038beb4d2 23-27,35
+packages/asset-delivery/src/deployment-limits.ts
+  s_adf6c59eceb8ab::t_e8e8d971714c18 3-5,7-12
+  s_adf6c59eceb8ab::t_2d305a189e2f69 6
+  s_adf6c59eceb8ab::t_3fa15038beb4d2 1-2
+packages/asset-delivery/src/index.ts
+  s_adf6c59eceb8ab::t_3fa15038beb4d2 4,7-8
+apps/apps-worker/src/assets.test.ts
+  s_adf6c59eceb8ab::t_e6e9286ef86f35 394,427
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6cbe48faea49e89fef247d5bd129477641b96167",
+  "prompts": {},
+  "sessions": {
+    "s_adf6c59eceb8ab": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16c63-f376-7571-9ad7-4fee84c9eb81",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
