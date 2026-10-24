@@ -1,5 +1,12 @@
 # @patchsmith/vite
 
+## 0.1.0-beta.67
+
+### Patch Changes
+
+- 6cbe48f: Replace the separate 3 MiB client and server limits with a 10 MiB combined deployment budget covering client code, server code, and both logo variants. The uploaded total and the total before compression must each fit the budget. Logos retain their 256 KiB individual limit; externally hosted runtime downloads are not counted.
+- @patchsmith/app@0.1.0-beta.67
+
 ## 0.1.0-beta.66
 
 ### Minor Changes
