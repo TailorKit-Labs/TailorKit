@@ -427,20 +427,23 @@ export const runDeploy = async (
 
   const clientAssetPath = path.join(outDir, manifest.assets.client);
 
-  const staticAssets = await Promise.all(
-    (manifest.assets.static ?? []).map(async (asset) => {
-      const content = await readFile(path.join(outDir, "assets", asset.path));
+  const staticAssets: (NonNullable<
+    PatchsmithUploadManifest["assets"]["static"]
+  >[number] & { content: Buffer })[] = [];
 
-      if (
-        content.byteLength !== asset.contentLength ||
-        sha256Hex(content) !== asset.checksum
-      ) {
-        throw new Error(`Built asset changed after hashing: ${asset.path}`);
-      }
+  for (const asset of manifest.assets.static ?? []) {
+    // oxlint-disable-next-line no-await-in-loop -- Read and validate each asset before opening the next file.
+    const content = await readFile(path.join(outDir, "assets", asset.path));
 
-      return { ...asset, content };
-    })
-  );
+    if (
+      content.byteLength !== asset.contentLength ||
+      sha256Hex(content) !== asset.checksum
+    ) {
+      throw new Error(`Built asset changed after hashing: ${asset.path}`);
+    }
+
+    staticAssets.push({ ...asset, content });
+  }
 
   const clientAsset = await readFile(clientAssetPath);
   const clientAssetGzip = await gzipAsync(clientAsset);
