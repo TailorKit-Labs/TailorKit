@@ -81,7 +81,9 @@ A slot with `multiple: true` displays separate instances of a view, such as one 
 
 Declare inline `instances` in a module-level `defineView`. The `resolve` arrow/function expression returns items; `dataSchema` validates their data. Single-instance slots omit `instances`. No backend entry file is needed, including when the app has no functions.
 
-The resolver runs on the backend with `{ context, identity, signal, queries }`. Read saved records through registered queries and enforce access there. Return the instances; read the selected item's data with `definition.useInstance()` inside the view. Keep resolver dependencies backend-safe. Instance lists refresh through the host separately from query subscriptions.
+Set `instances.cache: "static"` for hardcoded or build-time instance lists fixed until redeployment. Its zero-argument resolver runs at build time; discovery serves the snapshot without the app runtime. Return public, JSON-compatible data and metadata shared across installations. Static instances can still render live queries.
+
+For context-, identity-, or live-data-dependent lists, omit `cache` or use `"none"`. The resolver runs on the backend with `{ context, identity, signal, queries }`. Read saved records through registered queries and enforce access there. Keep resolver dependencies backend-safe. Instance lists refresh through the host separately from query subscriptions. Read the selected item's data with `definition.useInstance()` inside the view.
 
 For a repeated `tile` at `/`, `notes.list` from `patchsmith-functions` supplies each item:
 
