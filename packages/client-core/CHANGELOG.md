@@ -1,5 +1,14 @@
 # @patchsmith/client-core
 
+## 0.1.0-beta.66
+
+### Patch Changes
+
+- Updated dependencies [7ab8c01]
+  - @patchsmith/app@0.1.0-beta.66
+  - @patchsmith/core@0.1.0-beta.66
+  - @patchsmith/sandbox@0.1.0-beta.66
+
 ## 0.1.0-beta.65
 
 ### Patch Changes
