@@ -1,0 +1,19 @@
+packages/core/src/server/views.test.ts
+  s_ebb152472b7239::t_081d7daa51a5ec 436,456-461
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e31b5cda7c61a521481d3e9fdc8f5801f44e73a4",
+  "prompts": {},
+  "sessions": {
+    "s_ebb152472b7239": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16876-2efe-76f1-927d-a763e7a8b250",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
