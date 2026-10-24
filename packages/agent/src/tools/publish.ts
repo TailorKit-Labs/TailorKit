@@ -264,9 +264,14 @@ export const publishDeployment = async (
     }
   }
 
+  const pendingStaticAssets = staticAssets.values();
+
   await Promise.all(
-    staticAssets.map(async (asset) => {
-      await upload(staticUploads.get(asset.path), asset.content);
+    Array.from({ length: Math.min(4, staticAssets.length) }, async () => {
+      for (const asset of pendingStaticAssets) {
+        // oxlint-disable-next-line no-await-in-loop -- Each worker uploads one asset at a time to bound concurrent PUT requests.
+        await upload(staticUploads.get(asset.path), asset.content);
+      }
     })
   );
 
