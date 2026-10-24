@@ -123,6 +123,15 @@ export const deploymentRouter = {
                 instances: v.optional(v.literal(true)),
                 path: v.pipe(v.string(), v.startsWith("/"), v.maxLength(1024)),
                 slot: v.pipe(v.string(), v.minLength(1), v.maxLength(255)),
+                staticInstances: v.optional(
+                  v.array(
+                    v.object({
+                      data: v.unknown(),
+                      key: v.pipe(v.string(), v.minLength(1)),
+                      metadata: v.record(v.string(), v.unknown()),
+                    })
+                  )
+                ),
               })
             ),
             v.maxLength(1000)

@@ -48,6 +48,24 @@ export const AppWithCurrentDeployment = App.omit({ scopeKey: true }).extend({
   views: AppDeployment.shape.views,
 });
 
+const viewMetadata = (views: z.infer<typeof AppDeployment>["views"]) =>
+  views.map(({ staticInstances: _snapshot, ...view }) => view);
+
+/** Resolution returns each entry separately; omit snapshots from repeated app metadata. */
+const withoutStaticSnapshots = (
+  appValue: z.infer<typeof AppWithCurrentDeployment>
+) => ({
+  ...appValue,
+  currentDeployment:
+    appValue.currentDeployment === null
+      ? null
+      : {
+          ...appValue.currentDeployment,
+          views: viewMetadata(appValue.currentDeployment.views),
+        },
+  views: viewMetadata(appValue.views),
+});
+
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
@@ -248,8 +266,30 @@ const runtimeResolve = protectedRouter
 
       const instancesMs = (yield* Clock.currentTimeMillis) - instancesStarted;
 
+      const metadata = new Map<
+        string,
+        ReturnType<typeof withoutStaticSnapshots>
+      >();
+
+      const body =
+        result.status === "ready"
+          ? {
+              ...result,
+              data: result.data.map(({ app: appValue, ...entry }) => {
+                let publicApp = metadata.get(appValue.id);
+
+                if (!publicApp) {
+                  publicApp = withoutStaticSnapshots(appValue);
+                  metadata.set(appValue.id, publicApp);
+                }
+
+                return { ...entry, app: publicApp };
+              }),
+            }
+          : result;
+
       return {
-        body: result,
+        body,
         headers: {
           "cache-control": "no-store" as const,
           "server-timing": [

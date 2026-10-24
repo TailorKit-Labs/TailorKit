@@ -115,7 +115,12 @@ export const composeViewContext = (
 
 export interface PatchsmithApp {
   scope?: { name: string };
-  views?: { slot: string; path: string; instances?: true; disabled?: true }[];
+  views?: {
+    slot: string;
+    path: string;
+    instances?: true;
+    disabled?: true;
+  }[];
   clientPath?: string;
   description?: string | null;
   id: string;

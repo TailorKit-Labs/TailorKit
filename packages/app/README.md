@@ -55,7 +55,29 @@ export default view;
 
 An explicit `view` or `slot` must be a matching string literal; mismatches fail the build. Use named properties in the inline `defineView` options so the build can check them.
 
-For multi-instance views, provide `instances: { dataSchema, resolve }`. The builder extracts resolvers into the private server bundle. Host slot/view support and multiplicity are validated when publishing. An explicit slot also retains the source-level TypeScript checks for that slot's supported views and instances.
+For multi-instance views, provide `instances: { dataSchema, resolve }`. By default, the builder extracts resolvers into the private server bundle. Host slot/view support and multiplicity are validated when publishing. An explicit slot also retains the source-level TypeScript checks for that slot's supported views and instances.
+
+## Static instance lists
+
+Use `cache: "static"` for fixed navigation entries or tiles:
+
+```tsx
+instances: {
+  cache: "static",
+  dataSchema: z.object({ section: z.string() }),
+  resolve: () => [
+    { key: "reports", metadata: { label: "Reports" }, data: { section: "reports" } },
+  ],
+},
+```
+
+The build evaluates each static resolver once, including async resolvers, applies `dataSchema`, and writes the parsed entries into the deployment view manifest. Static resolver implementations are excluded from both deployed bundles. The platform uses the snapshot without an app runtime session or Cloudflare resolver call, including on the first request. New deployments replace the snapshot.
+
+Static resolvers take no arguments and have no request context, identity, registered queries, or cancellation signal. Returned data and metadata must be JSON-compatible; schema transformations must also produce JSON-compatible output. Invalid output, duplicate or empty keys, more than 1,000 entries, resolver failures, or evaluation beyond the 10-second build budget fail the build. An empty array is valid. Returned entries are shared deployment metadata, so keep secrets out of them.
+
+Omitting `cache` or setting `cache: "none"` preserves runtime resolution with the existing request capabilities. The client response cache remains independent of this setting. Runtime lifetime objects are not supported. Static instances retain the host's authentication, scopes, selected-view rules, and context readiness checks; later UI queries still use the app runtime.
+
+Deploy platform and host support before publishing apps with static instances. Older readers ignore the snapshot and try runtime resolution, but static resolvers have no deployed runtime implementation.
 
 ## Roots and layouts
 

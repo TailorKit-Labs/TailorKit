@@ -72,6 +72,7 @@ interface RuntimeInstallation {
     slot: string;
     path: string;
     instances?: true;
+    staticInstances?: ViewInstance[];
     disabled?: true;
   }[];
 }
@@ -140,7 +141,7 @@ export const resolveRuntimeViews = <TApp extends RuntimeInstallation>(
             !candidate.disabled
         );
 
-        return context && view?.instances ? [{ app, context }] : [];
+        return context && view?.instances ? [{ app, context, view }] : [];
       });
 
       if (selected.some(({ context }) => context.status === "error")) {
@@ -159,7 +160,7 @@ export const resolveRuntimeViews = <TApp extends RuntimeInstallation>(
         catch: () =>
           new ORPCError("BAD_REQUEST", { message: "Invalid view context" }),
         try: () =>
-          selected.flatMap(({ app, context }) => {
+          selected.flatMap(({ app, context, view }) => {
             if (context.status !== "ready") {
               return [];
             }
@@ -167,7 +168,14 @@ export const resolveRuntimeViews = <TApp extends RuntimeInstallation>(
             const cached = decodedContexts.get(context.path);
 
             if (cached !== undefined) {
-              return [{ app, context: cached, path: context.path }];
+              return [
+                {
+                  app,
+                  context: cached,
+                  path: context.path,
+                  staticInstances: view.staticInstances,
+                },
+              ];
             }
 
             const blobs = context.contextBlobs?.map((blob) => {
@@ -210,18 +218,44 @@ export const resolveRuntimeViews = <TApp extends RuntimeInstallation>(
 
             decodedContexts.set(context.path, decoded);
 
-            return [{ app, context: decoded, path: context.path }];
+            return [
+              {
+                app,
+                context: decoded,
+                path: context.path,
+                staticInstances: view.staticInstances,
+              },
+            ];
           }),
       });
 
-      for (const { app, path } of resolved) {
-        pending.set(app.id, path);
+      for (const { app, path, staticInstances } of resolved) {
+        if (staticInstances === undefined) {
+          pending.set(app.id, path);
+          continue;
+        }
+
+        const entries = yield* Effect.try({
+          catch: resolutionFailure,
+          try: () => instancesSchema.parse(staticInstances),
+        });
+
+        completed.set(
+          app.id,
+          entries.map((instance) => ({ ...instance, app }))
+        );
       }
 
       const instances = yield* Effect.forEach(
         resolved,
-        ({ app, context, path }) =>
-          Effect.gen(function* resolveInstallation() {
+        ({ app, context, path }) => {
+          const snapshot = completed.get(app.id);
+
+          if (snapshot !== undefined) {
+            return Effect.succeed(snapshot);
+          }
+
+          return Effect.gen(function* resolveInstallation() {
             const session = yield* Effect.tryPromise({
               catch: resolutionFailure,
               try: async () => await options.createSession(app),
@@ -262,7 +296,8 @@ export const resolveRuntimeViews = <TApp extends RuntimeInstallation>(
                 })
               )
             );
-          }),
+          });
+        },
         { concurrency: "unbounded" }
       );
 

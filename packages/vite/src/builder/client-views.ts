@@ -16,7 +16,7 @@ const views = Object.entries(client.slots).flatMap(([slot, definitions]) =>
   Object.entries(definitions).flatMap(([path, view]) => {
     if (view === false) return [{ slot, path, disabled: true }];
     const resolver = view?.instances?.resolver;
-    if (resolver !== undefined) instanceResolvers.push({ slot, path, resolver });
+    if (resolver !== undefined) instanceResolvers.push({ slot, path, resolver, ...(view.instances.cache === "static" ? { cache: "static" } : {}) });
     return [{ slot, path, ...(resolver !== undefined ? { instances: true } : {}) }];
   })
 );
@@ -41,6 +41,7 @@ export const readClientManifest = async (filename: string) => {
       v.object({
         instanceResolvers: v.array(
           v.object({
+            cache: v.optional(v.literal("static")),
             path: v.string(),
             resolver: v.pipe(v.string(), v.regex(/^i[0-9a-f]{24}$/u)),
             slot: v.string(),
