@@ -13,6 +13,7 @@ const applicationRelations = defineRelations(schema, (r) => ({
       from: r.app.id,
       to: r.appAgentThread.appId,
     }),
+    assets: r.many.appAsset({ from: r.app.id, to: r.appAsset.appId }),
     currentDeployment: r.one.appDeployment({
       from: r.app.currentDeploymentId,
       to: r.appDeployment.id,
@@ -42,14 +43,37 @@ const applicationRelations = defineRelations(schema, (r) => ({
     app: r.one.app({ from: r.appAgentThread.appId, to: r.app.id }),
   },
 
+  appAsset: {
+    app: r.one.app({ from: r.appAsset.appId, to: r.app.id }),
+    deployments: r.many.appDeploymentAsset({
+      from: r.appAsset.id,
+      to: r.appDeploymentAsset.appAssetId,
+    }),
+  },
+
   appDeployment: {
     app: r.one.app({
       from: r.appDeployment.appId,
       to: r.app.id,
     }),
+    assets: r.many.appDeploymentAsset({
+      from: r.appDeployment.id,
+      to: r.appDeploymentAsset.appDeploymentId,
+    }),
     files: r.many.appDeploymentFile({
       from: r.appDeployment.id,
       to: r.appDeploymentFile.appDeploymentId,
+    }),
+  },
+
+  appDeploymentAsset: {
+    asset: r.one.appAsset({
+      from: r.appDeploymentAsset.appAssetId,
+      to: r.appAsset.id,
+    }),
+    deployment: r.one.appDeployment({
+      from: r.appDeploymentAsset.appDeploymentId,
+      to: r.appDeployment.id,
     }),
   },
 

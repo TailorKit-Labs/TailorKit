@@ -7,6 +7,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -295,6 +296,66 @@ const AppDeploymentFileSchema = createSelectSchema(appDeploymentFile, {
 });
 
 export type AppDeploymentFile = z.output<typeof AppDeploymentFileSchema>;
+
+/** Public immutable files are shared by every deployment that references them. */
+export const appAsset = pgTable(
+  "app_asset",
+  {
+    appId: uuid("app_id")
+      .notNull()
+      .references(() => app.id, { onDelete: "cascade" }),
+    checksum: varchar("checksum", { length: 64 }).notNull(),
+    contentLength: integer("content_length").notNull(),
+    contentType: text("content_type").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    id: uuid("id")
+      .default(sql`pg_catalog.gen_random_uuid()`)
+      .primaryKey(),
+    objectKey: text("object_key").notNull(),
+    path: text("path").notNull(),
+    status: appDeploymentFileStatus("status").default("uploading").notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    check(
+      "app_asset_checksum_format",
+      sql`${table.checksum} ~ '^[a-f0-9]{64}$'`
+    ),
+    check("app_asset_positive_length", sql`${table.contentLength} > 0`),
+    uniqueIndex("app_asset_app_checksum_path_unique").on(
+      table.appId,
+      table.checksum,
+      table.path
+    ),
+    uniqueIndex("app_asset_object_key_unique").on(table.objectKey),
+  ]
+);
+
+const AppAssetSchema = createSelectSchema(appAsset);
+
+export type AppAsset = z.output<typeof AppAssetSchema>;
+
+export { AppAssetSchema as AppAsset };
+
+/** Removing a deployment removes its references, never the shared file. */
+export const appDeploymentAsset = pgTable(
+  "app_deployment_asset",
+  {
+    appAssetId: uuid("app_asset_id")
+      .notNull()
+      .references(() => appAsset.id, { onDelete: "restrict" }),
+    appDeploymentId: uuid("app_deployment_id")
+      .notNull()
+      .references(() => appDeployment.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.appDeploymentId, table.appAssetId] }),
+    index("app_deployment_asset_asset_id_idx").on(table.appAssetId),
+  ]
+);
 
 export { AppSchema as App };
 
