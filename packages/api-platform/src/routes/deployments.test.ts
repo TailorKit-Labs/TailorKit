@@ -389,6 +389,7 @@ describe("platform deployment uploads", () => {
     await db.insert(appDeploymentAsset).values({
       appAssetId: requireValue(asset).id,
       appDeploymentId: deployment.id,
+      appId: deployment.appId,
     });
     const context = publishContext("https://uploads.example/bundle");
     await expect(
@@ -605,6 +606,79 @@ describe("platform deployment uploads", () => {
       expect(fetchMock).toHaveBeenCalledTimes(encoding === "gzip" ? 3 : 2);
     }
   );
+
+  it("rejects cross-app asset links and ownership changes in the database", async () => {
+    const deployment = await createLogoDeployment();
+
+    const [otherApp] = await db
+      .insert(appTable)
+      .values({
+        name: "Other app",
+        projectId,
+        shortId: "app000000002",
+        ...canonicalizeScope(productionScope),
+      })
+      .returning();
+
+    const otherAppId = requireValue(otherApp).id;
+
+    const [otherDeployment] = await db
+      .insert(appDeployment)
+      .values({ appId: otherAppId, shortId: "dep000000002" })
+      .returning();
+
+    const [asset] = await db
+      .insert(appAsset)
+      .values({
+        appId: deployment.appId,
+        checksum: "a".repeat(64),
+        contentLength: 11,
+        contentType: "application/octet-stream",
+        objectKey: "stored/static/file",
+        path: "doom.wad",
+      })
+      .returning();
+
+    const appAssetId = requireValue(asset).id;
+    const foreignKeyViolation = { cause: { code: "23503" } };
+
+    await expect(
+      db.insert(appDeploymentAsset).values({
+        appAssetId,
+        appDeploymentId: requireValue(otherDeployment).id,
+        appId: deployment.appId,
+      })
+    ).rejects.toMatchObject(foreignKeyViolation);
+    await expect(
+      db.insert(appDeploymentAsset).values({
+        appAssetId,
+        appDeploymentId: requireValue(otherDeployment).id,
+        appId: otherAppId,
+      })
+    ).rejects.toMatchObject(foreignKeyViolation);
+    expect(await db.select().from(appDeploymentAsset)).toHaveLength(0);
+
+    await db.insert(appDeploymentAsset).values({
+      appAssetId,
+      appDeploymentId: deployment.id,
+      appId: deployment.appId,
+    });
+    await expect(
+      db.update(appDeploymentAsset).set({ appId: otherAppId })
+    ).rejects.toMatchObject(foreignKeyViolation);
+    await expect(
+      db
+        .update(appAsset)
+        .set({ appId: otherAppId })
+        .where(eq(appAsset.id, appAssetId))
+    ).rejects.toMatchObject(foreignKeyViolation);
+    await expect(
+      db
+        .update(appDeployment)
+        .set({ appId: otherAppId })
+        .where(eq(appDeployment.id, deployment.id))
+    ).rejects.toMatchObject(foreignKeyViolation);
+  });
 
   it("reuses hashed files between deployments, lists their references, and preserves shared files on deletion", async () => {
     const context = publishContext("https://private.example/file");

@@ -133,7 +133,7 @@ export const linkStaticAssets = async (
 
       await tx
         .insert(appDeploymentAsset)
-        .values({ appAssetId: file.id, appDeploymentId: deploymentId });
+        .values({ appAssetId: file.id, appDeploymentId: deploymentId, appId });
 
       return { file, headers: upload?.headers, uploadUrl: upload?.uploadUrl };
     })
