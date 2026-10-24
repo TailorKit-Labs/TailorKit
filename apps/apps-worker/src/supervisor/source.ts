@@ -52,7 +52,11 @@ const storedMetadata = appDeploymentMetadata.extend({
 });
 
 const bundleManifest = z.object({
-  chunks: z.number().int().min(1).max(192),
+  chunks: z
+    .number()
+    .int()
+    .min(1)
+    .max(Math.ceil(maxDeploymentBytes / chunkLength)),
   version: z.string(),
 });
 

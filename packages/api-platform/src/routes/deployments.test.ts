@@ -49,6 +49,11 @@ const { deploymentRouter, mapReturnedFilesByAssetPath } =
 
 const { canonicalizeScope } = await import("#scope");
 
+const describeFile = (bytes: Buffer) => ({
+  checksum: createHash("sha256").update(bytes).digest("hex"),
+  contentLength: bytes.byteLength,
+});
+
 const organizationId = "11111111-1111-4111-8111-111111111111";
 const projectId = "22222222-2222-4222-8222-222222222222";
 const logoChecksum = "b".repeat(64);
@@ -164,6 +169,208 @@ describe("platform deployment uploads", () => {
   };
 
   const publishContext = publishContextImplementation;
+
+  it.each([0, 1])(
+    "checks the combined upload budget with %i bytes over the limit",
+    async (extraBytes) => {
+      const currentApp = requireValue(await db.query.app.findFirst());
+      const context = publishContext("https://uploads.example/bundle");
+      context.storage.createUploadUrl = vi.fn<
+        typeof context.storage.createUploadUrl
+      >(
+        asyncFixture(({ key }) => ({
+          key,
+          uploadUrl: `https://uploads.example/${key}`,
+        }))
+      );
+
+      const metadata = {
+        checksum: "a".repeat(64),
+        contentType: "application/javascript" as const,
+        encoding: "utf-8" as const,
+      };
+
+      const logo = {
+        checksum: logoChecksum,
+        contentLength: 11,
+        contentType: "image/svg+xml" as const,
+      };
+
+      const create = call(
+        deploymentRouter.create,
+        {
+          body: {
+            app: { id: currentApp.id },
+            assets: [
+              {
+                ...metadata,
+                contentLength: 6 * 1024 * 1024,
+                objectKey: "client.js",
+              },
+            ],
+            logos: { dark: logo, light: logo },
+            scope: productionScope,
+            server: {
+              ...metadata,
+              contentLength: 4 * 1024 * 1024 - 22 + extraBytes,
+              objectKey: "server.js",
+            },
+          },
+        },
+        { context }
+      );
+
+      if (extraBytes > 0) {
+        await expect(create).rejects.toThrow("Input validation failed");
+        expect(context.storage.createUploadUrl).not.toHaveBeenCalled();
+
+        return;
+      }
+
+      await expect(create).resolves.toMatchObject({
+        body: { deployment: { status: "uploading" } },
+      });
+    }
+  );
+
+  it.each([
+    { encoding: "gzip", extraBytes: 0 },
+    { encoding: "gzip", extraBytes: 1 },
+    { encoding: "utf-8", extraBytes: 0 },
+    { encoding: "utf-8", extraBytes: 1 },
+  ] as const)(
+    "checks the decoded client, $encoding server, and both logos together ($extraBytes bytes over)",
+    async ({ encoding, extraBytes }) => {
+      const currentApp = requireValue(await db.query.app.findFirst());
+      const logo = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>');
+      const clientBundle = Buffer.alloc(6 * 1024 * 1024, 120);
+
+      const server = Buffer.alloc(
+        maxDeploymentBytes -
+          clientBundle.byteLength -
+          2 * logo.byteLength +
+          extraBytes,
+        121
+      );
+
+      const uploadedClient = gzipSync(clientBundle);
+      const uploadedServer = encoding === "gzip" ? gzipSync(server) : server;
+      const context = publishContext("https://uploads.example/bundle");
+      context.storage.createUploadUrl = vi.fn<
+        typeof context.storage.createUploadUrl
+      >(
+        asyncFixture(({ key }) => ({
+          key,
+          uploadUrl: `https://uploads.example/${key}`,
+        }))
+      );
+
+      const logoMetadata = {
+        ...describeFile(logo),
+        contentType: "image/svg+xml" as const,
+      };
+
+      const created = await call(
+        deploymentRouter.create,
+        {
+          body: {
+            app: { id: currentApp.id },
+            assets: [
+              {
+                ...describeFile(uploadedClient),
+                contentType: "application/javascript",
+                encoding: "gzip",
+                objectKey: "client.js",
+              },
+            ],
+            logos: { dark: logoMetadata, light: logoMetadata },
+            scope: productionScope,
+            server: {
+              ...describeFile(uploadedServer),
+              contentType: "application/javascript",
+              encoding,
+              objectKey: "server.js",
+            },
+          },
+        },
+        { context }
+      );
+
+      const files = await db.query.appDeploymentFile.findMany({
+        where: { appDeploymentId: created.body.deployment.id },
+      });
+
+      context.storage.head = vi.fn<typeof context.storage.head>(
+        asyncFixture(({ key }) => {
+          const file = requireValue(
+            files.find((entry) => entry.objectKey === key)
+          );
+
+          return {
+            checksumSha256: Buffer.from(
+              requireValue(file.checksum),
+              "hex"
+            ).toString("base64"),
+            contentEncoding: file.encoding === "gzip" ? "gzip" : undefined,
+            contentLength: file.contentLength,
+            contentType: file.contentType,
+            key,
+          };
+        })
+      );
+      context.storage.createDownloadUrl = vi.fn<
+        typeof context.storage.createDownloadUrl
+      >(
+        asyncFixture(({ key }) => ({
+          key,
+          url: `https://uploads.example/${key}`,
+        }))
+      );
+
+      const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(
+        asyncFixture((input) => {
+          const url = input instanceof Request ? input.url : String(input);
+
+          if (url.endsWith("/client.js")) {
+            return new Response(clientBundle);
+          }
+
+          if (url.endsWith("/server.js")) {
+            return new Response(server);
+          }
+
+          return new Response(logo);
+        })
+      );
+
+      const publish = call(
+        deploymentRouter.publish,
+        {
+          body: { rollout: false, scope: productionScope },
+          params: { deploymentId: created.body.deployment.id },
+        },
+        { context }
+      );
+
+      if (extraBytes > 0) {
+        await expect(publish).rejects.toThrow(
+          `Combined deployment assets cannot exceed ${maxDeploymentBytes} bytes after decompression.`
+        );
+        expect(
+          await db.query.appDeployment.findFirst({
+            where: { id: created.body.deployment.id },
+          })
+        ).toMatchObject({ status: "uploading" });
+
+        return;
+      }
+
+      await expect(publish).resolves.toMatchObject({
+        body: { status: "published" },
+      });
+      expect(fetchMock).toHaveBeenCalledTimes(encoding === "gzip" ? 3 : 2);
+    }
+  );
 
   it("hides a deployment when its app has a malformed stored scope", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -327,7 +534,7 @@ describe("platform deployment uploads", () => {
 
       const fetchMock = vi
         .spyOn(globalThis, "fetch")
-        .mockResolvedValue(new Response("client-code"));
+        .mockImplementation(asyncFixture(() => new Response("client-code")));
 
       const published = await call(
         deploymentRouter.publish,
@@ -391,13 +598,16 @@ describe("platform deployment uploads", () => {
       );
 
       if (encoding === "gzip") {
-        expect(
-          context.storage.createDownloadUrl
-        ).toHaveBeenCalledExactlyOnceWith({
+        expect(context.storage.createDownloadUrl).toHaveBeenCalledTimes(2);
+        expect(context.storage.createDownloadUrl).toHaveBeenCalledWith({
           expiresInSeconds: 60,
           key: requireValue(created.body.assets[0]).file.objectKey,
         });
-        expect(fetchMock).toHaveBeenCalledOnce();
+        expect(context.storage.createDownloadUrl).toHaveBeenCalledWith({
+          expiresInSeconds: 60,
+          key: requireValue(created.body.server).file.objectKey,
+        });
+        expect(fetchMock).toHaveBeenCalledTimes(2);
       } else {
         expect(context.storage.createDownloadUrl).not.toHaveBeenCalled();
         expect(fetchMock).not.toHaveBeenCalled();
@@ -573,7 +783,7 @@ describe("platform deployment uploads", () => {
         { context }
       )
     ).rejects.toThrow(
-      `Decompressed client assets cannot exceed ${maxDeploymentBytes} bytes.`
+      `Combined deployment assets cannot exceed ${maxDeploymentBytes} bytes after decompression.`
     );
     expect(cancel).toHaveBeenCalledOnce();
     expect(position).toBe(2);
@@ -600,7 +810,7 @@ describe("platform deployment uploads", () => {
     expect(currentApp?.currentDeploymentId).toBeNull();
   });
 
-  it("publishes gzip client code whose decoded size is exactly 3 MiB", async () => {
+  it("publishes gzip client code whose decoded size is exactly 10 MiB", async () => {
     const decoded = new Uint8Array(maxDeploymentBytes);
     const { context, created } = await createGzipClientDeployment(decoded);
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
@@ -739,7 +949,7 @@ describe("platform deployment uploads", () => {
           assets: [
             {
               checksum: "a".repeat(64),
-              contentLength: maxDeploymentBytes,
+              contentLength: maxDeploymentBytes - 2 * 262_144,
               contentType: "application/javascript",
               encoding: "utf-8",
               objectKey: "client.js",
@@ -861,7 +1071,7 @@ describe("platform deployment uploads", () => {
     });
   });
 
-  it("rejects the client assets array when it exceeds 3 MiB", async () => {
+  it("rejects the client assets array when it exceeds 10 MiB", async () => {
     const createUploadUrl = vi.fn();
 
     const context = {

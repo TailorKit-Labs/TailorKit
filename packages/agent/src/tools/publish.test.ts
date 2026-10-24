@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import { gunzipSync } from "node:zlib";
 
+import { asyncFixture } from "@patchsmith/config/testing";
+import { maxDeploymentBytes } from "@patchsmith/vite/upload-manifest";
 import { expect, it } from "vite-plus/test";
 
 import { deploymentDirectory, publishDeployment } from "./publish";
@@ -187,7 +189,7 @@ it("rejects oversized output before an authenticated deployment request", async 
 
   await expect(
     publishDeployment(
-      reader({ "client/client.js": Buffer.alloc(3 * 1024 * 1024 + 1) }),
+      reader({ "client/client.js": Buffer.alloc(maxDeploymentBytes + 1) }),
       authorization,
       undefined,
       send
@@ -210,3 +212,67 @@ it("honors platform authorization failures without uploading or publishing", asy
   ).rejects.toThrow("401");
   expect(requests).toEqual(["https://platform.test/api/platform/deployments"]);
 });
+
+it.each([0, 1])(
+  "checks the combined agent output budget (%i bytes over the limit)",
+  async (extraBytes) => {
+    const requests: string[] = [];
+
+    const send: typeof fetch = asyncFixture((input) => {
+      const { url } = new Request(input);
+      requests.push(url);
+
+      if (url.endsWith("/deployments")) {
+        return Response.json({
+          assets: [{ uploadUrl: "https://storage.test/client" }],
+          deployment: { id: "created" },
+          logos: { dark: {}, light: {} },
+          server: { uploadUrl: "https://storage.test/server" },
+        });
+      }
+
+      if (url.endsWith("/deployments/created")) {
+        return Response.json({ id: "published" });
+      }
+
+      return new Response(null, { status: 200 });
+    });
+
+    const publish = publishDeployment(
+      reader({
+        "client/client.js": Buffer.alloc(6 * 1024 * 1024, 120),
+        "client/logo-light.svg": logo,
+        "patchsmith-upload.json": Buffer.from(
+          JSON.stringify({
+            ...manifest,
+            assets: {
+              ...manifest.assets,
+              logos: {
+                dark: "client/logo-dark.svg",
+                light: "client/logo-light.svg",
+              },
+            },
+          })
+        ),
+        "server/server.js": Buffer.alloc(
+          4 * 1024 * 1024 - 2 * logo.byteLength + extraBytes,
+          121
+        ),
+      }),
+      authorization,
+      undefined,
+      send
+    );
+
+    if (extraBytes > 0) {
+      await expect(publish).rejects.toThrow(
+        "Combined deployment assets cannot exceed"
+      );
+      expect(requests).toHaveLength(0);
+
+      return;
+    }
+
+    await expect(publish).resolves.toBe("Deployment: published");
+  }
+);
