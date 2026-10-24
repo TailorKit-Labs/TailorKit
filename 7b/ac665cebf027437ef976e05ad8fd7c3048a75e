@@ -1,0 +1,46 @@
+packages/api-platform/src/routes/app-agent.ts
+  s_9ee8259b26abcd::t_f97c3ff322f829 44
+packages/api-platform/src/app-agent-mcp.ts
+  s_9ee8259b26abcd::t_f97c3ff322f829 181
+packages/agent/src/gateway-model.test.ts
+  s_9ee8259b26abcd::t_e0a3eab331d97c 43-45
+  s_9ee8259b26abcd::t_04beb1c914f88f 18-21,62-66
+  s_9ee8259b26abcd::t_8aa5a5ade5e6e9 1-17,22-42,46-61,67-127
+packages/agent/src/agent.ts
+  s_9ee8259b26abcd::t_f97c3ff322f829 39
+packages/api-platform/src/app-agent-mcp.test.ts
+  s_9ee8259b26abcd::t_0555d0c11087e5 272
+packages/agent/README.md
+  s_9ee8259b26abcd::t_8aa5a5ade5e6e9 26,70,92
+  s_9ee8259b26abcd::t_9976a6ee2b86bf 93
+packages/api-platform/src/routes/app-agent.test.ts
+  s_9ee8259b26abcd::t_0555d0c11087e5 253
+packages/agent/src/instructions.md
+  s_9ee8259b26abcd::t_f97c3ff322f829 17-18
+packages/agent/src/gateway-model.ts
+  s_9ee8259b26abcd::t_8aa5a5ade5e6e9 90,117
+  s_9ee8259b26abcd::t_3d209460588492 20-25,27-29,45-84,114-116,118-119
+  s_9ee8259b26abcd::t_bffc6c25a2e05a 85-89
+  s_9ee8259b26abcd::t_627f8750550b9e 91-93
+  s_9ee8259b26abcd::t_207bda3d271b6c 94-107,109-111
+apps/web/vite.config.ts
+  s_9ee8259b26abcd::t_f97c3ff322f829 81-87
+packages/agent/src/agent.integration.test.ts
+  s_9ee8259b26abcd::t_f97c3ff322f829 35,41,347
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7bac665cebf027437ef976e05ad8fd7c3048a75e",
+  "prompts": {},
+  "sessions": {
+    "s_9ee8259b26abcd": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14957-6633-74a1-9eab-196cb547da27",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

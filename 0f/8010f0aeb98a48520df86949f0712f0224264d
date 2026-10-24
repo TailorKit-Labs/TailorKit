@@ -1,0 +1,21 @@
+docs/docs.json
+  s_35012a91b914e4::t_04d8006e859689 34
+docs/writing-apps/overview.mdx
+  s_35012a91b914e4::t_04d8006e859689 1-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0f8010f0aeb98a48520df86949f0712f0224264d",
+  "prompts": {},
+  "sessions": {
+    "s_35012a91b914e4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a123fb-4e04-7eb2-af76-566a5e408879",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

@@ -1,0 +1,29 @@
+.changeset/cloudflare-view-resolution.md
+  s_4db27b78bdf702::t_a76132fcf65183 1-5
+packages/core/src/server/context.ts
+  s_4db27b78bdf702::t_bc7c403b30e911 32,58,89
+packages/core/src/server/handler.ts
+  s_4db27b78bdf702::t_ba1a10d7e81264 90-111,193
+packages/core/src/server/routes/views.ts
+  s_4db27b78bdf702::t_c1b480db152134 235-237
+packages/core/src/server/types.ts
+  s_4db27b78bdf702::t_714f91fdb172a8 89-90
+packages/core/src/server/views-backend.test.ts
+  s_4db27b78bdf702::t_bca2e8b8aa9ba1 1-82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "39bb8e464dc18809e849fe5af4aba3d4e0c7d95e",
+  "prompts": {},
+  "sessions": {
+    "s_4db27b78bdf702": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a165f1-6250-7f32-8922-4178f00a23c0",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

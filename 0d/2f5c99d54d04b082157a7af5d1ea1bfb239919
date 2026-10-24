@@ -1,0 +1,23 @@
+packages/db/src/migrations/20261022085340_clumsy_odin/migration.sql
+  s_f0d547ff8cf2ae::t_4e972a6e28a690 1
+packages/db/src/migrations/20261022085340_clumsy_odin/snapshot.json
+  s_f0d547ff8cf2ae::t_6f708489d066c5 1-4110
+packages/db/src/schema/apps.ts
+  s_f0d547ff8cf2ae::t_4d93e12a3811c3 141,186-208,210
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0d2f5c99d54d04b082157a7af5d1ea1bfb239919",
+  "prompts": {},
+  "sessions": {
+    "s_f0d547ff8cf2ae": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16144-7130-75d1-90e5-de5ca26dd535",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

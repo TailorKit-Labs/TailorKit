@@ -1,0 +1,36 @@
+playground/host/src/lib/local-apps.ts
+  s_cf0fb7db315121::t_0fb5a6544910c7 1-11
+playground/host/src/routes/api/playground/todo-client.ts
+  s_cf0fb7db315121::t_0fb5a6544910c7 1-5,7-27
+  s_cf0fb7db315121::t_0b711496f2e279 6
+playground/host/src/components/tailorkit-shell.tsx
+  s_cf0fb7db315121::t_0fb5a6544910c7 23,27-33,51
+  s_cf0fb7db315121::t_c5b9cf94289432 82-91
+  s_cf0fb7db315121::t_b55b4acc33bb28 81,92
+playground/host/src/components/app-sidebar.tsx
+  s_cf0fb7db315121::t_0fb5a6544910c7 93
+playground/host/src/routeTree.gen.ts
+  s_cf0fb7db315121::t_15dadd85304b67 18,52-56,75,85,97,110,120,131,141,190-196,232
+packages/app/src/builder/index.ts
+  s_cf0fb7db315121::t_c2f2389a304a34 150-152
+package.json
+  s_cf0fb7db315121::t_0fb5a6544910c7 34
+playground/apps/todo/src/slots/panel/home.view.tsx
+  s_cf0fb7db315121::t_893ff926dab92e 2-3,14-17,20,22-26,29-32,35-36,53,58,64,67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4292608e57c3c42c2b29e4477f7e98c527d0cdf6",
+  "prompts": {},
+  "sessions": {
+    "s_cf0fb7db315121": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13299-2aad-7903-a0fd-d5c80194fa73",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

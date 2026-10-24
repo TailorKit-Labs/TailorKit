@@ -1,0 +1,71 @@
+.changeset/shared-function-routers.md
+  s_760c954417358d::t_f86988b23e2545 9-11
+  s_760c954417358d::t_0df08e5eabad8a 1-8
+packages/app/src/server/builder.ts
+  s_760c954417358d::t_a9985da7a6b947 170-194
+packages/agent/src/skills/sqlite-database.md
+  s_760c954417358d::t_9bc130a9c87d92 40
+packages/agent/src/skills/backend-functions.md
+  s_760c954417358d::t_9d5d33a840d98e 3
+  s_760c954417358d::t_83211e9da3822b 19-21
+  s_760c954417358d::t_9bc130a9c87d92 5,9,13,16,23,30-31,38
+packages/cli/src/generator/templates/src/server.ts.liquid
+  s_760c954417358d::t_9bc130a9c87d92 3,5
+packages/cli/src/generator/templates/src/db/index.ts.liquid
+  s_760c954417358d::t_9bc130a9c87d92 2,6
+packages/cli/src/generator/templates/src/slots/view.tsx.liquid
+  s_760c954417358d::t_9bc130a9c87d92 17
+apps/apps-worker/src/runtime/execution.test.ts
+  s_760c954417358d::t_f86988b23e2545 235-236,239-244,586-587,590-591
+  s_760c954417358d::t_83211e9da3822b 582-585,592-598,600-604
+  s_760c954417358d::t_8db1408a543a49 13-14,580-581,605,611
+packages/agent-fx/src/skills/database.md
+  s_760c954417358d::t_9bc130a9c87d92 41
+packages/app-db/README.md
+  s_760c954417358d::t_9bc130a9c87d92 24-31
+  s_760c954417358d::t_f86988b23e2545 32
+packages/agent-fx/src/skills/references/functions.md
+  s_760c954417358d::t_9bc130a9c87d92 35,40,46,50,60,71,84-85,97,102,109-110,120-121,126
+packages/cli/src/generator/generate.test.ts
+  s_760c954417358d::t_9bc130a9c87d92 171-184,187,190
+packages/cli/src/generator/templates/src/functions/greeting.ts.liquid
+  s_760c954417358d::t_9bc130a9c87d92 1,4-6,9-10
+packages/app/src/server.ts
+  s_760c954417358d::t_a9985da7a6b947 1-8
+packages/agent-fx/src/skills/functions.md
+  s_760c954417358d::t_9bc130a9c87d92 3,13,17,25
+packages/app/src/server/functions.ts
+  s_760c954417358d::t_a5307c1a28e66e 150-151,155
+  s_760c954417358d::t_a9985da7a6b947 152-153,159,162,164-166
+  s_760c954417358d::t_f86988b23e2545 101-103,111-113
+apps/apps-worker/src/tests/backend.ts
+  s_760c954417358d::t_f86988b23e2545 25,31-32,35,55-56
+packages/app/README.md
+  s_760c954417358d::t_83211e9da3822b 149-151
+  s_760c954417358d::t_f86988b23e2545 167
+  s_760c954417358d::t_cf21a8d1d5ef5f 126-148,152-166
+packages/app/src/server/database.test-d.ts
+  s_760c954417358d::t_83211e9da3822b 12-18,95-97
+  s_760c954417358d::t_f86988b23e2545 60-72,74,76,78,80,82,85
+  s_760c954417358d::t_02048b3c83d5e3 31-32,50,86-94,98,101-105
+apps/apps-worker/src/runtime/functions.test.ts
+  s_760c954417358d::t_734e40b329af03 3,20,23,25,32
+packages/vite/src/test-utils.ts
+  s_760c954417358d::t_acf4e90be7e3bc 63,67-69,71-72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6a5c17a854754a1e352fde0b5bd62fdb2d1edb96",
+  "prompts": {},
+  "sessions": {
+    "s_760c954417358d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1521e-bdcb-7571-bf5d-0402c4f8de14",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

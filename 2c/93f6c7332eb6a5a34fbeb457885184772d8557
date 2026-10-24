@@ -1,0 +1,19 @@
+packages/agent-fx/src/agent.integration.test.ts
+  s_b281f2499fba28::t_d2dc6e4b8e8014 137-138
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2c93f6c7332eb6a5a34fbeb457885184772d8557",
+  "prompts": {},
+  "sessions": {
+    "s_b281f2499fba28": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14d94-b8f0-7821-b692-35eeff7ccd1d",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

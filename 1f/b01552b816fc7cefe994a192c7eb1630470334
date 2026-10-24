@@ -1,0 +1,205 @@
+packages/core/src/schema/children.test.ts
+  s_05a5d8c5ed772e::t_36a0e8eece39eb 1,33
+packages/vite/src/index.ts
+  s_05a5d8c5ed772e::t_6f292a7a985c7f 56
+  s_05a5d8c5ed772e::t_ab3053d03396da 7,57-59
+packages/vite/package.json
+  s_05a5d8c5ed772e::t_eb4f2b5e7ad0e2 59,71-72
+packages/app/src/validation.ts
+  s_05a5d8c5ed772e::t_eb4f2b5e7ad0e2 1-3,5-17,19-20
+  s_05a5d8c5ed772e::t_1d980de06b7f11 4,18
+packages/core/src/schema/slots.test.ts
+  s_05a5d8c5ed772e::t_36a0e8eece39eb 1,29,63,83,89,109,117
+packages/core/src/spec/json-schema.test.ts
+  s_05a5d8c5ed772e::t_36a0e8eece39eb 1,28,37,39,42,47,53,56
+packages/vite/src/upload-manifest-boundary.test.ts
+  s_05a5d8c5ed772e::t_24e705211b4b3d 22
+  s_05a5d8c5ed772e::t_36a0e8eece39eb 39-40
+packages/app/src/client/tools.ts
+  s_05a5d8c5ed772e::t_6f292a7a985c7f 1,56
+  s_05a5d8c5ed772e::t_8cb528c4a30e6b 57-59
+packages/core/src/server/contract.ts
+  s_05a5d8c5ed772e::t_24e705211b4b3d 204,208
+  s_05a5d8c5ed772e::t_6f292a7a985c7f 4,205-207
+  s_05a5d8c5ed772e::t_72a0a0037b437b 209-211
+apps/apps-worker/src/runtime/functions.ts
+  s_05a5d8c5ed772e::t_f4ee597bb5584b 106
+  s_05a5d8c5ed772e::t_adc99b10468b34 66-67,69-75,78,89,92-95,97-101
+  s_05a5d8c5ed772e::t_5c537dfa05bb5c 64-65,68,96,102-103
+packages/core/src/server/routes/deployments.ts
+  s_05a5d8c5ed772e::t_6f292a7a985c7f 8,23,31-35,38,40,43-51,54-58,60,92-93,96-107,109
+  s_05a5d8c5ed772e::t_24e705211b4b3d 24-27,30,39
+  s_05a5d8c5ed772e::t_5870669e77fbc2 133-135,150-154,172-174
+packages/app/src/protocol.ts
+  s_05a5d8c5ed772e::t_6f292a7a985c7f 3,5-6,9
+  s_05a5d8c5ed772e::t_24e705211b4b3d 7
+  s_05a5d8c5ed772e::t_1877c59f3c5d51 8,10,12-13,15,34-39
+packages/vite/src/config/loader.test.ts
+  s_05a5d8c5ed772e::t_adc99b10468b34 5
+  s_05a5d8c5ed772e::t_36a0e8eece39eb 13,36,43,54,64,70,88,97
+packages/vite/src/config/loader.ts
+  s_05a5d8c5ed772e::t_6f292a7a985c7f 37
+  s_05a5d8c5ed772e::t_e6dd0b4cdfed57 4
+apps/apps-worker/src/runtime/actions.test.ts
+  s_05a5d8c5ed772e::t_aa2c643fdabdac 8,431-435
+packages/core/src/server/routes/cli-auth.ts
+  s_05a5d8c5ed772e::t_6f292a7a985c7f 8,40-45,61,74-87
+  s_05a5d8c5ed772e::t_1b5a28890f59cb 88,99
+packages/cli/src/deploy.ts
+  s_05a5d8c5ed772e::t_aa2c643fdabdac 13
+  s_05a5d8c5ed772e::t_48c6ea923ca3bd 170,173
+packages/app/package.json
+  s_05a5d8c5ed772e::t_eb4f2b5e7ad0e2 77,87-88
+  s_05a5d8c5ed772e::t_368df90b2df8a7 74
+packages/app/src/server/functions.ts
+  s_05a5d8c5ed772e::t_eb4f2b5e7ad0e2 16,27-30,42,47-55,58-60,79
+  s_05a5d8c5ed772e::t_944af710e5c65f 1,7,87,89,99,116,140,152-153
+packages/app/src/client/reference.ts
+  s_05a5d8c5ed772e::t_eb4f2b5e7ad0e2 1,19,22
+packages/app/src/server/instances.ts
+  s_05a5d8c5ed772e::t_36a0e8eece39eb 1-2,13,22-24,27-40,69,71,82,86-88,92
+  s_05a5d8c5ed772e::t_362557a6de4ff6 93,96,102,109-122
+packages/cli/src/agent-tui.ts
+  s_05a5d8c5ed772e::t_36a0e8eece39eb 77-78
+  s_05a5d8c5ed772e::t_94c4a7ef0c07f4 13,80-81,84
+packages/vite/src/builder/upload-manifest.ts
+  s_05a5d8c5ed772e::t_6f292a7a985c7f 1,3-13,16,18-19
+  s_05a5d8c5ed772e::t_24e705211b4b3d 15
+  s_05a5d8c5ed772e::t_ce4bc87e2d6560 20-29,31,34,52
+packages/cli/src/client.ts
+  s_05a5d8c5ed772e::t_36a0e8eece39eb 127,129
+  s_05a5d8c5ed772e::t_d7e6db1822aa00 23
+packages/vite/src/builder/server.test.ts
+  s_05a5d8c5ed772e::t_adc99b10468b34 445,471
+  s_05a5d8c5ed772e::t_aa2c643fdabdac 26
+  s_05a5d8c5ed772e::t_2ca8dd9c1ae7f2 416-417
+packages/vite/src/config/config.ts
+  s_05a5d8c5ed772e::t_24e705211b4b3d 10,13
+  s_05a5d8c5ed772e::t_6f292a7a985c7f 1,3-5,8-9,11-12,14-19,21,28
+  s_05a5d8c5ed772e::t_f3651747a446fd 29-30,94-96
+packages/core/src/server/tool-auth.ts
+  s_05a5d8c5ed772e::t_eb4f2b5e7ad0e2 46,134
+  s_05a5d8c5ed772e::t_b8704135b14bf0 130
+  s_05a5d8c5ed772e::t_6f292a7a985c7f 1,4,33,35-40,42,129
+  s_05a5d8c5ed772e::t_24e705211b4b3d 34,41
+  s_05a5d8c5ed772e::t_93fe4e884c71b7 43-45,47-51,55,79-89,93,131,136-137,139,142-144,146-151,155
+packages/core/src/server/experimental.ts
+  s_05a5d8c5ed772e::t_6f292a7a985c7f 3,25
+  s_05a5d8c5ed772e::t_117eb99c08a5a2 26-28
+packages/client-platform/src/agent-chunks.ts
+  s_05a5d8c5ed772e::t_adc99b10468b34 1-4,6-24,26-32,35-40,44-47,51,53,57-60,74,79,84,91,125,130,134-137,142-166,168-169,172,177-195
+  s_05a5d8c5ed772e::t_14c1613d563974 5,25,33-34,41-43,48-50,52,54-56,61-73,75-78,80-83,85-90,92-124,126-129,131-133,138-141,167,170-171,173-176
+packages/core/src/validation.ts
+  s_05a5d8c5ed772e::t_eb4f2b5e7ad0e2 1-3,5-17,19-20
+  s_05a5d8c5ed772e::t_86b842e69b804b 4,18
+packages/core/src/server/routes/apps.ts
+  s_05a5d8c5ed772e::t_24e705211b4b3d 19-20
+  s_05a5d8c5ed772e::t_6f292a7a985c7f 9,18,25
+  s_05a5d8c5ed772e::t_af577967b840df 21-22,26-27,33,46,58,74,90-95,113-118
+packages/app/src/client/session.ts
+  s_05a5d8c5ed772e::t_eb4f2b5e7ad0e2 32,111
+  s_05a5d8c5ed772e::t_6f292a7a985c7f 1,5,10-12,14-17,19-21,23,25-29,33,107
+  s_05a5d8c5ed772e::t_975c6d009f6910 13,18,24
+packages/core/package.json
+  s_05a5d8c5ed772e::t_eb4f2b5e7ad0e2 94,106
+packages/app/src/views.ts
+  s_05a5d8c5ed772e::t_eb4f2b5e7ad0e2 54,61-62,171,189,195,199,202,207,213
+  s_05a5d8c5ed772e::t_017246684144ef 1,308
+packages/agent/src/tools/publish.ts
+  s_05a5d8c5ed772e::t_36a0e8eece39eb 91
+  s_05a5d8c5ed772e::t_199528447c55ec 7,92
+packages/core/src/server/routes/app-agent.ts
+  s_05a5d8c5ed772e::t_36a0e8eece39eb 51,54
+  s_05a5d8c5ed772e::t_d382c98455ba75 12
+packages/core/src/spec/component.ts
+  s_05a5d8c5ed772e::t_6f292a7a985c7f 1,5-8,11,13-16,19-21
+  s_05a5d8c5ed772e::t_b52e493e29241f 23
+apps/apps-worker/src/runtime/builder.test.ts
+  s_05a5d8c5ed772e::t_36a0e8eece39eb 63,72
+  s_05a5d8c5ed772e::t_f4ee597bb5584b 44-45
+  s_05a5d8c5ed772e::t_80f58cd9c93c7e 4,73-77
+packages/app/src/instances.test-d.ts
+  s_05a5d8c5ed772e::t_f4ee597bb5584b 1,77
+packages/cli/src/generator/types.ts
+  s_05a5d8c5ed772e::t_36a0e8eece39eb 761-762,789
+  s_05a5d8c5ed772e::t_a93a7aeb93870a 11,742
+packages/client-platform/package.json
+  s_05a5d8c5ed772e::t_eb4f2b5e7ad0e2 70
+  s_05a5d8c5ed772e::t_55991f76b2e24a 78-79
+packages/vite/src/builder/client-views.ts
+  s_05a5d8c5ed772e::t_6f292a7a985c7f 4,38-44
+  s_05a5d8c5ed772e::t_6f7670ea6e4bc6 47-50
+packages/client-core/package.json
+  s_05a5d8c5ed772e::t_eb4f2b5e7ad0e2 73,79-80
+packages/client-core/src/client/endpoints.ts
+  s_05a5d8c5ed772e::t_24e705211b4b3d 26,28,34-35,40-41
+  s_05a5d8c5ed772e::t_6f292a7a985c7f 14,27,29-33,36-39
+  s_05a5d8c5ed772e::t_87b5140b12a29f 42-50,237
+packages/core/src/spec/view.ts
+  s_05a5d8c5ed772e::t_6f292a7a985c7f 1,8,10,12-13
+  s_05a5d8c5ed772e::t_eb4f2b5e7ad0e2 7
+  s_05a5d8c5ed772e::t_24e705211b4b3d 9
+  s_05a5d8c5ed772e::t_0741dbe715e34d 14-15,17
+packages/core/src/spec/spec.ts
+  s_05a5d8c5ed772e::t_6f292a7a985c7f 1,6-9,13,17,23-30,32,34,36,86-88
+  s_05a5d8c5ed772e::t_eb4f2b5e7ad0e2 16,20-21,38-39,41-43,47,49-52,54,57-59,61,64-65,70-72,77-78,83-84
+  s_05a5d8c5ed772e::t_3406f0b09579d1 33,35,37,40,53,55-56,60,62-63,66-69,73-76
+packages/vite/src/builder/schema-check.ts
+  s_05a5d8c5ed772e::t_6f292a7a985c7f 7,44-47
+  s_05a5d8c5ed772e::t_b8704135b14bf0 48
+  s_05a5d8c5ed772e::t_6708e10aa260f4 49-51,57
+packages/cli/src/generator/types.test.ts
+  s_05a5d8c5ed772e::t_36a0e8eece39eb 215,255,548,644,757
+  s_05a5d8c5ed772e::t_b2afa45503642f 13
+packages/client-platform/src/agent.ts
+  s_05a5d8c5ed772e::t_eb4f2b5e7ad0e2 2,4-6,16-17,22,28-29,36-38,41-43,45-47,56-60,62-63,66-69
+  s_05a5d8c5ed772e::t_36a0e8eece39eb 50
+  s_05a5d8c5ed772e::t_24e705211b4b3d 44
+  s_05a5d8c5ed772e::t_adc99b10468b34 9,13-15,18-21,24-26,30-34,72-74
+packages/core/src/spec/schema-references.test.ts
+  s_05a5d8c5ed772e::t_36a0e8eece39eb 37,171
+packages/core/src/spec/json-schema.ts
+  s_05a5d8c5ed772e::t_6f292a7a985c7f 2,4,24-36,45-51,54
+  s_05a5d8c5ed772e::t_24e705211b4b3d 23,52
+  s_05a5d8c5ed772e::t_eb4f2b5e7ad0e2 20-21
+  s_05a5d8c5ed772e::t_aa2c643fdabdac 37-39,41-43
+  s_05a5d8c5ed772e::t_a8cb20cf0320c8 40,44
+packages/app/src/server/builder.ts
+  s_05a5d8c5ed772e::t_eb4f2b5e7ad0e2 3,18,22,30
+  s_05a5d8c5ed772e::t_52eb6009df2211 1,31-32,44,54-56,58,70-71,95,105,164,182-184
+apps/apps-worker/src/runtime/functions.test.ts
+  s_05a5d8c5ed772e::t_36a0e8eece39eb 59,96,105
+  s_05a5d8c5ed772e::t_fbe7809ddedea9 5
+.changeset/tidy-validation-bundles.md
+  s_05a5d8c5ed772e::t_8b2589139ef148 1-11
+apps/apps-worker/package.json
+  s_05a5d8c5ed772e::t_6b728f60835034 27
+apps/apps-worker/src/runtime/execution.ts
+  s_05a5d8c5ed772e::t_079a47fe32ddaf 6,190,192-198,202,206-207,212
+apps/apps-worker/src/tests/integration.test.mjs
+  s_05a5d8c5ed772e::t_640a290fc4695f 61
+packages/agent/package.json
+  s_05a5d8c5ed772e::t_f00928f1693523 61
+packages/cli/package.json
+  s_05a5d8c5ed772e::t_8bc379766f9da9 55
+packages/client-platform/test/agent-chunks.test.ts
+  s_05a5d8c5ed772e::t_80ec50397a8f28 1-168
+pnpm-lock.yaml
+  s_05a5d8c5ed772e::t_da1ae94fcada64 363-365,593-595,813-815,822-824,850-852,972-974,1018-1020,1034-1036,1046-1048,1068-1070,1095-1097,1126-1128,1560-1562,1594-1596
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1fb01552b816fc7cefe994a192c7eb1630470334",
+  "prompts": {},
+  "sessions": {
+    "s_05a5d8c5ed772e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a147db-9d06-7bb1-a637-664c37f768b0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

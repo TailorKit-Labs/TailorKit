@@ -1,0 +1,21 @@
+apps/views-worker/README.md
+  s_5ca652acdb6aa0::t_780d81d83237da 3,20,27
+apps/views-worker/wrangler.jsonc
+  s_5ca652acdb6aa0::t_e0f5cc77936ff0 1,19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "28520158db396ccf4ec52b76cea05c280b475e4b",
+  "prompts": {},
+  "sessions": {
+    "s_5ca652acdb6aa0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1669a-4175-7302-9c64-b203fe580666",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

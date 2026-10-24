@@ -1,0 +1,16 @@
+packages/agent/src/mcp.test.ts
+  h_18044dd1b61a81 739-745
+packages/vite/src/builder/server.test.ts
+  h_18044dd1b61a81 36-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1287887d5cf6b969964990bd4dcafa746f2054ff",
+  "prompts": {},
+  "humans": {
+    "h_18044dd1b61a81": {
+      "author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

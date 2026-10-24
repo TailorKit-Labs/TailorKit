@@ -1,0 +1,28 @@
+packages/ai-sdk/src/index.ts
+  s_bf2407f2747f3e::t_1bec97e3be4275 203,205,210,217
+packages/ai-sdk/src/index.test.ts
+  s_bf2407f2747f3e::t_1bec97e3be4275 232,245-247,250,252,282,299,325-327,335,373,406,438
+  s_bf2407f2747f3e::t_e9328048b5f28d 331,333,337
+packages/ai-sdk/README.md
+  s_bf2407f2747f3e::t_1bec97e3be4275 12,20,25,51
+.changeset/mcp-ai-sdk-tools.md
+  s_bf2407f2747f3e::t_1bec97e3be4275 6
+packages/ai-sdk/src/index.test-d.ts
+  s_bf2407f2747f3e::t_1bec97e3be4275 18-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9807e2b8223fae8b01db1aacc25953b3070e9771",
+  "prompts": {},
+  "sessions": {
+    "s_bf2407f2747f3e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a156ba-665c-75c3-9e65-8bb94000a003",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

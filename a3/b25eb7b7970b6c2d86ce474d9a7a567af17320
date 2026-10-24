@@ -1,0 +1,19 @@
+packages/core/src/primitives/theme.ts
+  s_e6f85ecb8d5a09::t_cd136140218e28 73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a3b25eb7b7970b6c2d86ce474d9a7a567af17320",
+  "prompts": {},
+  "sessions": {
+    "s_e6f85ecb8d5a09": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a167ae-b95e-7800-9b72-bafbaa4f1935",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

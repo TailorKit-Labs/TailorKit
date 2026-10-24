@@ -1,0 +1,45 @@
+packages/agent-fx/src/skills/references/views.md
+  s_d3057019e73af2::t_55a74c7b17a182 1,3,5-7,22,24,47,49,84
+packages/agent-fx/src/instructions.md
+  s_d3057019e73af2::t_14259e240d120e 1,3,5,7,9,11,13,22-26,28,30-34,36,38,40,42,44,46
+packages/agent-fx/src/skills/database.md
+  s_d3057019e73af2::t_14259e240d120e 1,3,5,7,9,11,13,35,37,39,41,43,45,47
+packages/cli/src/generator/agent-examples.test.ts
+  s_d3057019e73af2::t_7bba9170e70438 13,116,119-133
+  s_d3057019e73af2::t_14259e240d120e 136
+packages/agent-fx/src/skills/functions.md
+  s_d3057019e73af2::t_14259e240d120e 1,3,5,7-9,11,17,19,21,23,25,27-31
+  s_d3057019e73af2::t_52a8b59fd46f23 13,15
+packages/agent-fx/src/skills/references/functions.md
+  s_d3057019e73af2::t_55a74c7b17a182 1,3,5,9-10,90,94,115-117,130
+.changeset/clear-app-imports.md
+  s_d3057019e73af2::t_55a74c7b17a182 1-5
+packages/cli/src/generator/templates/package.json.liquid
+  s_d3057019e73af2::t_55a74c7b17a182 6-9
+packages/agent-fx/src/skills/references/interactions.md
+  s_d3057019e73af2::t_55a74c7b17a182 1,3,5,40
+packages/agent-fx/src/skills/references/workflows.md
+  s_d3057019e73af2::t_55a74c7b17a182 1,3,7,10-12,14,16,18
+packages/agent-fx/src/skills/frontend.md
+  s_d3057019e73af2::t_5f4cc2ff1e47e8 1,3,5,7,9,11,13-15
+packages/agent-fx/src/skills/setup.md
+  s_d3057019e73af2::t_dda0cfd0aa517d 1,3,5,7,9,11,13,15,17
+packages/agent-fx/src/skills/views.md
+  s_d3057019e73af2::t_b3ca8a0302c749 1,3,5,7-9,20,22,24,26,28,30,32,34-37,39,41,43,45,47,49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "78329a916015ca0a5e70d0cb7e4014be4448efb2",
+  "prompts": {},
+  "sessions": {
+    "s_d3057019e73af2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15312-993f-77e2-97fd-a77f6c7bbcd7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+apps/apps-worker/src/installation.ts
+  s_0e20373cc5805e::t_1888bfecccd39d 244-246
+apps/apps-worker/src/worker.test.ts
+  s_0e20373cc5805e::t_fedbb06d70fb6e 450,491
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e11b662975bea6ad2e0951439b2b6ef80fb8ca78",
+  "prompts": {},
+  "sessions": {
+    "s_0e20373cc5805e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16319-06d8-7730-99fa-9d07053b2a48",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

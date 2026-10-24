@@ -1,0 +1,33 @@
+packages/app-agent/package.json
+  s_2f40b5dc18ecb8::t_fae97ce9ecfb09 19-22
+packages/app-agent/vite.config.ts
+  s_2f40b5dc18ecb8::t_0e26c8e8d9e1b9 7
+pnpm-lock.yaml
+  s_2f40b5dc18ecb8::t_dfbf02e15997f6 550-552,562-564
+packages/api/package.json
+  s_84951073049f03::t_cec3631820dbeb 38,42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "65b1028b9f57c6c75d94087f24f762904349d5cd",
+  "prompts": {},
+  "sessions": {
+    "s_2f40b5dc18ecb8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1335c-f897-7d11-a78a-d7756d0c881a",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_84951073049f03": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1338f-c831-7f72-9216-75e04cf14290",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

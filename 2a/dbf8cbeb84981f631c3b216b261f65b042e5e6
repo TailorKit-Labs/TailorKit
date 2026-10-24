@@ -1,0 +1,41 @@
+apps/web/src/routes/api/assets.$.ts
+  s_7d1277528c5eb4::t_2fbf0b54fab116 3,8-14
+apps/web/src/routes/api/auth.$.ts
+  s_7d1277528c5eb4::t_d6d56adf35d7fb 3,8-9
+apps/web/src/routes/api/platform.$.ts
+  s_7d1277528c5eb4::t_32ba5eb94c99a2 3,8-13
+apps/web/src/routes/api/platform.app-agent.mcp.ts
+  s_7d1277528c5eb4::t_0cdaa9fa47a7c9 3,8-13
+apps/web/src/routes/api/rpc.$.ts
+  s_7d1277528c5eb4::t_a40f89ea5f9ec6 3,8-13
+apps/web/src/server/api/assets.ts
+  s_7d1277528c5eb4::t_f6113de64460fe 1-17
+apps/web/src/server/api/auth.ts
+  s_7d1277528c5eb4::t_c09c82c5d1dfd7 1-18
+apps/web/src/server/api/entry.test.ts
+  s_7d1277528c5eb4::t_d248feb05d6b30 1-87
+apps/web/src/server/api/entry.ts
+  s_7d1277528c5eb4::t_2b8c56027d63eb 1-38
+apps/web/src/server/api/mcp.ts
+  s_7d1277528c5eb4::t_510ce0dd8a6bf2 1-52
+apps/web/src/server/api/platform.ts
+  s_7d1277528c5eb4::t_9dcbc412a2873f 1-85
+apps/web/src/server/api/rpc.ts
+  s_7d1277528c5eb4::t_a33119ea7fd287 1-51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2adbf8cbeb84981f631c3b216b261f65b042e5e6",
+  "prompts": {},
+  "sessions": {
+    "s_7d1277528c5eb4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1497e-9fb2-72a0-980b-c455db548beb",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

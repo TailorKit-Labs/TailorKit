@@ -1,0 +1,1610 @@
+packages/client-core/src/client/scope-query.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-4,15,17,20-24,28,30
+playground/shared/src/contracts/zod.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4,8,17-18,22-24,28,31,37,39,46,51-54,57-61
+  s_ffab4eb5f4f549::t_2f5f1ecad592f6 62
+packages/core/src/schema/slots.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-7,14-15,17,21-22,27-28,36,43,56-58,66,68-71,79,82-84
+apps/apps-worker/src/dynamic-workers/facet.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-2,5-6,8,14,18-24,26,49,54-65,71-76,81-82,85-88,90-91,93-106
+apps/web/src/vite-env.d.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-5
+packages/observability/src/index.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,11,18,33,47,57,65,72-74,79,93,99,102,108,113-118
+apps/web/src/components/header-actions.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,11-13,16-20,22-31,33,35,39-41,44
+apps/apps-worker/src/supervisor/auth.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 7-12,19-21,26,28,30,35-37,40,42-44,46,60
+packages/cli/src/generator/types-schema.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 7-8,13-19,21-23,26-51,53,58-78,83-88,90,92,95,100-126,131-136,141-157,162,167,172,177,182,188-192,195-196,200,204-209,214,219,224-229,234,239,244,248,250,255,260,265,270-275,280,286,288,291,296,301,307-311,313,317-319,323,327-329,334-340,344-345,349-355,358,362-364,369-375,379-380,385,389-397,403,406,408,414,423-424,427-428,432-435,440-445,449-454,457-466,469,478,481-482,486-497,502,504-505,510-523,530-534,538,540,551-553,562,564,567,569,571-572,574,582
+packages/api/src/procedures.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-6,8,11,18-20,22,27-32,37,55-57,79-90,92-94,96-105,107-109,111-118,120-122,125-127,136-137,142,151,154-157,165-168,178-180,193,201
+packages/email/src/templates/better-auth/shared.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,17-19,22,48-104,109-123,125,127-132,134-146,149-151,153-155,157-161
+packages/api-platform/src/runtime/access.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,10,13-15,17,23-26,30-35,39,48-55,59,62-65,68-71
+packages/api-platform/src/preview-token.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,6-7,10-22,26,28-29,32-35,38,40,43-44,57-58,61-67
+packages/cli/src/options.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-21
+apps/web/src/routes/(app)/account/request-organization.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-8,16-35,60-64,68-78
+packages/sandbox/src/protocol.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,16,37-41,43,46-49,53-57,61-65,68-75,78,80-89,92-96,98-101,105,107-108,111-115,117,119-125,128-135,146-149,154-155,159,161,167-171,173,175-176,181-182,187-188,192-208,210-236,240-243,248-249,254-262,267-271,277,282-286,297,304-307,312-325
+packages/tailorkit/src/app.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1
+packages/ui/src/components/toggle-group.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6,8,14-21,23,30-31,42,51,59,64,66,72-73,76-77,91,93,99-108
+packages/api-platform/src/public-id.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4,13
+apps/web/src/routes/api/platform.preview.ws.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4,9-11,21,26-28,30,33-34,38,45-46,51-52,64,66-67,71-112,120-125
+packages/api-platform/src/routes/apps.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-2,6-10,14-25,28,33,40,42,47,56-58,66,72-75,78-107,116-117,121,124-125,130,133,139,147,165,167-169,172-173,175,180,185-186,189-191,193-196,198-200,253,262,265,278,282-284,346,351,355-356,362,366,373,380,391,396,423-425,429,447-452,486-487,493,495,500,505,520-522,528,531-532,538-542,545,556-557,561-563,569,571,575-576,578-582,584-585,590-591,607-609,618-620,630,636-637,645,647-648,650-652,658-659,663-667,673-684,693,701,704-705,719-722,729-731,734-740
+  s_ffab4eb5f4f549::t_066c3dea1473f2 219,224-228,231-238
+  s_ffab4eb5f4f549::t_9e146886fd3cfb 213,215
+packages/app-agent/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,9-25,29,31,33,41,43
+packages/cli/src/utils/fs-errors.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-7
+apps/web/tsconfig.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,4,7,18-19
+packages/api-platform/src/scope.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3,6-9,15,25,35,39,45-47,51-54,59-78,83-85,87-101,109,118-120,124-125,127,129,135,144-146,153-161,166-167
+packages/db/src/migrations/20261006230112_app-view-manifests/snapshot.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 8-13
+packages/react/src/hooks/use-query-result.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6-9,16-18,25-26,28,30
+apps/web/src/routes/(app)/$orgSlug/$projectSlug/route.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,6,8-11,26-36
+packages/vite/src/builder/server.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-610
+packages/app/src/client/reference.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-6,12,14-15,20,29-48,50
+  s_ffab4eb5f4f549::t_c9cec11d144786 2
+packages/ui/src/components/dropdown-menu.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6,9-12,18,22-30,32,49-66,68-74,76-80,82,90-101,103,111-147,149-156,158-162,164,168-195,197,203-213,215,218-224,226,229-238,240-244,246,253-266,268,278-279,293-324
+playground/tanstack-start/src/components/tailorkit-shell.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-133
+playground/tanstack-start/src/lib/auth-client.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-106
+packages/vite/src/builder/client-views.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-62
+apps/apps-worker/src/runtime/bundle.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-4,7-9,14,17,19,22-26,28-31,33-38,41-44,47-50,56,60,65,69
+apps/web/src/lib/deployment-headers.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-3
+packages/react/src/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 16-25
+packages/app/src/server/instances.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-5,9,14,18,23,26,30-32,35-37,41,44,46-47,49-51,67,73,76,78-83,88-90,92,94-96,100,104-109,119
+packages/ui/src/components/card.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6,9,13,16-17,27,29,33,36-37,47,49,53,57,67,69,73,75,84,86,90,92,101,103,107,110-111,121,123,127,138,140,144,148,158,160,164,166,175,177,181,183,192,194,198,202,212,214,218,221-222,232,234,238,242,252
+packages/sandbox/src/host/store.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-4,10-16,42,50-55,69
+packages/cli/src/deployment-client.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,6-7
+packages/db/drizzle.config.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2
+packages/app/src/views.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-7,10,13-17,20,23,26-38,41,52-55,59-62,64,67,71-74,81-83,85-87,124-126,129-134,138-140,143-145,155-158,161-166,168-172,176,193,201-208,211,216,220-239,249,252,255-268,272-280,282,286,291-293,300,302,304-310,312,319-322,331-334,336-339,344-349,352,354,361-366,371,379-383
+packages/vite/src/builder/upload-manifest.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-53
+apps/apps-worker/src/worker.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-4,7-10,13-14,16,21-24,27-32,36,46-48,53,58-64,68,72,74-76,78,80,82-83,85,87,90,92-96,99,101,103,107-108,111,120,123,126-136,142-162,165-173,175-178,182-204,207,209-211,214-215,217-218,220,222-226,230,235,237,239,242-244,246-256,260-262,264-265,267,270,273-274,287,292,299-303,305,313-314,316,324,326,342-345,362-370,373-378,390,394-397,400,403,410,413-414,425-426,432,436-439,448-449,457-458,463-466,475-476,478,481-482,490-496,501-506,508,510-516,520,522-530
+packages/api/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,9-25,29,31,33,41,43
+packages/api-platform/src/cli-token.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4,6,10,13-26,31-33,39-41,44-46,49,52-62,64-66,73
+packages/app-agent/src/source-export.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,9-11,16,18-22,24,26-28,30-38,41-43,45-54,58-59,61,79,87-92,95-99,101
+packages/cli/src/env.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-5
+packages/app/src/client/tools.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-4,6-9,11-17,19-23,26,29-30,32-37,42,44-53,55-77
+packages/cli/src/generator/types.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,6-10,13-14,24-26,34-35,38,40-41,44,46,50-52,55-58,64,68-72,75-84,87,90,98-101,106,110,115-124,130,138-141,145,153-163,173,177-198,203,207-208,210-211,221,228-230,241-243,246,292,328,343,369,403,406,412-414,416,422,428-433,447,450-456,466,510-515,521-526,534,545,575,582,589,596,602,606,617,628,634-643,647-649,652-654
+apps/web/src/components/google-icon.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,6-30
+packages/app/src/children.test-d.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 14-16
+packages/client-platform/tests/preview.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,15-16,18,25-30,38-42,47-54,56-58,63-65,70,72-73,78-85,87,90-95,100-106,109-111
+packages/core/src/server/routes/preview.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,6-19,24-27,33-37,42-43,45,51-56,89
+packages/api-platform/src/routes/agent-deployment.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,7,11-22,25,28,30-31,39-41,45,52,57-60,69-76,78-82,84-89,96-103,105-106,118,125,127,130,135-136,142,144,146-147,150,162-167,170-173,175-182,184-186,197-200,206-210,218,220-223,225-231,233,235,246-247,252,255,257,266-271,273,280,288-289,293-295,301-307,309-311,316-318,320-332,334-337,339-344,349,352-355,361-363,370-377,385-386
+packages/kv/src/preview-presence.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-4,15,17-18,22-25,30,34-35,37,39,41,45,48-72,74-96,98,102-118,120-122
+packages/client-core/src/client/fetch-client.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-8,17-18,25-27,30,33-37,41,45,47,49-51
+.changeset/ultracite-defaults.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-13
+packages/client-core/src/client/primitive-css.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-13,16-17,29-30,38,40,49-59,62-66,70-92,97-106,110-113,173,179,184-185,196,199-201,207-210,216-218
+packages/client-platform/scripts/normalize-esm-imports.mjs
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6-7,14-16,20,24-28,30-39,41-60,63,66-69,71
+packages/api-platform/src/routes/cli-auth.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-2,9-14,20-23,28-35,40,42-43,45,60,62-63,69-70,80,107-108,116,125,131-134,136-137,142-144,154-155,166-169,171-172,177-179,189-190,205,218-220,240-247,275-276,284-291,322-324,340-341,348-351
+packages/ui/src/components/form.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6,8-13
+playground/tanstack-start/tsconfig.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-21
+apps/web/src/lib/orpc.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-5,8-10,26-27,32
+packages/kv/src/preview-presence.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-6,9-37,42-45,49,53,62,76,78-83,90-93,96,103,105-110,119,122-125
+packages/vite/src/builder/client-views.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-65
+packages/app/src/server/builder.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-12,23-26,31-36,50,55-60,66,76-82,91-97,101-107,110-113,119,124-126,133,138,140-172,178-179
+packages/ui/src/components/drawer.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 10,12,17-18,21-26,28-31,38-39,41,47-48,50-54,57,59-60,62-63,65-69,71-77,83,95,101,103,106-117,125-176,181,196,206,209,211,213,215,224,228-235,238,243,245,247,249-250,270,272,279,284,294,296,305,313-314,324,326,329-337,340-348,359,362,364,377-381,388,390,394,405,407,415,418-419,432,434,438,449,451,455,466,468,472,474-477,486,488,492-506,519-558,560-569,572-580,590-620
+packages/api/src/test/pglite.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-2,8-9,13,23
+packages/api-platform/src/routes/runtime.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-10,17-18,20,25,34-36,46,58-60,70,81-83,91-93,95,100,102,106-108,119-120,124,127-130,136,140-141,144-151,153
+packages/app/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 9-53,70,74
+packages/api-platform/src/cli-token.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-10,13-29,33-36,38-45,61,80,82-84,91-93,101-103
+packages/cli/README.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,7,14-28
+packages/cli/src/deployment-client.test.ts
+  s_ffab4eb5f4f549::t_9e146886fd3cfb 82-86,88-89
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4,7,11-17,20-22,24-27,42-45,59-64,73,106,118,122-123,125,127-130,132,146,152,155-157,164-183,187,194-196,198,200-206,215-217,227-230,233,235-241,244,249
+  s_ffab4eb5f4f549::t_066c3dea1473f2 76-77,79-80
+  s_ffab4eb5f4f549::t_3b7cda6f2636d8 81
+packages/sandbox/src/iframe/resolve-view.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-2,5,9,11-14,16,23-29,35-38,40,43-45,48-54,65-66,73,75,78-80,83-100,105-108,116-117,122,124,142,153,162-163,167,179,181,191-194,205,210-211,215,218,227-228,233,235,241,244-245,247,254,261-273,277-289,295-305,309-320,322-326,328,332,334-335,337-340,345-351,353-372,376-379,389,391-399
+packages/vite/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-72
+.vscode/settings.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,58-61
+.changeset/pre/app-agent-mcp.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6
+apps/web/src/router.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6,12-14
+packages/api-platform/openapi.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 293-299,473-478,838-843,1181-1186,1600-1605,1938-1943,2518-2523,2732-2737,3100-3105,3209-3214,3277-3282,3409-3413,3444-3449,3516-3520,3551-3556,3689-3694,3937-3943,4285-4290,4482-4487
+packages/email/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 27-29,32,36,39,43
+apps/apps-worker/src/supervisor/websockets.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3-5,9-16,23-46,48-49,51-71,78,80-85,87,95,106,108,113,122-126,134,136
+packages/db/src/schema/preview-session.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 13-14,18-19,22-25,42-51,57-58,61,65-68,74,80,83,86
+playground/shared/scripts/export-schema.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-3,5,8-10,15-17
+packages/vite/src/config/config.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-80
+packages/app-agent/src/tools/glob.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,14-15,20-21,26-36
+packages/api/src/routers/org.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,6-8,21,32-34,38-54,63,65,70,72-82,86-91,93-104,111,121-122
+packages/client-platform/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,14-37,67-69
+playground/shared/drizzle.config.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-2,4-7,10-12,14
+packages/core/src/server/procedures.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,8-14,17,23,25-30,37,40-43,46,48-51,56-59,62,64-66,68-74,78,92-94,105-107,109,119
+packages/api/src/routers/user.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4,7-16,21-24,31-35,43-45,63,68,72-78,84,87-93,103,105-107,127-129,146-148,158-207,210-214,220-242,245-277,280-303,305-338
+apps/web/src/routes/(app)/$orgSlug/$projectSlug/apps.$appId.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 10-33,40-42,53,55,61-64,72-74,76-78,82-83,88-91,95-96,100,107,113,130,132-136,157,159-162,165,168-169,171-174,185-187,192,202-204,209-211,215-220,229,232-236,245-246,254,265-267,274-276,290,296-298,309-332
+docs/docs.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 55-64
+packages/cli/src/auth.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4,6,8,13-15,26,45-61,63,67,73,77,79,86,91,98-114,116,118-123,130-132,134,154-156,162-164,167-169,178-180,183-187,200-202,209,240-242,244-246,251-307,311-315,317-319,325-327,334,336-339,342-344,358,380
+packages/app/turbo.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5
+packages/cli/src/preview.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,7-8,15-16,19-23,32-37,54-59,62-64,69-138,151-152,155,159-161,163,166,169-177,187-189,194-196,210-212,221-224,226
+packages/client-core/src/client/scope-query.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2
+packages/vite/src/builder/drizzle.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-39
+apps/web/src/routes/(auth)/login.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,15,17-22,28,30-34,37-41,46-47,50,54-57,60,63-65,69-72,87,89-101,119-127,132-133,136-140,146-147,165,184-192,199-204,207-211,214-218,224-233,235,238,250,256-259,261,275,278-325,330-336,338-342,344,346-350,352-361,363-371,379,382-393,395-401,403-421,425,437-438,442,452-464
+apps/web/src/lib/table.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 15
+packages/vite/src/builder/generate-migrations.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-42
+packages/client-core/src/store/local/node-store.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3,6-10,15-16,20,31-33,36-38,48-50,61-64,67-74,84-91,139-140,151-152,161-163,165-166,171-174,183-185,187-188,191-193,202,205-207,216-217,231-232,243-244,255-256,270-271,282-283,294-295,307
+packages/app/src/protocol.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6,10-12,20,23-25,30-31,35-37,39-41
+packages/app-agent/src/tools/read.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,8-20,23,28-33,37,39,41-48
+packages/core/src/schema/components.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-7,24,30-35,63,69-70,75-77,82-83,94,100,108,110,118
+packages/ui/src/components/switch.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,8-22,24,26-29
+packages/app/src/server/builder.test-d.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3,5-9,14-25,37,40-42,53-56,60-61,70-72,74,80,82,84,102,105
+packages/app/README.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 9,25,30,36,52,56,72,74,84-109,111,113,115
+packages/db/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,9-25,29,31,33,41,43
+apps/apps-worker/src/runtime/errors.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,7-13,22-25,27,32,34-39
+packages/cli/src/generator/generate.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-8,13,25-33,40,45-46,60-67,71-73,76,80,82-89,91-96,101,109-112,118,124,126-129,132,135-139,144-151,154-156,159-162,165-166,168,171,173,175-179,188-207,215-220
+packages/ui/src/components/meter.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,8-10,13-19,21,24-30,32,34,36-47,49,52-58,60,63-69
+packages/kv/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,9-25,29,31,33,41,43
+packages/storage/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 32-34,42-43
+packages/ui/src/components/breadcrumb.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 10-14,16,19-28,30,33-39,41,45,56,58,61-68,70,74-84,86,89-100
+  s_ffab4eb5f4f549::t_f1d3a322b7fe41 7
+packages/ui/src/components/group.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 8,10,13,21,23,26,29,38-50,52,56,59-60,69,71,77-86
+packages/ui/src/components/skeleton.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,5-17
+packages/cli/src/agent-auth.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,6-7,9,18-22,24,28,31-37,41-47,49-52,57-60,63-65,69-78,82-83,86,89
+packages/vite/src/config/loader.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-40
+packages/api-platform/src/assets.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,6-7,10-19,28-41,57,60,77-79,95-98,101-104,111,114,116-118,122-133,137-139,148-151,154-167,170-172,179,190-193,197-215,225,232,234-236,238-239,242-244,246-248,257,260,263-264
+packages/app-agent/src/tools/utils.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-6,9-12,22-29,32-34,36-38,40-42,45-47,50,55-62,64-66,72-90,94,97,101-106,109
+apps/apps-worker/src/tests/integration.test.mjs
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3,7,10,12-16,18,20-41,46-48,50,54-58,61,66-71,79,81,84,86,95-100,102-112,118-127,132,137-146,149-157,160,162,164-174,179-187,190-192,195,198,200-201,209-227,232-237,240,242-243,248-250,252,254-257,260,263,270,272-273,275,277,279-283,285-291,295,297,328,332-333,335-338,341-344,356-359,363-367,374-398,400,405,407-410,413-414,424,426,428,430,433-444,447-448,450-479,481,484-487,495,503-506,510,518-520,525-537,551,560,572,589-592,594-599,603,610,616-618,623-625,631-632,635-638,655-657,670-675,682,686,692-720,725-735,740-753,757-760,773,780,784,790-798,806-814,823-831,834-837,842,853-863,867-872,882,885-892,896,901-904,907-910,923-927,929-933,936-939,951-953,959-963,971-975,981-983,989-993,998
+packages/client-core/tsconfig.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 10-13
+packages/ui/src/forms/field-errors.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-10,14-17,19,23-26,28,32-35,37,40,42
+apps/web/workflows/app-agent.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1
+apps/web/src/css-properties.d.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-7
+packages/app/src/server/functions.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-6,10-13,30-34,37,46-48,55,70,81-84,88-137,139-148,151,155,158,163-166,168,173-175,178
+apps/web/src/lib/auth-search.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-11
+licenses/Apache-2.0.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 9-53,70,74
+packages/client-core/src/store/fetch/slot.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-9,12-18,26-29,52,55-56,68,72-78,83,86-94,96-99,101-103,106-108,112-120,123,126-128,130-136,139-146,149-151,156-158,161-162,165,167,175,180-190,197-200,206-218,220-224
+apps/apps-worker/src/supervisor/subscriptions.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,4-7,9-13,20-22,26-44,48,50-51,53-71,75,90-93,95-101,105,107,113-115,117-122,124,126-133,138-140,143,145,147-151,156-159,162-175,179-190,196,198,201,203-205,208-213,215-222,224-228,231,236-238,241-242,245-246,252,254
+packages/sandbox/src/host/store.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-4,7-12,15-16,18-28,30-32,34-44,46,53,99,101-104,106-110,112-163
+packages/tailorkit/src/app-config.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1
+packages/app-agent/README.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 7,10-11,13,15,18-21,29,35,43,47
+packages/api-platform/vitest.config.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 14
+packages/core/src/primitives/theme.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 99,102-103,108,110,112-114,116,120,122,124-126,128,135,139,141,143,148-149,154,160-161,163-166,168-170,172-173,175,180,183,187-189,204,219-221,225-229,236-238
+packages/react/src/hooks/use-view-context.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-5,21,24,27-30,39,43,45
+packages/api/src/routers/user.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-21,25-29,65-91,99-100,107,110-111,115,118-119,126,130,133,137,142,146,160-166,173-174,182,190-192,202,207-209,212-214,219-223,226-228,233-237,241,252-253,257,269,277-278,283,297,300,302-303,306,309,311-312,315,318,320-321,325-331,337,340
+apps/web/src/routes/(app)/$orgSlug/$projectSlug/settings/index.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 23,26-35,39,43-44,63-66,72,76-77,83-87,90-92,96,103,112-118,120-122,124,146-149,155-156,165,168-191,196,205,212,217-219,240-243,252-254,260-262,268-270,279-283
+packages/app/src/slots.test-d.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-5,7,11,14,16,18-19,21,24-27,31-33,35-39,41,44,47,50-53,57,60-63,66,69,71,74,76
+packages/email/src/templates/better-auth.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,7,44-50,52-56,60
+packages/app/src/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1
+packages/api/src/routers/project.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6-18,34-38,40-41,54-80,88-89,93,96-97,103,107,110,114,119,123,128,131,136,138,154,158-160,165-169,173,181-187,191,199,203,215,219,237,241
+packages/client-core/src/client/views.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3-7,11,13-25,27,31-37,39-44,48-56,59,64-74,77,84,87
+apps/apps-worker/src/supervisor/runtime.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-3,5,12,15,17-19,23-27,33-62,67-76,83,91-93,95-99
+packages/cli/src/generator/package-versions.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,10,12,14-18,27-28,30-31,36-63
+packages/cli/src/agent-tui.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3-12,14-29,31-33,37,44-46,48,50,52,55,62-83,88,91-92,94-95,97,103,107,110-113,115-129,132-133,138-141,143-144,148-151,156,159,161-163,166,169,175-178,181,183-186,188,190,194,201-204,206
+packages/client-core/src/store/local/view-context.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,4-5,8,19-21,23,25,27,29,31,46-48,51-52,54,57,65-66,75,78,85-144,147-160,162-165,168-169,171,178-183,189
+packages/core/src/schema/shared.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-4,7-8,16-17,20-21,31-34,37-54,56,58,61-63,68-70,74,78
+packages/observability/src/env.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,11-14,16
+apps/web/src/components/sidebar/sidebar-back-button.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,4,8-20
+.changeset/pre/cli-builder-agent.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 7
+packages/client-core/src/client/url.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3-5,7
+packages/core/src/server/handler.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-6,8-12,17-20,24-26,43-49,51,53,56-75,77-79,82-84,87,94-98,108-110,112,119-121,124-125,134-138,143,150-152,154-161,168,171,173,182,186,191-194,196,198-202,207-212,214,235,242-243,247-250,254-257,259,277,288,291-293,296,302,323-325,328,330,358-361,370,378,387,390,397-400,413,415
+packages/client-core/src/client/tools.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-2,5-7,9-10,15,28-32,39-40,42,44-45,49,52,57-59,64-68,71,73-85,91-105,111-112,116-117
+packages/client-core/src/client/value-memo.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,15
+.changeset/config.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 14-15
+packages/cli/src/deploy.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,14-16,18-19,21-24,30,32-33,35-40,43,55-66,70,73-74,76,78,81-82,86-88,91,99,109,111-112,116,118,120-121,123-130,132-133,135-139,153-155,157,159,162,164-167,169,177-181,191-195,201-203,205-209,214-215,219-221,223,229,240,243-246,249,252-257,262,272,279-280,283-284,287-290,297-301,304-306,313-315,319-328,334,337-340,342,348-349,354-364,367,373-375,377,379,386-388,391-395,397,406,411-413,422-424,426-428,432,438-440,450,455,468-471,475,479,482,488-489,491-495,497-504,507-528,530-533,556,560-563,565-566,568,575,584-587,589-591
+packages/email/src/templates/better-auth/forget-password.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-24
+packages/react/src/hooks/use-apps.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-6,8-10,14-15,17,19-37,39-42
+packages/core/CHANGELOG.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-8,13,142-143
+packages/sandbox/src/host/serialize.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-13,19-21,28,34,37
+packages/ui/src/components/button.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 8,13,36,38,40,45,50,59,68-71,74,79-82,98
+packages/api-platform/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,9-25,29,31,33,41,43
+packages/app/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,14-37,66-68,71,75,81-82,85
+apps/web/src/lib/safe-return-url.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 9-13,18-23,29,31-33
+packages/core/src/spec/view.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,7
+packages/ui/src/forms/text-field.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-18,20-22,44,60,68-71,73,75-81,111,117
+packages/ui/src/components/progress.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,8-10,13-22,24,27-33,35,37,39-51,53,56-62,64,67-73
+playground/tanstack-start/src/routes/login.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-13
+packages/cli/src/utils/open-browser.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4,6,21-22,41-46,52-60,66-71
+packages/react/src/hooks/use-views.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3-6,15-16,19,21-36,38
+packages/cli/src/generator/package-versions.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-4,8-9,34,37-41,43-46,56-60,64-66,81-84,86-92,95-96,106-111,115-120,125-129,132,138-148,157,159-160
+packages/client-core/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,15-38,63-65,73-74,80
+apps/web/src/components/members/member-table-utils.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4,7-9,15,19-36,39,44,47,49-51,59
+apps/web/src/components/nav-breadcrumb.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 10-16,23-38,43-50,58,60,63-68,77,79,83-84,100-103,105,127-128,132-133,136,138,144,152-158,171-174,185
+apps/apps-worker/src/supervisor/capabilities.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,4,7,9,12,14,17,19,30-52,54,62-63,65-66,71,86-92,99-100,109-119,121-137,139
+packages/api-platform/src/preview-ws-auth.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-6,12,15,18-19,21-28,44-46,53,55
+packages/app-agent/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 7-16,39-41,44,46,48
+packages/asset-delivery/src/index.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,34-38,47,54-56,62-64,68,76-77,81,88-92,95-98,127-131,145-146,149-151
+packages/client-core/src/store/query.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-9,15,38-39,44,46-57,60-66,79-81,84,93,95-96,98-102,107-108,110,112-130,132,135-176,178-180,182,184,186-188,191-205
+packages/core/src/schema/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 46-51
+packages/email/src/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 9-15,19-22,48-54,61-67,75-84,86,119-121,139-143,151-158,174,177,181-185,191-192,195,231,237,250
+packages/vite/tsconfig.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-15
+packages/client-core/src/client/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 16,18
+apps/apps-worker/src/runtime/database/migrations.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-5,8,14-15,18,21,24-32,36-38,41,48-63,77-78,86-88,90,92-94,99-101,108-110,115,117-119,123-125,127,134-139,144,150-163,173-178
+packages/ui/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 9-53,70,74
+apps/apps-worker/src/runtime/database/migrations.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-2,4-11,16-21,26,28-31,39,43,49-51,55,59-63,66,70
+packages/ui/src/hooks/use-media-query.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-10,23-29,31-32,34,36-37,39,41-44,72-73,75-76,81,83,92-94,98,100-102,105-108,110,121,123
+packages/cli/vite.config.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,7-10,21,45-46,48
+apps/apps-worker/src/runtime/bundle.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-3,11,14,19,21,31,40-46,52-55,71-74
+packages/app-agent/src/sandbox.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3,5,18,20,24,50,53-55,63,65-67,69,76-82,85-88,94-97,110-113,132-135,147-149,158-161,165,168-170
+packages/flags/src/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,10,13,16-17,19-23,28
+packages/sandbox/src/host/serialize.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4,8-12,14-16,20-26,38-39
+packages/api-platform/src/mcp.integration.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-5,8,11-17,20-26,29-30,36-37,42-44,50,54,59,64,66-68,70-80,82-83,86-87,92-97
+packages/auth/src/trusted-origins.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 13-18
+packages/core/src/schema/schema.test-d.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-6,10,29,46-48,51,55-57,67-70,77-79,86,99-101,113-115,132,136,139-140,146-153,156-158,161
+packages/client-core/src/test-contract.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-6
+.changeset/pre/public-vite-plugin.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-10
+packages/client-core/src/store/fetch/preview-manager.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-5,8-11,37-39,42,44,47,51,53,57-61,76-79,90,92,96-97,104,126-128,130,134,152-155,171,173,182-187,194-195,233-235,252-255,257,259-260,263-268,277-281,292-294,300-302,306-314,320,326-331,335
+packages/client-core/src/store/snapshot-store.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,7-8,11-13,27,30-31,50
+packages/core/README.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 7,21-25
+packages/api-platform/src/routes/runtime.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 9-11,13-16,18,21-23,28,31-44,48,67-68,77-79,81,84-86,88,91-93,98-100,104,117-119,121-124,129,131-132,134-136,143-144,151-154,159,171,173,182-186,188-194,202-205,211-216,218,220-226,231-232,238,243,248-250,254-259,261
+packages/app-agent/src/schema.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-3
+packages/email/src/templates/theme.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 9
+apps/web/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 21-23,26-27,52,56-57,60,68,73,79
+packages/api/vitest.config.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 14
+apps/web/src/components/page-layout.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,13-15,20-23,25-27,33
+packages/kv/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 32-34
+packages/kv/src/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-8
+packages/sandbox/src/iframe/backend.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,5-11,13,17-20,22,31-35,44-46,50,55
+packages/storage/tsconfig.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 9-10
+LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,5,7
+packages/ui/src/components/accordion.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6,9-15,17,20-26,28,32-49,51,55-63,65
+packages/api-utils/src/env.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,6-7,9,13,15
+packages/client-platform/src/client/client/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-4,9-13,25
+packages/email/src/templates/better-auth/change-email.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-25
+packages/api-utils/src/app-auth/tokens.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-6,16,18-27,30,49,52-60,70,72,75,80-82,84-89,92-97,99-103,107-109,113,116,119-124,131,138-141,145-146,148,159,162-165,168-171,184-185,189,191-193,195-198,212,214-215,217,223-224,233,236-239,241,245,247,249-251,253-256,260
+packages/ui/src/components/separator.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,6-8,12-22
+packages/vite/src/builder/migrations.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-67
+apps/apps-worker/src/publication.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,7-8,22-25,27
+packages/api/src/routers/apps.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 12-14,31-32,34,54,56,59-60,69-71,74,77-169,171,178-196,221-239,241,243-246,253,263-269,274,292,295,297
+packages/vite/src/preact-version.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-24
+playground/apps/todo/src/root.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-7
+apps/apps-worker/src/supervisor/source.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,6,9-15,20-22,27-29,34,36,38,42,44-46,52-61,71-73,79-82,94-95,97-98,101-107,109-115,119,125-128,130-140,144-145,147-150,154-157,166,174-184,193,196-200,207-225
+packages/react/src/__tests__/tailor-kit.test.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-5,8-35,39,46,56-62,66-68,72-95,99-100,102,109-112,119-121,129,140-141,144,150,152,161,164-170,172,178-182,184,190,192,195,204,212,224,234-238,260,269,272,274,281-283,287-290,292-297,302-309,317,322,325-328,332,334,340,349-353,362,367,369,375,379-380,383,390,392-394,402-404,407,426,429,432,437,440-442,445-449,456,458,475,495,497,500,502,506,508-514,519,524-526,533,547,549,552,554,558-561,572,586,596-600,609,611,624,630,632,640,642,647,655-660,662,670,672,675,677,680,682,684,686-692,698,702-704,711,713,725-729,735-737,741-743,746-747,752-756,760-762,771,773,777-784,789-791,795,798-802,808-810,812-814,819-850,854-856,860,865,867,872,874-880,883-888,891,896,898-900,902-903,909,911,913,915,917-923,932,934-940,943,947-950,954-974,976-988,993,995-997,1003,1005-1007,1012,1014-1019,1024-1028,1032-1033,1036-1037,1041,1044-1049,1053,1055-1057,1061,1063-1065,1069,1076,1078-1080,1086-1100,1102-1104,1108,1110-1115,1118,1120-1123,1133-1134,1137-1144,1148-1149,1156,1160-1165,1169,1171-1173,1177,1179-1181,1190-1203,1209,1211-1213,1217,1219-1222,1229,1231-1233,1242,1244-1246,1249-1250,1252-1257
+playground/tanstack-start/src/routes/issues.$issueId.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-91
+packages/api-platform/src/routes/apps.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6-20,23,25-27,30-31,33,36,47,53-54,62-66,68,70,73-79,94-100,114-115,120-121,125-127,130-134,139,143,146-147,153,158,171,177-179,194-195,200-201,204-209,220-221,225-227,229,232-237,243-245,268-269,275,278-283,321,324-328,334-336,338,347,356-359
+  s_ffab4eb5f4f549::t_066c3dea1473f2 180-183,186-188
+vite.config.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-7,10-60,63-137
+apps/web/public/site.webmanifest
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-13
+packages/asset-delivery/src/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-3,6-12,17,20,35-37,50-53,55,59-63,65-76,80,82-87,91,93,95-96,99-105,108,110-112,115,119,122-134,137,139,141-142,144-149,153-154,160,163,168,175-176,187,191,194-201,203,207-230,232-242,245-248,255-258,260-268,272-273,275-276,281-283,287,295,297,299-300,305-307,311-312,314-316,320-324,329,333-338,340-345,350,352-356,358-363,367,373-382,385-390
+packages/app/src/routing.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4,7-16,28-29,33,38,44,46-50,80-86,90,92,94,98,100,105,110-116,121-125,127-131,134-135,138-140,144,147-152,155,160-164,170-171,187-191,196,199-203,206,209-212,216,220,225-227,229,231
+packages/core/src/server/context.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-4,8-11,26-29,40-43,46-49,56,63
+packages/react/src/__tests__/render-slot.test.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-4,6,9-21,24,30-32,35-38,41,47-48,56-59,63-65,67,74-82,86-93,96-97,99,101,104-109,112-115,117,120-125,127-129,137,153-156,158,160-165,170-221,223-224,226,228,230-234,238-240,246-250,254-255,257,259-264,266-268,272-273,275,277-279,282-288,296-299,314-315,317,319,322-344,348-377,379-384,386-390,392,394,397-399,405-414,416-418,420-422,426,428-429,432,435-436,438-445,447,454,456-458,467,469-473,480,485,489-491,498,501,503-505,508,512-516,518,522-524,527,543-548,553-555,557-559,579-581,584-586,590-593,598,600-604,616,618-622
+packages/react/src/__tests__/tailor-kit.types.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-5,8-10,12-28,40-48,51,59,68-71,75-76,79-81,88-90,102,104-110,134,142,144,147,155,160,165-166,186,189,211-215,222-226,237-251,276,280,287,289,302,305,308-311,313,315,319-320,323,335-337,375,382-386,401-406,435-441,454,471,479-481,487,494,501,512,577-581,583-588,590
+packages/db/src/migrations/20260915083215_thankful_crusher_hogan/snapshot.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 8-13
+packages/vite/src/builder/schema-check.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-88
+playground/schema.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 858-868,875-885,889-899,903-913,917-927,931-941,945-955,1566-1576,1583-1593,1597-1607,1611-1621,1625-1635,1639-1649,1653-1663,1674-1684,1691-1701,1705-1715,1719-1729,1733-1743,1747-1757,1761-1771,1883-1890,1894-1901,1905-1912,1916-1923,1927-1934,1938-1945,3075-3085,3092-3102,3106-3116,3120-3130,3134-3144,3148-3158,3162-3172,3783-3793,3800-3810,3814-3824,3828-3838,3842-3852,3856-3866,3870-3880,3891-3901,3908-3918,3922-3932,3936-3946,3950-3960,3964-3974,3978-3988,4100-4107,4111-4118,4122-4129,4133-4140,4144-4151,4155-4162,4793-4803,4810-4820,4824-4834,4838-4848,4852-4862,4866-4876,4880-4890,5916-5926,5933-5943,5947-5957,5961-5971,5975-5985,5989-5999,6003-6013,6624-6634,6641-6651,6655-6665,6669-6679,6683-6693,6697-6707,6711-6721,6732-6742,6749-6759,6763-6773,6777-6787,6791-6801,6805-6815,6819-6829,6941-6948,6952-6959,6963-6970,6974-6981,6985-6992,6996-7003,7596-7606,7613-7623,7627-7637,7641-7651,7655-7665,7669-7679,7683-7693,7791-7801,7808-7818,7822-7832,7836-7846,7850-7860,7864-7874,7878-7888,7937-7947,7954-7964,7968-7978,7982-7992,7996-8006,8010-8020,8024-8034,8045-8055,8062-8072,8076-8086,8090-8100,8104-8114,8118-8128,8132-8142,8160-8167,8171-8178,8182-8189,8193-8200,8204-8211,8215-8222
+packages/app/src/errors.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-2,14-15,17-18,23-38,40-45,47,49-52,54-55,57,59
+packages/core/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,15-38,84-86,102
+packages/cli/src/generator/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-5
+packages/core/src/schema/views.test-d.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,8-10,14
+packages/ui/src/styles/globals.css
+  s_ffab4eb5f4f549::t_611561ad3f3eec 56-57,59-60,64-65,194-198,225
+packages/api-platform/src/env.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,6-7,9-13,16,18,20-22,24,26-28,30-31,33,35-36
+packages/ui/src/components/menu.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6,9-12,18,22-30,32,49-66,68-74,76-80,82,90-101,103,112-124,126,134-170,172-179,181-185,187,191-218,220,226-236,238,241-247,249,252-261,263-267,269,276-289,291,301-302,316-347
+packages/api-platform/turbo.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 7-12
+apps/web/src/components/project-key-env.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-8,16-18,20,24,31,35,40,54-55,58,64,66,76-78,82-86,98-100,113
+  s_ffab4eb5f4f549::t_73277f45e839f1 2
+playground/shared/src/contracts/valibot.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,9,13-16,23-28,30,37-38,42-44,46-52,54,58-63,68,70,75-81,83,88-91,94-100
+  s_ffab4eb5f4f549::t_3547674cdfd77c 101
+apps/web/src/lib/org-creation.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1
+packages/api-utils/src/dev-delay.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-5,12-24,27,33-34
+packages/cli/src/init.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,5-7,9-10,14-15,20-21,25-27,35-37,41,48-50,52,55,58,60,62-67,69,73-85,89-92,94-96,103-109,112-114,125,128-133,135-138,148-150,165-167,170,172-215
+packages/client-core/src/store/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,6-11
+packages/app/src/client/session.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-30,43-47,51,53-54,57,61,68-74,77-115,117-118,120
+packages/kv/src/kv.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,5,11,17-23,31,33,40
+packages/ui/src/components/number-field.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,7,11-12,19,26,30,32,42,48,51-60,62,65-76,78,81-92,94,97-123,125,131,136,154
+packages/vite/src/builder/file-routes.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-314
+apps/web/src/utils/project-api-key-memory.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-4,6-7,9-13,15
+packages/api-platform/src/runtime/access.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-9,20-25,28
+packages/config/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,9-25,29,31,33,41,43
+packages/api-utils/src/app-auth.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2
+apps/web/src/routes/(app)/account/profile/route.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-6
+packages/core/src/server/cli-auth-page.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,7-16,26-29,47,53,60-63,73,75-79,81-125,127,147,171,599-751
+packages/sandbox/src/host/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-13,16-18,27-28,30-31,39,47-105,107-108,110-112,132-135,139-142,149-150,169-172,177-183,194-195,201-203,206-228,237-242,244-247,249,253-256,259-262,266-269,283,292,301,311-330,333
+playground/tanstack-start/src/routes/api/tailorkit.$.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-12
+playground/tanstack-start/src/components/auth-screen.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-82
+packages/client-core/src/types.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,16-21
+packages/ui/src/components/otp-field.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,9-11,16-27,29,32-44,46,49-62
+packages/ui/src/components/pagination.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-9,11,16,19-26,28,31-37,39-43,50,56,58,64,66,77,79,82-92,94,97-107,109,112-122
+packages/ui/src/components/slider.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,8-10,18-19,21,24,26-27,41,45,49,52,54,64,66,69-75
+packages/ui/src/forms/number-field.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-11,18-20,37,48,56-59,61,77-81,85
+apps/web/src/components/not-found.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 10,13-33
+packages/cli/src/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6-11,15,40-43,47-53,55-62,81-85,100-106,109-111,118-120,123,137,141-143,149,162,166-168,185,191,196-200,204-205,215,234,245-246,257,259-266,269-271,279,282-286,302,306-308,310,312-314,325-328,332,336-339,350-353,358-362,364,367,371-377,388-391,394,398-402,404
+packages/client-platform/src/client/core/serverSentEvents.gen.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 25
+packages/core/src/schema/views.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,15-18,34-37
+apps/web/src/routes/(app)/$orgSlug/$projectSlug/apps.index.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,14-39,50,60-64,74-76,87,89,103,105-107,121-124,130-131,134-135,145-147,151-153,162-164,169,171-173,177,183,200,202-206,219-230,234-239,257,264,266-269,274-282,287-288,292-296,302-304,311-323,330-333,336-342,346,351-353,360,365,378,385,407-430
+packages/client-core/src/store/local/slot-runtime.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3-21,44,50-53,56,60-63,79,81,97,104-106,109-115,117,119,121-122,124-128,132-134,137-142,144,149,152,154-156,162-166,168-170,175-202,205-210,212,215-221,223-228,232-236,238-241,245,248-249,280-282,297-299,308,322,325,329,331
+packages/core/src/server/contract.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,4-14,25-32,36-45,47-50,53-60,62-64,66,68,73-74,78-81,83,85-86,88-89,95-103,105-106,115-117,120,125-126,128-135,139,142-144,146-154,157-164,166-168,170-175,177-180,183-185,189-191,194,197-199,201,205,207,211-212,217,219-224,226,230-233,235-238,241-249,252,256-259,262-268,271
+packages/client-platform/src/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1
+packages/core/src/server/routes/app-agent.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-5,7-12,20,30,32,34,38-42,46-48,52-60,64-65,69
+playground/apps/todo/src/slots/panel/home.view.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-3,12-13,15,20,24-46,53,55-57,60,65-67,71,73-76,79,82-87,91,93-96,99,103-105,109,116-118,123-125,129-136,141-143,145-147,153-161,164-172,181-183
+packages/api-platform/src/routes/deployments.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 19-25,32-37,40,42,44,50,53,61,70,74,90-91,95-99,118-119,123-129,131-133,135,137-147,150-151,165,167-174,180-182,197,199-201,204,206-208,221,223-226,233-235,238,240,243-246,269-271,279-281,308-310,312,318-319,324,327-332,336-337,341-343,362-363,368-369,373-378,386-387,392,400,402-405,410-419,421-423,427-429,441-442,448,454-458,461,469,477-479,491,493,498-500,504-509,515-520,522-527,534-536,542-544,549-551,561,565-574,578-591,597-599,602,605-622,625,636-637,643,646,650-655,657,667-669,678,685,687,690-692,696-698,702-703,705-707,710-720,723-727,732,735,742-744,746,755,757-759,766,772,777,784-787,799-801,808-818,824-827,829,839-840
+packages/sandbox/iframe-plugin.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,9-20,22-40
+apps/web/src/env.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,10
+apps/apps-worker/src/supervisor/auth.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3-4,7-11,15,20-25,28,30-31,33,35,43-51,53-59,61,69-72,74,77-90,96-99
+packages/app/src/preact.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,6-14,19-20,33-37,42-51,54,56,59-61,64,82,85,88,91-104,109-114,116,119-123,126,128,131,150,153-154,156,160,162,164,167,169-173,187-188,190-194,204-211,215-219,231,235-244,246,254,261,268,270-271,274,281,283-284,287
+packages/client-core/src/store/local/view-context-types.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-6,37-44
+packages/core/src/server/base-url.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,15-17,23
+packages/core/src/schema/schema.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-2,9-12,20-23,54,57-79,88-89,93,102-115,117-126,129-135,139,145-149,163,171-173,176,178,180-186,188-193,195-196,198-206,209,213-216,219-229,233-234,236,247,256,267,279-285
+playground/shared/src/contracts/arktype.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,4,7,13-14,18-19,24,29,31,36,38,43-46,49-53
+  s_ffab4eb5f4f549::t_4bdb5d66f55297 54
+playground/shared/src/env.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-3
+packages/ui/src/components/kbd.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,5-17,19-28
+apps/web/src/routes/(app)/$orgSlug/~/(org)/index.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5
+packages/db/src/validate-project-slug.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,26
+apps/web/src/components/sidebar/sidebar-user-menu.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 12,14,16-26,30,32,49-57,67,69-73,77-79,92-96,105-109,118,127,134-154,160-161,164-168,171-175,178-182,189-192,199
+packages/client-platform/src/agent.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-2,9-12,22-24,32
+apps/web/src/routes/(auth)/verify-email.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 13-18,20-24,27-32,34-35,37-39,44,46,79,91,110,126,129,138,145-148,150,157-204,207,212-216,223-226,235-243
+turbo.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 21-26,49-55,57
+packages/vite/vite.config.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-17
+apps/web/src/routes/(auth)/forgot-password.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 15,17-21,23-30,34,39-43,46,87,98,123-126,131,151,162,170-172,204,214,217-229,233-236,246-302,305,310-314,328,331-341,343-351,355-358,368-371,373,380-382,390-393,398-401,411-421
+packages/sandbox/src/iframe/entry.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-6
+apps/web/src/components/sidebar-layout-header.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,7,23,26
+apps/web/src/routes/index.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,7-9,12,23-25,28-36,41-45,48
+packages/api-platform/src/asset-url.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,5,31-33,36,38,41-42,45-51,62-63,65,68-72,81,83-84,86,89,92,102,104-105,107,110,113,121,123-124,126,133-134
+packages/app-agent/src/agent.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-2,4,7-13,16,22-23,26-27,29,35,44,48,51,58-62,68-75,79,82,86,88-89,91,93-94,96-97,102,104-106,113-119,121-124,128,130-133,139-144,151,155-157,160-162,172,174,178-180,192,198-200,212-214
+packages/ui/src/components/field.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,8-19,21,24-33,35-44,46,49-55,57,60-66,68-69,71-72
+playground/tanstack-start/src/routes/issues.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-5
+packages/client-core/src/store/local/remote-view.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-12,15-18,26-27,30-33,44,46-47,50-55,59-61,63-65,73-77,83-87,89,92-98,102,104-108,111-113,115,118-122,125-127,134,145-147,152-156,158-162,164,169,171-173,177-181,187
+packages/sandbox/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 9-53,70,74
+playground/shared/tsconfig.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-7
+packages/sandbox/src/iframe/tools.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-16,20-21,26-56,58-59,63,71-87,89
+apps/apps-worker/src/runtime/context.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3-4,6,17-21,25-31,36,40,47-59,63-80,83,86-95,99-101,103,106-109,112-117,120,126-137,140,142-144,151-156
+packages/app/tsconfig.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 11-14
+packages/ui/src/components/alert-dialog.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,8-9,13-14,16-17,19-23,25,28-37,39,42-51,53,61-84,87-98,104-115,117,120-128,131-147
+packages/tailorkit/src/server.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-9,18
+packages/ui/src/components/badge.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 8,12,26-31,35-36,41,49,55,66
+packages/react/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,14-36,49-51,62,69
+packages/ui/src/components/calendar.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-8,10,16,23,26-30,36-40,44-47,49-50,57,61-62,66,79-80,86-89,91-110,119,121-124,129-130,137-147
+apps/web/src/components/org-slug-availability-indicator.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-4,12,15-19,31,34,39-41,45
+packages/core/src/schema/callbacks.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,19-21,37,42-44
+packages/app-agent/src/tools/deploy.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-10,15,17-18,37,43-46,51,55-59,62-63
+  s_ffab4eb5f4f549::t_1f4cc8ab7ee3d3 3
+packages/cli/src/agent.ts
+  s_ffab4eb5f4f549::t_066c3dea1473f2 45-47,133,136-138
+  s_ffab4eb5f4f549::t_9e146886fd3cfb 59,139-141
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-16,24,27-29,31-33,39,42,56-57,60-68,72-76,81,83-84,88-89,95-96,104,106,110-114,116-117,122-124,129-132,142-143,148-154
+packages/cli/src/client.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,19-21,24-29,33-37,40,44-46,48,50-51,55,58,68,72,74-75,77-83,88,92,94,96,100-114,116-118,120-139,141-259
+packages/core/src/server/routes/apps.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 11-16,37-38,52,60-63,67,87-91,99-102,120
+  s_ffab4eb5f4f549::t_066c3dea1473f2 71-73
+  s_ffab4eb5f4f549::t_9e146886fd3cfb 80-81
+  s_ffab4eb5f4f549::t_dac35e5429d981 10
+packages/db/src/migrations/20260921234115_add_preview_sessions/snapshot.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 8-13
+packages/sandbox/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,14-23,40-42,52
+packages/vite/src/builder/database-paths.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-6
+packages/vite/src/builder/file-routes.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-344
+packages/vite/src/preact-version.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-33
+packages/vite/turbo.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-8
+apps/web/src/routes/(app)/account/security/index.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 14-18,30,34-46,56-60,63-70,72-107,109-147,177,179-184,190-196,200-204,207-208,217-219,229,238-240,251-256,265,269-274,281-284,291,296-298,303,306-312,319,323-328,335-356,358-360,363-366,371,374-380,382-384,390-392,398,405-410,412,415-420,427-432,451-453,460-468,481-483,510,527-530,534,546,562-564,568,575-579,590-592,610-612,624-627,647,650-678,683,696,702-705,713-715,721-725,731-733,735-739,752-754,756-760,770-772,778-781,786-788,790-794,807-809,811-815,834,837,840-841,848-850,856-858,873,882-883,885-888,894-898,900-904,960-962,969-973,995-1015
+apps/web/src/routes/(app)/account/profile/index.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 12-13,21,31,35,56-59,71,74-84,89,99-103
+.changeset/pre/agent-select-app.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 7
+packages/api-platform/src/routes/preview.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-2,9-10,12-22,24-33,39-40,42-49,53,55,58,66,73,77,91-101,105-107,112-120,125,129-130,157-158,167,177-182,193-194,209,214,216,221,223,235-237,239,241,243-246,248,270,275,291-292,299-309,313-316
+apps/web/src/lib/safe-return-url.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-7,13-14,21-28,31-33,37,39,42-43,47,52
+packages/app/src/database/types.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 14-15
+packages/api-platform/src/preview-token.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-9,16-21,24-26
+packages/app-agent/src/mcp.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-5,10-13,16,18-21,27-30,35-39,42-44,47-49,52,56,58-60,63-67,70,72,74-78,81-87,91-93,97-100,104-108,116,125,127-129,131-132,141,143-145,147-148,152,154
+packages/cli/src/generator/generate.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-9,12,34-53,55,61,75,90-93,100-103,108-114,116-118,120,124-170,176-178,186,189-192,198-202,204-207,217,220-225,232-235,242-246,248-251,259-265,278-283,285-289,297,300,303-307,310-312,322-329,340,342,346-370,381-399,407,409,413,419-425,431-434,436,448-451,460-466,469-471,482-485,496-500,502,504-507,510,521-526,532,536,542,545-546,551-557,565-567
+packages/client-core/src/store/store.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-10,13,18,21,25,28-29,31-33,38,40,50,52-54,56
+packages/core/src/schema/tools.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-5,18-19,24-28,31-38,44,53,61,69,71-77,90-93,98-100,103-110,114-118,142-149,155,157,159-164,166,168-169,171-172,175-176,178-179,182-186,189,192-194,197-206,208-216,219-228
+packages/core/src/views.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2
+packages/app/src/database/definition.test-d.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-15,21,23,25,36-42,52-56,60-62,66,73,76,78-79
+  s_ffab4eb5f4f549::t_f59e2dbd90f8a5 3
+packages/ui/src/components/checkbox-group.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,8-10,13-18
+packages/ui/src/components/fieldset.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,8-10,13-21,24-30
+packages/ui/src/components/select.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 8-12,14,17-18,22,34,43,49-51,72,74,79-91,93,96-105,107,126-141,143-145,147-155,157-169,171,175-204,206,209-215,217-221,223,226-235,237-245,247
+packages/sandbox/src/host/index.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-7,9-13,17,19-26,28,33,35-36,67,73-75,85-87,103,109-114,148-150,153-156,158-170,176-181,192,198-200,218-220,222-224,245,249-254,261-263,272,275,281-284,287,291-294,297-299,306,312-314,325,329-341,353,359-362,368,370,372,374,381-385,387,399-401,406-408,414
+packages/api/src/context.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-7,17-21,24,32,36-37,42
+apps/web/src/components/create-org-dialog.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,15-16,18-20,22,24-28,30-31,56-60,62,64,66,68,72,74-87,90-98,100-101,104,113-115,117-119,135,137,139,144,148-150,154-156,165,168-197,199-211,215-217,221-224,236
+apps/web/src/lib/preferred-locale.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 12-15
+apps/web/src/routes/(app)/$orgSlug/~/(org)/route.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 19-27,29-30,35,37-38,62-64,72-75,95-97,107-112,129,131-132,136,139,156-163
+apps/web/src/routes/(app)/account/route.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6
+docker-compose.yml
+  s_ffab4eb5f4f549::t_611561ad3f3eec 44,52
+docs/index.mdx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6,10,12,16,18,22,24,30-32,36,38-41,47
+apps/web/src/lib/active-org.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 8,12-14
+packages/api-utils/src/agent-token.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,13-17,20-22,27-34,36,45,47,49,52,55-56,59-72,74-78,82,85,93,95,97
+apps/web/src/components/sidebar/org-switcher.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 15-16,22-26,31-32,39,49-51,53,55-58,64,67,70-71,73,76-78,94,96-97,115-119,129
+packages/auth/src/env.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,6,18,20-21,23,44-51,53-58,61
+packages/client-core/src/store/fetch/cache.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-9,43,60-70,73-79,81,84,95-97,103-105,107-109,114-116,124,126-128,134-142,145-146,155,158-160,172,174-175,177-179,183,187,189-192,197-198,200-220,222,224-248,250-257,264,269-282,289,291-295,298,303,305-336,339-342,345
+packages/core/src/server/agent.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,5-6,10,14-20,22-26,31,33-34,36-37,39-42,44,46-47,52-54,58,60,68-69,73-76,79-92,95-98,102-106,109,115-119,121,123-139,144-156,159-161,164,167,169-171,181,183,185,190-192,200-203,205-207,215-217,226-230,233,235-237,244-248,251,253-255
+packages/email/src/templates/theme-fonts.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-5,8-39
+packages/sandbox/tsconfig.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 7-8
+packages/ui/src/components/autocomplete.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6,11-44,46,63-64,68,71,74,82-83,87,96-97,109-110,119,121,138-153,155-158,160-165,167,171-182,184,187-193,195,198-204,206,209-218,220,223-232,234,237-243,245-246,248,251-253,255-256,258,260-262,264,267-276
+packages/ui/src/components/popover.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,8-9,15,19-27,29,48-67,69,71-74,76,78-83,85-89,91,94-100,102,105-111,113
+apps/apps-worker/src/assets.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 13,15,19,23-25,31,35-44,47-51,53-60,62-64,69,75,81,87,90-92,96,103-104,108-112,114-118,120-122,127,132,137-138,140
+packages/ui/src/forms/form.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-2,6-20,22,25,27,29,32-36,40,43,47,65,69-73,86-88,93,96,100,109,115,127,135,138,144-149,157-159,171-173,181-183,187-191,195,202,208,214,216,220,222,228,252,254,266,272,274-275,277-280,285-287
+apps/web/src/routes/(app)/account/invites.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 12-18,20-26,28-30,32-33,37,40-42,45-50,52-57,62-67,69-72,80-83,94-95,107,110-112,118-143,153-162
+packages/asset-delivery/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,9-25,29,31,33,41,43
+packages/asset-delivery/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 7-16,32-34
+packages/api-platform/scripts/generate-openapi.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-3,6,9-10,12-13
+packages/vite/README.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-18
+docs/installation.mdx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 7-8,14,95,98-99,222,235,245-249,271,277-281,284,295,314,329,331,339-340,504,506,546,577-582,652-658,676-679,681-682,692-695,704-708,731-734,736-737,747-750,759-763,783-786,788-789,799-802,811-815,836,838,840,847
+apps/apps-worker/src/runtime/database/driver.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-5,12-15,18,22-32,39-44,47,50-51,55-61,64,66-68,71-74,77-87,89-93,95-99,103,106,109,114-117,120-124,127-131,133,135-137,140,142-152,156,161-162,166,171,186-193,195,197-200,211-212,222-224,226
+packages/api-platform/src/runtime/auth.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-6,9,12,14-20,30,32-35,37,45
+packages/api-utils/src/rate-limiting.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 18,24,31,37,41-47,59,61,63-66,71-74,77-79
+packages/core/src/schema/components.test-d.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-8,15,21,28,32,43,51,55
+  s_ffab4eb5f4f549::t_de80fa19a81ff7 3
+packages/ui/src/components/checkbox.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,8-10,13-63,65-67
+packages/vite/src/builder/instances.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-151
+packages/db/src/schema/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1
+packages/api-platform/src/assets.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 13,15-28,30-32,38,40-46,49,61-70,74-75,79-80,82-86,94-98,100-102,108-109
+packages/core/src/schema/shared.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-4,6-8,41-43,46-48,70-73,75,82
+packages/ui/src/forms/boolean-field.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6-13,29,38,54-57,59-62,67
+packages/client-platform/scripts/restore-openapi-params.mjs
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-7,20,24-27,34
+playground/shared/src/db/schema.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-6,9-10,18,24-26,34,38-39,41,43-44,48,50-51,55-56
+packages/db/src/schema/auth.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3-4
+apps/apps-worker/src/runtime/builder.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-4,7,11-17,23-27,29,31,37-42,53-58,62-64,68-69,72,74,76-81,85-87,89-94,99-100,103,105-106,115-118,120-125,131-135,140,143-144,147-148,155-161,163,167
+apps/apps-worker/src/transport.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 7-15,19-21,24-29,31-34,37-42,44,53-56,59-63,65,69-74,79,84-86,89-93,95,98,100,102-107,109,113,115,118,123,126-128,135,138,141-147,166-168,170-173,176,178-179,183,185-187,189,194-200,204,206-208,210,214-215,219,224,227-233,236-240,244,247-250,252-254,257,260-266,268,271-276,281-283
+apps/apps-worker/src/runtime/cancellation.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-18,20-39,42-47,50-53,58-60,67
+packages/cli/src/test-utils.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-22
+packages/client-core/src/store/query.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-12,15,17-20,23,29-33,35-36,42-55,57-65,67-74,78-90,94,97,110-112,120,134-140,143-162,165,168-174,177-179,181-197,201-203,206-212,219-221,224,230,242-245,247,250-268,271-276,281-282,284
+packages/ui/src/components/scroll-area.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,8-31,46-51,53-59,61,63-75
+packages/vite/src/builder/migrations.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-58
+playground/shared/src/todos.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,7-8,15,17-18,25,27,29-31,35,37,43
+playground/tanstack-start/src/routes/api/playground/todo-client.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-33
+packages/core/tsconfig.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-8
+packages/kv/src/with-timeout.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3,5-12,16-30,32,37
+playground/tanstack-start/src/components/app-sidebar.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-136
+packages/api-platform/src/pagination.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1
+packages/db/src/migrations/20261007070850_left_maginty/snapshot.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 8-13
+playground/tanstack-start/src/router.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-17
+packages/vite/src/builder/instances.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-698
+packages/vite/src/builder/define-view.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-261
+packages/app-agent/src/tools/grep.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,30-38,40-41,46-60
+apps/web/src/routes/(app)/$orgSlug/~/(org)/projects.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 13-20,22-37,39,41,45,47-48,50,54-57,61-64,68-71,74-75,77-82,84-92,96,103-104,109-113,115-117,119,122,132-135,137-139,141-142,158-162,164,168,171-177,182-184,193,196-213,215-237,241-243,256,258-259,261,268-271,282,293-296,317,325-347
+packages/cli/src/index.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3,5-6,9,11-12,14-16,22,29,33,36,38,47,52-53,62-65,72,87,89,93,95,101-102,105,111-113,121-124,129-141,143-146,149-153,165,168-172,179,188-189,197-201,205,210-211,214-217,222-229,238,240-247
+playground/tanstack-start/src/routes/issues.index.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-151
+SECURITY.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,9
+packages/email/src/templates/better-auth/sign-in.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-24,28
+packages/storage/src/upload-url.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,19,21,26,28,30,32-36,52-54,56
+apps/web/src/routes/logout.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-10,13-14,19,26-28
+packages/observability/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,9-25,29,31,33,41,43
+packages/client-core/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 9-53,70,74
+apps/web/src/components/sidebar/project-sidebar.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 14-16,29-32,35-36,38,54-58,63-68,92-95,111
+packages/ui/src/components/table.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6,16,21,26-27,43,45,48-54,56,59-68,70,73-82,84-96,98-110,112-124,126,129-138
+packages/ui/src/components/tabs.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-6,12-13,16,19-20,22-34,36,45-60,62-65,67-70,72,78,85,88,95,97-106,108-114
+packages/app/src/client-boundary.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-7,14,18-22,30,34-36,38-49,72
+packages/api-platform/src/runtime/auth.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-3,10,12,14-37,39-40,42,44,46-48,55,60-66,68,70,73-75,79,81
+packages/db/src/schema/apps.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 17-21,26-33,37,41,43,46,51-55,58,61,63,81,83,85-96,98,100,103-104,107,109-114,117-121,124,130-133,139-142,144-147,162-163,165,167-170,174,180,182,185,192
+apps/apps-worker/src/tests/fixtures/todos-init.sql
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-5
+apps/apps-worker/src/runtime/context.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,5-6,17-18,24,32,34-37
+apps/web/src/components/members/members-table.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,12-28,31-35,53,57-83,86,88-142,144,156-159,171,177,194,200-203,234
+apps/web/src/components/sidebar/sidebar-brand.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-9
+packages/cli/src/generator/types.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 8-23,95,108,110,113,120-199,217-219,241-243,262-265,271-272,284-286,305-306,313-315,331,337-339,369-371,379-382,386,415,421,457,462,465,485,493-495,500-502,506,509-510,513-515,519-520,526-528,532-540,546-548,550-552,556,560-564,572-575,579,582,585-590,600,614,628-632,636,642-644,656-658,660-662,665-670,676,682-684,687,690-692,694-697,701-703,705-708,711-716
+packages/cli/src/app-link.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-5,8-14,23-27,31-33,41-44,46-49,57,62,71,76-80,87,89,91-95
+packages/core/src/server/router.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2
+packages/client-platform/test/stream.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,8-11,13,17,19-21,23,25-28,35-47
+packages/db/src/migrations/20260910035424_funny_korg/snapshot.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 8-13
+apps/web/vite.config.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-2,8-10,13-14,31-36,38,43,55,58-61,63,66,72,75,78,82-94,97
+packages/flags/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 7-16,26-28
+playground/tanstack-start/src/env.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-4
+packages/ui/src/components/theme-toggle.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-3,6-15,20,27,34,46,51,56,61,66-67,69,71-72,75-76,78,80-81,84-85,87,89-90,93-94,96,98-99,102-103,105,107-108,111-112,114,116-117,120-121,123,125-126,129-130,132,134-135,141
+packages/api/src/routers/project.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,6,9-14,22,24,26-30,41-42,46,48,51,53-64,66,72,76-81,105-122,124-130,138-139,157,160-167,173,175,190-191,205-207,234-243,251,254-258,260-263,274,293-324,338-387
+  s_ffab4eb5f4f549::t_a8ae6944f3d323 388
+packages/core/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 9-53,70,74
+packages/core/src/schema/callbacks.test-d.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,20-23,28
+packages/app-agent/src/instructions.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,7,9,11,15,17-21,23,27,29
+apps/web/src/lib/auth-client.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-10,12,19-22,27-29
+packages/core/src/server/routes/deployments.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,9-21,36-38,58-60,62-63,65-67,69-70,73-74,76-77,81,91-92,97-100,104,114-115,123-125,129-134,142,149,160-162,170,175,179
+packages/cli/src/preview-startup.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,5,9,13-14,20,23-28,34-35,38-41,45,48-49,57-61,63-65,76-85,87-126,128-159,170-174,186
+apps/apps-worker/src/supervisor/source.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-4,8-18,23-29,34-36,42,44-46,49,65,68,71-77,80-123,126,130,132-134,139-142,145-147,154-157,159,165,168,172-175,187-190,192-195,205
+apps/web/turbo.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-16
+packages/api-platform/src/app-agent-mcp-isolation.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,7-15,21-28,35,42-43,49-50,60-81,84,87,90,93,96,115,118,125-131,135-136,142,145,149-161,164-168,174,176,178-179,183,185,187-188,200,209-212,217-220,233,236,238,250,255-257,261,263-264,266-269,271-275,278-279,286-291,297-304,307-309,312-314,317,319
+packages/client-core/src/client/views.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-3,16,18-19,23-29,33-39,43-45,47
+packages/db/src/migrations/20261012235152_legal_shadow_king/snapshot.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 8-13
+packages/client-platform/scripts/normalize-sse-cancellation.mjs
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-7,10-16
+packages/app-agent/src/tools/ls.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,15-16,21-22,27-33
+packages/core/src/server/types.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,13-15,26-29,87,103-105,107-110,113-115,117-120,140-159,164,166-169,175,178,182-185,187-188,193,206
+packages/ui/src/components/command.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6,19-23,31-38,40,43-54,57-68,75-79,81-82,84,86-107,109,111-121,124-125,127,130-138,141-149,152-162,165-173,176-184,187-195,198-206,209-232
+packages/asset-delivery/src/logo-validation.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-8,18-21,24-28,30-33,37,47-51,56,63,66-71,74,81-84,99-104,106-107,117-119,127,131
+packages/client-core/src/client/primitive-css.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,25-28,38-40,46,50,52,54-55,57-59,65
+apps/web/src/routes/(app)/$orgSlug/route.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,10-12,15,18-19,24-29,39-40,42-43,47
+apps/web/src/routes/api/platform.$.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,4-9,17,21-24,27,30,38-40,42-43,46,51,64
+packages/core/src/server/tools.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,4-7,11-19,26-27,29,33,39,43-46,48,51,56-60,62,64-67,70,75-85,94-103,110,114-115,129,133-134,136-137,140-142,150-154,156,159-174,176,178-186,189,191,195-197,199-203,209-211,227-230,234-240,243-249,255,264-265,267,269,273-275,279,287-291,300,302-304,307,312-316,321-329,332-335,337-347,353-357,361-371,374-377,380-384,387-390,393-395,410-413,415-417,419-422,425-427,431-433,443-450
+packages/vite/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-74
+docs/toc.js
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,7-8,11-12,14-15,17-18,20,23-29,32-34,37,43,45,47-49,54-58,60,62-63,67,70-74,78-83,90-91,93,98,101-106,113-116,119-131,138-141,143-146,148,150,153-155,157,159-164
+apps/apps-worker/src/runtime/actions.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3,5-16,20-22,26-28,30-31,34,37-41,46-47,49,67-70,72-84,86-91,93-99,101-103,106-107,118,124,126-132,139-147,149-151,153-172,180,182-195,203,206,208
+packages/vite/src/builder/generate-migrations.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-70
+playground/tanstack-start/src/lib/auth.functions.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-14
+apps/web/src/lib/auth-client.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,4-13,35-37,39-41,49-52,55-58,62,68-70,80,96-100
+packages/client-platform/CHANGELOG.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-6,69
+AGENTS.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 7,12-23
+packages/core/src/server/client.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,6-9,18-20,22,24-25,29,31,33,38-44,48
+packages/core/src/primitives/primitives.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3-5,10-15,17-21,23,31,50-53,65-67,74-79,96-113,125,143-147,150,152-153,155-172
+packages/cli/src/preview.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4,14,17,19-27,30-45,47,63-65,67-70,74-76,85,87-89,93,105,110-112,114,122-124,127,129,132-133,136-137,149,151,153-154,160,162,167-169,174,183,194,196-206,208,210,212-219,222-226,228-229,232,237-245,248-250,252,257,259-260,264,273,275,288,290,292,294,296,298,300,302,304,306,308,310-343,361-367,370,389-407,414-415,417,420,422,430,432,434,436-442,444,457-460,469-474,492-493,496-498,500,502,504,506,508,510
+packages/cli/CHANGELOG.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-17,162-163
+licenses/BUSL-1.1.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,9-25,29,31,33,41,43
+packages/client-platform/src/preview.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 14,18,26-33,47-50,62-64,84-92,98-99,102-105,107-108,110,116,118,127,130,137-147,151-156,158-159,161-163,167,173-174,176
+packages/app/src/routing.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,8,18,21-23,26-27,30-32,35-36,40-42,47-56,58-68,70-76,80-81,85-86,91-92,94,97,99-114,117,123-127,131-138,149,156-157,159-160,163-164,166-181,188,191-192,194-195,197,199,201-204,207-209,214-216,218-221,224-227,230-236
+packages/auth/src/lib/permissions.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 15,23,29,31-33,35,41,43-45,47,53
+packages/core/src/server/tool-auth.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-3,7-10,12-15,17-19,22,24-63,65-67,69,71-75,77-91,107-109,115,119,122,124,126-152,160,162-163,165,170-173,176
+packages/tailorkit/CHANGELOG.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-22,27
+packages/cli/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,19-29,39-41,44,49,51,59,62
+packages/ui/src/components/avatar.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,8,10,13-22,24,27-36,38-50
+packages/core/src/spec/json-schema.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 11-22,24-26,31-33,37-42
+apps/apps-worker/src/modules.d.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-4,6-7
+packages/auth/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,9-25,29,31,33,41,43
+apps/apps-worker/src/supervisor/action-lifetimes.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-10,16-20,43,55-57,74-76,80-82,100-105,109,112-114,118-121,123-126,128
+packages/db/src/schema/cli-auth.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 13-14,16-17,28-31,36-37,42-43,46,48,52,56-59,63,69-74,79-80,87,93,95-96,99-106,109-115,118,121,126,129
+packages/api-utils/src/app-asset-url.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,5-7,17,22-26,30-33,39-42,47-53,66
+packages/core/src/server/preview-transport.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 10-12,17-21,36,40,46-49,53-55,61,64-65,69-71
+apps/apps-worker/src/runtime/functions.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-8,11-12,16-19,21,23-24,28,31-32,37,39-46,48,50,54-55,68-69,72-81,90-91
+packages/flags/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,9-25,29,31,33,41,43
+packages/client-core/src/client/slot-types.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-6,9-17,28-30,46,48-49,51-57,69-72
+  s_ffab4eb5f4f549::t_a1f0905f54fd10 4
+packages/react/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 9-53,70,74
+packages/storage/src/storage.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,6,10-17,22,26-27,29,31,38
+packages/storage/src/types.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-8,81-86
+packages/storage/test/s3.test.mjs
+  s_ffab4eb5f4f549::t_611561ad3f3eec 11,20,26,30-31,45,48,53-55,58,61-63
+.zed/settings.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 23-24,31,34,38-49
+  s_ffab4eb5f4f549::t_5464b6eace59bb 50-51
+packages/client-core/src/store/local/remote-view.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3-6,8-9,12-18,20-21,25,28-61,67-71,77-81,85-88,93,96-99,102-107,109,112,130-137,139-141,143-151,156-157,159,164-171,174,176-186,194,198,200,202-205,207,209-211,214,218,223,226-230,235-236,238,243-248,250-251
+packages/ui/src/components/collapsible.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,8-14,16,19-25,27,30-39,41
+apps/web/src/routes/(auth)/sign-up.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,15,17-23,28,30-33,35-36,39-43,48-49,52,56-59,62,65-67,83,85-97,112-117,120-123,125,143-144,147-151,157-158,170,176-179,181,195,198-254,256-261,264-284,292,295-306,308-311,314-333,337,349,354,364-376
+packages/kv/src/redis.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-10,67,70-71,96,98,102-103,105,119-120,123,125-143,145-167,172,174,176,186-188,190-199,201,209-211,224-225,228,230,233-234,236-289,291-292,294,296
+packages/ui/src/components/spinner.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,6,9-15
+packages/vite/CHANGELOG.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-15
+apps/web/src/routes/(app)/$orgSlug/~/(org)/settings/index.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 13,17-18,22-25,30-32,34-47,50,56-60
+packages/api-platform/src/routes/app-agent.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3-7,10-11,13-20,25,28-33,36-37,43-44,50-58,62,65-71,75-88,91-93,95,100,105,109-118,125-134,136,141-143,147,152-154,163-165,167,169-174,180,185,187-190,195-201,205,210-213,223-224,226,234,241,243-246,249-251,255-256,258-261,268,270,272-278,284,286,292,315-327,329,336-348,366,379-381,394-396,399-400,408-419,422-423,429-431,434,445,452-455,459-471,480-487,490-494,500,505-508
+  s_ffab4eb5f4f549::t_9e146886fd3cfb 98,478
+  s_ffab4eb5f4f549::t_066c3dea1473f2 301-304,307-308
+packages/api/src/routers/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,6,12
+packages/ui/src/components/input-group.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6,14,31,34,37-50,52,56-70,72-89,91,94-102,104-109,111-116
+playground/shared/src/issues.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,7-8,15-17,23,27,29,31,33-34,36-48,50-52,54-55,57-59,62,68,70-74,80-83,86
+apps/apps-worker/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,9-25,29,31,33,41,43
+apps/web/src/routes/(app)/$orgSlug/~/(org)/settings/members.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-5,8-18,21,27-30,34,37,41-45,48-54,56-58,64-74,81-87,89-90,99-100,102-103,108,112-117,124,129-132,134,141,147-149,169-181,208-230
+packages/kv/src/types.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-6,39,48,56,68
+packages/sandbox/src/iframe/runtime.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-5,10-12,15,19-45,50,55-61,74-77,80-86,89-96,98,101,104-105,111,132,135,144,150-155,163,177-185,193-194,197-208,216-223,228-232,240,249-251,253,255,261
+packages/sandbox/vite.config.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-2,5-8,16,23
+packages/asset-delivery/src/logo-validation.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,5-15,17,21,27-29,31,37,40,46,53-54,56-58,62-64
+packages/auth/src/captcha.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6,14,21,26,28,38-42,45,49-51,60,71,76-78,88-90,97-110
+packages/client-core/src/store/local/view-context-diagnostics.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,5-7,15,17-21,24-26,30,37,39-41,48,52-55
+packages/ui/src/lib/segmented-control.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-8,22,40
+playground/shared/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 20-22,27
+apps/web/src/routes/api/auth.$.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-5,8,14-15,20-21
+packages/cli/src/generator/templates/vite.config.ts.liquid
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-12
+packages/client-core/src/client/slot-view.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,4-5,8,12-13,16-21,23-28,31,35-36,38-40,44,48
+packages/client-platform/test/params.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,10-11,19-20,27-30
+apps/apps-worker/src/routing.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,5-6,8,10-16,19,21,23,25,27,29,32,34-35,37,42-44,46-51,53,55-70,72-81,84-88,95,99-101,104,114-121,124-128,137,139,142,149-151,153-155,161-162,166,169-172,179-194,197-200,205-207
+packages/react/src/__tests__/primitives.test.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,27-30,34-36,40,42,45,51,59-61,64-66,68-70,76,79,81
+  s_ffab4eb5f4f549::t_d425ba83878f3b 4
+packages/react/tsconfig.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 11-14
+apps/web/src/lib/theme.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 20-27,30,34-35,55-59,70-73,78-81,100-101,104,106,114-115,122-123,134-136,140-141,145
+packages/ui/src/components/toolbar.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,8,10,13-22,24,27-33,35,38-44,46,49-55,57,60-66,68-80
+packages/api-platform/src/preview-build-store.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,34-43,54-55,57,65-68,78,89-92,99,111-113,115-118,129-131,138-142,165,167-185,193,198,200-203,205,210,214-220,226,232,241-242,246-247,250-251,254-255,258,260,262,264-269,271,273-276,279,295-298,308-311,322-325,329,334,340-344,347,354,372,390-396,398-409,412,423-426,432-435,437,442-443,445-453,455-464,466-471,474-478,480,482,493-500,502-504,506-507,509-542,544,547
+packages/cli/src/generator/children.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,6-8,15,20,23-26,37,42-44,48,52-59,61-65,68-69,81-84
+packages/ui/src/components/label.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6,9,13,16-17,27
+playground/tanstack-start/vite.config.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-9
+apps/web/src/routes/__root.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-4,7-13,17-18,25,27,34-51,53-101,122,128,148-149
+packages/app-agent/src/tools/bash.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-11,24-26,28-30,34-38,40-50
+  s_ffab4eb5f4f549::t_7eb7d9213fe0f7 3
+packages/tailorkit/tsconfig.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6-9
+apps/apps-worker/src/worker-env.d.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-12,15-19,23,26,29-30
+packages/api-platform/src/test/pglite.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-2,8-9,13,23
+apps/web/src/lib/org-slug-availability.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-3,16,31,33,36,39-43,46-47,52-73,79-80,82,84,86-93,95,105
+apps/web/src/components/account-layout.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 16-25,28-31,36-38,49-62,117,119-131
+apps/web/src/routes/(app)/$orgSlug/$projectSlug/settings/api-keys.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 10,22-33,35-44,47-50,52-79,88-91,99-101,103,107-108,113-117,127,133,138-139,142-148,152-154,158,168,175,180-182,186-188,194-196,206-210,235-236,247,252-254,258-260,266-268,275-281,286-291,305-307,318-319,329,348-350,354-356,367-370,377-379,387,392,398-401,418-430
+packages/app-agent/src/agent.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-4,6-7,16-26,35,43-57,60,63,70,77-81,84,86-88,93-94,96,100,102-103,107-108,110,112-113,119-121,124-125,127-134,136-143,151-174,180
+packages/api-utils/src/hashing.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-4
+packages/client-core/src/store/fetch/preview-manager.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-4,6-10,13,16,20-38,42,73,75-76,80,88-89,91,94,96-97,99-106,112,114,116,119,129-136,139-141,143-145,168,170,173-180,187,189,192,194-196,199-209,223,228,231,233,235-239,246,248,251,253-255,258-265,279-283,289,291,294-300,303-310,325-359,368,370-373,379-380,383-384,391,393,396,398-400,402-407,409-416,418-424,426-428,430-436,438-444,446-448,453-485,494,496-497,504-507,510,512-515,521,523,526,528-530,532-534,536-543,545-565,567-572,585,587-588,599-600,602,606-614,616,621,624-627,633,635,643,645-647,649-651,670,672-673,684-685,687,691-699,701,703-706,711,713,716,718-724,726-728,738-750,754-758,765,767,770
+packages/email/src/env.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,6,12-14,18,20,23-24
+packages/app-agent/src/sandbox.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-5,8-42,44,46-50,53,56-59,63-66,69-75,77-80,84-85,88-93,95,100,102-103,105,110,115,117,120,123,129-135,137
+packages/cli/src/deploy.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,5,9-15,17,19-27,73-96,115-134,138-139,141,144-146,148-149,151-153,155-156,159-160,164,170-171,176,178-184,197-199,208-210,221-222,226,229-236,243,246,248,251-253,259,264-269,273,275,279,282-290,293,295-297,300,302-303,308-310,316-321,323,326-332,334,338-339,341,354-357,362-365,373-380,385,390,394,405-407,412-421,430,434-435,439,448,450-454,476,479-489,505-507,510-512,519,522-524,526,530-531,535,546
+packages/core/src/server/scope.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-20,23,25,27,29,31,33,35,40-42,44-46,48,50-53,55,57-71,73,75,78-80,82,84-85,87,90,94,96-98,100-107,109-132,134,137,139-140,142-145,147-148,150-151,153-155,160-161,163-164,166,172-179,187-190,194,208,215,217-219,221,224-227,229-237,240-241,247-250,252-254,258,263,267,270-272,274-279,281-289,291-330,332,335-351,355-368,370-385,387-399,401-429,432-436
+  s_ffab4eb5f4f549::t_058bcb20ebab9a 2
+apps/apps-worker/src/supervisor/subscriptions.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,4-6,8,10-24,26,32-37,40-42,45-46,48,52,54,59-69,72,75-100,103-104,109-114,119,126,128,130-137,141,150-151,156-169,171,180,189,196,201-207,219-221,240-243,245-249,254,257,275,283-295,297-310,312,314,318,336-338,345-350,355-358,365,370,381
+packages/cli/src/agent-tui.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6-7,18-23,25-27,36-38,42-50,52-54,57,60,67,69,71,73,78,81,83
+  s_ffab4eb5f4f549::t_d3c0c32e9f0f83 5
+packages/ui/src/components/sidebar.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 7,10,13-28,42-44,46,52,54,66,69-70,77,80,83-89,99-101,105-113,121,124,131,133,137,148,171,179,185-188,194,196,199-213,217,235,237,240-248,252-263,266-281,283-287,290-291,293,296-304,307-315,318-329,332-340,343-351,358,361,363-364,375,385-386,388,394,396,399,401-405,414,420,422,432-433,435,442,445,450,455-457,460,462,467,476-477,486,496,498,510,515,517,520-523,533
+packages/app-agent/src/tools/edit.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-10,20,23-29,34-37,48-50,62-63,65,67-81
+  s_ffab4eb5f4f549::t_97ee9ea6bf6ec4 4
+apps/web/src/routes/api/assets.$.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-6
+packages/cli/src/utils/open-browser.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 18-31,33-35,37-45
+packages/core/src/server/scope.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,5,7,14-24,28,40-43,48-50,57-58,63-67,69-73,75-77,79-80,85-88,96,98,104-105,119-121,125-127,130-133,136,139-142,150,155-160,164,174-177,203,205-208,214-217,221-225,229-237,241-243
+apps/apps-worker/scripts/build-bootstrap.mjs
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-4,8,12-13,15-17,20-23
+packages/client-core/src/store/local/node-store.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,6-7,19-21,44,55-56
+packages/db/src/migrations/20260923094646_worthless_rhino/snapshot.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 8-13
+apps/apps-worker/src/runtime/functions.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-4,6,9-12,14-16,25-30,32,35-37,46-50,53,57-60,62-66,71,74-75,81-83,94,96,100-103,105-108
+apps/web/src/routes/(app)/$orgSlug/index.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5
+packages/core/src/server/mcp.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-2,5-11,15,20-48,50-68
+packages/client-core/src/store/fetch/cache.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,4,9,11-23,25,31-32,34-35,46,57,78-85,88-92,95-99,107-109,128,130,132-138,149-152,159-162,177-181,184-186,199-206,209,222-225,231-233,246-249,251-253,258-262,270-277,292,294,306-309,316-325,330-333,338-345,348-350,361-365,368
+packages/db/src/relations.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,4,20-23,43-95
+packages/api-platform/src/routes/cli-auth.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6-17,19,35,43-68,75-84,87-88,92,95,99,102,119,125,131,140,147-148,151,161,164-166,172-176,184-188,198,200-202,204-206,215-216,227-228
+packages/core/src/primitives/arktype.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-5,10-17,28,30,32-38,42-43,46-48,50-53,58-60,63-66,70,72,77-83
+packages/react/src/__tests__/use-view-context.test.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-4,7-8,13-19,22-27,32,45-46,49,51,53,56-59,63,66-67,69-92,94-96,98-114,120-128,130,132-133,135-138,143-153,155-156,158-160,162,164-166,168,170-172,174,176-178,183-193,195,198-200,205-207,210-216
+packages/ui/src/components/toggle.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 7,10-11,13,28,31,34,39-46
+playground/shared/src/auth.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,8,10,16-17,20,23-25,32-44,46-48,51-58,61,69,71-72,74-75
+playground/tanstack-start/src/routes/__root.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-62
+playground/tanstack-start/src/routes/api/playground/todos.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-72
+packages/ui/src/components/tooltip.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,8-9,13-14,18-22,24,39-55,57-59,61-66,68
+packages/client-core/src/client/config.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-4,7-13,17-20,30,43,46,48-53,57,60,64-66,73-75
+packages/app/src/preact.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,7,11-12,15-17,25,30,36,39,41,44-56,58,67-70,72,74,76,86-88,94-97,100-101,103-104,107,110-112,115-117,120-122,125-127,130-132,148,151,153-159,161-163,167-169,171-173,175-177,180-182,186-191,193-196,201-204,207-211,214-219,235-237,244,247-250,253-255,273-278,288-292,295-298,302-304,317,321-322,326-329,334-336,340-342,348-351,354,357-359,361,364-366,368-370,373-375,377-379,381-383,389-396,398-412,415-420,423-425,430,432-434,438,441-444,446-448,453,456-464,468,471,474-479,482-484,497-499,501-503,511-516,518-520,522-530,533-535
+packages/sandbox/src/iframe/backend.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-7,11-12,18-26,28,30-48,50,54,67-68,73
+packages/cli/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 9-53,70,74
+apps/web/src/routes/(auth)/route.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-4,9-11,15-18,22
+packages/app/src/database/schema.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,9-12,14-15,20,22,24
+packages/api-platform/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 46-48,51,68
+packages/app/src/client.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,6-10,12-17
+playground/tanstack-start/src/routeTree.gen.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-247
+apps/web/src/tests/preview-ws.test.mjs
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,7,13-15,29,38-41,50-63,65,82-95,97,110-123,125,139,144-147
+packages/email/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,9-25,29,31,33,41,43
+packages/cli/src/auth.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-9,13,15-24,27,43,50,56,76-78,84-85,100-102,143-153,155-156,196-198,206-212,223,225,236-238,240,251,256,259-270,277,283-287,302-304,314-327,337-339,341,347-351,353,356-367,381-392,397-399,409-426,434-437,448-460,466-473,482-485,487,496,498-511,521-526,528-530,534-537
+packages/api-platform/src/routes/app-agent.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-8,17,20-21,23-31,39-42,51-53,61,65-70,86,89-91,103,106-107,109-110,113,123,134-135,137,141-143
+  s_ffab4eb5f4f549::t_066c3dea1473f2 79-80
+packages/auth/src/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-4,7-15,18-19,22,26,28-32,34-38,42-44,51-52,55-56,58-65,73-75,93,103,107-115,119-131,134-151,153,156-157,170,172,177-178,187-189,191,197,201,204,208,212,218,223,239-240,243,250-253,255,263-264,269-277,298-300,307-312,322-324,326-334,336,348,350
+packages/cli/src/generator/templates/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-14
+packages/kv/turbo.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-17
+packages/tailorkit/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 9-53,70,74
+packages/ui/src/components/textarea.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6,9-10,17,23-57
+packages/api-utils/src/agent-token.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,5,13,24-28,31-32,39,54-56,64-71,79-80
+packages/app-agent/src/tools/write.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-9,18-20,22-29
+  s_ffab4eb5f4f549::t_8c4e459fa69eed 3
+packages/client-core/src/store/local/view-context-diagnostics.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,4,7-13,22-26,29,37-41,50-52,55-58,65-66,70,72-74,83,85-89,95-96,99-105,114-118,122-124,126-129,139-151,154-155,159-160,162-171,174,176-179,188-191,196-197,201-205
+packages/vite/src/builder/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-10
+apps/web/src/components/apps/app-logo.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-3,15,23-29,31,36
+packages/app/src/client/connection.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-7,13,15,17-18,21,27-31,34-35,38-39,43-45,47-107,110-113,116-117,125-126,130,144-147,152,157-158,161,163,165-166,183,190-192,195,198-201,203-206,209-212,219,222-225,230-237,240-249,251,266,269-273,282,284-303,305,307-314,327,329-330,332,337-343,353-359,364,370-377,381,383
+apps/apps-worker/src/assets.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3,5-13,16-22,32-37,39-49,52-55,57-62,84,86,106-111,126-130,143-145,149,157-159,166-168,172,197-201,208-213,228-235,238-244,261,264-266,269,275,277,283,288-291,293-295,298-330,332,337-338,349,352,355-360,368,377-383,386,390
+packages/api-platform/src/app-agent-mcp.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,7-9,14-15,17,19,22-31,34,40,42-44,46-52,57-61,63,65-67,69,72,75,77,79-86,92-96,99-107,114,116,118-122,125-127,137,141,144-153,158,161,166-167,171-195,206-208,213,220-223,226,230-233,235-242,245-250,252,254-258,260,262-269,271,277
+packages/client-core/src/client/endpoints.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-6,8-18,21-74,78,81,83-85,88,93,95-96,104-107,111-114,119,127,134-135,138-141,143-145,147-149,163-168,171-173,175-176,180,182,186,189-192,196,198,200-204,208-212,217,219,222-224,227-232,234,238,241,243-248,250-272,274-280,290
+apps/web/src/routes/(app)/account/organizations.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 13-23,25-29,31-32,39-40,44,47-49,57-61,71-74,101-102,107-110,130,139,143-146,150-153,155-158,165-166,170-172,175,178,188-200
+packages/cli/src/agent.test.ts
+  s_ffab4eb5f4f549::t_066c3dea1473f2 162-173,178-185,230-235,245-252,265,269,273-275
+  s_ffab4eb5f4f549::t_9e146886fd3cfb 31,91,256-257,264
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,5-25,28,32-34,37-39,44,47-50,53,55-58,74-85,98,103,109-113,120,123,126,133-134,138,142-145,152-154,156,195,197-199,207,212-215,220-221,225,241,286,292-294,296,305,314-316,327-333
+packages/cli/src/build.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-102
+packages/core/src/schema/contract.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-7,10-17,24-27,37-38,40,42,44,46,49-50,55-57,59-60,63,72,74-93,95
+packages/email/src/templates/better-auth/invitation.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,13,19,25-28,33-35,39,45,50
+packages/kv/src/upstash.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-12,69-73,75-97,99-103,106-147,151-154,158-159,161,171-172,175,177-188,190-196,198-205,207-208,213-214,219-221,224-227,229-257,259,267-269,276-277,280,282,285-333,335-336,338-339,341,343
+packages/api-utils/src/rate-limiting.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,4,6,8,10,15,21,28,31,39-45,52,57,59-62,65,67-68,72
+packages/ui/src/components/date.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6-11,20,32
+  s_ffab4eb5f4f549::t_9ebb3505c5f30c 5
+packages/react/src/remote-view.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-11,21,23,37-44,68,70,73-79,87,89-96,108-116,130,137-144,146-149,154-165,171-174,182,186,195-200
+packages/client-core/src/client/fetch-client.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-6,15-21,23-26,29,35,39-41,45,52-58,61,67,80-84,88,100-113,126-127,129-150,155-157,160-166,170-175
+packages/app/src/server/tools.test-d.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-5,8,13,15-17,19
+packages/react/src/primitives.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-5,12-13,40,46-48,55-61,66-72,77-83,88-94
+packages/core/src/primitives/definition.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-12,83-87,90-99
+packages/api-platform/src/routes/deployments.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,4,7-11,15-32,36,46-48,54-88,96-97,137-141,157,169-174,178-181,196-201,205-208,216-220,223-225,238-239,241-242,246-252,255-256,262-263,268-269,271-274,278-280,285,294,300,303-307,315,318,321-325,329-330,335,339-342,345-346,348-367,369-371,373,385,392-404,406-408,423,426,443,445,448,452-454,460,463-467,472-476,494,499,502,517,527-529,535,538-539,545,551-554,564-566,570-574,598,636,641-644,648,650,653,656,662-666,694,726,761,788-789,806-807,817-836,845
+packages/ui/src/components/combobox.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,7,12-19,31-37,39-42,44,48,50,57-58,65,67,69,73,75-100,117-118,122,125,128,136-137,141,144-150,156-157,169-170,179,181,198,215-216,230,232,236-263,265,268-274,276,279-285,287,290-299,301,304-313,315,318-324,326-327,329,332-334,336-337,339,342-343,345-357,359-362,369,372,376-377,380-384,387,390,399-412,414,420-429,434-435
+README.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 11,13,17-23,27,31,33,37-41,45,49,51
+packages/api-platform/src/routes/preview-grants.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-3,8-15,22-24,42,47,50-56,61-65,77-81,86,90-94,100-104,116-119,126,128,135,137,141,144-148,157,160,168,170,175,185,187-196,202,210,214,216-224,226,229,231,238
+packages/client-core/src/store/store.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-7,12,14-26,28,33-35,43-62,67-69,72,78,83,89,94-96,110-114,124-127,129-132,149,151-154,166-168,171,175-180,194,196-200,211-215,217-219,232-235,244-251
+playground/tanstack-start/src/lib/tailorkit-server.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-33
+packages/app/src/server/functions.test-d.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3-6,24,27-29,35,37,56,59-61,70,73-78,80
+package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,18-19,22-25,33,36,39,41,46-50,52-53,56
+packages/vite/src/builder/fs-errors.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-7
+playground/tanstack-start/src/styles.css
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-17
+packages/core/src/server/routes/cli-auth.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 10-22,26,28-29,51-52,66-67,78-79,88-89
+packages/db/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 36-38
+playground/apps/todo/vite.config.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-6
+apps/apps-worker/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 8,11-14,21,34-35
+packages/api-platform/src/preview-build-store.test.mjs
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,5,7,14-16,18,20,24,33,36-40,46,62-71,78-79,88-91,104-106,108-110,112,116,118,120,124-125,127,140,147-150,153-160,165,179-182,196-199,204-207,218,224-232,237-240,245-248,255-258,264-267,271,291-301,310,315-318,323-333,342-345,353,362-365,374-377,380-383,397,400-403,406-407,409,420-426,428-434,438-445,459,466,473,477-480,488,494-504,515-517,523-526
+packages/app/tsup.config.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,6-10,20,22
+packages/client-core/CHANGELOG.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-14
+packages/core/src/spec/json-schema.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,4-12,20-23,25-32,34,38-39,41-46
+packages/core/src/schema/children.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-4,10-14,16-30
+packages/db/src/schema/project.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-9,15,19,26,30-34
+apps/apps-worker/tsconfig.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-4,11-12,14
+packages/client-core/src/client/apps.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3,6-10
+packages/env/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,9-25,29,31,33,41,43
+packages/api-platform/src/team-auth.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,4-5,8,12-14,31-42,46,51,62-65,75,77-82,86-88
+apps/apps-worker/src/transport.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,4-7,9,12-17,20-24,30-34,36-38,43-46,52-54,57-63,68-72,80-92,102,105-126,130-139,157,165-167,171-173,176-180,184-190,194-196,203-206,209-212,219-221,223-224
+packages/ui/src/components/frame.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,5-18,20,23-32,34,37-43,45,48-54,56,59-65,67,70-76
+packages/app/src/database/definition.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 8-10
+packages/vite/src/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-319
+apps/apps-worker/src/runtime/execution.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-5,7,10,15-17,19-20,33,36-37,41,43,47-48,50-54,56-62,64,66-75,80,89-90,93-94,109,111-113,117,120-126,131,135,138,142-147,159-164,166,170,174-183,186-188,191,201,204-210,213,219,222-225,227-230,232
+apps/apps-worker/src/supervisor/actions.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3-4,7,10-15,21-23,25-27,35-36,40-50,53,55-57,64,68-71,73,77-79,83,91-94,96-100,102-106,108,111-115,120,123,125-128,132-133,136-139,144-150,159-166,178,184,194-197,201-204,206-208,220-221,228-231,233
+packages/db/src/migrations/20260915014045_short_nova/snapshot.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 8-13
+playground/shared/scripts/seed.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-21,24-25,32-35,42-44,47,52-54,57,62-64,67,72-74,77
+playground/tanstack-start/src/routes/api/auth.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-83
+apps/apps-worker/turbo.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5
+scripts/package-manifest.mjs
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-79
+packages/client-core/src/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1
+packages/app/src/providers.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 17,22-23,31,33-39,42-44,48-50
+packages/cli/src/init.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-14,16,30,37,46-52,56,62-67,77-80,85-87,92-94,97-98,101,103,106-108,110-113,116-132,160,170-171,174-177,185-186,189-208,210-213,224-227,233-235,248,252-256,260-262,269,281,286
+packages/core/src/server/backend.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-8,11,19,21-22,27-34,36,40,43,52,59,61,71,74,76,81,83-87,91-94,96-100
+packages/ui/src/components/preview-card.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,8-11,13,15-17,19,32-47,49-59
+playground/tanstack-start/src/lib/local-apps.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-11
+packages/sandbox/src/iframe/resolve-view.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-20,23-25,34-36,41,43,46-47,49-53,57-74,76-87,91-94,97-104,106,108-111,113-115,117-118,126,128-132,136,138,140-142,144-152,155,158
+packages/tailorkit/src/client.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1
+packages/react/src/tailorkit.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 14,25-26,35-47,57-60,70,76-82,85-88,90-94,96-99,102,116-138,140-147,150-160,165-167,169-189,191-192,194,196,198,201-214,219-247
+packages/api-utils/src/app-auth/tokens.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,5,14-26,29,31,34,36-37,39,41,44-49,53-57,62-63,69-76,82,85-86,97-111,113-116,118-120,122,128,130,132-134,139-140,146-148,156,158,160-166,169-172,178-184,190-192,194-206,215-223,231,235-236,238-239,241-242,247-249,251-252,254
+apps/apps-worker/src/runtime/execution.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3,16-22,24,27,31,34-35,37-38,44-48,52-54,57,62,65-66,68-78,80,98-109,117-125,128-129,131-133,135,137-142,151-152,154-163,166-167,171-176,180,182,184-186,188-193,198,200-202,205-212,214-266,269,272-278,280-286,292-296,300-303,305-313,317-318,321-327,333-336,357,360,363-366,370-372,378-379,382-384,391-398,401,405-406,415-417,421-422,424-430,432-434,437,448-450,454-455,457-462,465,473-475,480,483-495,497-509,513-528,531,534-536,547-548,555-557,560,569,571,575,577-579,583,585-587,593-598,600-606,615,620-621,624,633-637,640-642,645
+packages/api-platform/src/preview-ws.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6-7,14,21,23-24,35-36,38-40,42-45,47,51-54,60,64,77,79-81,83,88,98-100,110-112,115-117,125-132,137,140-141,144-159,164-170,172-178,180-183,185-219,221-225,227-234,236-243,246-251,253-294,296-299,301,308,310-312
+packages/core/src/server/handler.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,11,15-37,43,45-47,50,55-58,63-67,69,73,76-85,92-93,98,100-102,105,110-113,115-123,127-129,131-134,136,144,149,154,156-178,180-209,211,231,234-235,237-238,246,248-254,257-260,265-266,268,276-277,283-284,292-294,296,299-302,315,321-322,327-328,330,333-335,337,340,346-349,359,363-368,370-373,375-380,387,392,399-402,417,420-423,430,439,442-444,449,464,468-472,474,480,494,499-506,514,519-523,532-535,538,542,544,555,560-562,575-578,581,584,587,599,602-604,611-613,615,618,621-623,625-627,633,643-646,650-652,655-658,662,664,667,670-672,682-688,701-703,705-710,720-723,727-729,732,736,738,741,744-746,756-762,837,839-840,843-845,847-850,853-855,858-866,871-873,883,886,896-897,899-901,907-913,916-918,920,924-926,932
+  s_ffab4eb5f4f549::t_9e146886fd3cfb 778
+  s_ffab4eb5f4f549::t_066c3dea1473f2 768-772,785-804,806-831
+packages/cli/src/app-link.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4,6,17,23-26,31,36-37,39-46,50
+packages/ui/src/components/empty.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4,16,19,22-34,36,39-45,47,51-76,78,80-82,84,87-93,95,98-107,109,112-121
+packages/app/src/server/bundle.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-2
+packages/sandbox/CHANGELOG.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-11
+playground/tanstack-start/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-44
+packages/app-agent/vite.config.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,4,9-11,17-20,24-25
+packages/auth/src/lib/public-team-id.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6-9,11-12,16-17,21,23
+packages/ui/vite.config.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 7
+packages/app/src/client/query-store.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-5,8-10,18-22,24-36,38,57-59,85-93,100-103
+packages/api-platform/README.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 7,11-18
+packages/client-core/src/framework-boundary.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-2,9-16,24,28-34,36-37,39-43
+packages/client-platform/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 9-53,70,74
+playground/tanstack-start/src/routes/index.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-110
+packages/client-core/src/store/local/slot-runtime.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-8,12-19,21-24,27-28,33,36-40,42-43,48-55,59,62-63,66-69,71,73,76,85,89-91,93,98-99,102-104,107,112-115,128-130,132,136-138,141,147,150-152,165-166,169,173-176,179,181,189,191,193,196,201,210-211,213,216-218,224,226,233-236,246,248,258-277,279,284-291,295-297,300,304-307
+packages/client-core/src/store/fetch/apps.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-6,16-28,31-33,40-51,59,65-89,93-95,99-101,108-111,113-115,120,126-130
+packages/ui/src/components/input.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,8-16,26,33,35-37,42,50-51,61-62,69,76
+packages/cli/src/build.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-91
+packages/db/src/migrations/20260915085530_lonely_tiger_shark/snapshot.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 8-13
+packages/app/src/client/session.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,6,9,13,17,26-32,35,46-56,59,80,84,88,91-99,108,112,116,119-124,133-135,141-143,147,152,156,161
+packages/sandbox/src/iframe/runtime.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,4-6,8,17,20-24,27-29,31,33-34,36-40,43-53,57,59-64,71-73,75,84,86-88,90,93,96,99-101,103-105,108-110,112-113,118-119,121-128,131-135,137-139,144,146-151,156-161,169,172-173,175,178-192,197,199-204,211,214,222,224-226,228,231-254,256-258
+packages/vite/src/config/loader.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-62
+packages/vite/src/builder/server.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-220
+.changeset/pre/bright-children-renderers.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-6
+apps/web/src/routes/(auth)/two-factor.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 25-31,39,41-46,49,52-53,55,84,90-93,109-111,116,120-123,132-134,141-147,149-151,153,182-185,187,193-195,197-263,269,288-289,293,297,307,314-320,324-326,330-334,338-340,344-346,348-352,363-367
+packages/react/src/components/context.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4,11-13,15,17-18,21-23,27,31
+apps/apps-worker/src/tests/backend.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-56
+packages/api-platform/src/procedures.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-9,11,15-24,26-27,30-34,39-49,54-59,61,67,72-74,77-109,112,114,116-123,137-138,152,155-156
+packages/db/src/migrations/20260928020750_optimal_carlie_cooper/snapshot.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 8-13
+packages/ui/src/components/toast.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 11,13,17-25,37-40,51,53-56,66,68,74-75,89,95-99,105,145,152,156,159,164-167,175-178,189,191,195-196,200-203,205-209,211,227,231,246,249,254-257,281,283-284,302,307-312,318,322-327
+packages/kv/src/contract.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,4-10,15-37,39-48,51-54,60,63,77,105,109-112,127,131,147,160,173-178,183,191,200,209,220-226,242,246,262,275,280-283,287-292,297,305,310-313,317,336,371-372,384-385,388-390,399-400,411-412,414-416,427-428,430-432,438-440,449-458,465-470,477-478,480,489-491,498-507,512-524,531,548-549,551,567-569,571,574-583,590-592,597,605-606,608,613-615,632-637,640-647,660-661,664-669,675-680,689-690,702-707,710-716
+apps/web/src/routes/(app)/$orgSlug/$projectSlug/index.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5
+.github/workflows/ci.yml
+  s_ffab4eb5f4f549::t_611561ad3f3eec 54-56
+packages/api/src/env.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,6
+packages/api/src/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-7,9,11-16
+packages/db/src/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-5,8-22,26,30-55
+packages/vite/src/builder/schema-check.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-123
+playground/shared/src/db/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,4-5,7-8,11-12,15,22
+docs/tsconfig.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-12
+packages/api-platform/tsconfig.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 9-10
+packages/db/src/env.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,6,8-9
+scripts/sync-licenses.mjs
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-5,10-11,36,38-39,42,49,52-61,64,73-75,79,81-83,90,103,105
+packages/app/src/instances.test-d.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3,5,9-11,20,31-33,40,42,52,58-59,66,68-69,76,78-79
+packages/core/src/schema/tools.test-d.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,4-6,14-17,19-21,23,35,37-41,51-53,55,57,61,63-66
+packages/storage/src/env.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,6,10,13,16-20
+packages/db/src/validate-org-slug.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 577,579,583,590,597,605,612
+packages/react/CHANGELOG.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-16
+packages/api-platform/src/team-identity.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,9,14,16,22,24,35-43,52,59,61,66-75,78-81,84,88-91,95-96,99,118,120-123
+apps/web/src/routes/auth/error.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 11,14-18,20-25,30-33,35,41,43-55,60,68-75
+packages/api/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 32-34,47,49
+apps/apps-worker/src/installation.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,7-8,11-14,17-23,27-31,33,35,39-41,43,46-52,55,58-61,70-72,77,81,85-90,97-99,102-104,108-112,116-125,134,142,145-147,161,164,168,173-186,190-191,194-195,198-199,202-203,212,220-225,235,237-253,261-266,271,277-278,282-288,290-297,301-304
+packages/kv/src/env.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,11,17
+packages/ui/src/components/alert.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4,8,15-18,24,27,31-39,41,44-50,52,55-64,66,69-78
+packages/api-platform/src/app-agent-mcp.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,4-5,7,10-16,19-20,23,30,32,36-41,54-55,61-62,67-75,79-89,93,98-99,102-103,106-118,120,126-128,133-137,142,148-151,154,165,171,175,178-182,186,190-195,198,206-207,210,212,215,223,227-228,238-251,253-263,270-275,279,284,298,306-318,323-324,328,330,340-354,363,367,369,375-381,388-391,399-400,420-421,426,446,450
+playground/tanstack-start/src/lib/tailorkit-client.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-74
+packages/tailorkit/src/app.test-d.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 12-16
+packages/core/src/primitives/zod.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-5,10-14,16,21,24,32-33,35,37,40-43,48-50,55-61,63,65-69
+packages/api-platform/src/scope.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-18,23-27,30,32,34,36,38,40,43,48-49,54,56-60,62,66-73,76,78-80,83-84,90,93,99,108,121-123,130-132,136,141-148,150-154,168,174,176,185,187-219,228,236-242,245,247-248,250-252,256-257,264-266,268-269,271,274-281,283-286,288,291-293,300-302,307,309-312,319
+apps/web/src/routes/(app)/account/security/-two-factor-settings.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 25-29,33,35,43-49,51,57,59,103,111-113,121-123,127-129,138-143,165,173-177,193-195,205-210,212-213,215,243-249,255-257,274-279,281,283-287,295-300,306,310-312,314-316,322-324,333-338,345-353,359,361,367,374,381-513,515,523-526,528,551-556,562-563,566-569,572-574,588-589,594-595,598-603,612-613,622-625,634,636-644,701,724,730-732,737-738,740-745,768-773,775-797,802,808-833,835-837,841,843-844,863-865,876-878,886-888,900-902,908
+packages/storage/src/s3.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 11,32,36,39-46,54,56-58,62-68,72-85,88-90,95-96,100-121,123,130-131,134-135,137-139,143,147-176,179-183,185,188,190
+docs/tools.mdx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6,31,53-57,79,81,85,98-99,108,116,125,136-139,144-148
+packages/api-platform/src/context.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-5,8-12,15-18,31-35,38-39,42-44,47-48,50-53,56-58,61-64,69-77,83,102,107,111,114-119,122-131,135-136,155,161,163,165,168,171-177,179-183,185
+packages/client-core/src/client/endpoints.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-4,8-10,16-19,24,26,33-78,81,86-99,102-105,119-124,130,132,134,139,141-144,146-148,152-154,158-163,167-169,173-174,178,182-195,205-210,212-214,216-219,222-224,226
+apps/web/src/routes/(app)/onboarding.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-4,8-10,13,17
+packages/api-platform/src/preview-lifecycle.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6,10-11,15-19,27,30-33,36-39,41,44,47-48,55,62,64-65,68-72,76,79,84-91,94
+packages/sandbox/src/iframe/tools.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,4-11,13,17-23,27-31,39-41
+packages/observability/src/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-7,12-15,17,20-32,49,51,53,58-59,61-62,64-65,67,69,71-106,112-122,132,134-135,139-171,177-178,189,193-197,200,215,217,221,223,225-226,231,233-234,244-246,250,252,254,257-258,260-265,271-292,294-295,297-298,300,304-305,309,311-316,322,333,336,338,342,344-345,347-348,355,358
+packages/ui/src/components/dialog.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 8,13-16,20-21,23-27,29-33,35,38-49,52-63,76-93,95-111,115,119,129,131,138,144-145,155,157,160-168,171-179,186,189-190,204-206,208
+packages/vite/src/builder/database-paths.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-30
+apps/apps-worker/src/worker.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 7,9-12,14,18-20,23-27,32-39,43-45,49,57-61,65-68,71-74,76-78,80-83,86-88,92-94,98-106,110-112,116,118-121,123,132-135,143-144,152-154,156
+packages/core/src/server/preview.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,7-9,16-21,24-25,28-33,37,43,53-57,62-66,73,82,91,103-108,117-118,121-124,127-130,136,146-147,149,158-161,163-165,171,174,176,178,188-190,199,204-206,213,216,218,220,227,230,232,234,240,243,245,247,251-253,260,263,265,267,288,296-297,299,303,312-314,321,323,326,328,332,334,338-341,350-351,360-365,367-368,377,388-390
+packages/ui/src/forms/select-field.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-19,21-23,27-32,48,61,65,71-74,81,89-91,93,106-108,118-122,126
+packages/ui/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 69-71,74,87,96
+packages/vite/src/builder/env.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-2
+tsconfig.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-10
+apps/web/src/components/members/invitations-table.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,13-29,32-36,52,58-73,75-86,88-141,143,157-160,163-171,185,196,202-205,228
+packages/observability/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 27-29
+packages/react/src/__tests__/use-views.test.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-2,4,9-19,23-28,33,36-38,40-44,48,50-51,54-60,65-68,70-71,73-75,77-79,83,87-89,93-94,108-111,117,119,127,130-132,134,136-154,159-161,163,166-175,179,182-189,201-206,211,214-218,222,231,233-235,240,242-247,250,252,254,261,267,269-278,280-281,289,298,300-302,305-306,308,322-324,327,335-337,345,349-353,355,357-363,367,369-371,376,379,381-383,399-413,423,425-427,431,440,442-444,447-449,461-464,466-479,486,488-490,492-494,496-499,502-506,509-511,515-518,522-524,526,528,530-537,539-540,547,549-551,554-556,562-569,576,578-580,591,593-595,598-604,606-610,612-617,621-626,628,634,641,643,645-656,664,666-667,669-671,679-682,684,686-690,699,701-703,714,721,723,725-728,737-740,742-755,762,764-766,769-775,782,784-793,796,799,803-807,809-823,830,832-838,843-846,849-856,862-867,879,881-883,894-897,899-902,909-915,919-924,935-938,940-953,960,962-964,967-973,975-977,980-983,985,988-990,1001-1004,1006-1019,1026,1028-1033,1035-1048,1060-1061,1064,1067-1073,1078-1080,1086,1092-1095,1101-1102,1107,1109-1111,1114,1121,1127-1150,1152-1155,1163-1173,1180,1182-1184,1186-1189,1203-1207,1209,1211-1213,1215-1218,1225,1231,1233-1235,1254,1257-1260,1262-1282,1287-1291,1293,1295-1297,1308-1310,1312,1317-1319,1324,1328
+apps/web/src/server.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-4,8-9,12-13,17
+packages/core/src/server/types.test-d.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,4,6-7,16,18,22,24-26,29-30,40,43,45,47,50-54,56-101,103,106-114,116,123,125-130
+packages/storage/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,9-25,29,31,33,41,43
+playground/README.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,7,14,22,26-28,35,37,39,43
+apps/web/src/index.css
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-10
+packages/app/CHANGELOG.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-14,114
+packages/client-core/src/store/local/view-context.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,6-7,9,21,23,26,28,35-36,38,57-63
+packages/ui/src/components/radio-group.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6,9-36,38-39,41,43
+apps/apps-worker/README.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 31-36
+packages/api-utils/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,9-25,29,31,33,41,43
+packages/tailorkit/src/react.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1
+packages/vite/src/config/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-5
+packages/core/src/spec/component.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,5,14,18
+packages/ui/src/components/logo.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 8-23
+packages/app-agent/src/tools/deploy.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3,5-12,16-17,22-23,33,35-36,38-47,61,72,74-75,78-81,85,90-92,94-97,101
+scripts/check-prerelease.mjs
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-7,20-23,26-30,32,38-40,49,70-72,77-79
+packages/env/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 25-27
+.changeset/pre/fn-export.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-6
+apps/web/src/components/members/invite-members-dialog.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 14-20,22-25,30,33,35,41,43-45,51-58,64-66,68,70,75-79,89-93,95,103,105,111,128-149,151-180,183-208,212-214,216-218,228
+apps/web/src/routes/(app)/route.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5-7,10
+packages/api-utils/src/app-auth/deployments.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 8-11,15-18,21-24,27,29,42,46
+packages/core/src/spec/spec.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,8,17,20,23-24,28-31,35,40,45,48
+packages/tailorkit/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,20-43,80-83,90-93,99-100
+playground/apps/todo/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 17-23,26,31-33
+apps/apps-worker/src/runtime/actions.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-7,10,13-21,23,26,32-36,40-43,53,62-64,66,69-71,74-75,79,81-82,87-88,94-101,105-108,110-112,117,125,130,137-140,145,150,158,165-171,175-176,178-179,187-200,206,215-216,218,221-223,229-230,234-235,238,240-242,250-263,268,274,279-289,292-306,311,315,317-328,332,336-340,343,348,352-356,359-371,377,380-381,386,389-390,397-398,400-401,405-410,412,414,416,419-420,427-432,435,438-441,447-452,455-457,460,464,466,469,473-483,485-492,498-501,506-508,510-513,520,524,528-538,543-545,549-557
+packages/db/src/schema/scope.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,3-24,26,29,39-41,44,47,49-50,53,55-56,61-64,74-76,78,85-91,98,106,108-111,118-121,128,130-138,142-144,148,153-156,160,165-167,171-175,179-183,194,198,206-210,213-215,219,226-229,232,238,241-244,248-250
+packages/react/src/components/render-slot.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 10,12-15,25,33,35,38-48,51-63,65,67-69,82-97
+packages/client-platform/tsconfig.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 11-15,17
+packages/app/src/client/connection.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-3,8-9,12-22,24-26,28-33,36-38,41-45,48-56,62-64,66,68-73,75,85-101,103-105,117-129,131-151,153-157,169-171,173-174,177-186,197-202,205,220-224,227-229,238-244,251-279,282-286,291-293,296,299-302,304,314-327,329-331,342-349,351-353,372-379,390,401,407-411,425-431,433,435-437,441-442,445-449,451-453
+packages/app-agent/src/tools/utils.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,8,19,22-26,33-36,48-50,53,58,61,69-76,84-87,91-92,95-96
+packages/core/src/server/backend.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2,4,7-20,25,32-36,41,47,49,56,72-76,85,96,106,116-117,120
+packages/core/src/server/preview-consent.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-4,7-13,16-21,23,25,27,30,36,41,46,58-61,65-82,84-111,125,130,138-141,145-146,148-151,154,159-163,169-172,178,187,191-194,201,205-207,211,221,230,235,240
+packages/tailorkit/src/vite.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1
+packages/api-platform/src/routes/preview.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-7,15-22,24-32,38-41,44-46,48-51,60,63-65,72,78,89,93-104,108,112,116-118,121,124,130,133,137-143,149-150,154,157,161,164,171,173,175,177-178,182,188,200,206,208-217,237-238,247-248,255-256,258,265-269,282-285,288-292,318-323,329-333,339-340,343-346,369-370,379-383,388,391-392,401-402,405-406,411,415-416,421-425,430,437-438,447-448,450,456-460,472-473,475-479,487-489,491-493,500-506,508-514,522,527-534,553,557,561,563-568,577,579,581,583-584,589,598-600,603-607,617,621,625,628-635,637-639,650-657,660,667-668,670,673-679,686-695,697-701
+apps/web/LICENSE.md
+  s_ffab4eb5f4f549::t_611561ad3f3eec 5,9-25,29,31,33,41,43
+packages/app/src/view-instance.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 12-14,17,21,24,26-27,30,35,38-41,44-46,50-52,54-57,64-66,73-77,79,81-88,93,95-97,101,103-111,114-117
+packages/cli/src/generator/templates/package.json.liquid
+  s_ffab4eb5f4f549::t_611561ad3f3eec 9,12-18,28-30
+packages/core/src/views.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-6,21,30,32-33,35-36,39-44,46,49,51-52,54,73,85-86,93-94,96
+packages/ui/src/components/context-menu.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 6,9-12,14-15,17,21-29,31,48-65,67-73,75-79,81,89-100,102,111-123,125,133-169,171-178,180-187,189,193-220,222,228-238,240,243-249,251,254-263,265-269,271,278-291,293,303-304,317
+playground/tanstack-start/src/lib/issues.functions.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-63
+packages/email/src/templates/better-auth/email-verification.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 4-23
+packages/sandbox/src/protocol.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-5,7-9,11-17,24-25,28-31,54,95,101,105,122-131,134,140,156,163,186,189-190,227,230,237,241,245,268-272
+packages/core/src/server/mcp.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1,4-6,8-15,18-24,32-35,37-45,54-56,59,69,72-74,85,100-103,105-106,108,117-119,125-127,131,134-137,140-142,149,153,155-157
+packages/env/src/index.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-3,7-9,13,28,30,49,51,59,61,63,69,71-74,76,78-87,92-94,101,105-111,113-114,117-120,123,125,128,130-135,139-141,145-146,151-152,155,157,160,162,167-173,176-181,186,188,195,205-210,215-219,222-226,232
+packages/auth/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 33-35,41,49,53-54
+pnpm-workspace.yaml
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3-5,9-12,15,35-37,40,42,44,49,51,54,57-58,65,67-68
+packages/api-utils/package.json
+  s_ffab4eb5f4f549::t_611561ad3f3eec 52-54,64
+packages/app-agent/src/mcp.test.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-4,6-15,19-23,26,28-39,43-45,50,52-54,61,63,65-66,73-77,79-80,84,87,94-106,111,115,119,122,125,128-134,143,147-148,151-156,159,163-167,180,188-200,204-223,229,231-233,235
+packages/client-core/src/client/config.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 11-13,15-28,32,35-38,44-45,66-69,81,85-87,94,99,103,105-108,111-112,114-117,122-126,128-129,131-134,138,140-143,147,149-152,156-159,161-163,165-179,185
+packages/vite/src/test-utils.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 1-82
+apps/web/src/routes/api/rpc.$.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 3,16-19,25,41
+packages/core/src/primitives/valibot.ts
+  s_ffab4eb5f4f549::t_611561ad3f3eec 2-5,11-15,25-26,28,30,33,36-39,44-46,49-52,56,58,63-67
+packages/ui/src/components/sheet.tsx
+  s_ffab4eb5f4f549::t_611561ad3f3eec 8,13-14,19-23,25-29,31,34-45,53-69,84-122,126,130,140,142,149,155-156,166,168,171-179,182-190,197,200-201,215-217,219
+pnpm-lock.yaml
+  s_ffab4eb5f4f549::t_c7a1d41ca8646f 10-11,15-16,20-21,25-26,30-31,35-36,40-41,46-47,52-53,58-59,64-65,70-71,76-77,82-83,87-88,92-93,99,102,105,108,111,114,117,120,123,126,129,132,135,138,141,143-156,171-172,174-175,177-178,180-181,210-211,231-232,234-235,243-244,252-253,255-256,276-277,279-280,286-291,300-305,307-308,310-311,313-314,319-320,322-323,326,335,338,341,343-344,356,359,372,375,377-378,380-381,386-387,389-390,393,399,402,405,447,450,453,459,462,464-465,468,471,473-474,476-477,479-480,483,486,488-489,492,495,512-513,522-523,526,535,540-541,547,550,559,585-586,589,591-592,613-614,617,620,623,656,659,662,664-665,693,696,713-714,717,738-739,748,763-764,766-767,774-776,779,784-785,790-791,794,796-797,816,822,838,844,846-847,850,870-871,874,877,882-883,885-886,899,907-908,921-923,926,928-929,941,946-948,955-957,963,985-987,1009,1049,1062,1074,1076,1098,1101,1128-1129,1140-1141,1149-1150,1156-1157,1178,1197,1244,1247,1250,1253,1256,1262,1320-1321,1354-1355,1361,1364,1379-1380,1382-1383,1408-1410,1412,1437-1438,1453,1465,1476-1477,1496,1498-1499,1507-1549,1553-1554,1565-1607,1609,1619,1622,1624-1625,1628,1656,1662,1665,1669-1670,1675-1676,1681-1682,1685-1686,1689-1690,1693,1777-1778,1781-1782,1785-1786,1793-1798,1801-1802,1805-1806,1809-1810,1813-1814,1817-1818,1821-1822,1829-1830,1833-1834,1841-1846,1853-1858,2045-2046,2062-2063,2089,2104-2105,2161,2339-2346,2351-2358,2363-2370,2375-2382,2387-2394,2431-2469,2695-2696,2953-2956,3030-3035,3048-3053,3059-3063,3074-3078,3089-3093,3106-3111,3124-3129,3136-3141,3148-3153,3166-3171,3184-3189,3202-3207,3220-3225,3240-3246,3261-3267,3275-3281,3289-3295,3310-3316,3331-3337,3352-3358,3373-3379,3389-3392,3398-3402,3409-3414,3427-3432,3445-3450,3687-3688,3692-3693,3695-3696,3706-3707,3710-3711,3714-3715,3717-3718,3721-3722,3731-3732,3764,3766-3767,3770,3777,4111-4114,4125-4132,4137-4138,4143-4144,4149-4150,4161-4166,4179-4180,4185-4186,4210,4279-4284,4291-4296,4303-4308,4315-4320,4327-4332,4339-4344,4351-4356,4364-4370,4378-4384,4392-4398,4406-4412,4420-4426,4434-4440,4448-4454,4462-4468,4475-4480,4492-4497,4504-4509,4516-4523,4529-4531,4535-4536,4544-4549,4556-4561,4568-4573,4580-4585,4592-4597,4604-4609,4616-4621,4629-4635,4643-4649,4657-4663,4671-4677,4685-4691,4699-4714,4727-4733,4740-4745,4752-4757,4764-4769,4776-4777,4779-4780,4782-4783,4788-4789,4794-4795,4800-4801,4806-4807,4812-4813,4818-4819,4824-4825,4831-4832,4838-4839,4845-4846,4852-4853,4859-4860,4866-4867,4873-4874,4880-4881,4886-4887,4892-4893,4898-4899,4934-4935,4940-4941,4946-4947,4952-4953,4958-4959,4964-4965,4970-4971,4976-4977,4983-4984,4990-4991,4997-4998,5004-5005,5011-5012,5018-5019,5025-5026,5032-5033,5038-5039,5044-5045,5050-5051,5137-5138,5386-5399,5462-5465,5482-5485,5578-5580,5598-5600,5604-5606,6002-6003,6014-6015,6017-6018,6043-6044,6046,6050-6051,6077-6078,6084-6085,6091-6092,6108-6109,6115-6116,6144-6145,6150-6151,6164-6165,6168-6169,6173,6200-6201,6208-6209,6220-6221,6224-6225,6234-6235,6277-6278,6282-6283,6287-6288,6292-6293,6297-6298,6302-6303,6550-6552,6572-6583,6608-6611,6624-6625,6633-6634,6636-6637,6642,6657-6661,6667-6671,6674-6684,6694-6698,6703-6705,6711-6715,6719-6723,6728,6730-6731,6745,6752-6753,6756-6759,6786-6787,6791-6792,6797-6798,6803-6804,6810-6811,6817-6818,6824-6825,6831-6832,6837-6838,6843-6844,6846-6847,6849-6850,6853-6854,6861-6862,6864-6865,6873-6874,6881-6882,6884-6885,6887-6888,6899-6900,6902-6903,6915-6916,6918-6919,6921-6922,6924-6925,6932-6933,6940-6941,7169-7173,7195-7196,7425,7438,7615-7618,7950-7952,7963-7964,8204-8205,8239,8242,8339-8340,8960-8961,9634-9635,9852-9853,10146-10147,10176-10177,10225-10226,10331-10332,10476-10479,10484-10485,10488-10489,10505-10506,10825-10826,10963-10964,11341-11342,11362-11370,11929-11930,12005-12007,12011-12014,12200-12201,12236-12237,12241,12243,12249-12250,12377-12378,12382-12388,12396-12397,12401,12610,12612-12613,12617,12619,12626,12630,12632,12636,12638-12640,12642,12645,12647-12649,12651,12743,12745,12747,12751,12753-12757,12759,12765,12767-12769,12771,12788,12791-12803,12807,12809,12811,12817,12819-12826,12828,12833,12835-12836,12838,12842,12844-12849,12851,12856,12858,12860,12864,12866-12868,12870,12883,12885-12886,12888,12892,12894-12895,12897,12912,12914-12915,12917-12928,12939,12942-12951,13224,13260,13263,13274,13277,13288,13299,13310,13314,13332,13337,13339,13346,13349,13352,13359,13362,13382,13389,13394,13401,13600,13604-13619,13621,13624,13627,13630,13633,13677-13707,13962-13965,14059-14063,14074-14078,14084-14088,14095-14097,14104-14106,14113-14115,14122-14124,14128-14134,14143-14145,14152-14154,14161-14163,14170-14172,14183-14187,14198-14202,14208-14212,14218-14222,14233-14237,14248-14252,14263-14267,14278-14282,14293-14297,14303-14307,14311-14313,14320-14322,14329-14331,14576,14581,14592,14595-14600,14649,14652-14655,14700,14714,14716-14721,14740,14742,14761,14767,14775,14782,14784,14786-14788,14810,14812-14814,14844,14846,14874,14876-14877,14970,14973,15251-15254,15262,15265-15271,15277,15281,15289,15293,15298,15301,15313-15318,15333,15336-15338,15341,15344-15345,15368,15372-15373,15375,15380,15383,15391,15396,15403,15408,15415,15421-15422,15431,15437-15438,15447,15450,15453,15455,15464,15477,15479,15492,15500,15504,15506,15514,15517,15526,15529,15532,15535,15538,15541,15544,15547,15550,15553,15556,15559,15562,15565,15568,15571,15574,15577,15580,15583-15584,15586,15589,15592,15595,15598,15601,15604,15607,15610,15613,15616,15619-15624,15627,15630,15633,15636,15639,15642,15645-15649,15652-15656,15659,15662,15665,15668,15671,15674,15677,15680,15683,15686,15689,15692,15695,15698,15701,15704,15707,15710,15713,15716,15719,15722,15725,15728,15731,15734,15737,15740,15743,15746,15749,15752,15755,15758,15761,15764,15767,15770,15773,15776,15779,15782,15785,15788,15791,15794,15797,15800,15803,15806,15809,15812,15815,15818,15821,15824,15827,15830,15833,15836,15839,15842,15845,15848,15851,15854,15857,15860,15863,15866,15869,15872,15875,15878,15881,15884,15887,15890,15893,15896,15899,16033,16035,16180-16187,16195,16295-16299,16324-16329,16427-16430,16451-16455,16461-16462,16753,16758,16760,16763,16768,16823,16826,16830,16833,16837,16843,16874,16877,16890,16898,16900,16907,16929,16931-16932,16941,16947,16951,16953-16954,16960,16962,16965,16967-16968,16972,16976,16978-16981,16987,16989,16991,16996,16998-17000,17004,17006-17007,17009,17011-17012,17030,17032-17033,17035,17037-17038,17056,17058-17060,17066,17068-17071,17073-17075,17080,17095,17097-17100,17102-17104,17109,17138,17140-17141,17146,17148,17153,17155,17161,17164,17174,17177,17187,17192-17193,17196,17199-17200,17211,17216-17217,17220,17223-17224,17235,17237-17238,17266,17268,17270,17275,17281-17283,17285,17295,17299,17314,17320-17322,17324,17334,17338,17353,17355-17358,17360,17365,17367,17373,17375,17419,17422,17425,17428,17431,17434,17501,17506,17512,17631-17635,17646,17648,17654,17659,17661,17666,17668,17670,17673-17680,17684,17697-17703,17706-17708,17711,17713,17722,17741,17744,17749-17770,17774-17775,17779,17781-17782,17799,17802,17806-17807,17811,17813-17814,17831,17834,17838-17839,17843,17845-17846,17863,17866,17869,17876-17896,17900,17902-17903,17920,17923,17926-17928,17933-17934,17938,17940-17941,17958,17961,17964-17966,17971-17972,17976,17978-17979,17996,17999-18008,18014-18032,18036,18038-18039,18053,18056,18059,18062,18066,18068-18069,18083,18086,18089,18092,18096,18098-18099,18113,18119-18123,18125,18127-18128,18134-18135,18144-18155,18162-18168,18170,18172-18173,18180-18187,18195,18197-18198,18205-18212,18220,18222-18223,18230-18237,18245,18248,18251,18254,18257,18260,18263,18266,18269,18272-18275,18286,18289-18293,18309,18315-18323,18351,18357-18365,18393,18399-18400,18402-18405,18424,18426-18427,18430,18436-18438,18449,18452-18454,18459,18468,18471-18476,18488,18491,18502,18505-18506,18522,18526-18529,18541,18549,18553,18555,18564,18566,18573,18575-18578,18587,18589,18591-18594,18607,18609,18611-18614,18627,18819-18820,18838,18840-18842,18983,18993,19094,19096-19097,19111,19114,19116-19117,19122,19126,19128-19129,19143,19147-19148,19153,19223,19225,19228,19230,19330-19331,19657,19662,19872,19882,19889,19908,19974,20791,20796,20798,20803,20806,20997,21541,21699,21948,21960,22295,22298,22300,22332,22334,22385,22449,22451,22460-22467,22492,22495,22532,22715-22739,22761,22763,22765-22787,22789-22812,22814-22835,22839-22858,22869,22871-22889,22891,22893,22895-22913,22915,22917,22919-22937,22939,23200,23348,23602,23677,23927,23935,24031-24064,24704,24706-24711,24811,24824,24829,24833-24834,24919,24973,24982,25018-25022,25042,25054,25056,25058-25066,25068-25069,25071-25078,25084,25089-25090,25110,25113,25115,25117-25125,25127-25128,25130-25137,25143,25148-25149,25169,25172,25174,25176-25184,25186-25187,25189-25196,25202,25207-25208,25228,25231,25233,25235,25238,25249,25254,25256,25260,25263,25274,25279,25281,25285,25288,25299,25304,25306-25331,25428-25436,25438-25455,25457,25477-25488,25490,25510,25513,25515-25516,25519
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cf0d489302bd27b03c4065f0702bf395387b1df8",
+  "prompts": {},
+  "sessions": {
+    "s_ffab4eb5f4f549": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a137d1-db26-7c81-88a2-37e60a3ee21e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

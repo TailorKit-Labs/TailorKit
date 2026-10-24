@@ -1,0 +1,81 @@
+packages/cli/src/generator/generate.ts
+  s_3f255cad337178::t_b7c048eb6ec7bd 67-70,74
+docs/writing-apps/ui.mdx
+  s_3f255cad337178::t_c9ef8fc38f0bc5 18,35,41,73,118,142-144
+docs/writing-apps/overview.mdx
+  s_3f255cad337178::t_c9ef8fc38f0bc5 23
+packages/agent/src/instructions.md
+  s_3f255cad337178::t_d7f1f96ce4aa8c 13-14,16,18,25,27,29,31,39
+  s_3f255cad337178::t_2059967c924dd8 9,15,17,19-24,26,28,42
+  s_3f255cad337178::t_3b6d5015334c2a 30
+packages/agent/src/skills/sqlite-database.md
+  s_3f255cad337178::t_bf0e45fc50af28 1-43
+packages/app/src/views.ts
+  s_3f255cad337178::t_b7c048eb6ec7bd 186
+packages/app/src/routing.test.ts
+  s_3f255cad337178::t_413e527d50a859 85-88,90-94,96,157,190-191,224,226-229,231,248-250
+  s_3f255cad337178::t_3502a3250de1ae 89
+  s_3f255cad337178::t_de78366dc61921 95
+  s_3f255cad337178::t_6ba83110bec730 230
+packages/agent/src/agent.ts
+  s_3f255cad337178::t_bf0e45fc50af28 10,44
+packages/agent/src/skills.ts
+  s_3f255cad337178::t_1b793da623ac90 14,20,32,38
+  s_3f255cad337178::t_bf0e45fc50af28 1-13,15-19,21-25,27-31,33-37,39-41
+  s_3f255cad337178::t_3b6d5015334c2a 26
+packages/agent/src/agent.integration.test.ts
+  s_3f255cad337178::t_1b793da623ac90 24
+  s_3f255cad337178::t_91cbf9459eca69 266-276
+packages/agent/src/skills/preact-composition.md
+  s_3f255cad337178::t_3b6d5015334c2a 1,3,5-11,13
+  s_3f255cad337178::t_bf0e45fc50af28 2,4,12
+packages/agent/src/skills/preact-performance.md
+  s_3f255cad337178::t_3b6d5015334c2a 1,3,5-12,14
+  s_3f255cad337178::t_bf0e45fc50af28 2,4,13
+packages/vite/src/builder/file-routes.ts
+  s_3f255cad337178::t_413e527d50a859 151,190-193,258-259
+  s_3f255cad337178::t_91cbf9459eca69 64-72,75-79
+  s_3f255cad337178::t_b7c048eb6ec7bd 15,22-24,46-63,73-74,80-85,115-118
+packages/cli/src/deploy.test.ts
+  s_3f255cad337178::t_7c75312fc99a84 269
+packages/app/README.md
+  s_3f255cad337178::t_c9ef8fc38f0bc5 18,36,39,52,74
+packages/app/src/routing.ts
+  s_3f255cad337178::t_413e527d50a859 59,148-150
+  s_3f255cad337178::t_39c25dc33b8aed 151-152
+packages/vite/src/builder/server.test.ts
+  s_3f255cad337178::t_d42dea603c9f3b 323,327-328,548,574-575,597
+packages/vite/src/builder/file-routes.test.ts
+  s_3f255cad337178::t_b0e152382b2298 23,63-78,86-88,90,99-117,132,134,136
+  s_3f255cad337178::t_d42dea603c9f3b 201
+  s_3f255cad337178::t_7c75312fc99a84 186,212,285,330,422
+  s_3f255cad337178::t_c9ef8fc38f0bc5 354-379
+  s_3f255cad337178::t_921977cba9edd9 380-389,394-396,402-407
+  s_3f255cad337178::t_da1878b25830fb 390-393,397-401
+packages/agent/src/skills/views-and-routing.md
+  s_3f255cad337178::t_bf0e45fc50af28 1-5,7-12
+  s_3f255cad337178::t_1b793da623ac90 6,13
+packages/agent/src/skills/backend-functions.md
+  s_3f255cad337178::t_bf0e45fc50af28 1-17
+packages/agent/README.md
+  s_3f255cad337178::t_d7f1f96ce4aa8c 5-10
+packages/cli/src/generator/generate.test.ts
+  s_3f255cad337178::t_7c75312fc99a84 340-343,345-350,390
+  s_3f255cad337178::t_6c85d71a1d420c 344
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "023eda45e989e7eedb7315e69e48af5d8e3b3c4f",
+  "prompts": {},
+  "sessions": {
+    "s_3f255cad337178": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a139e6-3df0-75a0-9373-c2b6bea12274",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

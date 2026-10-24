@@ -1,0 +1,19 @@
+packages/ui/src/styles/globals.css
+  s_eec6f58e9fec67::t_d4af0134b083b7 170-171,222
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "04662514613f390ed4120fe96d83b2d20dba8dc9",
+  "prompts": {},
+  "sessions": {
+    "s_eec6f58e9fec67": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16088-01a2-71a1-8720-de2510deeb9b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

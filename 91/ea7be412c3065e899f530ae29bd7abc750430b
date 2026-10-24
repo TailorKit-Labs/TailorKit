@@ -1,0 +1,58 @@
+packages/agent-fx/README.md
+  s_0ddee2e2eb8f91::t_ab8feb0823a204 7
+  s_0ddee2e2eb8f91::t_75b336f7d4c242 3
+  s_0ddee2e2eb8f91::t_cd690961f05eba 5,9,11,13
+packages/agent/src/input.ts
+  s_0ddee2e2eb8f91::t_75b336f7d4c242 5-6
+packages/agent-fx/src/workflows.ts
+  s_0ddee2e2eb8f91::t_75b336f7d4c242 13
+  s_0ddee2e2eb8f91::t_84c58638440d2e 2-6,12,14-17,20-21
+packages/agent/src/sandbox.ts
+  s_0ddee2e2eb8f91::t_cd690961f05eba 122-125,151-152,167-169
+  s_0ddee2e2eb8f91::t_84c58638440d2e 77,144-150,153-166,170
+packages/agent/src/workflows.ts
+  s_0ddee2e2eb8f91::t_75b336f7d4c242 9
+  s_0ddee2e2eb8f91::t_84c58638440d2e 2,8,10-13
+packages/agent/src/app-workflow.ts
+  s_0ddee2e2eb8f91::t_84c58638440d2e 1-5,7-8,11-18,20-37,44-85
+  s_0ddee2e2eb8f91::t_75b336f7d4c242 9,19,38-43
+  s_0ddee2e2eb8f91::t_6df2ef97bc6e2d 6,10
+packages/agent/src/runtime.ts
+  s_0ddee2e2eb8f91::t_ab8feb0823a204 4
+packages/agent/src/session-store.test.ts
+  s_0ddee2e2eb8f91::t_75b336f7d4c242 274-280,283-290
+  s_0ddee2e2eb8f91::t_57b496f47b4730 281-282
+packages/agent/src/session-store.ts
+  s_0ddee2e2eb8f91::t_a38c4bb3b29f81 30-38
+  s_0ddee2e2eb8f91::t_75b336f7d4c242 7,75-76,150
+  s_0ddee2e2eb8f91::t_0bf7b6c3f9037b 29,112-115
+packages/agent/package.json
+  s_0ddee2e2eb8f91::t_84c58638440d2e 44-46,50
+packages/agent/vite.config.ts
+  s_0ddee2e2eb8f91::t_84c58638440d2e 14
+packages/agent-fx/src/agent-step.ts
+  s_0ddee2e2eb8f91::t_84c58638440d2e 6,18
+  s_0ddee2e2eb8f91::t_ab8feb0823a204 16
+  s_0ddee2e2eb8f91::t_8868a8dfeead65 17
+packages/agent-fx/src/agent.ts
+  s_0ddee2e2eb8f91::t_84c58638440d2e 23,25-30
+  s_0ddee2e2eb8f91::t_147ba355771406 24,31
+packages/agent/README.md
+  s_0ddee2e2eb8f91::t_cd690961f05eba 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "91ea7be412c3065e899f530ae29bd7abc750430b",
+  "prompts": {},
+  "sessions": {
+    "s_0ddee2e2eb8f91": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14bd7-d404-71c0-bd0a-d7afa6931155",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

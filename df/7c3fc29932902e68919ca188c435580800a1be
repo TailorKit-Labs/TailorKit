@@ -1,0 +1,27 @@
+.changeset/pressable-primitive.md
+  s_2e36cd20a9fc96::t_fd61da890c2659 12
+playground/README.md
+  s_2e36cd20a9fc96::t_fd61da890c2659 63
+packages/core/src/primitives/theme.ts
+  s_2e36cd20a9fc96::t_fd61da890c2659 2
+packages/cli/src/generator/types.ts
+  s_2e36cd20a9fc96::t_fd61da890c2659 327
+packages/core/src/primitives/theme.test-d.ts
+  s_2e36cd20a9fc96::t_fd61da890c2659 38-40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "df7c3fc29932902e68919ca188c435580800a1be",
+  "prompts": {},
+  "sessions": {
+    "s_2e36cd20a9fc96": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a143e6-3e32-7762-8de9-caab7b9d0f90",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

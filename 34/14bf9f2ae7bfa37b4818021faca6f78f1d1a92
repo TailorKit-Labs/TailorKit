@@ -1,0 +1,57 @@
+packages/storage/README.md
+  s_9c0311e273b1b4::t_3a276f4cf29749 4-15,17-27
+  s_9c0311e273b1b4::t_e51a24292159b4 16
+packages/storage/src/s3.ts
+  s_9c0311e273b1b4::t_dac1ef829e499f 1,15-26,28-31,33
+  s_9c0311e273b1b4::t_fa07763fcb67ab 34-36,38-40,42-44,46-48
+packages/storage/src/s3-client.ts
+  s_9c0311e273b1b4::t_166434df8ef87b 1-182
+packages/storage/test/s3.test.mjs
+  s_9c0311e273b1b4::t_41fce22217f24c 4
+  s_92b04b0a56058c::t_741a71837aedd8 5
+packages/storage/test/lazy-import.test.mjs
+  s_9c0311e273b1b4::t_b12c0e4be12ad1 4
+  s_9c0311e273b1b4::t_fa07763fcb67ab 13
+  s_9c0311e273b1b4::t_41fce22217f24c 1-3,5-11,14-16,18-32
+  s_9c0311e273b1b4::t_308bd537427bc2 12,17
+packages/storage/test/fixtures/lazy-import.mjs
+  s_9c0311e273b1b4::t_41fce22217f24c 1-3,5-13,19-30,33-35,37-42,49-60
+  s_9c0311e273b1b4::t_b9fdea854e72f4 4,31-32,36
+  s_9c0311e273b1b4::t_fa07763fcb67ab 14-18,43-48
+packages/storage/turbo.json
+  s_9c0311e273b1b4::t_41fce22217f24c 1-8
+packages/storage/package.json
+  s_9c0311e273b1b4::t_dac1ef829e499f 34-35,47-48
+packages/storage/test/s3-operations.test.mjs
+  s_9c0311e273b1b4::t_85a34fee0223a7 1-13,15-36,40-56,58-69
+  s_9c0311e273b1b4::t_f43d6228b8d34b 14,37-39,57
+packages/storage/scripts/measure-bundle.mjs
+  s_9c0311e273b1b4::t_fa07763fcb67ab 1,6-7,9-21,41
+  s_9c0311e273b1b4::t_4f44604b0f1177 2-5,8,22-40,42-78
+pnpm-lock.yaml
+  s_9c0311e273b1b4::t_e0971a1926b256 1546-1548
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3414bf9f2ae7bfa37b4818021faca6f78f1d1a92",
+  "prompts": {},
+  "sessions": {
+    "s_92b04b0a56058c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14e9f-c915-7201-8d79-39c156ac8e55",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_9c0311e273b1b4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14ea1-8ef8-7c53-b355-ee83028924af",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

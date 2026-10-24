@@ -1,0 +1,19 @@
+apps/web/src/routes/(app)/$orgSlug/$projectSlug/apps.index.tsx
+  s_6ff642da80c878::t_99c8093289acb7 283,355-360
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c561c7cdf1a9717189623caa2bfdb8c23bab1243",
+  "prompts": {},
+  "sessions": {
+    "s_6ff642da80c878": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12962-52b6-7633-bf8d-4179c33e27c1",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

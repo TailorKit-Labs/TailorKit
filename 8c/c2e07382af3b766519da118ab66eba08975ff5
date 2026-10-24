@@ -1,0 +1,99 @@
+packages/cli/src/generator/package-versions.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 10-11,26,41-42,47
+packages/api-platform/src/routes/preview.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 145,153-154,327,482
+packages/app/src/preact.ts
+  s_56c6974c595a82::t_af9b9a068eb824 237
+packages/cli/src/generator/types.ts
+  s_56c6974c595a82::t_af9b9a068eb824 139-143,152,162,185,290
+packages/core/src/schema/schema.ts
+  s_56c6974c595a82::t_af9b9a068eb824 66
+packages/app/src/client/connection.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 31-33,100-102,157-159,188-190,226-228,273-275,288-291,330-332,353-355,384-386,417-419,450-452
+apps/apps-worker/src/runtime/builder.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 155-157,160
+packages/app/src/instances.test-d.ts
+  s_56c6974c595a82::t_af9b9a068eb824 2,11-13
+packages/cli/src/agent-tui.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 7,288-290,321-322
+packages/cli/src/generator/types.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 13,33-36,38,46-55,60,98,133
+packages/core/src/server/preview.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 367-376
+packages/vite/src/builder/define-view.ts
+  s_56c6974c595a82::t_af9b9a068eb824 145-168,186
+packages/core/src/server/scope.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 65-70
+packages/core/src/server/tools.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 443
+apps/apps-worker/src/runtime/actions.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 545
+packages/agent/src/tools/deploy.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 14-17,20,30,36-39,75-80
+packages/vite/src/builder/instances.ts
+  s_56c6974c595a82::t_af9b9a068eb824 140-169,213,228,257,448,466,491,507
+apps/apps-worker/src/runtime/execution.ts
+  s_56c6974c595a82::t_af9b9a068eb824 68
+packages/core/src/schema/schema.test-d.ts
+  s_56c6974c595a82::t_af9b9a068eb824 1,78-80
+packages/client-platform/src/preview.ts
+  s_56c6974c595a82::t_af9b9a068eb824 13-20
+packages/cli/src/utils/open-browser.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 1-2,10-11,21-23,33,35,50,54,56,62
+packages/client-core/src/store/fetch/cache.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 161,178,271
+packages/cli/src/deploy.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 17,23-27,122,135,208,360-361,496-497
+apps/apps-worker/src/worker.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 126-130
+packages/observability/src/index.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 33
+packages/api-platform/src/app-agent-mcp.ts
+  s_56c6974c595a82::t_af9b9a068eb824 189
+packages/vite/src/builder/server.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 26,393,418
+apps/apps-worker/src/runtime/execution.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 309-310
+packages/client-platform/test/stream.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 8-10,12,22-23
+packages/vite/src/builder/file-routes.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 13,305-306
+packages/cli/src/client.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 6,18-22,68-69,84,119,168,209-210,239
+apps/apps-worker/src/supervisor/capabilities.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 86-90,111-115
+packages/client-core/src/store/local/view-context-diagnostics.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 188
+packages/core/src/server/routes/deployments.ts
+  s_56c6974c595a82::t_af9b9a068eb824 121
+packages/core/src/server/mcp.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 131-133
+packages/client-platform/tests/preview.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 61-77
+packages/sandbox/src/host/index.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 306,350
+packages/cli/src/generator/package-versions.ts
+  s_56c6974c595a82::t_af9b9a068eb824 147
+packages/cli/src/init.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 15,54,100-104
+packages/api/src/routers/project.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 34,37,39
+packages/api-utils/src/app-auth/tokens.test.ts
+  s_56c6974c595a82::t_af9b9a068eb824 24,82-88,100,116-123,128,133
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8cc2e07382af3b766519da118ab66eba08975ff5",
+  "prompts": {},
+  "sessions": {
+    "s_56c6974c595a82": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13c51-ff76-7aa3-ae1e-e13edbc9af3a",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

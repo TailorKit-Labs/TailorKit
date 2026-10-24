@@ -1,0 +1,19 @@
+.coderabbit.yaml
+  s_04c835c2ba33b3::t_bffa8aaf1f3a88 5-8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dcaf857feb0e0e0bb6c17c74f6ddf2f1ee38bc73",
+  "prompts": {},
+  "sessions": {
+    "s_04c835c2ba33b3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142f1-83c1-7da0-8f84-c793fa31f7c8",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

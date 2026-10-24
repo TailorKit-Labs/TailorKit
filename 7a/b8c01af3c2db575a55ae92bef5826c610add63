@@ -1,0 +1,69 @@
+.changeset/static-instance-resolvers.md
+  s_ebb152472b7239::t_42d9e54f1bc816 1-11
+benchmarks/instance-resolution/README.md
+  s_ebb152472b7239::t_d39de6312b6b1c 5,11-12
+docs/writing-apps/ui.mdx
+  s_ebb152472b7239::t_de292be3dca283 84,109-119,134-135
+packages/api-platform/src/routes/apps.test.ts
+  s_ebb152472b7239::t_d521c1f9e7e0de 382-465
+packages/api-platform/src/routes/apps.ts
+  s_ebb152472b7239::t_f9b3d8394808e0 51-68,269-290,292
+packages/api-platform/src/runtime/view-resolution.test.ts
+  s_810501bdc1caea::t_5ee4bdc53021dd 640-751
+packages/api-platform/src/runtime/view-resolution.ts
+  s_ebb152472b7239::t_b30293ca05d684 75,144,163,171-178,221-228,232-246,251-258,299-300
+packages/app/README.md
+  s_ebb152472b7239::t_a5e6ecd461db8a 58-80
+packages/app/src/instances.test-d.ts
+  s_810501bdc1caea::t_554d1beb8367ac 7,104-157
+packages/app/src/server/instances.ts
+  s_810501bdc1caea::t_b21a7bcfb473c0 5,61-165,219
+packages/app/src/server/internal.ts
+  s_810501bdc1caea::t_687cbc271eb89f 90-91
+packages/app/src/server/static-instances.test.ts
+  s_ebb152472b7239::t_2e8e5955c9f605 1-89
+packages/app/src/views.ts
+  s_ebb152472b7239::t_fd233acaae50aa 37,53-54,57-73,133,146,244,299-302
+packages/core/src/server/handler.test.ts
+  s_810501bdc1caea::t_31e406f3b9e515 1116-1133
+packages/patchsmith/src/internal-server.ts
+  s_ebb152472b7239::t_5cd2867c3dbe0e 5-8
+packages/vite/src/builder/client-views.ts
+  s_ebb152472b7239::t_601437474e5c8b 19,44
+packages/vite/src/builder/instances.test.ts
+  s_810501bdc1caea::t_178488a4f0f6c0 160-211
+packages/vite/src/builder/instances.ts
+  s_810501bdc1caea::t_819ba81e2875d3 45,54,500-555,619-622,640,715
+packages/vite/src/builder/static-instances.ts
+  s_ebb152472b7239::t_861ac32e44559e 1-142
+packages/vite/src/builder/upload-manifest.ts
+  s_ebb152472b7239::t_1a9485d0557560 3-17,63-76
+packages/vite/src/index.ts
+  s_ebb152472b7239::t_1f73dc26a27331 20,115-117,151-199,205-207,365-368
+packages/vite/src/static-instances.test.ts
+  s_810501bdc1caea::t_1753a7bbc433db 1-198
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7ab8c01af3c2db575a55ae92bef5826c610add63",
+  "prompts": {},
+  "sessions": {
+    "s_810501bdc1caea": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1687f-4109-74d0-a413-3cdbc467f336",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_ebb152472b7239": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16876-2efe-76f1-927d-a763e7a8b250",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+packages/core/src/schema/shared.ts
+  s_c2a0ad27d22dd0::t_caf7b4ce4a8ead 110,119
+packages/core/src/schema/hooks.test.ts
+  s_c2a0ad27d22dd0::t_e15b8b3484488a 1,57-59,75-76,78-84,87-93
+  s_c2a0ad27d22dd0::t_82c58362092980 60-69,85-86
+  s_c2a0ad27d22dd0::t_02457ddad5be5b 70-74,77
+.changeset/host-app-hooks.md
+  s_c2a0ad27d22dd0::t_caf7b4ce4a8ead 12-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a208bbafa619a6d9cd25059362f984b966431455",
+  "prompts": {},
+  "sessions": {
+    "s_c2a0ad27d22dd0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a167a9-a1ad-79c3-94fe-22a9d7acea06",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

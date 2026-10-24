@@ -1,0 +1,21 @@
+apps/web/vite.config.ts
+  s_7d1277528c5eb4::t_1426f8e3f2a802 83-84,86
+packages/agent/README.md
+  s_7d1277528c5eb4::t_92973431bf1b78 92-94
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "88ceb78208fef3353704e773a1d2940abcd37819",
+  "prompts": {},
+  "sessions": {
+    "s_7d1277528c5eb4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1497e-9fb2-72a0-980b-c455db548beb",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

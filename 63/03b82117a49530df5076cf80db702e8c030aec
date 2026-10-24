@@ -1,0 +1,173 @@
+apps/apps-worker/src/runtime/execution.ts
+  s_c99e12388a36c5::t_5a468b604c7937 171,174
+apps/apps-worker/src/supervisor/runtime.test.ts
+  s_71ae4a7a952f57::t_f646a45ef17dcc 44-48,68-72
+apps/web/src/routes/api/platform.$.ts
+  s_c99e12388a36c5::t_df69887b8a3a8e 21-23
+packages/api-platform/src/scope.test.ts
+  s_71ae4a7a952f57::t_0b869d071f3ebf 82,85
+packages/asset-delivery/src/index.ts
+  s_c99e12388a36c5::t_a59fa4e2e9ab93 360,362,365
+packages/core/src/schema/schema.ts
+  s_c99e12388a36c5::t_25f2b2ad8bec87 75,86-93,104-105,107,113,117,194,200-201,203
+packages/db/src/schema/apps.ts
+  s_c99e12388a36c5::t_0d0552656ed7a2 58,64,154,166,214,223-229
+packages/db/src/schema/cli-auth.ts
+  s_c99e12388a36c5::t_b0a3669b55f096 118,123,125,130-134
+packages/db/src/schema/preview-session.ts
+  s_c99e12388a36c5::t_8d12b70ce84759 83,87-89
+packages/vite/src/builder/define-view.ts
+  s_c99e12388a36c5::t_8f9e76438a1cf2 92
+apps/apps-worker/src/assets.test.ts
+  s_0e0b64360a5a0c::t_bc59ed72320503 33,36-38,326-328
+apps/apps-worker/src/routing.test.ts
+  s_0e0b64360a5a0c::t_e5bf79422e9029 49,55
+apps/apps-worker/src/runtime/actions.test.ts
+  s_0e0b64360a5a0c::t_284c82377c2158 72,76
+apps/apps-worker/src/runtime/builder.test.ts
+  s_0e0b64360a5a0c::t_09a681ec1268fd 130-139,146,150
+apps/apps-worker/src/runtime/execution.test.ts
+  s_0e0b64360a5a0c::t_ee74e5ea5702f5 519-524,530
+apps/apps-worker/src/runtime/functions.test.ts
+  s_0e0b64360a5a0c::t_c37d9077314108 72,76
+apps/apps-worker/src/supervisor/capabilities.test.ts
+  s_0e0b64360a5a0c::t_942ed56d136354 10-12,63-67
+apps/apps-worker/src/supervisor/source.test.ts
+  s_0e0b64360a5a0c::t_82daeeada9037c 4,43,56-60,117-121,123,135-140
+apps/apps-worker/src/supervisor/source.ts
+  s_0e0b64360a5a0c::t_34a07bf15164f6 39-42,44,58-65
+apps/apps-worker/src/supervisor/subscriptions.ts
+  s_0e0b64360a5a0c::t_cb236d88d61a3a 44,49,96,105,114-115,118,120-123,145,159,203-204
+apps/apps-worker/src/supervisor/websockets.test.ts
+  s_0e0b64360a5a0c::t_2ffdab78c20106 1,32-38,47,51,60,94-95
+apps/apps-worker/src/tests/integration.test.mjs
+  s_0e0b64360a5a0c::t_e32dd456a978fe 856-874
+apps/apps-worker/src/transport.test.ts
+  s_0e0b64360a5a0c::t_619c3366f5f564 21-24,220
+apps/apps-worker/src/worker.test.ts
+  s_0e0b64360a5a0c::t_163ce99a209b98 5,9,59-62,138-145,151,171,178,199,251-260
+apps/apps-worker/tsconfig.json
+  s_0e0b64360a5a0c::t_91c6f493afed0e 4
+packages/agent/src/session-store.test.ts
+  s_0e0b64360a5a0c::t_0f1f06b987116b 80,82
+packages/agent/src/tools/deploy.test.ts
+  s_0e0b64360a5a0c::t_eb800983c03751 15-26
+packages/api-platform/src/app-agent-mcp-isolation.test.ts
+  s_0e0b64360a5a0c::t_15ceb5af833115 1,15,30-44,75
+packages/api-platform/src/app-agent-mcp.test.ts
+  s_0e0b64360a5a0c::t_6c25c2931c6a46 4,7,11,26-51,69-71,77-89,129,286-290
+packages/api-platform/src/mcp.integration.test.ts
+  s_0e0b64360a5a0c::t_9a1c40ae6aff8d 7,18-29,32-47
+packages/api-platform/src/preview-build-store.test.mjs
+  s_0e0b64360a5a0c::t_b12a91160ebb52 6,14-16,69,94,242-244,272,394,400-421
+packages/api-platform/src/routes/agent-deployment.test.ts
+  s_0e0b64360a5a0c::t_ac2cfc9fb92953 9,83-86,94-97,106-109,255,260,277,299-305,313-315,349
+packages/api-platform/src/routes/app-agent.test.ts
+  s_0e0b64360a5a0c::t_c6a76049c6f738 5,28-39,132
+packages/api-platform/src/routes/apps.test.ts
+  s_0e0b64360a5a0c::t_65989fd34641ab 43,212,385-386,393,826-844,846-863
+packages/api-platform/src/routes/deployments.test.ts
+  s_0e0b64360a5a0c::t_1efaa6ccf0e335 215,391-409,475,480,575,663,818
+packages/api-platform/src/team-identity.test.ts
+  s_0e0b64360a5a0c::t_98f1641a78c3f8 66-74,99-125
+packages/api-utils/src/app-auth/tokens.test.ts
+  s_0e0b64360a5a0c::t_66127916f95d83 159-162,187-192,215-218
+packages/api-utils/src/dev-delay.ts
+  s_0e0b64360a5a0c::t_e193fddfbe568d 6-8,10-26,28,30-35,37-39
+packages/api/src/routers/project.test.ts
+  s_0e0b64360a5a0c::t_0fdb25d2161529 200-203,205,216-221,223,238-240,242
+packages/api/src/routers/user.test.ts
+  s_0e0b64360a5a0c::t_ff859eabb08f2b 177,183
+packages/app/src/instances.test-d.ts
+  s_0e0b64360a5a0c::t_6564695a8ca62c 45,47,90
+packages/app/src/providers.test.ts
+  s_0e0b64360a5a0c::t_ccfd7380d88707 7-8,20-26,31
+packages/app/src/server/functions.test-d.ts
+  s_0e0b64360a5a0c::t_5b375a70447924 30,32,38,62,64
+packages/cli/src/generator/generate.test.ts
+  s_0e0b64360a5a0c::t_129882780bd561 13,135-144,504-511
+packages/cli/src/generator/types.test.ts
+  s_0e0b64360a5a0c::t_17b836244f7847 519-521
+packages/cli/src/init.test.ts
+  s_0e0b64360a5a0c::t_507a3c86790634 8,198-205
+packages/cli/src/preview-startup.test.ts
+  s_0e0b64360a5a0c::t_9ad73e87d63513 5,8-9,11-17,26,64,69,74,129
+packages/client-platform/scripts/normalize-esm-imports.mjs
+  s_0e0b64360a5a0c::t_8304e6068f705d 17-23,25-26,29-67,69-71,73
+packages/core/src/primitives/arktype.ts
+  s_0e0b64360a5a0c::t_db3d79556f9bb4 32
+packages/core/src/schema/contract.ts
+  s_0e0b64360a5a0c::t_64bae9a272a9e7 37,50-57,75-79,81
+packages/core/src/schema/tools.test-d.ts
+  s_0e0b64360a5a0c::t_2fcdf57af1e282 32
+packages/core/src/schema/tools.ts
+  s_0e0b64360a5a0c::t_50aa6a7f7d591e 201,203,205-209,214,220-221
+packages/core/src/server/backend.ts
+  s_0e0b64360a5a0c::t_5bbc70f43aba7d 47,50-51,55
+packages/core/src/server/tools.test.ts
+  s_0e0b64360a5a0c::t_f6b383e62c1065 331,415,419
+packages/core/src/spec/component.ts
+  s_0e0b64360a5a0c::t_1e1bb798ba06df 5,11,13-14,19,21-25
+packages/core/src/spec/json-schema.ts
+  s_0e0b64360a5a0c::t_101a8561fbb1a5 20,28,30-31,34,39-43,49-51
+packages/core/src/spec/spec.ts
+  s_0e0b64360a5a0c::t_d55cd5e767f278 20,51-53
+packages/core/src/spec/view.ts
+  s_0e0b64360a5a0c::t_c4b01c8523ff44 7,18
+packages/core/tsconfig.json
+  s_0e0b64360a5a0c::t_9c92d99f84c5b2 4
+packages/db/src/schema/scope.ts
+  s_0e0b64360a5a0c::t_2d86ab98cff68d 128-132,159-163,200-204
+packages/kv/src/contract.test.ts
+  s_0e0b64360a5a0c::t_c47fa6e9c836ae 7,25-28,31
+packages/observability/src/index.test.ts
+  s_0e0b64360a5a0c::t_1af84a8a1fc503 90-97,100-101
+packages/react/package.json
+  s_0e0b64360a5a0c::t_a55582c89c4fac 73-74
+packages/react/src/__tests__/render-slot.test.tsx
+  s_0e0b64360a5a0c::t_34450eb73dc0c4 280,282,289,386,425
+packages/react/src/__tests__/tailor-kit.test.tsx
+  s_0e0b64360a5a0c::t_1cdcf9e0fc688a 232,343,348,439,444,979
+packages/react/src/__tests__/use-views.test.tsx
+  s_0e0b64360a5a0c::t_3591a0ffd2d0b6 11,16-31,94,203,294-296,514,520,523-525,533,668-670,788,814-816,859-864,869,872-877,994,1000,1003-1005,1052,1258,1332
+packages/sandbox/src/iframe/runtime.ts
+  s_0e0b64360a5a0c::t_84edab55c64ce6 22-24
+packages/sandbox/src/protocol.ts
+  s_0e0b64360a5a0c::t_6d4b075c9ada33 95,157-159,231,274-280
+packages/vite/src/builder/drizzle.ts
+  s_0e0b64360a5a0c::t_95bda737911071 14-38
+pnpm-lock.yaml
+  s_0e0b64360a5a0c::t_71b29facf32728 1355-1357
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6303b82117a49530df5076cf80db702e8c030aec",
+  "prompts": {},
+  "sessions": {
+    "s_0e0b64360a5a0c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13e31-ec9d-7753-b5f4-65b435bafd61",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_71ae4a7a952f57": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13dba-073d-7880-beb5-dc2df392d25e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_c99e12388a36c5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13e35-7874-7a90-9c95-8d8fd269609f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

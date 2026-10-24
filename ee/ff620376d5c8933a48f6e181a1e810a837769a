@@ -1,0 +1,31 @@
+packages/api/src/procedures.ts
+  s_f90b094bd71745::t_95aad965046a84 16
+packages/api/package.json
+  s_f90b094bd71745::t_95aad965046a84 38,42
+packages/api/src/routers/apps.ts
+  s_f90b094bd71745::t_95aad965046a84 3-7,10,55-59,61-64,205-212,213-224,225-232,235-257
+  s_f90b094bd71745::t_7824ef6227b9d9 233-234
+  s_f90b094bd71745::t_e4e23916063931 54,60
+apps/web/src/routes/(app)/$orgSlug/$projectSlug/apps.$appId.tsx
+  s_f90b094bd71745::t_e49fe470def8a7 154-174,185-191,193
+  s_f90b094bd71745::t_4214d7c03dc4b0 3,23
+  s_f90b094bd71745::t_8cfe7d8f653f85 10
+pnpm-lock.yaml
+  s_f90b094bd71745::t_e6a9a4c7d932ca 791-793,803-805
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "eeff620376d5c8933a48f6e181a1e810a837769a",
+  "prompts": {},
+  "sessions": {
+    "s_f90b094bd71745": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12fd5-0e5c-76b3-b327-47fc1bb4c69d",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

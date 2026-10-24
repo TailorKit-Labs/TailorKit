@@ -1,0 +1,19 @@
+packages/app/tsup.config.ts
+  s_3d130e08251b54::t_5a86a33f7fea40 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4a4ea124bd59e130c9b74f783df894d1fd981295",
+  "prompts": {},
+  "sessions": {
+    "s_3d130e08251b54": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13e32-e2dc-77f3-b2bf-1b552eac1a42",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

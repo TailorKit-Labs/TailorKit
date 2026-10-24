@@ -1,0 +1,29 @@
+.github/workflows/ci.yml
+  s_f329dbdc7cbf09::t_d12e307caa13f1 98-99
+packages/agent/vite.config.ts
+  s_8fc24164d55a09::t_b3b476a614adae 33-36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3d4fd8d76fc24645dcfbc728533531e7611ba7e4",
+  "prompts": {},
+  "sessions": {
+    "s_8fc24164d55a09": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15620-fd9a-7702-bb81-a9b5c4c54ceb",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_f329dbdc7cbf09": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a153b2-28de-7cf2-ab39-a061b398ea9a",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

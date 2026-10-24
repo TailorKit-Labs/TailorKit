@@ -1,0 +1,67 @@
+packages/app/src/server/file-functions.test.ts
+  s_a11f6bc180ea21::t_7a91067d5d13ad 17,19,41,46,56-57,66,71,102-104,106
+  s_a11f6bc180ea21::t_5f899cd55ad1bc 105
+packages/vite/src/test-utils.ts
+  s_a11f6bc180ea21::t_7a91067d5d13ad 65
+packages/cli/src/build.test.ts
+  s_a11f6bc180ea21::t_7a91067d5d13ad 43
+packages/cli/src/generator/types.test.ts
+  s_a11f6bc180ea21::t_7a91067d5d13ad 75,86,100,121
+packages/vite/src/index.ts
+  s_a11f6bc180ea21::t_7a91067d5d13ad 325,335
+packages/vite/README.md
+  s_a11f6bc180ea21::t_7a91067d5d13ad 26
+packages/cli/src/generator/references.ts
+  s_a11f6bc180ea21::t_7a91067d5d13ad 386-387
+packages/agent-fx/src/skills/functions.md
+  s_a11f6bc180ea21::t_7a91067d5d13ad 15,17,29,51,59,61,67,85
+packages/vite/src/builder/file-functions.ts
+  s_a11f6bc180ea21::t_7a91067d5d13ad 24,47,57
+packages/app/README.md
+  s_a11f6bc180ea21::t_7a91067d5d13ad 144,156,158,164,171
+packages/cli/src/generator/generate.ts
+  s_a11f6bc180ea21::t_7a91067d5d13ad 287
+packages/vite/src/builder/server.test.ts
+  s_a11f6bc180ea21::t_7a91067d5d13ad 137,141,153-156,182,188,191-192,197-198,203,206,243,289,350,355,524,568
+packages/cli/src/deploy.test.ts
+  s_a11f6bc180ea21::t_7a91067d5d13ad 312,335,338,343,358,363,389,397,459
+packages/cli/src/generator/generate.test.ts
+  s_a11f6bc180ea21::t_7a91067d5d13ad 135,195,232
+.changeset/router-module-suffix.md
+  s_a11f6bc180ea21::t_a09ffeb6836a13 1-8
+packages/cli/src/generator/agent-examples.test.ts
+  s_a11f6bc180ea21::t_7a91067d5d13ad 186,190-191
+apps/apps-worker/src/runtime/execution.test.ts
+  s_a11f6bc180ea21::t_7a91067d5d13ad 205
+docs/writing-apps/overview.mdx
+  s_a11f6bc180ea21::t_7a91067d5d13ad 28,53,60
+packages/agent/src/skills/backend-functions.md
+  s_a11f6bc180ea21::t_7a91067d5d13ad 5,12,40
+packages/agent-fx/src/agent.integration.test.ts
+  s_a11f6bc180ea21::t_7a91067d5d13ad 414
+packages/agent-fx/src/instructions.md
+  s_a11f6bc180ea21::t_7a91067d5d13ad 44
+packages/cli/src/generator/templates/index.ts
+  s_a11f6bc180ea21::t_7a91067d5d13ad 17
+packages/vite/src/builder/file-functions.test.ts
+  s_a11f6bc180ea21::t_7a91067d5d13ad 27,31-33,37,58-60,81,104,108,114,117,123
+  s_a11f6bc180ea21::t_a09ffeb6836a13 20,35-36
+playground/apps/todo/.agents/skills/patchsmith-capabilities/references/index.md
+  s_a11f6bc180ea21::t_49595cf665c1e4 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a0ed266be19d2cfdf765feb820955e134e38b667",
+  "prompts": {},
+  "sessions": {
+    "s_a11f6bc180ea21": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a161d1-02ed-78d2-9039-5049128b2489",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

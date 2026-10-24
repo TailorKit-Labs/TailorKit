@@ -1,0 +1,27 @@
+playground/README.md
+  s_1b71a98e64139b::t_1e1f370f043c46 93,95-97
+playground/apps/todo/package.json
+  s_1b71a98e64139b::t_86920f493a240e 26
+playground/apps/todo/src/slots/panel/canvas-prototype.tsx
+  s_1b71a98e64139b::t_e905be93302e90 1-10,15-81,86,91,93-102,109,111,132,135,170,174
+playground/tanstack-start/canvas-demo/checks.ts
+  s_1b71a98e64139b::t_46f81448bc0ad5 56-68,71,73,98-104,113-117,121-124,140-150,196,199
+pnpm-lock.yaml
+  s_1b71a98e64139b::t_46af823b42ee3f 1708-1710,3973-3975,8149-8152,15526-15527,20881-20884
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ba840d8834195f222bbd24530a32cb9462c3d80c",
+  "prompts": {},
+  "sessions": {
+    "s_1b71a98e64139b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15653-d85a-7f00-822b-4116140d9b23",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

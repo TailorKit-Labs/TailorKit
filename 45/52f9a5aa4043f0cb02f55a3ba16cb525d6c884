@@ -1,0 +1,121 @@
+.agents/skills/patchsmith-db-changes/SKILL.md
+  s_5837c36838c834::t_7e344a5f4fdb89 2
+.changeset/pre/agent-conversation-threads.md
+  s_5837c36838c834::t_9cae93bc79fd41 6
+.changeset/pre/agent-select-app.md
+  s_5837c36838c834::t_721c58eb0d6bc0 7
+.changeset/pre/app-database-entry-point.md
+  s_5837c36838c834::t_5e5ffa11f1ad34 9,11
+.changeset/pre/bare-app-scaffold.md
+  s_5837c36838c834::t_5c069669b6f29c 5
+.changeset/pre/bright-demos-work.md
+  s_5837c36838c834::t_4157d39377f0c1 10
+.changeset/pre/calm-clients-bind-react.md
+  s_5837c36838c834::t_392633b6a63185 5,7
+.changeset/pre/calm-libraries-build.md
+  s_5837c36838c834::t_8c40a2e8e9205d 13
+.changeset/pre/cli-builder-agent.md
+  s_5837c36838c834::t_a17082cff308ee 7
+.changeset/pre/colocated-instance-resolvers.md
+  s_5837c36838c834::t_8cee7020381444 7
+.changeset/pre/config-free-agent.md
+  s_5837c36838c834::t_2fd4e37894b4d0 5
+.changeset/pre/configured-app-name.md
+  s_5837c36838c834::t_f21b04fddc3521 7
+.changeset/pre/document-config-defaults.md
+  s_5837c36838c834::t_6cff496b9bdbea 6
+.changeset/pre/experimental-deployed-app-installation.md
+  s_5837c36838c834::t_a2ce3095444662 7
+.changeset/pre/fn-export.md
+  s_5837c36838c834::t_58a17c4cbde10e 6
+.changeset/pre/focused-app-contracts.md
+  s_5837c36838c834::t_792f9f1f0fe47b 5,7
+.changeset/pre/fresh-vite-workers.md
+  s_5837c36838c834::t_c535d2762277ad 5
+.changeset/pre/friendly-init-logos.md
+  s_5837c36838c834::t_bb9bd7c286a9ea 5
+.changeset/pre/initial-beta.md
+  s_5837c36838c834::t_a26c902301aba2 11
+.changeset/pre/persist-fx-deployment-app-id.md
+  s_5837c36838c834::t_98a70a3692e7df 5
+.changeset/pre/pluggable-app-storage.md
+  s_5837c36838c834::t_d73cbc65aa5f9f 11,13,15,17
+.changeset/pre/public-vite-plugin.md
+  s_5837c36838c834::t_f8eac41121f7df 8,10
+.changeset/pre/remove-patchsmith-previews.md
+  s_5837c36838c834::t_8b9a2e59f3e309 11
+.changeset/pre/rename-render-slot-provider.md
+  s_5837c36838c834::t_7a51aca85effae 10
+.changeset/pre/required-app-name-slug.md
+  s_5837c36838c834::t_a4f7e690d199c8 7
+.changeset/pre/shared-host-contract.md
+  s_5837c36838c834::t_6d03df0af1ad56 8
+.changeset/pre/tidy-app-deployment-config.md
+  s_5837c36838c834::t_cd6743622695b0 5
+.changeset/pre/tidy-validation-bundles.md
+  s_5837c36838c834::t_e3fca8c29d4d6e 11
+.changeset/pre/write-init-config-app-id.md
+  s_5837c36838c834::t_e53a135654fa83 5
+.github/workflows/db-migrate.yml
+  s_5837c36838c834::t_0ac4ef481aadac 55
+.gitignore
+  s_5837c36838c834::t_3178b8584494a2 75
+AGENTS.md
+  s_5837c36838c834::t_fcf9b9fae25c82 31
+apps/apps-worker/README.md
+  s_182f08b5b79179::t_64c03d01a4ca2b 126,144,188-189
+apps/apps-worker/src/runtime/database/migrations.test.ts
+  s_5837c36838c834::t_0937550a3394f4 93,104-204,219,263
+apps/apps-worker/src/runtime/database/migrations.ts
+  s_5837c36838c834::t_0dd5497dfca21c 37-55,57,61,84
+apps/apps-worker/src/tests/integration.test.mjs
+  s_5837c36838c834::t_7b1365f45f80f9 79
+apps/apps-worker/wrangler.jsonc
+  s_5837c36838c834::t_5d73411a8e2895 32,57-66
+apps/web/vercel.json
+  s_5837c36838c834::t_0161e7ba6cfec3 30,44,48,52,56,60,64,68
+docker-compose.yml
+  s_5837c36838c834::t_64292a99cb0a7f 1,6,8,36,52
+packages/app-db/src/schema.ts
+  s_5837c36838c834::t_abe31514062cb5 19
+packages/auth/src/trusted-origins.test.ts
+  s_5837c36838c834::t_fed9f465dea6d8 9,14
+packages/cli/CHANGELOG.md
+  s_5837c36838c834::t_fc80c92f912c38 461
+packages/client-platform/CHANGELOG.md
+  s_5837c36838c834::t_29e19e6269d479 206
+packages/core/CHANGELOG.md
+  s_5837c36838c834::t_a0de4bce028848 363
+packages/react/CHANGELOG.md
+  s_5837c36838c834::t_cffc3e3f073fe0 547,549
+packages/react/src/__tests__/patchsmith.test.tsx
+  s_5837c36838c834::t_728b8689320f0b 544,554,559
+packages/ui/src/components/docker-compose.yml
+  s_5837c36838c834::t_98c896cb3e8d0a 1,6,8,14,23
+packages/vite/src/builder/server.test.ts
+  s_5837c36838c834::t_534cf3101ad625 240,243,318
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4552f9a5aa4043f0cb02f55a3ba16cb525d6c884",
+  "prompts": {},
+  "sessions": {
+    "s_182f08b5b79179": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15760-846a-7ed1-8e66-889dfe520b43",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_5837c36838c834": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1573b-2bd0-7ba1-9afe-f0ce6731909c",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

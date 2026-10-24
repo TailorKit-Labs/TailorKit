@@ -1,0 +1,73 @@
+packages/api-platform/src/routes/apps.ts
+  s_03779b7e2ab596::t_61c51c7e34464a 27,234,244-245,255-258
+  s_03779b7e2ab596::t_1a2f849fd95ffd 241-243,259-261
+packages/api-platform/src/runtime/view-timing.ts
+  s_03779b7e2ab596::t_1a2f849fd95ffd 55,57-60
+  s_03779b7e2ab596::t_61c51c7e34464a 1-14,17-51,54,61-74
+  s_03779b7e2ab596::t_cde7e7183d389b 15-16,52-53,56
+packages/api-platform/src/routes/apps.test.ts
+  s_03779b7e2ab596::t_c9f003c0a29008 289
+  s_03779b7e2ab596::t_f805ce6be1db13 246-250,253-254,290-295
+  s_03779b7e2ab596::t_11017747512388 251-252
+apps/apps-worker/src/supervisor/source.ts
+  s_03779b7e2ab596::t_0d932ed4bc5099 12,184-188,208-212,239-258
+apps/apps-worker/src/timing.ts
+  s_03779b7e2ab596::t_3fcf34d5553fb9 1-75
+apps/apps-worker/src/tests/integration.test.mjs
+  s_03779b7e2ab596::t_c9f003c0a29008 1069-1073
+  s_03779b7e2ab596::t_f26e03c47a29ab 1074-1077
+benchmarks/instance-resolution/sidebar-analysis.md
+  s_03779b7e2ab596::t_c712d1c3a68f47 1-67
+packages/api-platform/src/runtime/view-timing.test.ts
+  s_03779b7e2ab596::t_ddc03dda146c31 1,11,20,25-26,30-31,33-34
+  s_03779b7e2ab596::t_c9f003c0a29008 3-8,23,35-40
+  s_03779b7e2ab596::t_f26e03c47a29ab 10,12-19,21-22,24,27-29,32
+  s_03779b7e2ab596::t_eb89cb8c7f6f7b 2
+  s_03779b7e2ab596::t_0f0935758a32a6 9
+apps/apps-worker/src/worker.ts
+  s_03779b7e2ab596::t_b12c158202b520 20,48,52-54,169
+  s_03779b7e2ab596::t_1730a453c08738 143-146,181-183
+  s_03779b7e2ab596::t_88a1746ec8806c 170
+apps/apps-worker/README.md
+  s_03779b7e2ab596::t_8f594041a51a01 222-229
+apps/apps-worker/src/timing.test.ts
+  s_03779b7e2ab596::t_f26e03c47a29ab 11-14,17-18,23-28,35-37,45,49-50,53
+  s_03779b7e2ab596::t_ddc03dda146c31 1,16,20-21,46-48,51-52
+  s_03779b7e2ab596::t_c9f003c0a29008 3-9,19,29-34,38-44,54-57
+  s_03779b7e2ab596::t_2f779ff1ad2b6b 2
+  s_03779b7e2ab596::t_28ac60b98bf777 10
+  s_03779b7e2ab596::t_b067dce2372695 15
+  s_03779b7e2ab596::t_071a330bb1d604 22
+apps/apps-worker/src/installation.ts
+  s_03779b7e2ab596::t_4f8a3f5c856b84 302-305
+  s_03779b7e2ab596::t_2154c8ecfbd586 58-59,137-139,146-147,159,163,169,192,205-206,209-212,220-222,228,230,367,370,372
+  s_03779b7e2ab596::t_1730a453c08738 18,68-72,113-118,151-157,171-177,180-183,187-191,194-200,213-219,223-227,232-238,245-246,283-287,375-376,382-410
+  s_03779b7e2ab596::t_4e38be74b1dc37 61,140
+  s_03779b7e2ab596::t_8924881b279632 60
+benchmarks/instance-resolution/2026-10-22-sidebar.json
+  s_0e20373cc5805e::t_5fe89f74597b51 1-772
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2d25054cb599363b7099abc759607369f31cea93",
+  "prompts": {},
+  "sessions": {
+    "s_03779b7e2ab596": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1635d-7a6e-74b2-b3c9-1ec29d075b00",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_0e20373cc5805e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16319-06d8-7730-99fa-9d07053b2a48",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

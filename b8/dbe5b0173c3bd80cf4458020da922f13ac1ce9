@@ -1,0 +1,16 @@
+.changeset/nearby-instance-resolution.md
+  h_18044dd1b61a81 8
+benchmarks/instance-resolution/README.md
+  h_18044dd1b61a81 36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b8dbe5b0173c3bd80cf4458020da922f13ac1ce9",
+  "prompts": {},
+  "humans": {
+    "h_18044dd1b61a81": {
+      "author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

@@ -1,0 +1,97 @@
+packages/cli/src/index.test.ts
+  s_bb1128fc3a1bf0::t_83313c4e359b90 100,109,119
+packages/cli/src/generator/generate.test.ts
+  s_bb1128fc3a1bf0::t_30068a65afc15b 69-72,81-84,89-90,100-105,110-113
+  s_bb1128fc3a1bf0::t_34f0bbffffac0c 73-78,80,85-88,91-99,106-109
+  s_bb1128fc3a1bf0::t_83313c4e359b90 79
+packages/agent-fx/src/workspace.test.ts
+  s_bb1128fc3a1bf0::t_8959d8211b7923 1-20,23-25,28-30,35-41,43,45-48,50-57,61,78,87-93,98-104,111-113,121-125,132
+  s_bb1128fc3a1bf0::t_a166048b43c281 80-82
+  s_bb1128fc3a1bf0::t_34f0bbffffac0c 21-22,26-27,31-34,58-60,62-77,79,83-86,94-97,105-110,114-120,126-131
+  s_bb1128fc3a1bf0::t_027de2c81d6fe9 42,44,49
+packages/agent-fx/src/deploy.test.ts
+  s_bb1128fc3a1bf0::t_34f0bbffffac0c 38-40,44-47,54-60,65-78,80-87,98-103,118-132,141-143
+  s_bb1128fc3a1bf0::t_97bffdd0030fcd 61,88-90
+  s_bb1128fc3a1bf0::t_8959d8211b7923 8-9,36-37,41-43,48-53,79,91-97,104-117,133-140,144-147
+  s_bb1128fc3a1bf0::t_b39bd038e73a0f 62-64
+packages/agent-fx/README.md
+  s_bb1128fc3a1bf0::t_b3a81ded7518a4 5,15,18-25
+packages/agent-fx/src/agent.ts
+  s_bb1128fc3a1bf0::t_1fbb17e9fe51b7 12,28
+packages/agent-fx/src/skills/views.md
+  s_bb1128fc3a1bf0::t_1fbb17e9fe51b7 3
+packages/agent-fx/src/session.ts
+  s_bb1128fc3a1bf0::t_c55561ee10bb5c 13,82,86
+packages/cli/src/init.ts
+  s_bb1128fc3a1bf0::t_91b82a5611c946 22,276
+packages/cli/src/deploy.test.ts
+  s_bb1128fc3a1bf0::t_37814d683a235f 19,219-226,229
+packages/agent-fx/src/sandbox-session.ts
+  s_bb1128fc3a1bf0::t_34f0bbffffac0c 9-15
+  s_bb1128fc3a1bf0::t_30068a65afc15b 1-8,16-17
+packages/cli/README.md
+  s_bb1128fc3a1bf0::t_b3a81ded7518a4 7-16,82
+.changeset/bare-app-scaffold.md
+  s_bb1128fc3a1bf0::t_b3a81ded7518a4 1-5
+packages/cli/src/init.test.ts
+  s_bb1128fc3a1bf0::t_a166048b43c281 113
+  s_bb1128fc3a1bf0::t_34f0bbffffac0c 1-8,107-112,114-120
+  s_bb1128fc3a1bf0::t_8959d8211b7923 105-106,121-124
+packages/cli/src/index.ts
+  s_bb1128fc3a1bf0::t_91b82a5611c946 352
+  s_bb1128fc3a1bf0::t_34f0bbffffac0c 338-341
+packages/agent-fx/src/verification.ts
+  s_bb1128fc3a1bf0::t_83313c4e359b90 30,33,37,40-41,44,64,85
+  s_bb1128fc3a1bf0::t_c55561ee10bb5c 1-2,4-17,19-20,24-26,31-32,34-36,38-39,42-43,45-52,57-63,65-84,86-87
+  s_bb1128fc3a1bf0::t_34f0bbffffac0c 21-23,27-29,53-56
+  s_bb1128fc3a1bf0::t_30068a65afc15b 3,18
+packages/agent-fx/src/workspace.ts
+  s_bb1128fc3a1bf0::t_30068a65afc15b 2,10
+  s_bb1128fc3a1bf0::t_34f0bbffffac0c 20-25,46-53,55-60,78-83
+  s_bb1128fc3a1bf0::t_465c3eee63d11b 29
+  s_bb1128fc3a1bf0::t_c55561ee10bb5c 1,3-9,11-19,26-28,30-45,54,61-77,84-86
+packages/cli/src/generator/templates/tailorkit.config.ts.liquid
+  s_bb1128fc3a1bf0::t_91b82a5611c946 5,9
+packages/cli/src/options.ts
+  s_bb1128fc3a1bf0::t_91b82a5611c946 3
+packages/agent-fx/src/deploy.ts
+  s_bb1128fc3a1bf0::t_34f0bbffffac0c 231-261,263-268,271-273
+  s_bb1128fc3a1bf0::t_30068a65afc15b 10,41
+  s_bb1128fc3a1bf0::t_c55561ee10bb5c 11,228-230,274-276
+  s_bb1128fc3a1bf0::t_83313c4e359b90 277-279
+packages/agent-fx/src/skills.test.ts
+  s_bb1128fc3a1bf0::t_30068a65afc15b 11
+  s_bb1128fc3a1bf0::t_34f0bbffffac0c 12-13,19
+  s_bb1128fc3a1bf0::t_2c32d1b38c9a16 9,15-18,20
+packages/cli/src/generator/generate.ts
+  s_bb1128fc3a1bf0::t_34f0bbffffac0c 125-127,132-135,142-146,229-231,250-267
+  s_bb1128fc3a1bf0::t_91b82a5611c946 40,112-124,128-129,131,136-139,180,191,216,222,228,232,245-246,269,274,285
+  s_bb1128fc3a1bf0::t_b39bd038e73a0f 130,213
+  s_bb1128fc3a1bf0::t_83313c4e359b90 140-141,147-149,207
+  s_bb1128fc3a1bf0::t_a39850ef612441 208
+packages/agent-fx/src/skills/database.md
+  s_bb1128fc3a1bf0::t_1fbb17e9fe51b7 5
+packages/agent-fx/src/instructions.md
+  s_bb1128fc3a1bf0::t_1fbb17e9fe51b7 3,9,22,30,32,34
+packages/agent-fx/src/skills/setup.md
+  s_bb1128fc3a1bf0::t_1fbb17e9fe51b7 3,5,11,13,25
+packages/agent-fx/src/skills.ts
+  s_bb1128fc3a1bf0::t_2c32d1b38c9a16 18,22-23,30,36,43,49,52-66,75,80
+  s_bb1128fc3a1bf0::t_34f0bbffffac0c 67-74,76-79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "434323a276ca09f0f16e137d37fb4a18c266126d",
+  "prompts": {},
+  "sessions": {
+    "s_bb1128fc3a1bf0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1521e-a2bd-7f40-b8cc-c38121fd3c26",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

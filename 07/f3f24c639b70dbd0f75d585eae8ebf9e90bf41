@@ -1,0 +1,18 @@
+.changeset/restore-cli-reauthentication.md
+  h_18044dd1b61a81 1-5
+packages/core/src/server/handler.test.ts
+  h_18044dd1b61a81 637-682
+packages/core/src/server/procedures.ts
+  h_18044dd1b61a81 1,81-98,100
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "07f3f24c639b70dbd0f75d585eae8ebf9e90bf41",
+  "prompts": {},
+  "humans": {
+    "h_18044dd1b61a81": {
+      "author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

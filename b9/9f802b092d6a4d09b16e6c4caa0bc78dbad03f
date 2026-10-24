@@ -1,0 +1,19 @@
+packages/agent-fx/src/skills/frontend.md
+  s_d3474f96fd37c0::t_65dbed3dce68f0 7-8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b99f802b092d6a4d09b16e6c4caa0bc78dbad03f",
+  "prompts": {},
+  "sessions": {
+    "s_d3474f96fd37c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16bb5-84d6-7b60-a7de-08b26fa5fef6",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

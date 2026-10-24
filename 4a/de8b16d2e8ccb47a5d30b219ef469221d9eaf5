@@ -1,0 +1,1862 @@
+packages/email/src/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 8
+packages/api/src/routers/project.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-6,45,51,62,90,122,185,355
+apps/web/LICENSE.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5
+apps/web/src/routes/(app)/account/security/index.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3-4,13,18,28-33,200,262,380,384,386,390,396,400,402,406,410,415,417,421,425,429,431,434,439,457,464,495,509,523,530,533,540,569,572,579,626,963
+apps/web/src/components/members/invite-members-dialog.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,12-13,20-21,43,47,62,74,82,103,107,114
+packages/cli/src/generator/agent-examples.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 9-10,16,18,25,109,111,120-121,129,138,152,154,158,162,167,171,175,179,187,191,194,197,199,202,208,212,216,221,226,232,239-241,245,256-260,276,281,288
+packages/react/src/remote-view.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,7-8,10,12,16,58,72,95,99,106,108,124,140,142,166,171,194,203,206,208,213,217
+apps/web/src/lib/theme.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,31,42,52,85,130,138
+packages/api-platform/src/routes/deployments.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5-6,11-13,31,35,40,49,56,136,140,149,153,162,225,232,235,239,246,263,301,322,326,342,348,385,398,402,430,434,454,463,469,479,508,512,516,529,538,540,544,556,562,569,581,585,598,619,649,711,743,745,786,816,877,885,901
+apps/apps-worker/src/worker.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4,9,33,54,95,136,142,151,153,157,161,165,180,184,194,251,261,264,279,283,309,324,329,348,392,400,415-420,455-460,475,493-498,508,516-520,525,539,558,571,575
+apps/web/src/components/create-org-dialog.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,13-15,41,98,114,126,145,197
+packages/cli/src/utils/open-browser.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 25,28,46
+packages/agent/src/env.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+packages/api-utils/src/rate-limiting.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7,27,30,38,53
+packages/email/src/templates/theme-fonts.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3
+apps/web/src/routes/(auth)/sign-up.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3-4,13-15,56,58,62,68,72,82,97,103,153,187,190
+apps/apps-worker/src/worker.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6-8,12,31,42,56,74,79,85,91,97,116,119,123,127,137,149,164
+packages/vite/src/builder/client-views.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 10,12,36,38,41
+packages/vite/src/for-each-sequential.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 10,13,17,21,24
+packages/app/src/client/session.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,4-40,47,53,56,59,64,73,83,87,93,99,105,117,126,131,137,156,161,167,175,182,190,195,201,203,207,212
+packages/app-db/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3,6,22,27,34
+packages/app/src/server/functions.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7-8,10,17,31,39,75,113,144,162,167,173
+.changeset/pre/quiet-coins-login.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+playground/apps/todo/.agents/skills/patchsmith-capabilities/references/index.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-20
+.changeset/pre/actionable-deploy-diagnostics.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/client-core/src/store/local/view-context-types.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+packages/email/src/send.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3,138,153,171,210
+packages/db/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/storage/test/fixtures/lazy-import.mjs
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6,11,20,22,29,31,33,35,37-38,44,51,53-54,59,68,70,72,74,76-78
+packages/client-platform/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3,7,60,74-75,78,80-82
+apps/web/src/components/sidebar/sidebar-back-button.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+packages/core/src/schema/slots.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5,8,28-30,56,64,75,84-85,91,99-100,105,113,121,132,145
+packages/core/src/server/handler.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,6-7,15-17,21,26,34,38,49-82,90,93,98-102,104-118,122,127,129,137-142,144-145,147,151,153,161-162,176-177,181,186,188,190-193,195,200,203,205,210,212,217,224,226,247-248,256,268,270-273,275,282,286,295,301,313,328,346-347,351,356,358,363-368,370,381-382,387,389,396,400,405,409,420,423,434-435,439,443,445,447,450,463-464,473,478,480,482-485,488,494-500,513,515-520,531-533,537,540,549,554-555,560,563,568,582-583,587,589,601,613-614,623,628,633-634,643,645-650,659-660,666,670,675,677,681-686,707-708,713,718,725,729-734,743,750,755-756,762-765,768,772,787,795,800-801,811,813,817,830-831,837,853,857-858,872,883,910-911,917,930,934-935,949,960,971,977,1013,1018,1024,1026,1032,1036,1040-1041,1054,1056,1066-1067,1072,1074,1080,1087,1091-1092,1103,1105,1111,1130-1131,1136,1142,1144,1148,1156-1157,1161,1163,1166,1168
+packages/app-db/vite.config.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-12
+docs/images/patchsmith-logo.svg
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-7
+packages/config/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3,5
+apps/web/src/routes/(app)/account/security/-two-factor-settings.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,10-11,21-24,29-32,106,120,224,550,582,684,692,701,734
+docs/concepts/tools.mdx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 15-16,32,34,69,88
+apps/web/src/components/google-icon.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+playground/tanstack-start/src/routes/api/playground/todos.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 16,34,42,46,51,55,57,63
+AGENTS.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5-6,31-32
+.changeset/pre/accessible-pressable.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3
+packages/ui/src/components/button.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 70
+packages/agent/src/session-store.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4,37-38,43,45,56,63,72,80,87,96,104,114,117,123,126,188,191,195,204,238,243
+packages/agent/src/skills/references/drafts.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 8,11
+packages/client-core/src/client/primitive-css.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 33-37,39,57,59,61,88,91,94,97,101,104,128,130,132,135,138,156,158,161,164,167,183
+.changeset/pre/bare-app-scaffold.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/react/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3
+packages/storage/LICENSE.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5
+packages/vite/src/config/app-link.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 9,13,15,27,34,38,43,57,65,69
+packages/core/src/server/mcp.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7,13,19,27-28,34,39,42,46,48,53,60,62,67,73,82,86,89,91-93,99-104,106,109,119-124,129-130,138,143,146,148-149,156,164,166,169,171,176-179,184-185,190,194,196
+playground/apps/todo/.agents/skills/patchsmith-capabilities/references/views.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-67
+packages/api-platform/src/runtime/auth.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,29,39,41,45,51
+packages/app/src/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3
+packages/vite/src/builder/upload-manifest.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,35-36,39-40,42,44-45,48,52,56-57
+packages/agent/vite.config.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 33-36
+packages/storage/src/s3.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 21,31,38,43,52
+packages/core/src/primitives/arktype.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 12,18,26,30,36,41,45,48,53,64,69,74,80,88-90,92,100
+apps/web/src/components/page-layout.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 16
+packages/api-platform/src/app-agent-mcp.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-5,17,55-56,61,79,96-97,101-102,106,108-109,113-114,121,133,146,149,172,207,222,235,240,243,252,262,271,282,291,311,327,338-474,477,482,484,489,511,516-531,541,544,549,554,556,561,576,583,590,596,599,607,612,623,630,638,641,653,658,669,675,684,718,724,745,750
+.github/workflows/ci.yml
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 19,71,77,98-99
+packages/agent/src/agent-auth.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 13,17,27
+apps/web/src/routes/(auth)/login.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3-4,13-15,54,56,60,66,70,74,77,88,103,109,129,136,140,142,146,177,181,199,206,210,212,222,225,241,243,248,279,282
+packages/cli/src/auth.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5-6,30,51,63,71,94,100,143,147,150,155,158,161,164,167-169,175,197,205,219,229,234,243,247,249,272,293,296,325,327,334,343,348,359,363,367,381,396
+packages/vite/CHANGELOG.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-35,42,48-50,57,63,69,71,74,80,84,91,94,100,102,108,114-115,121,127,131,137,143,151,157,163,169,175,181,189,195,197,203
+packages/cli/src/init.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 23,31,40,51,53,56,80,84,89,91,94,122,128,130,145,153,156,168,173,177,180,185,202,221,227,240,249
+.changeset/pre/init-host-schema.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+.changeset/pre/declare-multiple-slots.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-6
+playground/apps/todo/src/slots/panel/pressable-prototype.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,8,12,18,23
+.changeset/pre/all-app-slot-instances.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/app/src/server/instances.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 43,51,57,66,68,71,74,78,83,89,92,102,106,113,115,122,128,135,142,144,146
+apps/apps-worker/src/runtime/context.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,10,14,23,25,39,42,45,48,51,54,63,69,73,86,92,97,102,104,129,138,145,160
+docs/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3,20
+packages/vite/src/upload-manifest-boundary.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 35-37,39-40,48
+apps/web/src/routes/(app)/$orgSlug/~/(org)/settings/index.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,10-12,44
+apps/web/src/lib/auth-search.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4,7
+packages/email/src/templates/better-auth/sign-in.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 20
+apps/web/src/server/api/mcp.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,12,18
+apps/apps-worker/src/supervisor/runtime.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 16,27,40,53,59,67,80,86
+packages/core/src/server/scope.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4-7,38,44,46,65,69,71,75,78,81,84,86,90,93,97,100,103,111,113,122,125,128,130,133,135,137,139,142,145,147,149-150,153,156,159,168,172,184,186,190,193,203,206,208,210,216,219,222,225,227,229,234,236,239,242,244,251,254-256,259,262,265,276,279,284,286,289,291,294,297,300,303,312,315,320,323,329,332,335,339,341,347,350,352,354,358-359,362,365,367,370,372,375,379-380,384,389,392,395,398,401,406,412,417,421,424,427,430,433,435,442,445,447,452,455,458-461,464-465,467,469,471,474,476,478-479,483,485,488,491,493,496,499,504,506
+apps/web/src/routes/auth/error.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,9-10,22,33,36
+apps/web/src/components/sidebar/project-sidebar.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 12,35,38
+packages/client-core/src/store/local/view-context.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 52
+packages/kv/src/redis.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,14,22,30,36,46,75,83
+packages/app/src/preact.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 15,23,34,38,54,60,86,92,106,109,112,115,118,121,124,163,166,169,172,208,225,228,233,236,239,269,272,275,316,321,324,327,349,353,356,360,363,367,372,391,394,397,400,403,406,409,435,444,447,450,488,491,494,519,522,525,528,531,570,576,579,582
+packages/cli/src/build.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 12,27,34,37,46,48,51,54,56,60,68,75,82,87,95,102
+.changeset/pre/calm-clients-bind-react.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+apps/web/src/lib/orpc.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6
+packages/cli/src/deploy.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 15-17,30,46,60-61,67-69,71,73-75,77,83,86,89-92,94,98,102,106,116,125,143,154,165,171,180,190,198,205,207,218,221,229,233,242,248-249,292,295,299,319,327,332,337,340,348,358,365,400,408,419,426,430,455,458,468,471,475,479,501,507,511,575,586-588,598,620,624,626,630,634,652,669,672,677,682,685,695,702,709,713,717,734
+apps/web/src/routes/(app)/account/organizations.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-4,12,20,47,51
+playground/tanstack-start/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 24,30,44-46
+apps/web/vite.config.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 75,77,83,87,118,134,156,169-174,292-294
+apps/apps-worker/src/runtime/actions.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,7,19,25,39,41,53,67,75,89,101,130,146,165,173,178,200,203,205,214,219,221,227,239,249,259,262,273,278,281,286,288,294,301,308,317,319,331,337,344,356,368,389,398,406,429,439-440,447,450,461-462,466,470,490,492,545,553,561,565,570,576
+packages/api-utils/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3
+packages/api/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,30,39-47,53-54,57-59
+.changeset/pre/direct-preview-tunnel.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4
+packages/react/CHANGELOG.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-48,59-63,69-73,80-84,90-94,101-105,111-115,125-129,137-141,148-152,158,163-167,175-179,196-200,207-211,218-222,229-233,240-244,250-254,261-265,272-276,283-287,295-299,309-313,320-324,331-335,351-355,361,375-379,387,393-397,419-423,433-437,451-455,463-467,485-489,509-512,525-528,537-540,546,548,550,552,562-565,571,577-579,591-593,600-601,607-608,614-615,622-623,642-643,654-655,664-665,672-673,680-681,689,692-693,699,701-702,709-710,717-718,724,729-730
+packages/ai-sdk/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-17
+packages/client-core/src/client/value-memo.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6,9,15
+packages/core/src/schema/shared.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 38,47,76
+.changeset/pre/view-context-query-state.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-6
+packages/agent/src/agent.integration.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 28,31,35,41,56,68,75,81,94,98,108,126,159,171,176,181,189,191,193,199,206,223,237,241,246,248,256,262,269,279,329,333,339,344,351,356,365,374,380,385
+packages/core/src/schema/components.test-d.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 34,36,39-42,60
+packages/core/src/spec/component.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 15
+.changeset/pre/preact-eleven.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3
+packages/ui/src/components/toggle-group.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 43
+apps/web/src/components/sidebar-layout-header.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,10
+packages/api-utils/src/app-auth/policy.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/patchsmith/vite.config.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-26
+packages/client-core/src/client/scope-query.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7,11-13
+packages/vite/src/builder/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4,6,11
+packages/cli/src/app-link.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3
+.changeset/pre/write-init-config-app-id.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+playground/shared/src/contracts/arktype.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+  s_a0bf9224ecab6e::t_d09febcbbfcf5b 3
+apps/web/src/components/members/members-table.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-5,11,19,67,198
+packages/api-platform/src/runtime/access.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6,14,16
+packages/vite/src/builder/drizzle.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 14,18,21,28,30,45,47
+packages/asset-delivery/src/logo-validation.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 9,19,26,32,38,42,49,59,61,68,71,77,89,98,102,126,129,137,148
+packages/app-db/src/schema.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 19-20,24,32
+apps/web/src/components/members/member-table-utils.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 21,30,39,58,62
+packages/storage/test/s3.test.mjs
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 15,22,39,55,59
+.changeset/pre/basic-package-readmes.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-9
+packages/agent/src/tools/publish.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5,10,13,18,32,37,46,53,64,68,76,93,97,101-103,105,108,112,116,118,121,125,129,133,136,151,155,158,197,208,213,215,219,223,231,236,238,242,248,255
+packages/cli/src/generator/templates/src/root.tsx.liquid
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+apps/web/src/components/header-actions.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 22,27,41,46
+packages/client-core/src/client/tools.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,6,10-11,24,35,40,42,44,49,59,63,67,95,98,100,109,115,119
+packages/core/src/schema/callbacks.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6,8
+packages/core/src/server/base-url.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4,8,10,22
+.changeset/pre/fresh-database-layout.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-5
+packages/kv/src/kv.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 39
+playground/shared/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 25,29,38-40
+packages/client-core/src/client/config.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3,8,10,14,16-17,24-28,66,77-78,80,82,86,98-100,104-105,107,109,114,117,127,129,134,136,143,148-150,178,183,185,200
+packages/core/src/server/handler.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5-7,14,24,26-28,31-38,48,52,55,59-60,67,72-73,77,79-80,82,84-85,87-91,98-99,101-104,112,115,122,130-132,142-143,154,160-162,166,169-172,175,177,186,202,206,217,238-240,244-245,249,256,265,268,272,275,318,322
+scripts/check-prerelease.mjs
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 11-12,29-30,33,100,108,112
+packages/app/CHANGELOG.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-47,57,63,77,83,89,91,96,107,113,175,177,181,209,269,282,288,294,296,298,300,310,317,324,330,336,343,362,372,380,386,393,401,404,410,412,419,426,432,437
+packages/cli/src/generator/templates/src/slots/view.tsx.liquid
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,17
+SECURITY.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3
+.changeset/pre/local-agent-schema.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4
+packages/core/src/primitives/definition.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 10
+packages/client-core/src/store/query.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 8,15,61,67,69-70,74,90,96,100,105,107,113,119,127,133,136,139,142,149,153,161,169,172,181,186,192,194,202,206,208,211,215,218,224,230-231
+packages/api-platform/src/env.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,21
+packages/app/src/client/connection.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6-16,19,39,41,49,51,114,121,137,144,150,153,162,175,179,186,202,206,214,221,231,235,239,251,258,265,268,272,281,285,289,312,319,335,345,347,354,358,371,376,383,398,402,409,416,436,443,449,460,469,474,481,500,505,509,513,521,527
+packages/core/src/schema/shared.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 9,12,16,48,52,54,71,85,88-89,92,99
+packages/react/src/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,4,11-13,15-20,22,28,34
+apps/web/src/components/nav-breadcrumb.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 8,92,96,99,108,113,117,124,135,141
+vite.config.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 19,21,26,48,54,57,144
+.github/workflows/release.yml
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 18,24
+packages/client-core/src/client/apps.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,4
+packages/client-core/src/store/query.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4,6,13,15,17-18,22-23,29-30,38,53,59,63,68,75,79,120,124,144,155,170,176,184,188,237,241,257,259,263-264,268,273-274,278-279,285,289,291,296,300,304
+packages/client-platform/test/stream.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 8,12,31,43,49
+playground/shared/src/contracts/zod.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+  s_a0bf9224ecab6e::t_dab9bb20f05583 2
+packages/react/vite.config.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-12
+playground/apps/todo/src/server.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+packages/api-utils/src/env.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+packages/cli/src/init.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 35,51,59,71-72,76,88,99,104,112,123,126,150,160,164,168-169,178,186,199,219,227,238,243,254,261,283,294,315
+packages/cli/src/test-utils.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 18-19
+packages/cli/src/generator/templates/package.json.liquid
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,5-7,9,20-22,31
+.changeset/pre/clear-host-view-registration.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3
+playground/shared/scripts/seed.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 23,30,32,85
+packages/client-core/src/client/url.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,7
+apps/apps-worker/src/publication.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,10
+packages/react/src/__tests__/use-views.test.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3,15-26,37,45,50,66,78,80,83-84,92,100-102,106,119,123,127,132,136,150,174-175,179,181,185,189,197,203,207,211,214,218,225,227,230,291,296,318,326,330,335,345,354,360,362,366,371,381,397,402,430,440,445,460,492,494,498,505,519,524,544,548,557,563,568,572,577,614,630,633,637,642,659,666,670,675,687,692,729,733,738,742,747,754,760,764,768,775,783,790,798,807,811,816,828,833,837,842,857,861,870,876,881,885,890,910,912,918,928,931,936,939,946,956,960,963,967,972,1004,1008,1018,1022,1027,1041,1050,1053,1057,1062,1067,1083,1088,1092,1101,1107,1112,1116,1121,1157,1162,1166,1175,1181,1186,1190,1195,1224,1231-1232,1260,1264,1266,1275,1280,1290,1295-1297,1299,1310,1338-1339,1342,1346,1353,1361,1378,1380,1384,1393,1409,1413,1418,1437-1438,1443-1445,1449,1452,1458,1466,1472,1476,1479,1483,1492,1505,1515
+.changeset/pre/focused-app-contracts.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/email/src/templates.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,4
+packages/api-platform/LICENSE.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5
+packages/kv/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/api-platform/src/app-selector.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+packages/cli/src/auth.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 14-15,27-28,31-32,38,40,55,64,88,115,121,125,139,178,180,186,194,203,207,219,221-222,234,241,243,249,255,259,263,266,269,281,290,295,301,313,319,324,333,340,350,379,385,389,397,401,404,406-411,413,425,431,436,449,453-458,473,479,484,492,495,497-502,504,512-517,526,529,532,537,539-541,543-548,550,553,560,567,570
+apps/apps-worker/src/runtime/builder.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-4,16,29,41,52,56,72,78,97,99,104,107,114,119,128,133,137,142,145,151,158,165,194
+apps/web/src/server/api/rpc.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3-5,11,19,27,29-30,37
+packages/client-core/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3
+packages/core/src/server/procedures.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,6-7,13,19-20,24,27,30-31,33,36,39,41,47,52,55,57,63,97,113-114,116-117,121,128-129,133,135,139
+apps/apps-worker/src/transport.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 8,56,67,77,84,91,97,100,108,111,122,136,141,150,155,167,175,177,181,188,195,202,204,223,234,252
+packages/patchsmith/LICENSE.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-74
+packages/api-platform/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/client-core/src/store/fetch/slot.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3,5,8,16,20,24,29,33,54-55,67,69,74,77,81,85,92,95,109,113,116,120,138,142,150,153,161,165,167,171,173,180,186,190,201,204,211,218,220,233,241,251
+.changeset/pre/patchsmith-branding.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-17
+packages/app/src/client/session.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4-7,22,25,39,43,46,55,77,85,87,91,93-94,101
+apps/apps-worker/src/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3-4
+packages/core/src/schema/tools.test-d.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 25,28,30,32,34,36,39,42,50,52,56,59,64,70,72-73,75-77,80,82-83,85
+packages/patchsmith/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-140
+apps/apps-worker/turbo.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4-6
+packages/agent/src/workspace.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5-6,8,13-14,32,40,42,46,65,87,89,111
+apps/web/src/routes/(app)/account/profile/index.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 10-12,39,58
+packages/vite/src/builder/define-view.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4-8,12,18,20,54,68,71,91,109,112,124,135,141,155,157,161,165,169,183,193,206,210,241,246,249,253,261
+apps/apps-worker/src/supervisor/subscriptions.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4-6,24,33,43,45,53,62,66,81,103,113,126,129,133,135,157,271,290,300,307,313,316,318,325,331,334,337
+packages/cli/src/client.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4,19-22,35-37,51,61,67,70,80,82,86,90-91,93,102,104,109,127,142,145,152,155,157,161,240
+packages/cli/src/generator/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/observability/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3
+packages/cli/CHANGELOG.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-52,62,64-66,74-76,90-93,99,101,109-111,117,119,122-124,130,135-137,148,152-154,164,167-169,177-179,185,190-192,198-200,206,219-221,228-230,241-243,252-254,262-264,270-272,287-289,296-298,304,309-311,319-321,327,329,334-336,344-346,354-356,362,365-367,374-376,383-385,403-405,411-413,425-427,435-437,455-457,463,474-476,482-483,487-489,495,497,501,505-507,513,515,517,519,528-530,536-538,547-549,557-559,565-567,575-577,585-586,605-606,613-614,622-623,629-630,637-638,646,649-650,657-658,665-666,673-674,680,685-686
+packages/agent/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,49-52,54-58,62,66,68,74
+.changeset/pre/fresh-preview-response.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+.changeset/pre/shared-function-routers.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4
+.changeset/pre/experimental-deployed-app-installation.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4
+packages/client-core/vite.config.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-17
+apps/web/src/routes/(app)/$orgSlug/$projectSlug/apps.$appId.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,8-9,16,24-25,46,50,54,166,168,172,197
+packages/core/src/server/backend.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3,17,20-22,27,41,43,47,51,54,58,61,65,68,71,73,79,90,96,100,106-107
+packages/vite/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+apps/web/src/routes/index.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 21,32,41,43
+packages/kv/turbo.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5,8,11,14
+packages/core/vite.config.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-22
+apps/apps-worker/src/runtime/context.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,21,25,29,33
+packages/api/src/test/pglite.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4,15
+packages/client-platform/src/client/types.gen.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4,631,659
+packages/react/src/hooks/use-view-context.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,5,13,31-32
+packages/ui/src/components/date.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 22
+apps/web/src/routes/(app)/$orgSlug/$projectSlug/apps.index.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-5,13,18,26,80,84,88,108,274,279,292,315,333,374,407-408
+packages/api/src/routers/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7,12,17,22,26,28
+packages/client-platform/scripts/restore-openapi-params.mjs
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7,32,39
+.changeset/pre/shared-provider-caches.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-5
+packages/cli/src/deploy-name.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 73,77,80,83,86,95,98,102,105,109,112,117,120,123,126,129,132,157,160,163,168,171,176,180,201,211,215,222,235
+packages/patchsmith/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3
+packages/client-core/src/store/fetch/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,10,12-14,16
+packages/core/src/spec/schema-references.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 16,30,33,43,46,54,57,62,70,80,84,87,89,96,99,104,106,112,115,117,121,134,138,141,155,159,167,174,176,180,185,190,193,198,204,207,210
+packages/api-platform/src/routes/runtime.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,7-8,44,56,59,86,97,103,108,112,124,127,141,143,176,187,191,194,202,212,245,251,255,266
+packages/core/src/schema/schema.test-d.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4,7,18,26,41-43,45,48,51,54,57-61,65-66,92,96,98,108,122,136,145,150-151,160
+.changeset/pre/component-behavior-descriptions.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-6
+.agents/skills/patchsmith-db-changes/SKILL.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-35
+.changeset/pre/mcp-ai-sdk-tools.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-6
+packages/db/src/validate-org-slug.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 485,815
+packages/client-platform/src/agent-chunks.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 11,22,26,34
+packages/core/src/server/types.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4-5,15,19,23,29,36-37,50,63,73,75,79,90,97-98,101-102,105-108,110-111,114,119-120,123,125,127,130,133,144,146-147,166,176-177,179,181-182,184-185,189,191,194-197,201,207-208,212,219,222,233-234
+packages/client-core/src/store/snapshot-store.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 11,15,18,21,30,41,44,51,54
+packages/ui/src/components/group.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 64
+packages/api-platform/src/procedures.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,7-10,24,29,63,86,89,92,103,120,130,138-140,154-156
+packages/cli/src/generator/templates/.gitignore.liquid
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3-4
+packages/app/src/client/query-store.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 36,70,75,78,84,90,98,112,114,119,122,137,142,144
+packages/client-core/src/store/store.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,6,8,14,21,27,30,36,38,40,50,53,56,63,72,75-76,82,92-94,97,118,137-138,142,161-162,166,168,181,183-184,189,193,197,214,216-217,221-222,226
+packages/storage/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3
+packages/cli/src/generator/templates/vite.config.ts.liquid
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,5,7,10
+packages/app/src/server/builder.test-d.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 17,25,35,41,48,60,63,68,71,73,75,79,81,83,87,91,93,95,97,100,103,106,109,112,115,118,121,123,125,127,129,132,136,140,142,144,147,150,153,156,159,161,163,166,169,171
+packages/sandbox/src/iframe/backend.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5-15,20,33,36,40,54
+playground/apps/todo/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6,16,27-28,31,35-37
+packages/client-core/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+playground/tanstack-start/src/components/auth-screen.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,8,13,23,26,48
+playground/apps/todo/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 17
+.changeset/pre/test-trusted-publishing.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/api-platform/src/scope.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 19,86,90,113,121,125,133,137,144,152
+playground/apps/todo/.agents/skills/patchsmith-capabilities/references/components/Pressable.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-73
+.changeset/pre/callback-results.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-8
+packages/ui/src/components/toast.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 58,62,64,68,103,214
+packages/agent-fx/src/skills/functions.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,13,54,64,72,77,96,100,105,107
+playground/tanstack-start/src/routes/api/auth.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 14,29,40,44,57
+packages/cli/src/index.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,32,42,46,55,63,65,67,69,71,85,112,119,123,134,152
+packages/db/src/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 41,46,54
+packages/api-platform/src/runtime/access.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,13,21
+  s_a0bf9224ecab6e::t_7fd1e669742e7e 22
+packages/client-core/src/store/local/view-context-diagnostics.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,12,23,25,28,31,37,40,47,50,54,57,59
+docs/concepts/slots.mdx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 19-20,36-37,53-54,134
+packages/auth/LICENSE.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5
+packages/cli/src/generator/templates/tsconfig.json.liquid
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 17
+apps/apps-worker/src/supervisor/capabilities.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,11,15,17,39,45,48,75,77,82,88,102,109,111,130,137,139,145,152
+packages/app-db/src/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,4,6,12,19
+packages/cli/src/generator/templates/src/db/relations.ts.liquid
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+apps/web/src/components/project-key-env.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,8,14-16,26,45,64
+.changeset/pre/agent-conversation-threads.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3
+packages/db/src/env.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+packages/sandbox/src/iframe/entry.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3-5
+packages/vite/src/builder/instances.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 18,23,25,30,37,46,51,57-59,78,85,89,93,100,105,124,127,132,136,139,165,188,191,195,198,201,212,218,224,229,233,237,241,244,247,251,254,257,261,264,273,277,280,283,287,290,293,297,299,302,309,314,318,321,324,328,330,333,336,339,343,353,366,369,375,378,382,388,392,397,416,419,424,427,432,435,439,441,446,450,453,465,467,471,475,479,483,491,509,514,523,525,529,531,535,539,543,545,550,552,556,560,562,572,575,586,595,601,611,614,621,625,627,635,643,655,668,670,681,684,691,696,722,734,736,739,742,745,748,750,754,764,768,775,781,784,787,805,811
+packages/api-platform/src/runtime/auth.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,9,26,38,42,44,50,56,59,67,78,83
+packages/api-platform/src/app-slug.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4,11,31,35,39
+packages/db/src/migrations/20261020044845_drop-identifier-immutability/snapshot.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3929
+packages/ui/src/components/command.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 20
+packages/storage/src/s3-client.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 10,68,93,101,109,117,125,147,162
+packages/email/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/storage/src/storage.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 37
+packages/asset-delivery/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,30,40,43-45
+.gitignore
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 15-17,78-80
+README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3,6-7,11,13,24,35,41,43-45,54
+packages/client-core/src/client/slot-view.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3,5,9,12,15,24,34,37,40,44
+apps/web/src/server/api/mcp.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 42
+packages/core/src/server/context.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3,5-6,12-14,21-24,28,30,35,37-38,42,44
+.changeset/pre/unified-use-slot.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3
+packages/sandbox/src/virtual.d.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+docs/writing-apps/ui.mdx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 12,20-21,43-44,68,75-76,114
+.changeset/pre/ai-created-agent-apps.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4
+packages/db/src/schema/apps.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 88,198,256
+packages/ai-sdk/src/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-275
+packages/storage/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,30,37-38,42-44,59-61
+packages/cli/src/agent-tui.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 9-11,16,21,41-43,45,55,58,63,66,74,78,84,89,102,104,111,114,117,120,125,129,135,150,152,156-158,168,173,177,180,190,202,204,208,211,215
+packages/api-platform/src/test/pglite.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4,15
+.changeset/pre/tidy-app-deployment-config.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/agent/src/skills/views-and-routing.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5
+packages/api-platform/src/routes/cli-auth.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5-7,20,23,57,124,214,257,259,267,275,305,307,315
+.changeset/pre/quiet-preview-reconnects.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+.changeset/pre/clear-app-imports.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,5
+packages/agent/src/threads.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 23-26,34,38,41,46,50
+packages/flags/src/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 24
+packages/client-core/CHANGELOG.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-48,59-61,67-69,76-78,84-86,93-95,101-103,110,114-116,122,125-127,134-136,142,147-149,156-159,176-179,186-189,196-199,206-209,216-219,225-228,235-238,245-248,255-258,266-269,278-281,288-291,298-301,316-319,325,339-342,350,355-358,380-383,389-392,408-411,419-422,434-437
+packages/patchsmith/src/db.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2
+packages/client-core/src/store/local/remote-view.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,6,11,51,57,65,67,71,93,100,102,112,120,130,136,142,144,149-150,153,160,166,168,173,185,190,217,230
+packages/api-utils/src/agent-token.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6-7,19,32,34,41,51,63,68,90,92,94,103
+packages/sandbox/src/iframe/backend.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,16,18,22,27,34,41,44,49,55,65,69,72
+packages/cli/src/generator/types-schema.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 17,412,415,424,452,465,545,606,608,610,627,632,639
+packages/core/src/spec/spec.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 20,43,45,88-89,92
+packages/patchsmith/src/app.test-d.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-24
+packages/api-platform/src/assets.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 9-11,28,30,39,50,55,57,63,68,77,81,87,93,99,104,114,118,124
+packages/agent/src/session-store.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 10-11,13-14,19,26,45,49,54,57,76,79,85,89,93,95,99,106,116,121,137,142,152,166,174,202,208,216,243,254,258,263,267,279,283,299
+apps/web/src/server/api/mcp-authenticated.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4,11,16,18-19,24,32,34
+packages/agent/src/mcp.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 9-13,19,23-30,32,45,49,57,62,69,79,84,91,96,129,131,135-137,139,145,149,152-153,171,180,183-184,186,188,199,202-203,209,211-214,216-217,231-232,235,240-241,248,251,334-336,338-339,341,347,356,358,361,363,374-375,377-382,388,396-397,399,401,403-404,407-411,415,422,424-432,436,438,446,450,464-465,468,480-483,486-515,519,539,544,552,566,579,600,606,614,626,657,661,673,684,693,700,707,713,716,731,744,747-748,751,753,763
+packages/kv/src/contract.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 11,28,32,39,49,54,62,67,77,82,92,106,111,120
+.changeset/pre/shared-host-contract.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-5
+apps/web/src/routes/(auth)/verify-email.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,12,18-19,24-25,63,66,74,79,81,88,91,100,115,124,127,137,159,162
+apps/apps-worker/src/assets.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 10-11,15,19,23,29,36,40,45,69,76,78,85,95,97,115,117,121,131,133,138,140,158,162,172
+packages/cli/src/generator/generate.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 19,30,36,45,54,65,75,78,83,90,94,96,108,113,116,122,124,130,133,136,142,160-161,170,189,210-211,218,221,233,262,300,311,314
+packages/patchsmith/src/valibot.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3
+packages/cli/src/generator/skill.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 15-16,27,29,31,37,41,45,47,53,57,63,70,76,78,84,86,97,99
+packages/api-utils/src/agent-token.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 10,20,54,56,58,60
+packages/app/src/slots.test-d.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6,20,34,36,38,45,51,62,73,76,78,81,87
+.changeset/pre/render-slot-instances.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-5
+packages/email/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,30,37-44,48-49,54-56
+packages/ui/src/hooks/use-media-query.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 33,39,48,52,56,60,64,68,77,81,114,117,129
+packages/client-core/src/store/fetch/cache.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 10,17,23,26,37,40,83,88,93,115,119,136,141,146,150,154,174,179,193,198,201,205,218,223,228,244,249,255,259,272,277,283,300,305,309,321,326,332,336,351,359,363,376,381,386,388,394
+playground/apps/todo/.agents/skills/patchsmith-capabilities/references/.generated
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+apps/apps-worker/src/worker-env.d.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3,5-12,15-19,23-25,28-40,43-64,287-294,382-385,455,457-459,462,470,477-480,490-493,505-508,514,555-559,562,567,572,577,582,590,592-596,599,604,656,669-672,677,681-683,699-701,706,710,712-714,737-739,760-779,784-787,791-810,814-816,818-821,868-870,876-878,1019-1021,1033-1035,1045,1055,1193-1196,1252,1292-1295,1297-1300,1363,1373,1383,1394,1403,1413,1425,1435,1447,1464,1478,1480-1483,1624-1630,1649-1652,1875-1881,1890-1893,1922-1941,1944-1947,1952-1959,1974-1985,2011-2014,2061,2185,2193-2196,2313-2316,2318-2321,2324-2327,2330,2332-2339,2343,2347,2351,2355,2358,2363,2367,2371,2375,2379,2383,2387,2391,2395,2399,2403,2407-2410,2413,2417,2421-2424,2452,2548,2553-2559,2562,2566-2573,2575-2578,2589,2719-2722,2735-2740,2747-2756,2829,2836-2839,2847-2849,2860,2864,2903-2905,2914,3087-3090,3175,3193,3213-3216,3244-3247,3609-3611,3664-3670,3685,3752-3755,3922-3925,4053-4055,4129-4132,4187-4198,4218,4222,4232,4296,4298-4300,4321,4332-4336,4536-4539,4545-4547,4555-4558,4568-4570,4670-4674,4750-4753,4869-4873,4950-4954,4999-5005,5156-5158,5178,5197,5286,5293-5295,5389-5391,5401,5410,5549-5554,5636-5637,6063-6068,6262-6264,6284-6286,6351-6354,7987-7989,9547-9550,9988-9996,11133-11138,11344-11347,11364-11367,11491-11494,11507-11510,11662-11665,11684-11687,11706-11709,11728-11731,11750-11753,11968,11976,11984,11992,11998,12011,12017,12021,12100-12102,12142,12151-12153,12162-12164,12172,12325-12328,12393-12397,12413,12471,12514-12517,12585-12588,12660-12662,12664-12668,12893-12897,12950-12953,13276,13278-13281,13285,13287-13294,13327-13330,13362-13365,13381-13384,13400-13403,13420-13423,13441-13444,13461-13464,13486,13495,13498-13501,13503-13505,13761-13768,13968-13976,14035-14040,14796-14798,14819-14821,14833-14834,14837-14850,14854,14856-14858,14997,15010-15019,15028-15034,15061,15066,15068-15093,15103,15114,15125,15136,15147,15158,15169,15180,15444-15451,15490-15494,15573,15589-15591,15599-15602,15608-15611,15639,15696-15698,15810,15826,15869-15871,16002-16006,16044,16053,16084-16086,16173,16191-16194,16199,16211-16213,16220,16241-16244,16251-16254,16261-16264,16308-16311,16318-16325,16333,16346,16351-16357,16363,16372,16395-16398,16406,16424-16427,16480-16482,16845-16847,16885-16888,16899-16902,17019-17024,17238,17242,17449-17457,17505,17543-17549,17704,17750,17758-17761,17931,17955-17957,17959,17961-17970,17972-17974,17984-18010,18021-18031,18320-18326,18331
+playground/apps/todo/vite.config.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,5
+.changeset/pre/document-config-defaults.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3
+packages/agent-fx/src/skills/database.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,5,9,16,33-34,42
+.changeset/config.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7-17
+.changeset/pre/agent-jwt-deployment.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/vite/src/config/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3-4
+packages/client-core/src/client/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,4-6,8-10,12,14,16,18,20,22,26,28,30,32
+.changeset/pre/app-agent-mcp.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3
+packages/patchsmith/src/vite.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+packages/agent/src/tools/deploy.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 11,16,20,26,36,41,45,58,62,69,73,82,86,95,106
+scripts/sync-licenses.mjs
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 28,44,83
+packages/sandbox/iframe-plugin.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6,14,20,28,30,32,34,36,38,40,43
+packages/core/src/primitives/theme.test-d.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5,10-12,14,16,25,28,31,34,37,40,43,45-46,48
+packages/auth/src/trusted-origins.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5,7,11
+packages/auth/src/lib/email.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3
+packages/agent-fx/src/instructions.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3,11,13-27,33,39-41,52
+packages/agent/src/skills/references/local-state.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 10
+packages/agent/src/skills/backend-functions.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 13,36,43,51
+docs/concepts/views.mdx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 15-16,37,43,46,53,56,62,69,80,94,114,125
+packages/api-platform/src/cli-token.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,17,25,28,31-32,35,37,39,53,61
+packages/asset-delivery/src/index.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 51
+packages/core/src/server/cli-auth-page.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-5,7-9,18,28,30,41,58-60,96,109,115,119,123,130,132,614,620,634,637,639,643,647-648,660,666,673,693-694,699,705,717,721,752,761
+apps/apps-worker/src/dynamic-workers/facet.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,16,26,39,45,58,62,69,72,86,94
+packages/core/src/server/router.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 8,15-17
+packages/client-platform/src/agent.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 20
+licenses/BUSL-1.1.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5
+packages/agent/src/sandbox.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 23,29,33,39,44,46,56,67,92,135,140,146,183
+packages/client-platform/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3,12
+packages/db/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,30,41,49,54-56
+playground/apps/todo/.agents/skills/patchsmith-capabilities/references/tools/todos-remove-971a790b36fc8cc5.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-15
+apps/apps-worker/src/tests/integration.test.mjs
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 17-18,35,38,43,46,77,82,85,92,99,126,136,146,150,158,162,166,227,268,280,285,294,304,307,315,326,331,371,394,422,430,440,446,449,456,469,472,474,482,484,490,509,526,534,540,562,566,596,602,606,610,727,754,763,776,787,793,797,801,805,811,828,836,863,881,898,950,955,968,973,980,984,988,993,1018,1022,1039,1055,1061,1078,1091
+packages/sandbox/src/iframe/runtime.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,25,27,31,34,38,43,46,72,90,94,98,100,104-109,112,119,125,128,134,137,139,144,155,162,176,182,194,199,203,208,210,212,214,229,232,234,239,248,252,254,257,260,263,266,269,272,286,303,305,316,319,321,333,339,341,349,353,356-358,360-362,364,366-368,370,372-374,376
+packages/app/src/errors.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,39,43,51,62
+apps/apps-worker/wrangler.jsonc
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,6-14,39,46,52-55,65,70-71,73,89
+playground/apps/todo/.agents/skills/patchsmith-capabilities/references/components/Button.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-36
+.changeset/pre/pluggable-app-storage.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-8
+apps/web/src/server/api/assets.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2
+packages/app-db/src/definition.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7
+packages/client-core/src/types.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+packages/kv/src/upstash.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,16,20,29,43,51,56,65,68,79,108,116
+packages/core/src/server/routes/app-agent.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7,11,30,34,38,59,62,69,72,74,80,102
+packages/agent-fx/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3,5,11,15,17,27
+packages/core/CHANGELOG.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-50,60,66,72,78,84,90,101,105,115,118,129,135,140,146,162,168,173,183,190,198,204,219,226,233,241,247,257,265,277,283,295,301,321,327,333,341,358,372,382-383,385,394,404,406,408,410,418,424,432,440,446,453,461,479,485,493,499,506,514,517,523,525,533,540,546,551
+packages/core/src/server/contract.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,6,15-16,19-23,31-32,35,46,51,54,57,65,72,74-75,83,92,98-99,104,106,111,114,116,119,126,134,137,143,147,152,154,158,160,164,168,174,176,184,191,197,206,216,218,226,230,237,239,255,257,261,263,269,271,283,286,290,295,301,310-311,316
+docs/getting-started/introduction.mdx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,6,10,16,18,28,30,36,41,43,45
+packages/sandbox/src/host/serialize.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 14-15,17,21,31,34,38,41
+packages/core/src/spec/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-5
+.changeset/pre/required-host-subject.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-12
+apps/web/src/server.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4,6,16
+packages/observability/src/env.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,9-10
+packages/api/src/routers/project.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3-5,23,31,204,223,243
+packages/patchsmith/CHANGELOG.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-781
+packages/api-utils/src/dev-delay.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,19,25,34-36
+docs/docs.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4,41,55,67,84,87
+packages/client-core/src/store/fetch/apps.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,5,9-10,17-18,26-27,32,35-37,40-41,46,50,53,57,59,70,78,81,85,88,96,102,104,109,117
+packages/sandbox/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3
+packages/agent/src/mcp.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 8-9,11,13,34,47-48,51-60,71,75,84-86,88-110,112-128,139,147,180,183-186,200,203-206,208
+packages/client-platform/test/params.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 9,18,28,31
+playground/apps/todo/src/root.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+packages/client-core/src/store/local/view-context-diagnostics.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,11,16,19,25,30,140,151,157,160,167,208
+packages/env/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3
+packages/ui/src/components/combobox.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 39,44
+packages/client-platform/src/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,5
+packages/auth/src/lib/tenant-short-id.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+apps/apps-worker/src/supervisor/auth.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,12,14,21,30,40,42,53,58
+packages/vite/src/preact-version.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 28
+packages/ui/src/components/input-group.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 65,69,77,81,84,88
+.changeset/pre/persist-fx-deployment-app-id.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/app/src/client.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,5,7,9,15,17,24,26,28,30
+packages/sandbox/src/protocol.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7-17,20,35,46-64,71,256,306,310,315,350-353,356,376-381
+packages/vite/src/test-utils.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 9,33-34,52,59,62-63,65,67-68,78
+apps/web/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 27-28,33-46,53,57-58,63,70,74-75,81,85-87
+packages/patchsmith/src/ai-sdk.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-8
+playground/apps/todo/.agents/skills/patchsmith-capabilities/references/tools/todos-toggle-1fa8d43e2df154c1.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-15
+playground/apps/todo/.agents/skills/patchsmith-capabilities/references/tools.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-11
+packages/client-platform/src/client.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5
+apps/apps-worker/src/runtime/functions.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-4,15,25,37,46,55,57,62,91,98-101,109-110,114-115
+packages/cli/src/generator/generate.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 12,17,22,24,30,33,81-82,86,88,91,98,102,120,130,133,138,143,150,155,160,183,190,210,215,217,220,225,227,230,235,239,244,266,271,282,284,290,292,295,311,342,358-360,375-377,388,405,409,414,417-421,423,429-430,440,450,452,455,458,467,484,523,558,563,617,622,627,629,632,641,646,648,661,664,672,674,677,679,692,699,712,721,739,744,749,772,777,787,803
+docs/concepts/components.mdx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 9,13,15-16,22-23,37,46,48-49,51,53,74
+packages/agent/src/tools/publish.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 14,24,30,35,47,52,73,82,85,89,111,115,120,124,156,159,162,166,181,184,187,201,204,207
+packages/flags/LICENSE.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5
+packages/cli/src/app-link.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 13-14,16
+packages/patchsmith/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-12
+packages/core/src/spec/json-schema.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 28,38
+packages/vite/vite.config.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6,17
+.changeset/pre/secure-preview-tunnel.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4
+.changeset/pre/quick-cups-pack.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-16
+packages/email/src/env.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,31
+packages/patchsmith/src/app.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2
+packages/flags/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+.changeset/pre/retry-staged-beta-publish.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+apps/web/src/components/members/invitations-table.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-5,12,20,66,83,201
+packages/asset-delivery/src/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 10,16,21,42,46,50,61,63,67,73,88,92,94,104,108,117,121,169,174,178,186,199,203,205,209,211,215,217,221,235,244,246,250,272,277,280,283,295,297,301,308,312,321,337,341,345,360,373,377,386,390
+packages/sandbox/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+playground/shared/src/db/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 14,17,21,25
+packages/app/vite.config.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-22
+.changeset/pre/automatic-backend-sessions.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3
+packages/sandbox/src/iframe/runtime.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-6,17,28,33,38,47,56,67,88,101,103,109,116,123,127,131,133,137,157,161,172,206,215,217,227,270,272,283,313,318,335,339,341,345,349,351,355,358,362,422,426,429,436,440,469
+packages/cli/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3,7,11,43,46-48,50,59-60,65-67
+playground/tanstack-start/src/env.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3
+apps/apps-worker/src/runtime/database/migrations.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5,16,23,28,33,38,40,45,48,52,59,69,78,82,90,107,132,160,170,178,189,193
+packages/app-db/src/relations.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 12,14,39
+.changeset/pre/host-view-declarations.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4
+.changeset/pre/swift-workers-auth.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/env/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+.changeset/pre/smaller-app-server-bundles.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4
+packages/vite/src/builder/instances.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 9,14,41,58,62,66,80,86,94,100,111,155
+packages/app/src/routing.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5,32,41,45,89,94,103,117,121,125,130,133,139,151,157,163,167,171,177,180,183,192,194,199,202,207,211,217,224,232,234,237,245,249
+docs/images/logo-with-text-dark.svg
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-6
+packages/client-core/src/client/slot-types.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3,6,9,20,38,56,67
+packages/storage/test/s3-operations.test.mjs
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 12,15,30,33,51
+packages/observability/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/agent/src/tools/utils.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 8,14,23,27,30
+.changeset/pre/hosted-asset-urls.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3
+apps/apps-worker/src/modules.d.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/core/src/schema/contract.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7,23,54,61,67,69-73,78,82,89
+apps/apps-worker/src/supervisor/auth.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6,23,40
+packages/agent/src/agent-auth.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7,10,12,17
+playground/shared/scripts/export-schema.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4,11,14,16,18
+packages/asset-delivery/LICENSE.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5
+packages/cli/src/generator/package-versions.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 56,60,62
+packages/client-core/src/store/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-4,7,9,16
+apps/apps-worker/src/runtime/errors.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,5,24,32
+packages/sandbox/CHANGELOG.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-53,64-65,71-72,79-80,86-87,94-95,101-102,112-113,121-122,129-130,136,141-142,148-149,156-157,164-165,172-173,180-181,188-189,195-196,203-204,211-212,218-219,227-228,236-237,244-245,252-253,261-262,273-274,281-282,310-311,317-318,326-327,335-336,344-345,362-363,372-373,382-383,389,391,393,395,405-406,412,420,427,433,439,446,465,477,493,499,509
+packages/api-platform/src/routes/deployments.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,8-9,16-19,131,133,158,168,181,183,187,189,193,199,203,207,210,217,236,242,254-256,267,271,283,287,293,303,345,419,430,436,444,449,454,458,476,521,525,560,562,566,570,576,587,590,602,605,609,622,626,632,641,643,654,658,695,769,771,775,777,781,787,791,846,850
+packages/agent-fx/src/deploy.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,8-24,27,34,38,42,47,56,61,66,70,75,91,94
+packages/client-platform/vite.config.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-12
+playground/tanstack-start/src/routes/__root.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 10,17,21,23,25,44,48,52,61
+packages/sandbox/src/protocol.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,12,17,24,156,186,198,322
+.changeset/pre/orpc-v2-beta.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3
+packages/agent/src/skills.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 18,23,29,34,40,45
+playground/shared/src/todos.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 23,25,31,35,38,47
+apps/web/src/components/sidebar/sidebar-user-menu.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,11-13,40,94,107,146
+LICENSE.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3,5
+packages/app/src/views.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 18,21-22,25,32-33,50,65,67,70-71,75-76,127,132,134,147-148,154,158,166,168-170,184-185,221,224,226,231,236,247,261,283,291,312,318,332,344,363,372,389-390,393
+packages/core/src/server/client.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4,12,18-20,22,29,31,50
+packages/ui/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,68,81,87,91,96,99-101
+packages/app/src/routing.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 11,18,22,27,30,34,39,42,47,52,68,74,80,111,114,118,122,144,180,214,216,219,223,248,255
+.changeset/pre/restore-cli-reauthentication.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+apps/web/src/server/api/entry.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 8,11,29,46,58,63,66,68,72,76
+packages/app-db/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3,7,49,59,61-65
+packages/react/src/__tests__/patchsmith.test.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-1214
+.changeset/pre/fn-export.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3
+packages/observability/LICENSE.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5
+packages/client-core/src/store/local/view-context.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3,20,40,45,52,57,59,64,67,72,75,97,104,107,115,123,126,137,142,147,150,172,176,179,182,186,194,206
+.changeset/pre/remove-legacy-session-auth.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-12
+packages/api-platform/src/routes/apps.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3-5,37,44,70,146,214,216,224,239,276,282,290,299,305,382,416
+packages/api-utils/src/app-asset-url.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,28,34,38,52,56
+packages/agent-fx/src/agent.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 17-19
+.changeset/pre/calm-libraries-build.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-8
+.changeset/pre/immutable-app-slugs.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4
+playground/apps/todo/.agents/skills/patchsmith-capabilities/references/components/Input.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-50
+packages/email/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3,7
+packages/patchsmith/src/server.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-25
+packages/storage/test/lazy-import.test.mjs
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 28
+apps/web/src/components/org-slug-availability-indicator.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,20
+packages/core/src/schema/callbacks.test-d.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 26,48
+packages/client-core/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3,7,61,69-71,76,79,81-83
+packages/react/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+.changeset/pre/remove-tailorkit-previews.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-8
+packages/api-platform/src/context.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-7,12-14,36,41,56,67,71,82,84,89,97,102,105,116,122,136,140,144,150,170-172,193
+apps/web/src/routes/(app)/$orgSlug/~/(org)/settings/members.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5-7,31,34,38,42,48,58,79,93
+packages/react/src/hooks/use-query-result.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,20
+packages/ui/src/components/calendar.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 91,93,107
+packages/core/src/schema/components.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 14-16,27-28,51,70,89,97,112,122-133,138,144,149-154,158
+apps/apps-worker/src/runtime/functions.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,6,15,17,28,33,35,39,42,51,55,68,71,75,77,88,92,98,100,110,121,125,128,130
+packages/auth/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3
+packages/sandbox/src/iframe/tools.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,7,26,28,37,41,48,51,56,62,66,71,76,81,86,90,93
+packages/agent-fx/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,36-39,42,46,52
+playground/tanstack-start/src/lib/local-apps.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3
+packages/patchsmith/src/db.test-d.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-23
+.changeset/pre/typed-preview-tunnel.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3
+packages/cli/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/cli/src/generator/templates/patchsmith.config.ts.liquid
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-14
+packages/agent-fx/src/workspace.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 10,20,27,30,32,36,40,42,44,55,59,66,70,73,75,94,97,119,129
+playground/tanstack-start/src/lib/issues.functions.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 15,19,25,31,40,44,52,66,70
+packages/app/src/server.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 8,10,12,21,23
+playground/tanstack-start/src/routes/api/patchsmith.$.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-15
+playground/tanstack-start/src/routes/issues.index.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,9-10,33,36
+.codex/environments/environment.toml
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3
+packages/cli/src/generator/templates/src/server.ts.liquid
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+packages/api-platform/src/scope.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3-4,22-23,28,54,67,69,90,98,103,106,111,115,118,122,126,132,139,143,145,151,157,160,170,177,179,186,188,192,195,201,204,207,211,214,216,224,228,231,235,238,242,254,257,265,269,278,296,299,305,307,313,317,322,325,330,341,344,350,353,363
+.changeset/pre/colocated-instance-resolvers.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4
+packages/client-core/src/client/fetch-client.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,4,11,16-18,21,25-26,31-32,50-51
+packages/sandbox/src/iframe/tools.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5-15,20,41
+packages/core/src/server/types.test-d.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 9-10,12-14,16,19-20,26-28,44-46,50-51,57,61-76,78,85,89,91,98,102,104,106-109,112,114,117,120,122,129,144,148,156-157,161,163,165-168,173,176
+playground/apps/todo/.agents/skills/patchsmith-capabilities/references/tools/todos-list-f2d7a276699d7c36.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-15
+playground/tanstack-start/src/styles.css
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/kv/LICENSE.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5
+apps/apps-worker/src/runtime/bundle.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,11,14,19,25,33,38,50,55,68,74,78
+packages/cli/src/generator/types.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7-10,58,85,98,105-106,111,139,179,187,189,193,199,223,254,261,273,281,290,294,298,302,308,312,315,318,322,326,330,333,338,361,380,401,407,411,413,417,420,431,445,449,453,457,461,509,514,520,531,538,548,570,574,579,582,586,588,594,599,603-610,625,636,641,652,658-661,694,699,716,728,744,754,773-774,805,812,815,817-819,823,827-828,836-839,851,867,871,875,877,884,887,894,900,903,909,920,926,930,937,940,942-944,955,963,967,970,972,978,981,984,992,995
+packages/kv/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,30,37-38,42,59-61
+packages/auth/src/env.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-5
+packages/api/src/routers/user.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-5,25,31,44,60,66,72,84,120,143,225,258,262,270,318
+packages/cli/src/agent-tui.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,44,54,56,74,76,80,83,102-103,105,110,117,126,134,154,162,166,179,205,215,222,244,255,260,264,276,289,298,304,323,332,334,338,360,364,372,374,381,428,432,436,478,482,504,508
+packages/patchsmith/src/app-config.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+playground/apps/todo/.agents/skills/patchsmith-capabilities/references/components/Box.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-64
+packages/client-core/src/store/local/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,4,6,13,15,17,27,29
+playground/apps/todo/.agents/skills/patchsmith-capabilities/references/styling.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-9
+playground/tanstack-start/src/components/patchsmith-shell.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-135
+packages/vite/turbo.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5
+packages/api-utils/src/app-auth/deployments.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 13,27,36,38,43,47,51
+packages/observability/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,25,38,43,46-48
+packages/cli/src/env.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3-4
+packages/agent/src/mcp-progress.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-281
+packages/agent/src/mcp-progress.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 12-13,16-20,24,33,45,50,69,72,75,79,83,85,89,91,96,99,103,107,118-166,168,170,172-175,177,179,181-187,189-194,196-198,203-207,209-403
+.changeset/pre/rename-render-slot-provider.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-5
+packages/react/src/components/context.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,4,6-8,11,15,17-20,23,26,29,32
+.changeset/pre/simple-view-discovery.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-7
+.changeset/pre/tired-books-bake.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3
+packages/api/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/app-db/src/types.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5,14,19
+packages/core/src/server/backend.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7-18,22,26,31,46,54,56,62,72,82,102,113,121,125,136,143,151
+packages/api-platform/openapi.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,8,2689,2753-2755,2771,2784
+.changeset/pre/app-database-entry-point.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-6
+packages/app/turbo.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5
+.changeset/pre/direct-iframe-runtime.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4
+apps/web/src/index.css
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+packages/vite/src/builder/file-routes.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 12,16,22,26,37,45,47,51,53,63,73,75,81,93,98,111,115,118,122,125,129,135,141,146,151,156,158,163,172,185,189,194,211,225,236,239,251-252,264,268,270,274,277,281,285,290,295,315,320,322,329,333,337,343,352,356,360,362,375,381,384-385,387-388,394,396
+packages/app/src/children.test-d.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6,8,12,14,21,26,30-31
+packages/react/src/hooks/use-views.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,5,10-11,16,22,24,36,41
+.changeset/pre/hide-hook-cache-options.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/auth/src/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5-6,10,15-17,40,73,77,122,137,162,165,184-186,196,236,242,363
+packages/ui/src/components/slider.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 23,27
+packages/cli/src/agent.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 24,42,51-53,55,61-63,65,67,74,78-79,108,113,150,217,221,239,243,247
+RELEASING.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3,9,21
+packages/agent-fx/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+playground/apps/todo/.agents/skills/patchsmith-capabilities/SKILL.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-21
+apps/apps-worker/src/tests/backend.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 15,25-26
+playground/shared/src/issues.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 25,51,55,59,70,72,86,90,92
+packages/api-platform/src/mcp.integration.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 15,22,29,33-35,54-55,59,61-62,66-67,74,82,85,87,94,99,131,136
+packages/api-platform/src/asset-url.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+packages/env/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,24,34,37-39
+apps/web/src/env.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+.changeset/pre/viewport-scopes.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-7
+packages/core/src/primitives/valibot.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 12,15,17,25,29,35,40,44,47,52,58,63,67,72,80,88-90,92,98
+packages/app-db/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/api/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3
+packages/app/src/view-instance.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 9,12,22,35,47,49,63,84,108,119,122,125
+packages/cli/src/deploy.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 10-12,79,84,96,101,103,126,160,164,167,179-182,209,234,244,247,257,260,269-270,272,284,287,289,316,318,339,349,353,364,368-370,388,401,404,406,410,414,418,426,429,435,439,443,453,478,480,504,553,570,576,584,590,596,602,605,629,639
+packages/agent-fx/src/deploy.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 8,26,30,35,47,57,61,66,84,91,101,106,120,126,134
+packages/agent-fx/src/env.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+packages/core/src/server/agent.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5-6,11-12,18,29-30,32,69,81-82,88,90,99,108,112,118,123-124,130,132,142,146,183,187,196,198,202,211,220,222,228,232,247,255,265,269,285,292,294,301,316-317,322,324
+packages/vite/src/config/loader.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 8-10,15-16,24,28,32-33,36,39,51,58,68-73,78,83,94-95,98,101,111,130,136-138
+packages/sandbox/src/host/index.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3-5,9-10,14-24,26,29,33,50,62,66,72,102,163,167,169,199,204,237,240,266,271,287,297,302,331-391,395,399,401,408,414,463,478,482,484,491,497,500,503,506,509,512,518,522,539,545,555,588,591,596,601,606,608,616,629,634,639,643,648,665,673,675,680
+packages/core/src/views.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,25,31,58,61,66,69,75,79,88,93,102,107
+packages/client-core/src/test-contract.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,4-5,9-10
+packages/core/src/server/routes/deployments.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7,12-13,56,68,72,75,124,146,168,185
+packages/core/src/server/tools.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,21,24-25,34,51,55,58,71,81,90,101,105-107,126,129,132-133,137-142,154,162,166,172,183,201,218,230,244,250,266,276-279,285,289,293,300,304,314,323,336,378,384-386,400,404,409,411,418,424,431,433,448,453,487,500,505,529
+packages/agent/src/agent-step.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 9,21,29,35,37,50,55,62,64,79,112,134,147,156
+apps/apps-worker/src/supervisor/websockets.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3,14,34,42,67,70,83,91,94
+packages/core/src/spec/schema-references.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 32,35,39,57,68,79,159,166,173,177,181
+packages/sandbox/vite.config.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 17,22
+apps/web/src/server/api/entry.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4,15-16,19,28,37,39
+turbo.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 17,44
+packages/sandbox/src/host/serialize.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 11,19-20,23,26,31,37-39
+packages/client-core/src/client/primitive-css.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3,31,35,46,50-51,58,65,69,82,86,94,98,102,110,120,122,125,132,135,139,143,147,151,155,159,163,167,171,175,179,183,187,194,198,202,206,211,213,217,224,226,250,253,256,272,275,282,285,290,294,296,301,303,310,314,320,324,332,338,340,348
+packages/app/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3,5,32,42,65,87,100,102,105,109-111,115,119,121,123,132-133,145,160
+packages/api-platform/src/agent-stream-token.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,16,18,31
+packages/react/src/patchsmith.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-251
+scripts/check-prerelease.test.mjs
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 12,14-15,32,34,44,63,98,104,114,118,128,184,189,198
+apps/apps-worker/src/runtime/actions.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,42,46,48,54,57,60,64,68,71,75,82,88,98,101,104,108,116,122,125,132,136,140,142,155,160,165-166,179,183,186,195,199,204,208,212,231,233
+packages/kv/src/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/api-platform/src/app-agent-mcp-isolation.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-6,26,46-47,52-55,59,61-62,66-67,74,108,110,132,143,156,169,188,239,244,249,284,288,292,328,347,351
+packages/vite/src/config/loader.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6-7,9-10,15,17-19,23,26,28,35,37,39
+packages/api-platform/src/assets.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4-5,17,63,99,104,107,112,155,163,170,177,180,183,187,205,210,220,232
+apps/web/src/routes/(auth)/two-factor.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,12,22-24,29,71,77,89,93,104,112,126,135,140,144-145,165,183,195,198,222,314
+apps/web/src/routes/(app)/$orgSlug/$projectSlug/route.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+packages/vite/src/config/config.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 8,31,34-35,38,52,105-107,110,112,114-115
+apps/apps-worker/scripts/build-bootstrap.mjs
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,5,20-21
+apps/apps-worker/src/runtime/cancellation.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 11,16,18,26,42,51,64,68,70
+.changeset/pre/flexible-view-errors.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4
+packages/agent-fx/src/session.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 16-17,19-20,23,38,44,50,56,66,72,77,81,86,89,91,100,102,108,115,135,146,151,154,176,181,188,192,210
+packages/api/src/procedures.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,6-10,36-37,86-89,139-142
+packages/api-utils/src/app-auth/tokens.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 18,25,27,31,33,38,48,50,57,74,77,91,99,110,112,130,142,167,170,175,182,193,213,221,225,227,244,248-255,257-258,260,262-275,282,293-314
+packages/patchsmith/src/arktype.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3
+apps/web/public/site.webmanifest
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+apps/web/src/routes/(app)/$orgSlug/route.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 13,42
+packages/cli/src/testing.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,6,9,12,26,30,37,42
+packages/agent-fx/src/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/react/src/__tests__/render-slot.test.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3,21-32,39,45,89,96,151,313,331,362,368,372,377,385,391,395,398,450,454,459,472,510,513,522,529,582,609,626,633
+packages/react/src/__tests__/tailor-kit.types.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3,5-6,10-12,18,28,30,36,38,40,42,50,55,59,63,66,95-98,100,105-106,109,111-114,116-117,119-120,122-123,125-126,128,146,178,205,215,217,221,229,231,233,235,237,258,264,270,273,276,279,288,290,292,294,296,298,306,311,313,321,330,332,334,336,338,341,344,346,349,353,356,359,362,365,367,374,377,379,381-382,386,390,393,398,401,403,405,408-410,412,415,420,422,425,428,431,434,445,457,465,467,472,480,483,492,501,510,513,531,536,538,540,542,550,570,575,583,593,596,599,602,608,617,626,636,648,658,668,670,672,674,683,688,690
+apps/web/src/lib/auth-client.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,31,40,42,64
+packages/cli/src/generator/templates/src/db/index.ts.liquid
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2
+packages/cli/src/generator/types.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5,10-13,24,26,31,33,39,45,55,61,67,69,71,76,91,96,110,112,120,129,134,148,150,153,167,172,211-254,257,270,272,275,277,279,281,294,298,304,321,442,614,633,635,640,642,644,646,678,719,721,723,728,736,744-745,753,769,774,776,778,781,787,796,826,831,841,845,848,864,869,896
+packages/client-core/src/client/endpoints.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,6,8,11-13,16,21,62,76,82-83,86,89,91,97,99,102,104,107,110,114,117,124,129,132,136,142-143,146,150,155,159,162-163,165,168,171,174,178,184,188,191,195-196,198,203,207,209,218,221,225,228,233,243,245,249,256,260,262,265,267,272,275,278,286,291,296,300,302
+packages/client-platform/CHANGELOG.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-35,72,84,96,110,148,222,238,240,242,244,300,306,320
+apps/web/src/server/api/auth.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,5,10,12-13,15
+packages/agent/src/skills/sqlite-database.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5,9,20,29,36,40
+packages/agent/src/sandbox.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 10-11,19,22,27,35,40,59,67,79,93,97,105,111,116,126,137,139,143
+packages/app/src/protocol.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5-29,36,40,42,76,78
+packages/asset-delivery/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3
+packages/app/src/server/builder.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7-8,36,136,140,144,148
+.changeset/pre/ultracite-defaults.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-10
+packages/sandbox/src/iframe/resolve-view.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,11,22,90,94,109,114,317,334,359
+packages/app/src/instances.test-d.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 20,22,25,35,39,57,68,89,93,95,97,100
+packages/patchsmith/src/react.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+packages/agent/src/workflows.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 24,28,34,41,47,53,63,73,75
+packages/client-core/src/store/local/node-store.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,25,48,52,63,68,79,116,120,148,161,198,228,244,257,270,286,299,309-310,313,316,322
+packages/ui/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3
+packages/core/src/schema/views.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6,8,10,12,14,23,25,35,39,49,52
+packages/client-core/src/client/fetch-client.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,5,8-19,30-31,35-36,42-43,49,53,67-68,72-73,79-80,86,96,101-102,107,120,124-125,129-130,134,150,159,163,168,174-175,179,181,197,200,204,208
+apps/web/src/components/apps/app-logo.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,17
+packages/client-platform/test/apps.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,17,23,27,44,48
+packages/api-utils/LICENSE.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5
+apps/apps-worker/src/supervisor/source.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4-8,17,40,43,47,50,53,58,81,88,92,94,100,108,112,125,129,131,141,145,149,164,179,195,202,210,217,221
+packages/react/src/__tests__/use-view-context.test.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3,13,15,30,37,43,49,57-58,64,66,69,71,74,133,142,158,168,200,210
+packages/api-platform/src/routes/app-agent.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7,11-12,41,53,103,131,135,142,147,156,161,171,178,181,195,206,208,240
+packages/auth/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/api/LICENSE.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5
+packages/app-db/src/relations.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 9,15,18,36,39
+apps/apps-worker/src/runtime/database/driver.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,23,27,31,41,46,60,87,94,98,103,111,122,132,136,148,157,161,168,173,198,204,207,225,227,234,243
+packages/app/src/preact.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 40,48,55,61,64,67,76,97,107,112,127,134,168,178,181,189,195,201,207,212,218,221,235,244,248,253,258,271,276,298,312
+packages/client-core/src/client/config.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,6-20,26,37,44-45,50,59,67,74-75,80
+apps/web/src/routes/(app)/$orgSlug/$projectSlug/settings/api-keys.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,9-10,20-21,26,33-35,92,100,104,119,141,373
+packages/api-platform/src/routes/cli-auth.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4,22,33,38,43,90,132,136,149,169,173,202,208,212,214,218
+.changeset/pre/host-slot-instances.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-8
+packages/agent-fx/LICENSE.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5
+packages/cli/src/generator/references.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 16,35,40,42,48,60,62,75,79,83,87,89,95,99,107,115,119,121,132,153,164,168,172,174,179,188-195,201-203,208,213,218,222,232,240,244,253,269,273,278,283,288,302,306,311,321,332,347,349,356,365,370,376,380,392,403,409,413,417,425,429,442
+.changeset/pre/bright-contexts.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3
+packages/auth/src/captcha.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 18,23,46,60,77,89,105
+packages/core/src/schema/schema.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,28,34,56,64,74,77,81,92-93,104,108,115,134-136,139,141,148,160-163,170,176,181,185,189,193,204,209,214,232,284
+packages/email/LICENSE.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5
+packages/vite/src/builder/file-routes.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 15,39,42,48,55,62,83,85-86,91,96,118,126-130,133,140,145,155,158,199,201,203,219,223,229,234-235,276-277,283,288,292,296,300,304,320,329,339,344,346-347,351,355,358,362,364,367,371,374,378,381,387,390,407-410,416,421,431-432,438,442,444-445,462-463,465,467,473,478,481,485
+.github/workflows/db-migrate.yml
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 20,26,55
+packages/ui/src/forms/form.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 230
+.changeset/pre/cli-builder-agent.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4
+packages/agent-fx/src/agent-step.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 21
+packages/vite/src/preact-version.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 8
+packages/auth/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,30,38-47,49,57,59,61-63
+packages/auth/src/lib/captcha-endpoints.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+packages/cli/src/generator/templates/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,4,6,8,10,12,14,16,18,20,22,24-26,28
+.changeset/pre/resume-agent-streams.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4
+.changeset/pre/shared-client-stores.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3
+apps/apps-worker/src/runtime/execution.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 11,20-21,37,42,48,57,59,61,66,69,77,84,94,103,107,115,141,168,176,180,184,187,191,194,205,215,224,234,252,256,262,265,277,286,295,305,308,321,326,331,334,340,356,372,382,386,396,408,424,429,432,440,444,451,455,465,473,500,508,518,527,540,542,549,555,558,560,567,573,576,578,597,601,603,608,615,617,627,630,647,652,655,671,684,688,696,701,708,725,729
+packages/agent/src/gateway-model.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 12,16,20
+packages/agent-fx/src/workspace.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4-6,16,34,49,69
+packages/db/src/schema/preview-session.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 37,87
+packages/sandbox/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3,7,46-47,51,53,57-59
+apps/apps-worker/src/runtime/bundle.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,33,47,54,56,63,67,74
+packages/cli/src/agent.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 9,29,32,34,36,38,42,50,76,82,94,100,102,108,110,120,122,124,127,130,134,141,145,147,151,153,156,164,169
+packages/core/src/server/experimental.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,27,32,37-38,43,47,49,56,60,69,83,91,125,128,133,137,149,153
+playground/tanstack-start/src/routes/index.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,9,17
+packages/vite/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3,7,61,66-67,71,80-82
+.changeset/pre/agent-select-app.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4
+packages/api-platform/src/routes/agent-deployment.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-7,20,36-37,42-43,46-49,55,61,65,70,92,97,101,106,112,117,121,127,159,172,174,194,213,232,237,248,252,256,260,296,327,335,340,344,348,352,366,372,374,379,381,386,388,393,420,428
+packages/ui/src/forms/select-field.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 106,110
+.changeset/pre/gzip-deployment-artifacts.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4
+packages/core/src/schema/tools.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3-4,10,16,22,26,36,42,47,54,61,63,68,71,77,88,123,131,154,157,164,172,174,177,184,192,195,199-201,206,218,221,238,241,243,247
+docs/images/logo-with-text-light.svg
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-6
+playground/shared/src/auth.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5,35,40,48,54
+.changeset/pre/explicit-server-configuration.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3
+packages/email/src/templates/better-auth/shared.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 19,21,113
+packages/api-platform/src/team-auth.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,10-15,18-19,25,27-28,30,44,51,55,59,62,66,70,75,83,86,101,104,108
+.changeset/pre/nullable-generated-types.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3
+playground/apps/todo/src/slots/panel/index.view.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,4,34,59,66,86,107
+playground/tanstack-start/src/lib/patchsmith-client.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-83
+.changeset/pre/runtime-upload-manifest.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/client-core/src/client/endpoints.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,4,7-18,23,28,32,44,49,86,98,104,109-110,114,139,145,152-153,157,192,203,209,214-215,219,223,227,236
+packages/api/src/routers/apps.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6-10,62,66,88,96,103,112,123,129,163,182,187,203,211,226,230,250,254,259,265,274,308,312
+packages/storage/src/env.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+.changeset/pre/explicit-slot-rendering.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4
+packages/ai-sdk/src/index.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-611
+packages/client-platform/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+.changeset/pre/public-vite-plugin.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-5
+apps/web/src/routes/(app)/account/request-organization.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,8,21,38
+packages/cli/src/agent-auth.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 12,24,30,33,47-48,51,55,62,66,69-70,73,77,85,89
+apps/apps-worker/src/assets.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,19,32,35,39,43,53,75,97,113,156,162,180,184,287,298,300,308,316,320,329,337,341,350,361,365,374,377,379,386,398,408,418,443,452,455,468,475
+packages/core/src/schema/components.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-68
+packages/patchsmith/src/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-29
+packages/kv/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3
+packages/cli/src/generator/templates/src/functions/greeting.ts.liquid
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+packages/db/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3
+packages/agent-fx/src/skills.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6,12,16,20,24,30
+packages/core/src/primitives/theme.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7,222,228-230,242-243,245,253
+packages/ai-sdk/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-73
+packages/cli/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3,12,22,25,32-33,35,42,46,56,59,63,66,69,71,86,91
+scripts/package-manifest.mjs
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 32,35,38,42,45,53,57,79,83
+packages/react/src/hooks/use-apps.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,4-6,9,17,20,24,35,40,45
+apps/apps-worker/src/runtime/execution.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3,23-25,31,43,46,54,60,70,80,83,88,94,98,107,109,111,119,122,125,133,140,143,146,149,153,155,173,177,183,211,224,228,240
+packages/asset-delivery/src/logo-validation.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 13,24,32,42
+packages/core/src/server/routes/cli-auth.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7,11,29,51,101
+packages/app/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3,7,64,74,80,82,91-93
+.changeset/pre/fresh-vite-workers.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+apps/web/src/components/sidebar/sidebar-brand.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,7
+packages/config/LICENSE.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5
+packages/ui/src/forms/field-errors.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6,43-46
+  s_a0bf9224ecab6e::t_599ba5e3f63d75 47
+packages/db/src/schema/scope.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 22,26,28,45,50,72,77,79,82,87,91,94,97,101,105,109,112,115,124,127,132,138,146,148,157,162,171,175,180,184,186,195,197,209,211,220,224,229,231,236,245,247,256,258,266,270,273,304,308,328
+packages/cli/src/generator/children.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,27,54,58-61,66,74,78,80,84,86,89-90,94-95,110
+playground/apps/todo/.agents/skills/patchsmith-capabilities/references/components/experimental_Canvas.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-37
+apps/apps-worker/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,5,21,23,31,102,108,115,126,130,134,139,144,150-185,202,222,234,236,242
+packages/env/LICENSE.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5
+packages/sandbox/src/iframe/resolve-view.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,6,63,71,94,98,107,111,113,116,124,128,132,137,140,143,174
+pnpm-workspace.yaml
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 22,52,58,60,67-68,70,73,75,77-78,83-85
+packages/storage/src/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,4,6
+packages/core/src/schema/children.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6,10,17,33
+packages/vite/src/builder/client-views.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6,23,35,37,39,49,53,65
+packages/react/src/components/render-slot.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,8-9,16,22,34,37,39,44,48,54-55,60,64,68,72,75-76
+apps/web/src/routes/(app)/account/invites.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,11,18-19,40,51,69
+playground/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3,7,26,35,37
+packages/agent-fx/src/skills/frontend.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,5,15,24,27,65
+packages/app/src/server/database.test-d.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7,21,27,32,35,43,47,54,57,63,69,73,77,80,83,86,93,100,103,108,112,115,119,121,124,128,131,135
+.changeset/pre/kv-backed-preview.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-6
+apps/apps-worker/src/supervisor/subscriptions.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3,19,33,37,57,62,67,76,82,86,89,92,95,98,100,105,107,115,119,127,131,148,157,161,167,179,182,189,194,200,203,209,216,220,228,232,235,254,264,266,276
+packages/cli/src/generator/reference-examples.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 12,19-20,36,44,50,54,56,60,63,72-73,90,94,98,101,105,109,117,128,131,146-147,149,163,171,182,184
+packages/cli/src/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 18,20,45,51,64,68,74,80,82-83,91-92,97,119,121-122,124-125,145,147-148,150-151,169,176,180,182,185,193,198,200,211,216-217,233,256,262,265,268,271,276,282,290,302,305-306,310,313-316,322,331,337,340-341,349,358,365,378-379,382,395,404,413,435-437
+apps/web/src/routes/__root.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,37,41,43,149
+packages/client-core/src/store/local/slot-runtime.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3,14,20,50,55,63,75,83,85,90,93,100,105,107,110,114,118,120,124,129,135,139,143,163,167,184,186,195,211,214,218,220,227,232,240,244,251,266,270,275,285,294,299,302,305,307,311,318,320,325,328,332,341
+packages/api-platform/src/routes/app-agent.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3-5,9-10,23,45-46,54-55,59-60,67-70,74,86,89,94,113,121,123,127,131,134,169,178,187,193,207,209,213,229,242,285,298,321,327,331,359,365,369,381,390,410,416,420,431,440,478,485,558,565,571,574,580,584,591,597,704,709,720,726,736,747,756,762,766
+packages/api-platform/src/for-each-sequential.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 10,13,17,21,24
+.changeset/pre/tidy-definition-map-types.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3
+package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 11-13,33,35,40-41,49,51-53,55-56,59-60
+  s_a0bf9224ecab6e::t_7723ee9af93281 61
+packages/sandbox/src/host/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3,5,21,23,62,73,79,87,110,113,116,126,137,142,145,154,160,164,191,194,214,223,225,250,254,258,267,274,287,297,300,306,313,316,320,324,331,334,337,340,343,346,349,353,361,366,381,384,387,391,398,400,415,429,432,448,450,454,457,463,465,467,475,478,481,483,487,490,494,498
+  s_a0bf9224ecab6e::t_0a47216e07f7f3 499
+packages/db/AGENTS.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6
+packages/agent-fx/src/skills/views.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 20,31,34,68,82,86,91,95
+packages/app/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/core/src/server/tool-auth.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6-7,13,20,24,27,35,39,59,63,73,79,82,91,103,107,110,115,117,125,128,132,140,151,153,171,176,180,183,193,197
+packages/client-core/src/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3-5
+apps/web/workflows/app-agent.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,5
+.changeset/pre/bright-demos-work.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-7
+packages/patchsmith/src/zod.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3
+packages/vite/src/builder/schema-check.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 29,38,43,60,64,69,93
+packages/app/src/providers.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 10,12,22,26,29,32,44
+packages/db/LICENSE.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5
+apps/apps-worker/src/transport.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 16-17,31,35,38,60,82,87,89,95,133,139,161,163,167,169,176-177,185,191,193,201,208,246,262,268,273,276
+packages/client-core/src/store/local/remote-view.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,6-7,16,41,46,66,71,73,77,80,92,101,125,130,153,157,167,171,175,178,181,202,207,212,218,222,262,281,283,290,306,314,316,320,325,328
+apps/web/src/lib/org-slug-availability.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,18,41,46,58,73,78
+packages/agent/src/skills.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 10,14,20
+packages/agent/src/tools/deploy.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 14,39,42,45,48,68,77,84,88
+packages/vite/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3,7,10,14,18,22
+packages/api-platform/src/routes/runtime.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 26,35,48,70,74,88,92,131,142,162
+packages/agent-fx/src/workflows.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 14,17,27,39,42,48,55,59,61,65,67
+packages/agent/src/skills/host-ui.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3
+apps/apps-worker/src/supervisor/actions.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,9,18,22,24,28,30,34,36,63,105,113,120,122,133,140,157,168,172,177,184,187,201,205,207,218,229,232,249
+packages/api-platform/src/app-agent-mcp.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4-8,12-18,33,40,51,58,61,63-64,72,74,78,86,90,92,104,112,114,117-121,123,129,139,141,148,151,169,173,178,188,190,192,194-195,197,223,230,232-255,257,260,262,264,270,304,308,314,316,326,339,345,351,355
+packages/react/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3,7,47,56-60,65,69,73,78-80
+packages/core/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3,7,12,22
+playground/apps/todo/.agents/skills/patchsmith-capabilities/references/components/Inline.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-55
+packages/db/src/schema/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3,5,7,9,11
+packages/app-db/CHANGELOG.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-25,47,49
+.changeset/pre/configured-app-name.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4
+packages/app/src/server/bundle.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 10
+packages/agent/src/agent-step.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 18,21,31
+packages/client-core/src/store/local/slot-runtime.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4-5,7,14-15,19-20,27-28,38,45,51,55,84,90,94,98,105,107,111,131,141,144,148,160,164,175,184,193,197,209,218,224,232,239,243
+playground/tanstack-start/src/components/app-sidebar.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,12-13,22,38,41-42,85
+packages/api-utils/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+.changeset/pre/friendly-init-logos.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+.changeset/pre/initial-beta.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-8
+packages/ui/src/components/drawer.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 49,156
+packages/cli/src/generator/templates/src/db/schema.ts.liquid
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+packages/cli/src/generator/package-versions.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 11,45,52,56,58,66,79,83,92,102,105,121,125,132,144,165,169
+packages/agent/src/agent.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 20,23,26,37
+.changeset/pre/restore-zero-major-releases.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-10
+apps/web/src/routes/(app)/$orgSlug/~/(org)/route.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 18,37,40
+packages/ai-sdk/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-59
+packages/ui/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/core/src/schema/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,4,10,21,30,41,52,60,62-64,66-68,70-71
+docs/getting-started/installation.mdx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,4,7,9,12,14,23,27,31,35,47,51,55,59,71,75,79,83,95,106-108,158,180-182,234,256-258,308,335,341-343,345,347,350-351,359-361,363,365,368-369,377-378,380,382,384,387-388,400,402,407-408,410,415-416,436,441,443,449,451,457-458,461,471,486-487,490,500,510,522-523,527,537,557-558,563,573,587,591-592,602,618-619,622,632,647,655,661,680,694,709,731,733,755,810,866,924-926,931
+packages/core/src/primitives/zod.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 12,15,23,27,33,37,43,48,52,55,60,66,71,75,80,86-88,90,102,109
+apps/web/src/lib/safe-return-url.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 11,20
+packages/api-platform/src/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 8,16,23,28,33,43,50
+apps/web/vercel.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 30,34,38,44,48,52,56,60,64,68
+packages/cli/src/generator/capabilities-skill.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 9-10,12,19,21,26-27,75,77,80,88,91,93,100,109,113,118,122,128-130,134,137,140,144,153,157,162,165,174,177,179,184,195-198,205,216,229,231,233,241,250,255,262,271,274,276-278,288-313,315,321,323,326,336,338,341,345,348,350,352,358,367,384-387,390,393,396,398
+packages/client-platform/scripts/normalize-sse-cancellation.mjs
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7,9,16
+packages/env/src/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 22,34,43,56,75,79,87,102,105,139,158,162,185,210,233
+.changeset/pre/config-free-agent.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/storage/src/upload-url.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 32,42
+packages/core/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3,7,81,92,98,105-106,123-125
+packages/core/src/server/experimental.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,7-8,10-11,20-21,23,27,32-33,36-38,42,46,53,55,63
+packages/flags/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,25,34,37-39
+packages/api-utils/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,50,59-62,64,70,73-75
+packages/config/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,26-28
+playground/tanstack-start/src/lib/auth-client.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 47,51,64,74,94,98,109
+apps/web/src/routes/(auth)/forgot-password.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3-4,13-16,21-22,43,61,75,78,89,96,99,101,109,122,125,127,133,135,144,150,153,166,173,176,206,210,218,222,281,395,398
+packages/patchsmith/tsconfig.build.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-13
+packages/api-platform/src/asset-url.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 12,45,57,76,91,98-99,114,116,132
+.changeset/pre/skip-generated-dependency-checks.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/core/src/server/mcp.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3,18-19,22,28-30,34-35,39,47,53,58,62,64,66,68-70
+.changeset/pre/sandbox-valibot.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+apps/web/src/routes/(app)/$orgSlug/$projectSlug/settings/index.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,11,21-25,54,68,73,89,121,187,236
+packages/client-core/src/store/local/node-store.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,13,17,20,26,32,36,61,68,103
+packages/agent-fx/src/sandbox.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 13,17,27,32,37,41,45,50,54,59,63,65,71,75,80,90,100
+packages/cli/vite.config.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 21,38,43,46
+packages/ui/src/components/sidebar.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 48,52,100,102,223,395,399,418,483,521
+packages/cli/turbo.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5
+packages/ui/src/components/number-field.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 31,45
+.changeset/pre/required-app-name-slug.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4
+packages/api/src/routers/user.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 8,33,41,58
+packages/app/src/server/tools.test-d.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7,11,19-20
+packages/vite/src/builder/server.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 16,19,23,30,40,57,60,66,73,80,84-85,91-92,97,113,115-116,120,128,131,134-135,137,140,142,145,150,152,154,162-163,171,201,213-214,218,238,240,242,245,247,250,253,257,260,262,274,279,286,288,298,315,317,320,327-328,331,335,337,340,342,346,355-357,383-386,393,399,411,413,431,441,443,446,448,451,458,460,462,465,477,479,481,485,515,541,549,554,558-559,565,567,571,573,589,600,630,633-634,637,641,644,647,651,654,656,668,681,691,701,705,709,711,716
+.changeset/pre/sandbox-secure-connections.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+apps/apps-worker/src/routing.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,17,102,133,149,167,171,191
+packages/react/src/primitives.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3,9,17-18,35,47,49,72,79,81,86,89,94,109,116,124,127,134,141,145,149,151,158,165,169,177,180
+packages/client-core/src/store/fetch/cache.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 76,80,96,100,109,111,115,117,124,127,130,136,141,149,163,166,181,186,189,195,199,202,211,215,223,231,240,244,249,251,273,280,287,290,300,311,315,320,324,329,334,338,355,360
+packages/observability/src/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 48,59,63,66,108,115,128,149,153,181,201,228,233,242,254,267-268,272,296,322,326,354
+packages/vite/src/builder/generate-migrations.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5,20-21,24,27,36,42,49,56,72,76
+packages/core/src/server/scope.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 8-10,17,22,28-29,53,68,79,92,96,115,120,124,131,134,143,151,154,161,166,171,195,203,207,209,213,215,222,230,233-234,237,240,243-246
+packages/api-platform/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,38,49-59,63,67,69,73-75
+packages/api-platform/src/cli-token.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3,18,28,32,38,40,48,54,70,72,76
+apps/apps-worker/src/supervisor/action-lifetimes.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 20,32,107,109,114
+packages/email/src/templates/better-auth.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 62,64,66
+packages/vite/src/builder/schema-check.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 32,36,42,46,48,57,63,72,79,89,96,99,101,103,120,122,125,128,132,135
+docs/custom.css
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 63,68-69,72,81,85,91
+packages/app/src/client/connection.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 50,54,58,62,72,76,78,89,92,96,122,126-127,131,134,141,143,147,153,160,170,178,181,188,194,198,202,207,212,224,231,246,254,267,272,276,282,286,304,313,317,321,343,345,350,352,361,367,379,381,385,396,402,405,414
+packages/vite/src/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5-6,18-20,27,33,35-36,42,46,49,52,61,72,81-82,95,100,103,108,112,114-118,120,131,135,149,154,158,168,170,176,195-196,200,220-221,226,257-259,276,282,287,291,304,307,316,319,322,325,329,338,341,344,349,353
+playground/apps/todo/.agents/skills/patchsmith-capabilities/references/components/Flex.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-69
+packages/observability/src/index.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 11,17-18,39-40,71,82,91,95,101
+packages/api/src/env.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+packages/cli/bin/patchsmith.js
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2
+packages/patchsmith/src/server.test-d.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-36
+playground/tanstack-start/src/routes/issues.$issueId.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3,17,22,26
+packages/sandbox/src/host/store.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 22,26,29,34,42,44,47,50,58,62,66,72,75,80,83,87,90,93,97,100,103,107,110,113,117,120,143,145,149,161,167,171,180,193
+apps/web/src/server/api/platform.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4,10,23-24,26,30,45,47-48,52,55-56,62,69
+apps/apps-worker/src/runtime/database/migrations.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,10,14,23,40,43,45,48,51,64,67,71,73
+.changeset/pre/friendly-deploy-login.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/agent/src/workflows.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 15,17,22,29,38,43
+docs/writing-apps/overview.mdx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7,10,13,38,40,55-56
+packages/core/src/server/index.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-4,6,8-9
+docs/toc.js
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 17,26,30,32,40-41,43,54,58,60,63,68,73,75,81,85-86,89,95,97-98,105,116,120,125,133,135-137,143-146,148-149,159,174,177
+apps/web/src/routes/(auth)/route.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 18
+packages/cli/src/build.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 18-19,26,36,45,54,56,79,92-94,100
+packages/core/src/primitives/primitives.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4,18,20,26,60,96,102,107,112,152,158,186,209,247,295
+.changeset/pre/floppy-plants-dig.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4
+apps/web/src/lib/active-org.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 8
+packages/agent/src/source-export.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 18,24,32,36,49,53,76,96,100
+packages/api/src/context.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,7,22,28,32-33
+packages/app/src/client/reference.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 12,17,44,48,53
+apps/apps-worker/package.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,7,10,12,21-25,32,37-41
+packages/api-utils/src/app-auth/tokens.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,13,19,31,43,52,67,70,112,118,138,146,169,184,187,194,198,205,226,232,237,239,252,270,273,276,283
+packages/ai-sdk/LICENSE.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-74
+playground/tanstack-start/src/lib/patchsmith-server.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-35
+packages/cli/src/utils/open-browser.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 23
+packages/sandbox/src/host/store.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 13,18,21,52,56,84
+playground/apps/todo/patchsmith.config.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-8
+packages/asset-delivery/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/sandbox/src/bridge.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2
+playground/tanstack-start/src/routes/api/playground/todo-client.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 8,19
+packages/react/src/__tests__/primitives.test.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-3,71,75-78,82,115,130,133,153,185,188
+packages/app/src/server/functions.test-d.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 26,30,43,52,62,66,71,78,80,84,88,91,93
+playground/apps/todo/.agents/skills/patchsmith-capabilities/references/components/Grid.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-66
+.agents/skills/patchsmith-db-changes/references/rollout-patterns.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-40
+packages/core/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/storage/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/cli/src/for-each-sequential.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 10,13,17,21,24
+apps/web/src/lib/safe-return-url.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5,10,28-29
+apps/web/src/lib/auth-client.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3-4
+packages/api-platform/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3,7,12,14,16,18,20
+packages/vite/src/builder/migrations.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 16,22,24,27,31,47,49,55
+packages/client-platform/src/client/client.gen.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 16
+packages/patchsmith/src/client.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1
+apps/web/src/components/not-found.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,9
+packages/agent/src/workspace.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,10,28,32-33,36,38-39,45,52,55,64,72,76,78,90,93,108,111,113,121-123,129,131,169,189
+apps/apps-worker/LICENSE.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5
+packages/cli/src/generator/templates/pnpm-workspace.yaml.liquid
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6-7
+packages/vite/src/builder/migrations.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5,22,24,28,32,35,40,47,51,56,60,68
+packages/agent-fx/src/skills.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 10-11,21,27,34,40
+packages/client-core/src/client/scope-query.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 8,11,14,31,33
+packages/client-core/src/client/views.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,17,22,34,42,45,47,51
+packages/kv/src/with-timeout.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 16,23,31
+.changeset/pre/simple-react-hook-results.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+.changeset/pre/quiet-views-render-ready.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/client-platform/test/agent-chunks.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 104,108,110,115,120,126
+apps/apps-worker/src/supervisor/source.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4-5,15,20,42,77,85,101,117,128,134,141,154,158,162,166,171,178,185,191,195,197,204,217,221,230,233,247
+packages/agent/tsconfig.json
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+packages/vite/src/builder/server.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4,8,23,34,40,46,51,67,75,80-81,83,88,99,107,113,117,123,126,130,160,163,168,171,175,184,187,190,192-193,201,203,214,220,228,237
+playground/apps/todo/src/patchsmith.gen.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-294
+packages/vite/src/builder/generate-migrations.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 15-16,23,26,31,43-45
+.changeset/pre/bright-logos-deploy.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-6
+packages/client-core/src/store/store.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 3-4,6-7,9,14,17,19-22,26,29-30,33,36,38
+packages/core/src/server/routes/apps.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 8,13-14,38,44,55,70,85,92,110,117,135
+.changeset/pre/bright-children-renderers.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3
+apps/web/src/routes/(app)/$orgSlug/~/(org)/projects.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,12,20-22,112,137,148,162,223,264,268
+playground/apps/todo/.agents/skills/patchsmith-capabilities/references/tools/todos-add-6bfe2fb3209a3c0e.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-15
+.changeset/pre/rename-react-view-hooks.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+.changeset/pre/client-core-nanostores.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-3
+apps/web/src/components/sidebar/org-switcher.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2,12-13
+packages/agent-fx/src/agent.integration.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 30,34,49,61,72,75,81,92,96,108,141,152,157,163,167,174,176,178,183,189,194,208,215,225,229,234,236,244,250,257,267,288,297,301,303,310,341,345,348,358,361,366,372,377,381,391,393-396,400
+packages/kv/src/env.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,20
+packages/api/src/routers/org.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-4
+packages/agent/src/instructions.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,9,11
+apps/apps-worker/src/installation.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-4,26,53,64,71,77,83,89,100,104,143,167,172,176,220,239,265,282,286,294,304
+.changeset/pre/pressable-primitive.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-5
+packages/ai-sdk/src/index.test-d.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-38
+packages/app/src/client/tools.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 14-16,22,43,50,54,60,73-74,78,82
+packages/db/src/migrations/20261020044845_drop-identifier-immutability/migration.sql
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-15
+packages/app/src/client-boundary.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 10-14,18,20,35,39,58,64,75
+packages/cli/src/client.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5,16,22,28,32,35,41,43,51-52,58,116,121,123,128,155,161,173-174,180,187,191,196,201,213,238-239,244,246,250,260,263-264
+packages/agent/README.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1,3,16,26,46,48,52,54,56,68,84,96,98,100,102,104,114,124,135-137
+packages/api-utils/src/app-auth.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2,5
+.changeset/pre/tidy-validation-bundles.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2-8
+.changeset/pre/new-github-repository.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-15
+packages/api-utils/src/rate-limiting.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 6-8,31,54,64,71,80
+playground/shared/src/contracts/valibot.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 2
+  s_a0bf9224ecab6e::t_76e3d0323d0ba8 3
+packages/ai-sdk/CHANGELOG.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-18
+packages/client-core/src/client/views.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 4,7,12,19,25,28,34,38-39,43,45-46,51,56,62,77,81-82,86,91-92,98
+packages/vite/src/builder/database-paths.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 10-11
+packages/api-platform/scripts/generate-openapi.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 12,14,25,33
+apps/web/src/components/account-layout.tsx
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 15,32,36,41
+packages/patchsmith/bin/patchsmith.js
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 1-2
+packages/cli/src/platform-app-selector.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 9
+playground/tanstack-start/src/routeTree.gen.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 18,52-56,75,85,97,110,120,131,141,190-196,232
+packages/core/src/server/platform-app-selector.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 9
+packages/api-platform/src/lazy-router.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 13,20,23,25,29,33,38,47,57,74,84,89,98,103,111,115
+packages/agent/LICENSE.md
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 5
+packages/api-platform/src/routes/apps.test.ts
+  s_a0bf9224ecab6e::t_f8b0bcf30518ac 7-10,15-18,59,61,84,89,204,207,216,227,236,248,259,263,265,276,280,300,313,315,319,342,359,365,383-384,389,397,403,426,432,446,454,498,504,521,531,539,543,547,556,560,579,590,596,609,623,632,646,656,666,670,673,693,705,708,716,719,727,729,737,792,825,930,979,983,999,1009,1013,1018,1022,1044,1058,1069,1101,1116,1132,1138,1144,1155,1160,1171,1175,1184,1188,1193,1198-1199,1202,1211,1222,1243,1249,1257,1268-1287,1308-1313,1361,1370,1375,1389,1393,1398,1411,1414,1429,1473,1519,1547,1553,1566,1568,1576
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4ade8b16d2e8ccb47a5d30b219ef469221d9eaf5",
+  "prompts": {},
+  "sessions": {
+    "s_a0bf9224ecab6e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a156f7-f6c7-7d12-81e0-7055869efe72",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

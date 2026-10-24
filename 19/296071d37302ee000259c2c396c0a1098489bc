@@ -1,0 +1,109 @@
+packages/agent/src/agent-step.test.ts
+  s_30b8cd006b4232::t_d482670c5afce8 49
+  s_30b8cd006b4232::t_37e43db52d11ff 101,122,129,142,179
+packages/agent/src/mcp.ts
+  s_30b8cd006b4232::t_2abae334c757dd 13-18,134,150
+packages/agent/src/workflows.test.ts
+  s_30b8cd006b4232::t_d482670c5afce8 37
+  s_30b8cd006b4232::t_5cfeaa2072956d 40,52,55,65,73,80,83,101,126,146,152
+packages/db/src/schema/apps.ts
+  s_30b8cd006b4232::t_d482670c5afce8 94
+  s_30b8cd006b4232::t_a6ff8e9a54db8b 67-86,88-90
+packages/client-platform/src/agent.ts
+  s_30b8cd006b4232::t_2abae334c757dd 33-39
+  s_30b8cd006b4232::t_99b579fcea5f05 40
+packages/agent/src/session-store.ts
+  s_30b8cd006b4232::t_d482670c5afce8 103-108,110
+  s_30b8cd006b4232::t_41c4a9c0067eba 29,99-100,102,113,181-185,187,203-204,206,211-213,246-251,253-254
+  s_30b8cd006b4232::t_c0ffbf2da8d49b 52-54
+  s_30b8cd006b4232::t_1aeb27f4392f16 2,6,11-13,19,23,34,37,41-51,55-81,83-89,91-98,111-112,114-120,124,126,129,131,137,140,146-156,158-174,179,189,193,196,198,201,210,214-225,227-236,238-245,255
+  s_30b8cd006b4232::t_687a6485132162 82,90,101,109,186,205,237,252
+packages/db/src/relations.ts
+  s_30b8cd006b4232::t_d482670c5afce8 12-13
+  s_30b8cd006b4232::t_d1b778ec7435ef 8,10-11,14,34-42
+packages/db/src/migrations/20261014003536_agent-threads/migration.sql
+  s_30b8cd006b4232::t_0378f6a82d2cb0 1-16
+packages/cli/src/options.ts
+  s_30b8cd006b4232::t_2abae334c757dd 3
+packages/agent/src/agent-step.ts
+  s_30b8cd006b4232::t_1aeb27f4392f16 29-30
+packages/agent/src/threads.ts
+  s_30b8cd006b4232::t_1aeb27f4392f16 1-39
+packages/agent/src/session-store.test.ts
+  s_30b8cd006b4232::t_20dec58354952e 1,4,16,24,38,53,55-56,58-62,71,73-75,83-84,86-100,103-119,121,124-129,133-148,150-153,156-162,165-166,171-174,176,180-186,188,195,199-203,205,207-214,219-222,227,232-237,239,241-247,250-256
+  s_30b8cd006b4232::t_a5516c3532907d 57,63-67,70,72,76-77,122,149,154-155,167,215,257
+packages/db/src/migrations/20261014003536_agent-threads/snapshot.json
+  s_30b8cd006b4232::t_0378f6a82d2cb0 1-3841
+packages/api-platform/src/routes/app-agent.test.ts
+  s_30b8cd006b4232::t_d482670c5afce8 207-212,215-239,494
+  s_30b8cd006b4232::t_0841d7871d88bd 4-5,27,50-53,107-110,213-214,240,492-493
+packages/cli/src/agent.test.ts
+  s_30b8cd006b4232::t_d482670c5afce8 129-134
+packages/agent/src/agent.integration.test.ts
+  s_30b8cd006b4232::t_d482670c5afce8 161-167,188,192,250-257,259-266,268-272,278
+  s_30b8cd006b4232::t_c0954e3ac4cfad 258,267
+packages/cli/src/agent-tui.test.ts
+  s_30b8cd006b4232::t_c0ffbf2da8d49b 174-176
+  s_30b8cd006b4232::t_99b579fcea5f05 15-17,19
+  s_30b8cd006b4232::t_d482670c5afce8 165-167,170-173,177-179,181-187,189-190,192-195
+  s_30b8cd006b4232::t_151c5db225a176 18,137,148-154,168-169,180,188,191
+packages/cli/src/agent.ts
+  s_30b8cd006b4232::t_2abae334c757dd 24,144
+packages/cli/src/index.ts
+  s_30b8cd006b4232::t_2abae334c757dd 388-391,409
+packages/api-platform/src/app-agent-mcp.ts
+  s_30b8cd006b4232::t_2abae334c757dd 6-7,9,99-100,113-121,177,199,210,215,270,273
+  s_30b8cd006b4232::t_02001ba50ac9d3 8
+packages/api-platform/src/app-agent-mcp.test.ts
+  s_30b8cd006b4232::t_d482670c5afce8 3-4,28,55-58,131-134,174-180,182-185,187-202,204-208,210
+  s_30b8cd006b4232::t_ae0c48e1f95331 181,186,203,209,211
+packages/cli/src/agent-tui.ts
+  s_30b8cd006b4232::t_2abae334c757dd 6,18,26,28,75,80-83,87-90,99-101
+  s_30b8cd006b4232::t_c0ffbf2da8d49b 84-86
+  s_30b8cd006b4232::t_792f84536c36e5 2,4
+packages/agent/src/workflows.ts
+  s_30b8cd006b4232::t_1aeb27f4392f16 9,19,26,31,54,57,59,61
+packages/agent/src/sandbox.test.ts
+  s_30b8cd006b4232::t_d482670c5afce8 38,40,91-109
+  s_30b8cd006b4232::t_84dcdfbe5f089a 110-111
+packages/agent/src/sandbox.ts
+  s_30b8cd006b4232::t_41c4a9c0067eba 88-89
+  s_30b8cd006b4232::t_1aeb27f4392f16 4,87,90
+packages/api-platform/src/routes/app-agent.ts
+  s_30b8cd006b4232::t_2abae334c757dd 7-8,10,65,91-99,121,127-128,131
+  s_30b8cd006b4232::t_e0a6e795467540 9,129-130
+.changeset/agent-conversation-threads.md
+  s_30b8cd006b4232::t_f16741d6515dce 1-6
+packages/agent/README.md
+  s_30b8cd006b4232::t_bb1ebf733c0153 11,13-21,25,29,39,41,43
+packages/agent/package.json
+  s_30b8cd006b4232::t_65a43b860daa33 35-38,42
+packages/agent/src/identity.ts
+  s_30b8cd006b4232::t_d8013cc81451c9 1-2
+packages/agent/src/input.ts
+  s_30b8cd006b4232::t_49a404bfb2bbeb 6,8-9
+packages/agent/vite.config.ts
+  s_30b8cd006b4232::t_cbbd1bce429b99 13
+packages/api-platform/openapi.json
+  s_30b8cd006b4232::t_3754a2850b59a5 74-78
+packages/cli/README.md
+  s_30b8cd006b4232::t_47d0ccaa436444 29-30
+packages/client-platform/src/client/types.gen.ts
+  s_30b8cd006b4232::t_2340b92443b28a 23,28,30-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "19296071d37302ee000259c2c396c0a1098489bc",
+  "prompts": {},
+  "sessions": {
+    "s_30b8cd006b4232": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13773-a88c-7c40-89c1-4ffa8d769fa8",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

@@ -1,0 +1,72 @@
+packages/app/src/server/builder.ts
+  s_e0e9d1c83a08a8::t_f156699f59ab45 15,54,57,81,88,95,102,112,123,129,137-149,156,191-192,205-211,217,225
+apps/apps-worker/src/tests/integration.test.mjs
+  s_e0e9d1c83a08a8::t_4fd7b3398cde82 369,552-556,560-571,580-582,587-591
+  s_e0e9d1c83a08a8::t_7768c657db9614 592
+  s_e0e9d1c83a08a8::t_8719d6c5b58c99 557-559,572-579,583-586
+apps/apps-worker/src/tests/backend.ts
+  s_e0e9d1c83a08a8::t_4fd7b3398cde82 44-59,62,68
+  s_e0e9d1c83a08a8::t_74e272a36375ac 70
+apps/apps-worker/src/runtime/bundle.ts
+  s_e0e9d1c83a08a8::t_66a559a0439044 39
+apps/apps-worker/src/runtime/builder.test.ts
+  s_e0e9d1c83a08a8::t_b9aeaf985ba417 200
+  s_e0e9d1c83a08a8::t_08030d1d7992fa 188-199,201-210
+  s_e0e9d1c83a08a8::t_f634b2ce9972b7 186-187
+packages/app/src/server.ts
+  s_e0e9d1c83a08a8::t_f156699f59ab45 22
+packages/app/src/server/functions.ts
+  s_e0e9d1c83a08a8::t_f156699f59ab45 32-33,140-141
+packages/app/src/server/database.test-d.ts
+  s_e0e9d1c83a08a8::t_67feb23051b242 86
+  s_e0e9d1c83a08a8::t_08030d1d7992fa 72-85,87-96
+apps/apps-worker/src/runtime/execution.ts
+  s_e0e9d1c83a08a8::t_66a559a0439044 3-7,22,55-56,58,107-108,116-118,153,181,193-194,267-268
+packages/vite/src/builder/server.ts
+  s_e0e9d1c83a08a8::t_66a559a0439044 62-68
+apps/apps-worker/src/runtime/bundle.test.ts
+  s_e0e9d1c83a08a8::t_66a559a0439044 33
+packages/app/src/server/builder.test-d.ts
+  s_e0e9d1c83a08a8::t_3d956399be6388 231
+  s_e0e9d1c83a08a8::t_08030d1d7992fa 174-230,232-238
+.changeset/internal-app-functions.md
+  s_e0e9d1c83a08a8::t_275a61746a7841 1-8
+apps/apps-worker/src/runtime/functions.ts
+  s_e0e9d1c83a08a8::t_66a559a0439044 6,60-79,84-85,92
+packages/app/src/client/reference.ts
+  s_e0e9d1c83a08a8::t_f156699f59ab45 19-27
+packages/app/README.md
+  s_e0e9d1c83a08a8::t_275a61746a7841 165-170,172-182,184-189
+  s_e0e9d1c83a08a8::t_74e272a36375ac 171,183
+packages/vite/src/builder/server.test.ts
+  s_e0e9d1c83a08a8::t_8719d6c5b58c99 316-318
+  s_e0e9d1c83a08a8::t_4fe204b1bf8c74 288,320-323,327
+apps/apps-worker/src/runtime/execution.test.ts
+  s_e0e9d1c83a08a8::t_8719d6c5b58c99 233-235,320-321
+  s_e0e9d1c83a08a8::t_b318ba61966cf4 207-209,289-296,348
+  s_e0e9d1c83a08a8::t_4fe204b1bf8c74 14,203-206,210-213,349
+  s_e0e9d1c83a08a8::t_1ed4b5a887a298 20,198-202,214-230,238-249,251-272,276-286,299-319,322-345,371,373-375,389-393
+  s_e0e9d1c83a08a8::t_0c6d08b7caa006 394
+  s_e0e9d1c83a08a8::t_74e272a36375ac 287-288,298,346-347,350
+  s_e0e9d1c83a08a8::t_275a61746a7841 231-232,236-237,250
+  s_e0e9d1c83a08a8::t_1c93b1b155f080 376
+  s_e0e9d1c83a08a8::t_c68e2bf97ec40e 388
+  s_e0e9d1c83a08a8::t_eebc9d5099866c 273-275,351-370,372,377-387
+  s_e0e9d1c83a08a8::t_57e2a43890557d 297
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dfca420df6bb95de921e95075a1fa56e8de7200f",
+  "prompts": {},
+  "sessions": {
+    "s_e0e9d1c83a08a8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1608d-287e-7862-a700-e072c4a82405",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": null
+    }
+  }
+}

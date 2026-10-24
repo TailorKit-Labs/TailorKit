@@ -1,0 +1,32 @@
+packages/api-platform/package.json
+  s_12331c99473dba::t_e4211e6b4189e7 46
+  s_12331c99473dba::t_b4d1c53e9cbe88 71
+packages/api-platform/src/runtime/view-timing.ts
+  s_12331c99473dba::t_b4d1c53e9cbe88 124-140,142-149,152-154
+  s_12331c99473dba::t_e4211e6b4189e7 1,141
+  s_12331c99473dba::t_d5fd49b71c4bed 4-5
+packages/api-platform/src/runtime/view-timing.test.ts
+  s_12331c99473dba::t_185df3a5caf5f0 106-110,112-115,117-131,133-148
+  s_12331c99473dba::t_e4211e6b4189e7 1-6,8,15-25,116,132,149-157,159
+  s_12331c99473dba::t_f40306a3b541c9 26
+packages/api-platform/src/runtime/runtime-response-error.ts
+  s_12331c99473dba::t_d5fd49b71c4bed 1-10
+pnpm-lock.yaml
+  s_12331c99473dba::t_b1fc141cb469e1 824-826,894-896,4151
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "143b9ed533212957cd565eb66596ef86f6fc190e",
+  "prompts": {},
+  "sessions": {
+    "s_12331c99473dba": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a167f4-39a5-7f92-a991-6c747ea62cd9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

@@ -1,0 +1,42 @@
+playground/apps/todo/LICENSE.md
+  s_cf0fb7db315121::t_b5b2985f067dda 1-87
+playground/host/src/lib/tailorkit-client.tsx
+  s_cf0fb7db315121::t_6d427ebd162376 14
+packages/app/test/fixtures/backend-todo/package.json
+  s_cf0fb7db315121::t_1f00db75471b78 4
+playground/apps/todo/package.json
+  s_cf0fb7db315121::t_6d427ebd162376 4
+playground/shared/package.json
+  s_cf0fb7db315121::t_6d427ebd162376 4
+playground/host/package.json
+  s_cf0fb7db315121::t_6d427ebd162376 4
+playground/apps/todo/src/slots/panel/home.view.tsx
+  s_cf0fb7db315121::t_ec114cfe65b259 3
+  s_cf0fb7db315121::t_71e719a5a40a86 2,13-16,18,20-41,43-57,60-72,75-87,104,109-111,117,120
+playground/host/LICENSE.md
+  s_cf0fb7db315121::t_b5b2985f067dda 1-87
+playground/shared/LICENSE.md
+  s_cf0fb7db315121::t_b5b2985f067dda 1-87
+packages/app/test/fixtures/backend-todo/LICENSE.md
+  s_cf0fb7db315121::t_1b71ec4ddfe8a9 1-201
+playground/shared/drizzle.config.ts
+  s_cf0fb7db315121::t_6d427ebd162376 2,7
+package.json
+  s_cf0fb7db315121::t_6d427ebd162376 34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2a134fefb70815b074adabdb7bd3aa5689bf3e37",
+  "prompts": {},
+  "sessions": {
+    "s_cf0fb7db315121": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13299-2aad-7903-a0fd-d5c80194fa73",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

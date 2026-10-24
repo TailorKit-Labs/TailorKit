@@ -1,0 +1,101 @@
+packages/client-core/src/client/views.test.ts
+  s_005b4f3ee9b072::t_28e3b59b30eb4b 1-3,12-17,34-36,45-46,48-49
+  s_005b4f3ee9b072::t_a713c26dac4f57 31,43
+  s_005b4f3ee9b072::t_d45467fe743213 20,32-33,37-42,44,47,50-60
+packages/core/src/server/views.ts
+  s_005b4f3ee9b072::t_f9a6c5ed9fcc17 1,4-10,12-15,17-32,37-69,72-98,101-113,119,121-122,125-133,136-174,176-181,183-202,204-208,212,217,222-223,229-249
+  s_005b4f3ee9b072::t_23e205c22c426b 16,100,114-118,120,123-124,134-135
+  s_005b4f3ee9b072::t_62d291a6f55e7c 2-3
+  s_005b4f3ee9b072::t_6fc6a4fdbff454 11
+  s_005b4f3ee9b072::t_cd66b511aed6e1 33-36
+  s_005b4f3ee9b072::t_24bb515255242b 70-71
+  s_005b4f3ee9b072::t_f2282c992312f2 99
+  s_005b4f3ee9b072::t_8b661e8351e335 175
+  s_005b4f3ee9b072::t_155125a7779e20 182
+  s_005b4f3ee9b072::t_ff59558168dfb9 203
+  s_005b4f3ee9b072::t_0a9518579d7af2 209-211
+  s_005b4f3ee9b072::t_b8b371ce7b13e7 213-216
+  s_005b4f3ee9b072::t_24229f85ef7af9 218-221
+  s_005b4f3ee9b072::t_06b80c1300e02c 224-228
+packages/client-core/src/client/fetch-client.ts
+  s_005b4f3ee9b072::t_a7d4ae720843b3 48-56
+  s_005b4f3ee9b072::t_ade4a0adf83b36 5,57-58
+packages/client-core/src/client/index.ts
+  s_005b4f3ee9b072::t_a7d4ae720843b3 3,19
+packages/client-core/src/client/endpoints.ts
+  s_005b4f3ee9b072::t_a7d4ae720843b3 1-2,9-10,24,245-251,254-255,257-258
+packages/core/src/views.ts
+  s_005b4f3ee9b072::t_f9c7ac3f973c81 4-5,17,115-178
+  s_005b4f3ee9b072::t_a7d4ae720843b3 2-3,179-190,194,196,206-212,214-238,240-247,253-260
+  s_005b4f3ee9b072::t_a713c26dac4f57 205,248
+  s_005b4f3ee9b072::t_9dd82d5be5ea03 191-193,197-204
+  s_005b4f3ee9b072::t_28e3b59b30eb4b 1,251,261-263,265,267
+  s_005b4f3ee9b072::t_23e205c22c426b 195
+  s_005b4f3ee9b072::t_1369818cde1588 213,239,249-250,252,264,266,268
+packages/core/package.json
+  s_005b4f3ee9b072::t_a7d4ae720843b3 92
+packages/client-core/src/store/local/slot-runtime.ts
+  s_005b4f3ee9b072::t_52b387a790649e 79,110-115
+  s_005b4f3ee9b072::t_9602f6c08ca235 3
+packages/client-core/src/store/query.ts
+  s_005b4f3ee9b072::t_28e3b59b30eb4b 105
+  s_005b4f3ee9b072::t_0504d0bc93d6e6 103,108-110,112-116,118-119,121-123,125-128,130-134,136-138,141,144,150,155
+packages/core/src/server/list-apps.ts
+  s_005b4f3ee9b072::t_23e205c22c426b 1-34
+packages/client-core/src/client/fetch-client.test.ts
+  s_005b4f3ee9b072::t_a713c26dac4f57 137
+  s_005b4f3ee9b072::t_93df515f14ce34 135-136,138-144,152-154,160-189
+packages/client-core/src/store/fetch/slot.ts
+  s_005b4f3ee9b072::t_a713c26dac4f57 34
+  s_005b4f3ee9b072::t_e8b773736c1ae0 2,8,13,22,25-26,28-29,32-33,35-46,48,52-54
+packages/client-core/src/store/query.test.ts
+  s_005b4f3ee9b072::t_a713c26dac4f57 160,186
+  s_005b4f3ee9b072::t_28e3b59b30eb4b 125-127,131-132,135-136,139-141,143-144,163,182-184
+  s_005b4f3ee9b072::t_18324fbdc8d027 116-118,121-124,149,157-159,161-162,165,167,174-176,185
+packages/core/src/server/handler.ts
+  s_005b4f3ee9b072::t_23e205c22c426b 279
+  s_005b4f3ee9b072::t_f9a6c5ed9fcc17 226-239
+  s_005b4f3ee9b072::t_7573f0d139c84b 2,20,38,240-241
+packages/core/src/server/views.test.ts
+  s_005b4f3ee9b072::t_25c44e991dec5d 1-3,6-22,24,27,29-43,53-56,58-62,64-74,76-86,88-98,100-113,115-117,119-123,125-127,129,132-136,138-139,141-154,156-160,162-165,167-168,170,172-181,183-184,188-203,206-213,215,217-218,220-227,229,233-236,249-250,252-288,290-297,300-301,303,305-307,310-325,327,339-345,348-349
+  s_005b4f3ee9b072::t_23e205c22c426b 45-52,128,130,137,304,329-338,346-347
+  s_005b4f3ee9b072::t_9dd82d5be5ea03 4-5,26,237-247
+  s_005b4f3ee9b072::t_0d7a48a9bff86c 23,25,28,44,57,63,75,87,99,114,118,124,131,140,155,161,166,169,171,182,185-187,204-205,214,216,219,228,230-232,248,251,289,298-299,302,308-309,326,328
+packages/client-core/src/types.ts
+  s_005b4f3ee9b072::t_f9c7ac3f973c81 1
+packages/client-core/src/store/fetch/index.ts
+  s_005b4f3ee9b072::t_8fed9024bda041 17
+packages/react/src/__tests__/use-views.test.tsx
+  s_005b4f3ee9b072::t_28e3b59b30eb4b 59,80,82,99,118,130-132,134-135,178,197-198,208
+  s_005b4f3ee9b072::t_a713c26dac4f57 88
+  s_005b4f3ee9b072::t_a1fdb1c4bf7d05 6,12,14,16-18,28-29,33,35-36,43-45,48,56-58,63-64,66-68,70,76,78-79,81,83-86,90-92,96-98,103,105-106,108,114,116-117,120,122,124-125,128-129,137,139,144-147,151,154,156,158,161-165,169-170,172,175-177,181-182,186,190,192,194,203-206,210,215,220-222
+  s_005b4f3ee9b072::t_6f7ebd6113b2f3 15,19,30,87,107,138,148,166,199,223
+.changeset/network-view-resolution.md
+  s_005b4f3ee9b072::t_6fde940eea60ac 1-9
+packages/client-core/README.md
+  s_005b4f3ee9b072::t_e30acd475ce92e 4-31
+packages/client-core/src/client/views.ts
+  s_005b4f3ee9b072::t_d933b3a921a235 13,16,18-24
+packages/client-core/src/store/local/slot-runtime.test.ts
+  s_005b4f3ee9b072::t_649cada754a846 92-93,143,206-207,216,220-222
+packages/react/src/__tests__/render-slot.test.tsx
+  s_005b4f3ee9b072::t_353788b76a9e46 378,409-417,439,466-467,480-482
+pnpm-lock.yaml
+  s_005b4f3ee9b072::t_bf03609ff07849 1223-1225
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "74a7a6bf6ec7a069d52da450b82e133225cadba0",
+  "prompts": {},
+  "sessions": {
+    "s_005b4f3ee9b072": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15cb8-e253-7fc2-ac27-a77f4faed787",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

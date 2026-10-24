@@ -1,0 +1,19 @@
+packages/db/src/index.ts
+  s_4905e80b1fe580::t_93db5e7e4015b2 21-22,24-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "75a4ee1fcce00b461cc80344a2573a7f22427f32",
+  "prompts": {},
+  "sessions": {
+    "s_4905e80b1fe580": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12e3c-b6ee-7c70-bf75-6df43b3e7449",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

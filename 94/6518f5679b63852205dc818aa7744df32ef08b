@@ -1,0 +1,21 @@
+packages/agent/src/workspace.test.ts
+  s_0ead419c6156be::t_245eddcf18ea7b 80-115
+packages/agent/src/workspace.ts
+  s_0ead419c6156be::t_245eddcf18ea7b 29-48,88-91,95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "946518f5679b63852205dc818aa7744df32ef08b",
+  "prompts": {},
+  "sessions": {
+    "s_0ead419c6156be": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1395e-4bfc-7793-8914-5977db756be9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

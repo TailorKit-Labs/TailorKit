@@ -1,0 +1,19 @@
+docs/concepts/components.mdx
+  s_067afca1d75e5c::t_fc18dc62e2d150 66-68,81,83,89,98,103,106
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "509c61d8ac481429d9dae7b2ec8f9558ea94b748",
+  "prompts": {},
+  "sessions": {
+    "s_067afca1d75e5c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16309-c950-7061-8d11-9ce5a9705810",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

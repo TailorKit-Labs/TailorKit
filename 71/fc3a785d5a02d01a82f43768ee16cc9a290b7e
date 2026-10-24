@@ -1,0 +1,102 @@
+packages/core/src/schema/callbacks.ts
+  s_5ad5329e4782be::t_5f4ed55cd50983 38
+  s_5ad5329e4782be::t_db4645218d52f3 3,27,29,31,33-36,47
+packages/app/src/views.ts
+  s_5ad5329e4782be::t_db4645218d52f3 15,310-317,363-366
+.changeset/callback-results.md
+  s_5ad5329e4782be::t_99d51a300c304e 1-10
+  s_5ad5329e4782be::t_a34cc13c23c217 11
+packages/core/src/schema/callbacks.test-d.ts
+  s_5ad5329e4782be::t_a1c59266be382d 18-19,42-45,47-49
+  s_5ad5329e4782be::t_99d51a300c304e 39-41,46
+  s_5ad5329e4782be::t_38b6b94d9cfd29 17,20,24-27,37-38,50
+packages/client-core/src/store/local/remote-view.test.ts
+  s_5ad5329e4782be::t_a1c59266be382d 162,167,269-275,280-295
+  s_5ad5329e4782be::t_99d51a300c304e 262-266,268,278-279,296-298
+  s_5ad5329e4782be::t_7b75ea273ab960 30-31,131,151,154-158,163-166,172,176,194,267,276-277
+packages/core/src/schema/components.ts
+  s_5ad5329e4782be::t_5f4ed55cd50983 39
+packages/cli/src/generator/types.test.ts
+  s_5ad5329e4782be::t_99d51a300c304e 359-363,370-375,377-379,383-384
+  s_5ad5329e4782be::t_a1c59266be382d 365-368
+  s_5ad5329e4782be::t_82f3bcf82086e1 352,364,369,376,380-382,737
+packages/sandbox/src/host/index.ts
+  s_5ad5329e4782be::t_db4645218d52f3 29-30
+  s_5ad5329e4782be::t_c5364d8c6b356e 132-139,150,217-222,224-234,324,333-339,343,360-365
+  s_5ad5329e4782be::t_a1c59266be382d 124-126,128-131
+  s_5ad5329e4782be::t_1b5af5194f9e12 9,31,127,223,328,330-331,340-342,344-359,366
+packages/sandbox/src/host/index.test.ts
+  s_5ad5329e4782be::t_a1c59266be382d 106-107,109-110,417-419,422-433,436-440,455-461,465-468,472-477,485,491,495-496,501
+  s_5ad5329e4782be::t_99d51a300c304e 112,415-416,420-421,434-435,441-444,446-454,462-464,469-471,478-481,492,504-505
+  s_5ad5329e4782be::t_8385948bd3fabe 92,96,108,111,165,173,445,482-484,486-490,493-494,497-500,502-503
+packages/sandbox/src/iframe/runtime.ts
+  s_5ad5329e4782be::t_a1c59266be382d 245-249,251-253,259,262-264,266-272
+  s_5ad5329e4782be::t_c5364d8c6b356e 227,231-232,234,242-244,250,254,257,276-279
+  s_5ad5329e4782be::t_db4645218d52f3 1,228-230,233,235-237,239-241,258,265,274-275
+  s_5ad5329e4782be::t_1073757b73506a 238
+docs/concepts/components.mdx
+  s_5ad5329e4782be::t_99d51a300c304e 76,78-79,87,90-95
+  s_5ad5329e4782be::t_bb458e1f8753b4 75,77,80-86,88-89
+packages/sandbox/src/protocol.ts
+  s_5ad5329e4782be::t_db4645218d52f3 147
+  s_5ad5329e4782be::t_5f4ed55cd50983 235,241-242
+  s_5ad5329e4782be::t_a1c59266be382d 236-240
+  s_5ad5329e4782be::t_998c569f4b801c 287-291
+packages/client-core/src/store/local/remote-view.ts
+  s_5ad5329e4782be::t_db4645218d52f3 89-90,92-93,95,180-181,185
+  s_5ad5329e4782be::t_5f4ed55cd50983 94
+  s_5ad5329e4782be::t_04150d66658587 91
+packages/cli/src/generator/types.ts
+  s_5ad5329e4782be::t_a1c59266be382d 574-577
+  s_5ad5329e4782be::t_5f4ed55cd50983 579
+  s_5ad5329e4782be::t_db4645218d52f3 578
+packages/sandbox/src/protocol.test.ts
+  s_5ad5329e4782be::t_a1c59266be382d 69,72,84-87
+  s_5ad5329e4782be::t_7e4fd8b23cf212 64,70-71,88
+playground/tanstack-start/src/lib/tailorkit-client.tsx
+  s_5ad5329e4782be::t_a2cc0a4483da21 50
+packages/cli/src/generator/capabilities-skill.test.ts
+  s_5ad5329e4782be::t_f68867dade9101 23,180-187
+packages/cli/src/generator/children.test.ts
+  s_5ad5329e4782be::t_362dde2607f93c 11-15,84-89
+packages/cli/src/generator/types-schema.test.ts
+  s_5ad5329e4782be::t_8a1017937d5796 452,461-463
+packages/core/src/schema/schema.test-d.ts
+  s_5ad5329e4782be::t_2ca9b7bc0ff264 76-78,82,84,89-93
+packages/react/src/__tests__/primitives.test.tsx
+  s_5ad5329e4782be::t_4bbef92928a811 122,124,179-182,185-190
+packages/react/src/__tests__/tailor-kit.test.tsx
+  s_5ad5329e4782be::t_30783383220d6d 78-80
+packages/react/src/__tests__/tailor-kit.types.tsx
+  s_5ad5329e4782be::t_4175d44c8cf8c4 165,177-178,181
+packages/sandbox/src/host/store.ts
+  s_5ad5329e4782be::t_b4b4700e1d07d6 140
+packages/sandbox/src/iframe/runtime.test.ts
+  s_5ad5329e4782be::t_0ac1db14d934cb 2-3,124,282-433
+playground/apps/todo/src/tailorkit.gen.ts
+  s_d3057019e73af2::t_b18e7c348add35 251,263,276
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "71fc3a785d5a02d01a82f43768ee16cc9a290b7e",
+  "prompts": {},
+  "sessions": {
+    "s_5ad5329e4782be": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15380-083a-7700-9e70-bcb90714e4cf",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_d3057019e73af2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15312-993f-77e2-97fd-a77f6c7bbcd7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

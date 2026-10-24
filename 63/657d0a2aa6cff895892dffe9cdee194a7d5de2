@@ -1,0 +1,111 @@
+packages/app/turbo.json
+  s_79ff2e144b2355::t_5a0937cba08a73 5
+packages/cli/package.json
+  s_79ff2e144b2355::t_b238ea10b1f3cd 36,46
+packages/vite/src/builder/server.test.ts
+  s_79ff2e144b2355::t_4e328f27d5a7dd 2-3,9,12,39-44
+.changeset/config.json
+  s_1c2f5257cdad52::t_09a1f1adc6e20b 14-15
+.changeset/public-vite-plugin.md
+  s_1c2f5257cdad52::t_b6c6f01f34b4f4 3,8
+apps/apps-worker/src/runtime/database/migrations.test.ts
+  s_1c2f5257cdad52::t_c0a12e77c9e5e5 22
+apps/apps-worker/src/tests/integration.test.mjs
+  s_1c2f5257cdad52::t_04ef421cc9a5d9 16,196,203
+apps/apps-worker/turbo.json
+  s_1c2f5257cdad52::t_e139099c05ef75 6
+package.json
+  s_a728f25ed798f7::t_00e132973faba3 31,34,37,39
+packages/app/README.md
+  s_1c2f5257cdad52::t_6e8bbf66b329bd 117
+packages/app/package.json
+  s_1c2f5257cdad52::t_1ec8156f43a205 63
+packages/cli/src/agent.test.ts
+  s_1c2f5257cdad52::t_08b77f80eb5bf9 27
+packages/cli/src/auth.test.ts
+  s_1c2f5257cdad52::t_d9705a444e4f87 6,11
+packages/cli/src/auth.ts
+  s_1c2f5257cdad52::t_b9d91198537a7f 4
+packages/cli/src/build.test.ts
+  s_1c2f5257cdad52::t_fb0dc33e66678f 11,79
+packages/cli/src/deploy.test.ts
+  s_1c2f5257cdad52::t_c6142400daac54 18-19,30-31,190,209
+packages/cli/src/deploy.ts
+  s_1c2f5257cdad52::t_75b22886db5047 9-11,188,253
+packages/cli/src/generator/types.ts
+  s_1c2f5257cdad52::t_bb25f097dded49 5
+packages/cli/src/index.ts
+  s_1c2f5257cdad52::t_a949f3e34b08c5 277
+packages/cli/src/preview-startup.test.ts
+  s_1c2f5257cdad52::t_f25c9f9283ea88 21
+packages/cli/src/preview.ts
+  s_1c2f5257cdad52::t_f3bb17fd696c72 6
+packages/cli/vite.config.ts
+  s_79ff2e144b2355::t_08e6d84e141fd9 24
+packages/tailorkit/package.json
+  s_1c2f5257cdad52::t_3c19dbade8ae49 73-74
+packages/tailorkit/src/app-config.ts
+  s_1c2f5257cdad52::t_99bc6de955a33a 1
+packages/tailorkit/src/vite.ts
+  s_1c2f5257cdad52::t_70e54d3d9ec00d 1
+packages/vite/README.md
+  s_1c2f5257cdad52::t_b3269bc83cce36 1-24
+packages/vite/package.json
+  s_1c2f5257cdad52::t_6d6b7221546503 1-59
+packages/vite/src/builder/file-routes.test.ts
+  s_1c2f5257cdad52::t_987cbf4d19f718 7
+packages/vite/src/builder/migrations.ts
+  s_1c2f5257cdad52::t_36d097112e8273 4
+packages/vite/src/builder/server.ts
+  s_1c2f5257cdad52::t_d1808c3cb8d4be 7,13-18
+packages/vite/test/fixtures/backend-todo/LICENSE.md
+  s_1c2f5257cdad52::t_c022b4a5f7805f 1-201
+packages/vite/tsconfig.build.json
+  s_1c2f5257cdad52::t_f35825d13d7320 1-8
+packages/vite/tsconfig.json
+  s_1c2f5257cdad52::t_06230d30a105c8 1-15
+packages/vite/tsup.config.ts
+  s_1c2f5257cdad52::t_b416b22159046e 1-14
+packages/vite/turbo.json
+  s_1c2f5257cdad52::t_c5fe37fe46a323 1-9
+playground/README.md
+  s_a728f25ed798f7::t_3bbc41ca1d6833 4
+playground/tanstack-start/package.json
+  s_1c2f5257cdad52::t_10d29dd935b55e 2
+pnpm-lock.yaml
+  s_79ff2e144b2355::t_18ffdec7bbafc0 764-766,911-913,936-938,1395-1397,1494-1564,1587-1624
+pnpm-workspace.yaml
+  s_1c2f5257cdad52::t_35970a88c9ef41 14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "63657d0a2aa6cff895892dffe9cdee194a7d5de2",
+  "prompts": {},
+  "sessions": {
+    "s_1c2f5257cdad52": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1330d-146a-7191-b1d2-8c234710d378",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_79ff2e144b2355": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13352-70a5-78e2-9cff-6e3d90d0659f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_a728f25ed798f7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13351-38a5-7b72-9408-7c0aab989f39",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

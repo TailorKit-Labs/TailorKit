@@ -1,0 +1,19 @@
+packages/api/src/routers/apps.ts
+  s_f90b094bd71745::t_5d49da2b3cf411 60-62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4ba8746c51a7ebae84342d46d1f44528ab599350",
+  "prompts": {},
+  "sessions": {
+    "s_f90b094bd71745": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12fd5-0e5c-76b3-b327-47fc1bb4c69d",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

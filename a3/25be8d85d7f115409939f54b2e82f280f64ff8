@@ -1,0 +1,31 @@
+.changeset/portable-ai-sdk-tool-types.md
+  s_788d559f4e7678::t_a71b5019dddde1 1-5
+packages/ai-sdk/src/index.test-d.ts
+  s_788d559f4e7678::t_19fba7ed65181c 3,5,8,28-63
+packages/ai-sdk/src/index.ts
+  s_f0d547ff8cf2ae::t_6ea6b53c3d578b 14,23-43,211
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a325be8d85d7f115409939f54b2e82f280f64ff8",
+  "prompts": {},
+  "sessions": {
+    "s_788d559f4e7678": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16167-2fda-7c71-af2d-a16684bb8fcf",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_f0d547ff8cf2ae": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16144-7130-75d1-90e5-de5ca26dd535",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

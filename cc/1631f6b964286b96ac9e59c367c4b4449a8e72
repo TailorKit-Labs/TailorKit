@@ -1,0 +1,61 @@
+packages/cli/src/generator/templates/tailorkit.config.ts.liquid
+  s_cf8052fd052798::t_867ea27b664250 9-10
+packages/cli/src/deploy.ts
+  s_cf8052fd052798::t_867ea27b664250 17,438,455,548,555,561
+playground/apps/todo/tailorkit.config.ts
+  s_cf8052fd052798::t_867ea27b664250 6-7
+packages/cli/src/build.test.ts
+  s_cf8052fd052798::t_867ea27b664250 26
+packages/cli/src/generator/generate.test.ts
+  s_cf8052fd052798::t_4cd09c4c2ed9d7 292,306
+  s_cf8052fd052798::t_b8adc38ef7247a 12,285-287,307-309
+  s_cf8052fd052798::t_1b3a5a1b4cffe3 278-279,283-284,290-291,293-305,310-312
+packages/cli/src/agent.test.ts
+  s_cf8052fd052798::t_867ea27b664250 140,150
+packages/cli/src/deploy.test.ts
+  s_cf8052fd052798::t_867ea27b664250 122,124,221-222,654-655
+  s_cf8052fd052798::t_b8adc38ef7247a 112,114,230,232,426,428
+  s_cf8052fd052798::t_2c8f365840996d 123,656
+packages/vite/src/builder/server.test.ts
+  s_cf8052fd052798::t_867ea27b664250 93,346,646
+packages/cli/src/auth.test.ts
+  s_cf8052fd052798::t_867ea27b664250 192,194-196,302,304-306,320,322-324,385,387-389,423,425-427,466,468-470
+  s_cf8052fd052798::t_b8adc38ef7247a 193,303,321,386,424,467
+packages/cli/src/generator/generate.ts
+  s_cf8052fd052798::t_867ea27b664250 168-173,175-176
+packages/vite/src/builder/file-routes.test.ts
+  s_cf8052fd052798::t_867ea27b664250 267,384,405,436
+packages/vite/src/builder/generate-migrations.test.ts
+  s_cf8052fd052798::t_867ea27b664250 23
+packages/vite/src/config/config.ts
+  s_cf8052fd052798::t_867ea27b664250 15,22-27,75-76,78,98-103
+packages/vite/src/test-utils.ts
+  s_cf8052fd052798::t_867ea27b664250 72
+packages/vite/src/config/loader.test.ts
+  s_cf8052fd052798::t_f8716327905b83 6,8,12-17,19-26,28,36,50,58,67-68,75-76,81,85,95,109,113-121,123-129
+  s_cf8052fd052798::t_010f2ffe381708 18,122
+packages/cli/src/generator/types.test.ts
+  s_cf8052fd052798::t_867ea27b664250 68,109,139
+.changeset/required-app-name-slug.md
+  s_cf8052fd052798::t_541d04ac4d20c9 1-7
+packages/cli/README.md
+  s_cf8052fd052798::t_cfebcd81ea2583 42,44,53,57,59-61
+packages/cli/src/deploy-name.test.ts
+  s_cf8052fd052798::t_a000eb037b0324 160-163,166,170-172,174,178-181,183,192,194,221-227
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cc1631f6b964286b96ac9e59c367c4b4449a8e72",
+  "prompts": {},
+  "sessions": {
+    "s_cf8052fd052798": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1486e-c4e1-7172-b53b-71fb0b9bca7e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

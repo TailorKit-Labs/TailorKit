@@ -1,0 +1,66 @@
+packages/core/src/server/agent.test.ts
+  s_56c6974c595a82::t_a4d5b73e8a20d1 73-75,125-126,144
+  s_56c6974c595a82::t_88c8dba44e8a28 127-143,291-293
+packages/api-platform/openapi.json
+  s_56c6974c595a82::t_84495afce92316 1133,4566-4596,4598-4678,4680-4735,4737-4750,4752-4774,4777-4785,4787-4789,4791,4793-4794,4800-4862,4865,4868-4881,4884-4886
+  s_56c6974c595a82::t_a4d5b73e8a20d1 4775-4776,4786,4790,4792,4795-4796,4798,4866-4867
+  s_56c6974c595a82::t_38081ede9b3205 1132,4597,4679,4736,4751,4797,4863
+  s_56c6974c595a82::t_b3e7255e7e7bad 4799,4864,4882-4883,4887-4888
+packages/client-platform/src/client/index.ts
+  s_56c6974c595a82::t_84495afce92316 5,34-36
+packages/core/src/server/routes/app-agent.ts
+  s_56c6974c595a82::t_88c8dba44e8a28 8-11
+  s_56c6974c595a82::t_890e09a7969da9 4,75-87
+packages/client-platform/src/client/sdk.gen.ts
+  s_56c6974c595a82::t_84495afce92316 16-17,353-362
+  s_56c6974c595a82::t_0d39f0e40dd780 363-368
+packages/core/src/server/handler.test.ts
+  s_56c6974c595a82::t_88c8dba44e8a28 821-831
+packages/cli/src/client.test.ts
+  s_56c6974c595a82::t_88c8dba44e8a28 84-86
+  s_56c6974c595a82::t_0d2dafba163372 76,88
+packages/api-platform/src/routes/app-agent.ts
+  s_56c6974c595a82::t_73888f0d8a072d 100-104
+  s_56c6974c595a82::t_c8471db5045f47 34-35,85-99,105-109,239
+packages/api-platform/src/routes/apps.test.ts
+  s_56c6974c595a82::t_88c8dba44e8a28 5-8,17,38-41,262-270,278-283,288-292,295-305,308-314,317-324,326-335,343-347,352-365
+  s_56c6974c595a82::t_c7d5912df410de 236-249,251-256
+  s_56c6974c595a82::t_a4d5b73e8a20d1 9,32,217-221,224,226-230,232-233,258-261,271-277,284-287,293-294,306-307,315-316,325,336-342,348-351,366-368
+  s_56c6974c595a82::t_38081ede9b3205 250,257
+  s_56c6974c595a82::t_7392c0c2a95ca5 369
+packages/client-platform/src/client/types.gen.ts
+  s_56c6974c595a82::t_84495afce92316 1150-1216
+packages/cli/src/client.ts
+  s_56c6974c595a82::t_88c8dba44e8a28 147-153
+  s_56c6974c595a82::t_46a49500e4ae96 20
+.changeset/ai-created-agent-apps.md
+  s_56c6974c595a82::t_4e550d41a6f408 7
+packages/api-platform/src/routes/apps.ts
+  s_56c6974c595a82::t_feef387ee0e4b4 180,183
+packages/cli/src/agent-tui.ts
+  s_56c6974c595a82::t_3fd73981a16b0d 20
+packages/cli/src/agent.test.ts
+  s_56c6974c595a82::t_1d2bfef952e094 90-91
+packages/cli/src/agent.ts
+  s_56c6974c595a82::t_0c7b7786138d64 29,94
+packages/client-platform/src/agent.ts
+  s_56c6974c595a82::t_4aac8c579c9b16 5-9
+packages/core/src/server/routes/apps.ts
+  s_56c6974c595a82::t_4696d4ff810f42 31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1898a7b3e7b8d87f5f6d0f83ec65a3b5dbf815a7",
+  "prompts": {},
+  "sessions": {
+    "s_56c6974c595a82": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13c51-ff76-7aa3-ae1e-e13edbc9af3a",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

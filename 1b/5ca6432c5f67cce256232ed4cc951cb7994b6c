@@ -1,0 +1,29 @@
+packages/cli/src/agent-tui.ts
+  s_788d559f4e7678::t_be04ccfd22fcb6 20-23,25
+packages/react/src/__tests__/client-api.test.tsx
+  s_11d4f31b83f26a::t_6902bef19cf782 3,41-49,74-76,102,118-122
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1b5ca6432c5f67cce256232ed4cc951cb7994b6c",
+  "prompts": {},
+  "sessions": {
+    "s_11d4f31b83f26a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16167-990d-7562-9e57-45d69de5d4ac",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_788d559f4e7678": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16167-2fda-7c71-af2d-a16684bb8fcf",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

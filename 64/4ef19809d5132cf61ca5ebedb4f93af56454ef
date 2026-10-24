@@ -1,0 +1,79 @@
+AGENTS.md
+  s_2f40b5dc18ecb8::t_808306cdf01b5d 17
+apps/web/src/lib/auth-client.test.ts
+  s_2f40b5dc18ecb8::t_21059c1fec63ff 13
+apps/web/src/routes/__root.tsx
+  s_2f40b5dc18ecb8::t_550e82693aaffc 17,25,27
+apps/web/src/tests/preview-ws.test.mjs
+  s_2f40b5dc18ecb8::t_41b9e6ec151e03 28
+packages/api-platform/src/routes/agent-deployment.test.ts
+  s_2f40b5dc18ecb8::t_5cf0c3f8b248ce 11-12,44
+packages/api-platform/src/routes/app-agent.test.ts
+  s_2f40b5dc18ecb8::t_0b61bbf2ca4d4b 10,12
+packages/api-platform/src/routes/app-agent.ts
+  s_2f40b5dc18ecb8::t_36aad646a40a8e 21,23-24
+packages/api-platform/src/routes/apps.test.ts
+  s_2f40b5dc18ecb8::t_8db7488fb7f232 22-24,64
+packages/api-platform/src/routes/apps.ts
+  s_2f40b5dc18ecb8::t_2cc2581584e2a6 8-12,18-19
+packages/api-platform/src/routes/cli-auth.test.ts
+  s_2f40b5dc18ecb8::t_c5278907e22cfa 15,17
+packages/api-platform/src/routes/cli-auth.ts
+  s_2f40b5dc18ecb8::t_93ca26cfdd7466 11,13-14
+packages/api-platform/src/routes/deployments.test.ts
+  s_2f40b5dc18ecb8::t_f9264727c7ca7f 23-24,47
+packages/api-platform/src/routes/deployments.ts
+  s_2f40b5dc18ecb8::t_8f1f7d3b6da17c 22-25,32-33
+packages/api-platform/src/routes/preview-grants.ts
+  s_2f40b5dc18ecb8::t_4cbff30abf0d71 10,12-15,22-23
+packages/api-platform/src/routes/preview.test.ts
+  s_2f40b5dc18ecb8::t_4d096d47657b22 24,26,44-46
+packages/api-platform/src/routes/preview.ts
+  s_2f40b5dc18ecb8::t_67cdb3aaf0a7c4 14,16,20-22
+packages/api-platform/src/routes/runtime.test.ts
+  s_2f40b5dc18ecb8::t_9df4d62289e308 4-5
+packages/api-platform/src/routes/runtime.ts
+  s_2f40b5dc18ecb8::t_01d02b2207a3fb 13-16
+packages/api-platform/src/runtime/auth.ts
+  s_2f40b5dc18ecb8::t_dda2b499993b26 12
+packages/api/src/routers/apps.ts
+  s_2f40b5dc18ecb8::t_8d3bac27cfabbe 14
+packages/api/src/routers/org.ts
+  s_2f40b5dc18ecb8::t_9c59282968a6b8 8
+packages/api/src/routers/project.test.ts
+  s_2f40b5dc18ecb8::t_fe670d5ecd5a71 15-16
+packages/api/src/routers/project.ts
+  s_2f40b5dc18ecb8::t_27a47da1d56c57 11
+packages/api/src/routers/user.test.ts
+  s_2f40b5dc18ecb8::t_2f3065bbe8c42e 18-19
+packages/api/src/routers/user.ts
+  s_2f40b5dc18ecb8::t_60884bb4d26a63 10
+packages/ui/src/forms/boolean-field.tsx
+  s_2f40b5dc18ecb8::t_ff62d09ac13668 11-13
+packages/ui/src/forms/form.tsx
+  s_2f40b5dc18ecb8::t_7dfcf562db80fa 6-7,13,18-21
+packages/ui/src/forms/number-field.tsx
+  s_2f40b5dc18ecb8::t_3d4894216adcdc 10-11,18-19
+packages/ui/src/forms/select-field.tsx
+  s_2f40b5dc18ecb8::t_a5201f247f8555 10,17-19
+packages/ui/src/forms/text-field.tsx
+  s_2f40b5dc18ecb8::t_7bf0f121613f1a 10-12,17-18
+playground/tanstack-start/src/routes/__root.tsx
+  s_2f40b5dc18ecb8::t_7859d0db3881d1 13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "644ef19809d5132cf61ca5ebedb4f93af56454ef",
+  "prompts": {},
+  "sessions": {
+    "s_2f40b5dc18ecb8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1335c-f897-7d11-a78a-d7756d0c881a",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

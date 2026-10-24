@@ -1,0 +1,24 @@
+.changeset/quiet-page-discovery.md
+  h_18044dd1b61a81 11-12
+packages/core/src/server/handler.test.ts
+  h_18044dd1b61a81 379-387,389-393,395,397-401,403-406,408,410-413,415-425,427-430,432-435
+packages/core/src/server/http.test.ts
+  h_18044dd1b61a81 4,10-13,20,28,91-145
+packages/core/src/server/routes/README.md
+  h_18044dd1b61a81 13-14
+packages/core/src/server/routes/tools.ts
+  h_18044dd1b61a81 20-21,215-219
+packages/core/src/server/routes/views.ts
+  h_18044dd1b61a81 130
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b1efa3a7e2b517b9c72005205641c3e378b1e776",
+  "prompts": {},
+  "humans": {
+    "h_18044dd1b61a81": {
+      "author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

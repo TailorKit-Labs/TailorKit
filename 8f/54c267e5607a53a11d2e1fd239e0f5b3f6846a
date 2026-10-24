@@ -1,0 +1,350 @@
+packages/app/src/client/connection.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 232,310,334
+packages/core/src/primitives/theme.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 219-221,225,228-230
+packages/observability/README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1,3
+packages/api-platform/src/routes/apps.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 43,212,385-386,393,826-844,846-863
+packages/cli/src/generator/types.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 534-536
+packages/client-platform/README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1,3
+packages/agent/package.json
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 56
+packages/app/src/server/functions.test-d.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 30,32,38,62,64
+packages/core/src/schema/contract.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 37,50-57,75-79,81
+packages/core/src/schema/schema.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 75,86-93,104-105,107,113,117,194,200-201,203
+packages/vite/src/builder/drizzle.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 14-38
+docs/writing-apps/overview.mdx
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 2-3,7,47-49
+packages/cli/src/preview.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 18-19,86,94,117,157-175,177
+packages/core/src/spec/json-schema.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 20,28,30-31,34,41-42,44-46,52-54
+packages/agent/src/instructions.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 48,50-52
+packages/core/src/server/handler.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1-2,8-12,46-52,55,78,97-103,106,122,135,242-249,252,270,321-323,326,347,358,362-363,523-525,529,550,553-556,563-565,569,589-591,598-600,637-641
+packages/db/src/schema/apps.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 58,64,154,166,214,223-229
+packages/kv/src/contract.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 7,25-28,31
+packages/api/src/routers/user.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 177,183
+docs/README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1,3,5,7,9-11,14,16,18,20-22,24,26,28,30,32-35,37,39-41,43,45
+docs/concepts/tools.mdx
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 2-3,7,65,94
+  s_71ae4a7a952f57::t_4a08b94bac7a9c 95
+packages/core/src/spec/spec.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 20,51-53
+packages/core/src/primitives/arktype.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 33,62-64
+packages/agent/src/session-store.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 80,82
+packages/vite/README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 3,5-7,20
+  s_71ae4a7a952f57::t_67612f312a33f6 21
+playground/README.md
+  s_71ae4a7a952f57::t_96dd26563dec1f 37
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 3,22,28,41
+packages/asset-delivery/README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1,3
+docs/concepts/components.mdx
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 2-3,9,59,130,160
+  s_71ae4a7a952f57::t_35b949d9e2267e 161
+packages/vite/src/builder/migrations.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 7-8,36,43,58
+packages/app/README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1,3,7,23-27,37,52-56,78-82
+packages/core/src/spec/component.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 5,11,13-14,19,21-25
+packages/client-core/src/store/store.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 83,114
+packages/vite/src/builder/define-view.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 92
+packages/api-platform/src/scope.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 82,85
+packages/agent/src/agent-step.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 18,25-26
+apps/apps-worker/src/supervisor/capabilities.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 10-12,63-67
+packages/agent/src/agent-step.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 14,30
+packages/cli/src/for-each-sequential.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1-26
+packages/core/src/schema/tools.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 201,203,205-209,214,220-221
+packages/react/package.json
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 73-74
+docs/concepts/slots.mdx
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 2-3,75,79,114,116,134,138
+  s_71ae4a7a952f57::t_2a1b48ddeed80c 139
+apps/apps-worker/src/runtime/builder.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 130-139,146,150
+packages/core/README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1,3,5,7-9,22-24,26,28
+packages/vite/src/for-each-sequential.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1-26
+docs/writing-apps/ui.mdx
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 2-3,127,141
+  s_71ae4a7a952f57::t_f729d0bfa1c5f8 142
+packages/agent/src/tools/publish.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1-191
+packages/api-platform/src/mcp.integration.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 7,18-29,32-47
+packages/db/src/schema/scope.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 128-132,159-163,200-204
+.changeset/actionable-deploy-diagnostics.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1-5
+packages/vite/src/for-each-sequential.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1-10
+packages/api-utils/src/app-auth/tokens.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 159-162,187-192,215-218
+RELEASING.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 3,7,9,13,15,17
+docs/concepts/views.mdx
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 2-3,78,88,92,111-112,122
+  s_71ae4a7a952f57::t_cc5e28a74f5d90 123
+packages/sandbox/src/iframe/resolve-view.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 73-89,128
+packages/api-platform/src/team-identity.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 66-74,99-125
+packages/agent/src/tools/deploy.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 6,13-90
+packages/asset-delivery/src/index.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 360,362,365
+packages/storage/README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1,3
+packages/react/src/__tests__/use-view-context.test.tsx
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 59
+packages/app/src/providers.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 7-8,20-26,31
+packages/cli/src/init.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 8,198-205
+packages/api-utils/README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1,3
+packages/api-utils/src/dev-delay.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 6-8,10-26,28,30-35,37-39
+.agents/skills/writing-guidelines/SKILL.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1-39
+packages/api-platform/src/routes/app-agent.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 5,28-39,132
+packages/vite/src/builder/file-routes.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 8,10,128-129,160-171,173-176,178-198,201
+packages/env/README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1,3
+packages/client-core/README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1,3
+apps/apps-worker/src/transport.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 21-24,220
+README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 11,13,15,17,19-25,27-35,41-45,50,54
+apps/web/src/routes/api/platform.$.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 21-23
+packages/email/src/templates/better-auth.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 44-49
+apps/apps-worker/src/supervisor/subscriptions.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 44,49,96,105,114-115,118,120-123,145,159,203-204
+packages/client-core/src/client/tools.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1,10,34-36
+packages/api-platform/src/preview-build-store.test.mjs
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 6,14-16,69,94,242-244,272,394,400-421
+apps/apps-worker/src/supervisor/source.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 39-42,44,58-65
+apps/apps-worker/src/supervisor/source.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 4,43,56-60,117-121,123,135-139
+  s_71ae4a7a952f57::t_d501090722d3fd 140
+packages/core/src/server/scope.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 165
+packages/core/src/server/mcp.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 38-42,44-50
+packages/cli/src/index.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 4,16,72,79-82,135-138,214,218
+packages/core/src/schema/tools.test-d.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 32
+packages/client-core/src/store/local/slot-runtime.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 288,308-311
+packages/api-platform/src/app-agent-mcp.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 4,7,11,26-51,69-71,77-89,129,286-290
+apps/apps-worker/src/routing.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 49,55
+packages/sandbox/README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1,3
+packages/api/README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 3
+packages/agent/README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1,3,7,9-18,24-30,32,34,36,38,40,42-50,56-58,60-64,66,68-78,85,88,90-94,126-130
+packages/client-core/src/client/views.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 64-68
+packages/db/src/schema/cli-auth.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 118,123,125,130-134
+packages/agent/src/tools/deploy.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1,3-4,11-18,22-26,29-38,40-65,68-104,106-116,119
+docs/getting-started/installation.mdx
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 2-3,7-9,95,321,386,437,627,745-747,802-804,856-858,918,920
+SECURITY.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 3,5,7-10,12
+apps/apps-worker/tsconfig.json
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 4
+skills-lock.json
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 83-88
+packages/agent/src/sandbox.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 9-10,65-76,123,135,139
+packages/client-core/src/store/local/remote-view.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1,49,230
+packages/core/src/primitives/zod.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 61
+packages/core/src/spec/view.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 7,18
+packages/react/src/__tests__/tailor-kit.test.tsx
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 232,343,348,439,444,979
+packages/react/src/__tests__/use-views.test.tsx
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 11,16-31,94,203,294-296,514,520,523-525,533,668-670,788,814-816,859-864,869,872-877,994,1000,1003-1005,1052,1258,1332
+packages/app/src/client/connection.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 438-447
+packages/cli/src/generator/generate.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 13,135-144,504-511
+packages/observability/src/index.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 90-97,100-101
+apps/apps-worker/src/assets.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 33,36-38,326-328
+packages/sandbox/src/host/store.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 140-141
+packages/ui/README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 3
+packages/client-core/src/client/config.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 17-19,23
+packages/core/src/server/backend.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 47,50-51,55
+packages/cli/src/for-each-sequential.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1-10
+packages/core/src/server/tools.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 5,47-52,194-222,331,415,419
+packages/api-platform/src/routes/agent-deployment.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 9,83-86,94-97,106-109,255,260,277,299-305,313-315,349
+packages/cli/src/deploy.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 15-16,19,23,35-38,40-59,109-113,221-224,270-312,358-364,369-374,377-379,390,416-417,449,532-540
+packages/api-platform/src/routes/preview.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 16,124,133,243-250,252
+apps/apps-worker/README.md
+  s_71ae4a7a952f57::t_96dd26563dec1f 4
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 3,7-13,15-17,21-27,29,31,33-41,45,47,49-53,57,68-72,76,78,80,82-86,90-91,100,102,105,108-114,120-122,126-127,134,138,142-143,150-156,160-164,170-172,176,184-186,192-196
+packages/client-core/src/client/fetch-client.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 15-17,75-78
+apps/apps-worker/src/worker.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 5,9,59-62,138-145,151,171,178,199,251-260
+packages/app/tsup.config.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1
+packages/kv/README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 3
+packages/react/README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 3
+packages/client-platform/scripts/normalize-esm-imports.mjs
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 17-23,25-26,29-67,69-71,73
+packages/agent/src/skills/backend-functions.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 5-16
+apps/apps-worker/src/supervisor/websockets.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1,32-38,47,51,60,94-95
+apps/apps-worker/src/runtime/actions.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 72,76
+apps/apps-worker/src/tests/integration.test.mjs
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 856-874
+packages/core/src/server/contract.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 119-159,198,214
+packages/email/README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1,3
+packages/db/src/schema/preview-session.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 83,87-89
+packages/agent/src/agent.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 9
+packages/api/src/routers/project.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 200-203,205,216-221,223,238-240,242
+apps/apps-worker/src/runtime/functions.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 72,76
+packages/api-platform/src/for-each-sequential.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1-10
+packages/auth/README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1,3
+packages/config/README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1,3
+apps/apps-worker/src/runtime/execution.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 171,174
+packages/api-platform/src/routes/deployments.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 215,391-409,475,480,575,663,818
+packages/app/src/client/query-store.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 75,86
+packages/client-core/src/store/fetch/cache.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 197
+packages/sandbox/src/iframe/runtime.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 22-24
+packages/agent/src/tools/publish.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1-218
+packages/api-platform/src/routes/preview-grants.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 12,166-169,171,174,180,186,188,207,216,236
+packages/react/src/__tests__/render-slot.test.tsx
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 280,282,289,386,425
+packages/core/tsconfig.json
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 4
+packages/sandbox/src/protocol.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 95,157-159,231,274-280
+packages/cli/src/deploy.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 251-261,273,294,360-366
+packages/sandbox/src/iframe/runtime.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 2,6,20-33,42,56-63,108-118,122,137-139,141-143,159-161,265-270
+apps/apps-worker/src/runtime/execution.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 519-524,530
+packages/api-platform/src/for-each-sequential.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1-26
+packages/vite/src/index.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 10-11,139,148,161,165,168
+apps/apps-worker/src/supervisor/runtime.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 44-48,68-72
+packages/agent/src/sandbox.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 72,82-83,85-86,94,175
+packages/api-platform/src/routes/deployments.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 23,195-200,202-204,665,757,770
+packages/app/src/instances.test-d.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 45,47,90
+packages/db/README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1,3
+docs/getting-started/introduction.mdx
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 3,6,8,10,12,14,16,18,20,22,24,26,28,30-32,34,36,38-41,43,45
+packages/client-core/src/client/config.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 164-168,178
+packages/cli/src/preview-startup.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 5,8-9,11-17,26,64,69,74,129
+packages/cli/README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 3,5,7,10-22,26-30,32,34,36,38,40,42,44-60,62
+packages/core/src/primitives/valibot.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 55-57
+packages/api-platform/README.md
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1,3,5,7,11-12,14-16,20,22
+packages/api-platform/src/app-agent-mcp-isolation.test.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 1,15,30-44,75
+packages/api-platform/src/preview-build-store.ts
+  s_71ae4a7a952f57::t_e1910c3a76f3e7 6-7,193-203,205,300-330,332-334,337,342-360,362,422-442,445,485-497,500
+pnpm-lock.yaml
+  s_71ae4a7a952f57::t_2c8aa038b6a632 602-604,1388-1390
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8f54c267e5607a53a11d2e1fd239e0f5b3f6846a",
+  "prompts": {},
+  "sessions": {
+    "s_71ae4a7a952f57": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13dba-073d-7880-beb5-dc2df392d25e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

@@ -1,0 +1,32 @@
+packages/app-agent/README.md
+  s_109b9869ca3fd4::t_1cfded82157e86 59-63
+packages/core/README.md
+  s_109b9869ca3fd4::t_1cfded82157e86 29-31
+packages/api-platform/src/app-agent-mcp.test.ts
+  s_109b9869ca3fd4::t_42a1a96f76d193 299-347
+packages/api-platform/src/app-agent-mcp.ts
+  s_109b9869ca3fd4::t_1cfded82157e86 10,124,126-136
+packages/app-agent/src/sandbox.ts
+  s_109b9869ca3fd4::t_1cfded82157e86 87
+packages/api-platform/src/app-agent-mcp-isolation.test.ts
+  s_109b9869ca3fd4::t_d3779de6286bce 1-28,33-78,80-88,106-116,126,144-146,152-165,171-179,182-192,195-200,207-208,216-220,223-230,240-242
+  s_109b9869ca3fd4::t_bd1c4a3830bd7b 96
+  s_109b9869ca3fd4::t_1397a042c478d8 29-32,89-95,97-98,100-105,118-125,127-143,147-151,180-181,193-194,201-206,209-215,221-222,231-239
+  s_109b9869ca3fd4::t_c1ef84c365cee5 79,99,117,166-170
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "581d8740240dac1ca5af26ccea7e4e8c78421c3f",
+  "prompts": {},
+  "sessions": {
+    "s_109b9869ca3fd4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12e6f-0b67-7601-a555-bed53c57145f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

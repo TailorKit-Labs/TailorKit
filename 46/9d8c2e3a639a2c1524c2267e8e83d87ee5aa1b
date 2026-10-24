@@ -1,0 +1,51 @@
+packages/core/src/schema/views.ts
+  s_3d130e08251b54::t_703f159a658178 50-55
+packages/cli/src/generator/types.test.ts
+  s_3d130e08251b54::t_d060d982eaadaf 197
+  s_3d130e08251b54::t_13257e53a455cc 193-196,198-199,202-220,235,638
+  s_3d130e08251b54::t_2623bedf624526 200-201,221-223,225-230,234
+  s_3d130e08251b54::t_2650d32b6d7b71 13,224,231-233
+packages/core/src/schema/slots.test.ts
+  s_3d130e08251b54::t_703f159a658178 6,10-71
+docs/concepts/slots.mdx
+  s_3d130e08251b54::t_13257e53a455cc 76-96,147,153
+docs/getting-started/installation.mdx
+  s_3d130e08251b54::t_512b3fcb0b8c1a 167-172,244-249,319-324,333
+  s_3d130e08251b54::t_f8b69916abfe4c 334
+packages/core/src/schema/schema.ts
+  s_3d130e08251b54::t_703f159a658178 23-25,92-94,190-191
+  s_c99e12388a36c5::t_302f8b78d5bd15 192
+packages/core/src/schema/contract.ts
+  s_3d130e08251b54::t_703f159a658178 19-21,61-63
+.changeset/tired-books-bake.md
+  s_3d130e08251b54::t_68d8d0055a11ae 2-3,5-6
+  s_3d130e08251b54::t_6b452491462d8b 1,4
+packages/core/src/spec/spec.ts
+  s_3d130e08251b54::t_703f159a658178 29
+packages/cli/src/generator/types.ts
+  s_3d130e08251b54::t_703f159a658178 58-63,78,618-631
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "469d8c2e3a639a2c1524c2267e8e83d87ee5aa1b",
+  "prompts": {},
+  "sessions": {
+    "s_3d130e08251b54": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13e32-e2dc-77f3-b2bf-1b552eac1a42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_c99e12388a36c5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13e35-7874-7a90-9c95-8d8fd269609f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

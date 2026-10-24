@@ -1,0 +1,39 @@
+.changeset/focused-app-contracts.md
+  s_44975098974bf2::t_bf7aae5b12d961 5
+packages/agent-fx/src/instructions.md
+  s_44975098974bf2::t_9e7a0c08961597 9
+packages/agent-fx/src/skills/frontend.md
+  s_44975098974bf2::t_dbb5d594073e29 5
+packages/agent-fx/src/skills/setup.md
+  s_44975098974bf2::t_75cd909f59bcca 45
+packages/agent-fx/src/skills/views.md
+  s_44975098974bf2::t_2bf597f05c27dd 5
+packages/cli/src/generator/capabilities-skill.test.ts
+  s_44975098974bf2::t_12ca6ad7cfdd5d 70-72,83-86,93,152,270-273,313
+packages/cli/src/generator/generate.test.ts
+  s_44975098974bf2::t_4fdf01c1aeba4d 571
+packages/cli/src/generator/skill.ts
+  s_44975098974bf2::t_9dd2528456ffdd 23-28,67,73
+packages/cli/src/generator/templates/vite.config.ts.liquid
+  s_44975098974bf2::t_2f226ed37fa0f9 7,10
+playground/apps/todo/.agents/skills/tailorkit-capabilities/SKILL.md
+  s_44975098974bf2::t_1f4a5eaefef71a 2,8
+vite.config.ts
+  s_44975098974bf2::t_35fed3f7e29a61 53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f542c2d73f2faeb029180e5133fa4ede0bde49e0",
+  "prompts": {},
+  "sessions": {
+    "s_44975098974bf2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15182-bddb-71e2-8ef7-0ada4d2e5ba6",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+packages/vite/src/builder/file-routes.test.ts
+  s_4309e34fe2b036::t_3893468af40820 259,294-301,314-320,322-324,326-339,341-367,369
+packages/vite/vite.config.ts
+  s_4309e34fe2b036::t_fa4d382791d3c2 17-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0bcdccf2dd06e3f0f248debbf8061ffe69f4419d",
+  "prompts": {},
+  "sessions": {
+    "s_4309e34fe2b036": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13d0c-2e32-7141-b980-d10e6701e261",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

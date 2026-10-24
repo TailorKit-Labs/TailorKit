@@ -1,0 +1,25 @@
+apps/web/public/favicon.svg
+  s_a54fefc9bc01c7::t_13fa3d256d2819 2-12
+apps/web/src/routes/__root.tsx
+  s_a54fefc9bc01c7::t_217d269b9fbc03 130-135
+docs/docs.json
+  s_a54fefc9bc01c7::t_2a72efd7d51d24 10
+docs/favicon.svg
+  s_a54fefc9bc01c7::t_117e489966d5bc 1-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b5e7273c57f3411d336c696249e44c319da23feb",
+  "prompts": {},
+  "sessions": {
+    "s_a54fefc9bc01c7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15b77-a9b6-7c70-9102-3b45a92ed8fe",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

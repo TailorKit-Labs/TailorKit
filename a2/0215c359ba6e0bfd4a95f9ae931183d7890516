@@ -1,0 +1,20 @@
+packages/agent-fx/src/instructions.md
+  s_d3057019e73af2::t_7161bc21405634 23
+  s_d3057019e73af2::t_122c4b6dace6f2 17-22,24-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a20215c359ba6e0bfd4a95f9ae931183d7890516",
+  "prompts": {},
+  "sessions": {
+    "s_d3057019e73af2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15312-993f-77e2-97fd-a77f6c7bbcd7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

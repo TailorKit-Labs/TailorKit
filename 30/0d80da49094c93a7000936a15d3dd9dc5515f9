@@ -1,0 +1,21 @@
+pnpm-workspace.yaml
+  s_79ff2e144b2355::t_9911611e1b229f 7-8
+pnpm-lock.yaml
+  s_79ff2e144b2355::t_821f673a1c4906 287,18720,18735,18752,18767
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "300d80da49094c93a7000936a15d3dd9dc5515f9",
+  "prompts": {},
+  "sessions": {
+    "s_79ff2e144b2355": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13352-70a5-78e2-9cff-6e3d90d0659f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

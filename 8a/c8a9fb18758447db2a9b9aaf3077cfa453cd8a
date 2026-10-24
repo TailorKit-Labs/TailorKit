@@ -1,0 +1,115 @@
+.changeset/focused-app-contracts.md
+  s_44975098974bf2::t_d2c66f6bdea07d 12-13
+packages/agent-fx/README.md
+  s_44975098974bf2::t_1cc1b0a06659f7 13,15
+packages/agent-fx/src/instructions.md
+  s_44975098974bf2::t_4a8daf774cf64e 1,3,5,7,9,11,13,15-18,20,22-26,28,30,32,34
+packages/agent-fx/src/skills.ts
+  s_44975098974bf2::t_3ec42d93411a57 40,46,51,57,61-62
+packages/agent-fx/src/skills/database.md
+  s_037b1ed6cffbe5::t_092247b1bdb048 1,3,5,7,9,11,27,29-30,32,35,37,39,41,43,45,47
+packages/agent-fx/src/skills/frontend.md
+  s_44975098974bf2::t_658f655023c678 1,3,5,7,9,11,13
+packages/agent-fx/src/skills/functions.md
+  s_44975098974bf2::t_d1c2ab9f1b2863 1,3,5,7-9,11,13,15,17,19,21,23,25,27
+packages/agent-fx/src/skills/references/functions.md
+  s_44975098974bf2::t_d4d1b58853cca2 1,3,5,7,12,44,62-63,79,85,87,89,99-105,108,121
+packages/agent-fx/src/skills/references/interactions.md
+  s_44975098974bf2::t_6dd703458d4a31 1,3,5,10-11,17-19,25-26,30,34,40
+packages/agent-fx/src/skills/references/views.md
+  s_44975098974bf2::t_9714ed2cbddd5a 1,3,5,22,45,47,82
+packages/agent-fx/src/skills/references/workflows.md
+  s_44975098974bf2::t_287782d6dcc6fb 1,3,5-14,16,18
+packages/agent-fx/src/skills/setup.md
+  s_44975098974bf2::t_7e776735a69a25 1,3,5,7,11-12,15,17,19,21,23,25,31,33,35
+packages/agent-fx/src/skills/views.md
+  s_44975098974bf2::t_7dccc3c50e1916 1,3,5,7,9,11,15,17,19
+packages/agent/README.md
+  s_44975098974bf2::t_008e9649cc1cba 18,22
+packages/agent/src/agent.integration.test.ts
+  s_44975098974bf2::t_412dfe07587bbf 277
+packages/agent/src/instructions.md
+  s_44975098974bf2::t_51b2a02f4f81a6 1,3,5,7,9,11,13,15,17-20,22,24,26,28,30
+packages/agent/src/skills.ts
+  s_44975098974bf2::t_60a3f9feb42bbc 16,22,28,33,38,44
+packages/agent/src/skills/backend-functions.md
+  s_44975098974bf2::t_2d268ada6a1358 1,3,5,7,9,27,44,46,48,50,52
+packages/agent/src/skills/host-ui.md
+  s_44975098974bf2::t_4072978ea1423b 1,3,5,7,9,11
+packages/agent/src/skills/preact-composition.md
+  s_44975098974bf2::t_e56cefbdcda42b 3,5,7,9
+packages/agent/src/skills/preact-performance.md
+  s_44975098974bf2::t_5e13de912fef54 3,5-9,11
+packages/agent/src/skills/references/drafts.md
+  s_44975098974bf2::t_66e805368fc0e9 1,3,5,7-8,11,13,15-34
+packages/agent/src/skills/references/local-state.md
+  s_44975098974bf2::t_10021b44664c7b 1,3,5,8-24,27-30,35
+packages/agent/src/skills/sqlite-database.md
+  s_44975098974bf2::t_0013c52b31747c 1,3,5,16,18,25,27,36,38,40,42
+packages/agent/src/skills/views-and-routing.md
+  s_44975098974bf2::t_11aa573a0ebe6e 1,3,5-8,10,12,14,16
+packages/app-db/src/agent-reference.test.ts
+  s_037b1ed6cffbe5::t_c380b51c5a604b 29-30
+packages/cli/src/generator/agent-examples.test.ts
+  s_44975098974bf2::t_0655d3c6c297ae 43-49,144
+packages/cli/src/generator/reference-examples.ts
+  s_037b1ed6cffbe5::t_9c1028497573ca 3-4,8,15,21,51-55,60,62,64,66-69,112
+packages/cli/src/generator/references.ts
+  s_44975098974bf2::t_885a79c27e6acd 195,212,214,293,295,360,384
+packages/cli/src/generator/skill.ts
+  s_037b1ed6cffbe5::t_aac0a0089de1fb 75,77,79-82,84-86
+playground/apps/todo/.agents/skills/tailorkit-capabilities/SKILL.md
+  s_44975098974bf2::t_f0b46539fccc7d 10,12,14-17,19-21
+playground/apps/todo/.agents/skills/tailorkit-capabilities/references/components/Box.md
+  s_44975098974bf2::t_49f625d76feb35 33,39,43
+playground/apps/todo/.agents/skills/tailorkit-capabilities/references/components/Button.md
+  s_44975098974bf2::t_e21fee042cf9d2 17,23,27
+playground/apps/todo/.agents/skills/tailorkit-capabilities/references/components/Flex.md
+  s_44975098974bf2::t_fd4f966e4465bf 38,44,48
+playground/apps/todo/.agents/skills/tailorkit-capabilities/references/components/Grid.md
+  s_44975098974bf2::t_16fbc242a37500 35,41,45
+playground/apps/todo/.agents/skills/tailorkit-capabilities/references/components/Inline.md
+  s_44975098974bf2::t_18b1ef434ccd18 24,30,34
+playground/apps/todo/.agents/skills/tailorkit-capabilities/references/components/Input.md
+  s_44975098974bf2::t_cce37097b20bca 16,22,26,32,39,41,43,45-48
+playground/apps/todo/.agents/skills/tailorkit-capabilities/references/components/Pressable.md
+  s_44975098974bf2::t_bd16d0e1525031 42,48,52
+playground/apps/todo/.agents/skills/tailorkit-capabilities/references/styling.md
+  s_44975098974bf2::t_f4412625b41346 7
+playground/apps/todo/.agents/skills/tailorkit-capabilities/references/tools.md
+  s_44975098974bf2::t_2b61cd751770b5 5
+playground/apps/todo/.agents/skills/tailorkit-capabilities/references/tools/todos-add-6bfe2fb3209a3c0e.md
+  s_44975098974bf2::t_54b148c457773e 11-12
+playground/apps/todo/.agents/skills/tailorkit-capabilities/references/tools/todos-list-f2d7a276699d7c36.md
+  s_44975098974bf2::t_f250c15832f386 12
+playground/apps/todo/.agents/skills/tailorkit-capabilities/references/tools/todos-remove-971a790b36fc8cc5.md
+  s_44975098974bf2::t_8f6fab4804a2f5 11-12
+playground/apps/todo/.agents/skills/tailorkit-capabilities/references/tools/todos-toggle-1fa8d43e2df154c1.md
+  s_44975098974bf2::t_47214fa5524b64 11-12
+playground/apps/todo/.agents/skills/tailorkit-capabilities/references/views.md
+  s_44975098974bf2::t_83be2960774082 15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8ac8a9fb18758447db2a9b9aaf3077cfa453cd8a",
+  "prompts": {},
+  "sessions": {
+    "s_037b1ed6cffbe5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a151c9-2b6f-77e1-aaaf-03012636c18c",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_44975098974bf2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15182-bddb-71e2-8ef7-0ada4d2e5ba6",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+apps/apps-worker/package.json
+  s_9868f7882269c0::t_fe9c854d7dc8cf 7,10,12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5bac362cbf3d2adc73fa4b5cf6d60f4daba891ec",
+  "prompts": {},
+  "sessions": {
+    "s_9868f7882269c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15739-48fc-7fb3-8903-5da02d25dcc0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

@@ -1,0 +1,65 @@
+apps/apps-worker/src/supervisor/capabilities.test.ts
+  s_9e5c633f1eb375::t_b10f419959baf6 86-90,111
+  s_9e5c633f1eb375::t_1734927c4b2e30 112-115
+packages/observability/src/index.test.ts
+  s_9e5c633f1eb375::t_10992c5071f968 33
+packages/agent/src/tools/deploy.test.ts
+  s_9e5c633f1eb375::t_10992c5071f968 14-15,17,20,30,36-39,75-80
+  s_9e5c633f1eb375::t_fed376e8e0d87a 16
+packages/cli/src/init.test.ts
+  s_9e5c633f1eb375::t_10992c5071f968 15,54,100
+  s_9e5c633f1eb375::t_020bccb1e8c828 101-104
+packages/sandbox/src/host/index.test.ts
+  s_9e5c633f1eb375::t_10992c5071f968 306,350
+packages/cli/src/generator/types.test.ts
+  s_9e5c633f1eb375::t_5f37a5d633b6af 49-58,63,101,136
+packages/cli/src/deploy.test.ts
+  s_9e5c633f1eb375::t_10992c5071f968 207
+packages/vite/src/builder/server.test.ts
+  s_9e5c633f1eb375::t_10992c5071f968 393,418
+  s_9e5c633f1eb375::t_b10f419959baf6 26
+apps/apps-worker/src/runtime/actions.test.ts
+  s_9e5c633f1eb375::t_10992c5071f968 545
+packages/app/src/client/connection.test.ts
+  s_9e5c633f1eb375::t_10992c5071f968 31-33,100-102,157-159,188-190,226-228,273-275,331-333,354-356,385-387,418-420,451-453
+packages/client-core/src/store/local/view-context-diagnostics.test.ts
+  s_9e5c633f1eb375::t_10992c5071f968 188
+packages/client-platform/tests/preview.test.ts
+  s_9e5c633f1eb375::t_5f37a5d633b6af 61-62,64,66-77
+  s_9e5c633f1eb375::t_7e4ccf49c5d1a5 63,65
+apps/apps-worker/src/worker.test.ts
+  s_9e5c633f1eb375::t_b10f419959baf6 126-130
+packages/api/src/routers/project.test.ts
+  s_9e5c633f1eb375::t_10992c5071f968 34,37,39
+packages/api-utils/src/app-auth/tokens.test.ts
+  s_9e5c633f1eb375::t_10992c5071f968 24,128,133
+  s_9e5c633f1eb375::t_b10f419959baf6 82-84,86-88,100,116-123
+  s_9e5c633f1eb375::t_bcf2e364eaa70a 85
+packages/cli/src/generator/package-versions.test.ts
+  s_9e5c633f1eb375::t_10992c5071f968 10-11,26,41-42,47
+packages/client-platform/test/stream.test.ts
+  s_9e5c633f1eb375::t_b10f419959baf6 8-10,12,22-23
+packages/client-platform/src/preview.ts
+  s_9e5c633f1eb375::t_b10f419959baf6 13-20
+packages/client-core/src/store/fetch/cache.test.ts
+  s_9e5c633f1eb375::t_10992c5071f968 161,178,271
+packages/core/src/server/mcp.test.ts
+  s_9e5c633f1eb375::t_10992c5071f968 131,133
+  s_9e5c633f1eb375::t_d2bb980a5a6633 132
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b684d199776cf2978de73406d67564817c9d0945",
+  "prompts": {},
+  "sessions": {
+    "s_9e5c633f1eb375": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13c52-a1d3-7610-a50b-87e3e67e19d6",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

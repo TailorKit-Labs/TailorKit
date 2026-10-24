@@ -1,0 +1,47 @@
+apps/web/src/routes/(app)/$orgSlug/$projectSlug/apps.$appId.tsx
+  s_f90b094bd71745::t_27c671329f4e35 6,153,155-160,168-183
+  s_f90b094bd71745::t_091a0d8aad5737 3,154
+apps/web/src/routeTree.gen.ts
+  s_f90b094bd71745::t_521d584f19b5bb 40,195-199,284,318,359,400,434,474,500,702-708,954
+apps/web/package.json
+  s_f90b094bd71745::t_b8d774b1c90c18 39
+apps/web/src/routes/api/apps/$appId/source.ts
+  s_f90b094bd71745::t_091a0d8aad5737 51
+  s_f90b094bd71745::t_27c671329f4e35 1-26,28-36,38-50,52-69
+  s_f90b094bd71745::t_20e7ec7f1aad7d 27,37
+packages/flags/LICENSE.md
+  s_f90b094bd71745::t_93d25af99b474b 1-87
+packages/app-agent/package.json
+  s_f90b094bd71745::t_3cd5260cfa40ba 27
+  s_f90b094bd71745::t_b8d774b1c90c18 19-23
+packages/flags/package.json
+  s_f90b094bd71745::t_94a19df71160f1 23
+  s_f90b094bd71745::t_b8d774b1c90c18 1-22,24-26
+packages/flags/src/index.ts
+  s_f90b094bd71745::t_c390ddb703243b 7
+  s_f90b094bd71745::t_b8d774b1c90c18 1-6,8-11
+packages/flags/tsconfig.json
+  s_f90b094bd71745::t_b8d774b1c90c18 1-11
+packages/app-agent/src/source-export.ts
+  s_f90b094bd71745::t_27c671329f4e35 6-12,27
+  s_f90b094bd71745::t_77ce9718f8134d 15,60-62,64-66
+  s_f90b094bd71745::t_e5c07cb8e29d88 1-5,13-14,16-26,28-59,63,67-68
+pnpm-lock.yaml
+  s_f90b094bd71745::t_4253b8d82ce04c 420-422,1415-1430,6540-6550,6567-6570,9432-9435,17542-17554,17578-17579,21235-21236
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d82465c694590c368e1341d7d17e878d5f0f5c05",
+  "prompts": {},
+  "sessions": {
+    "s_f90b094bd71745": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12fd5-0e5c-76b3-b327-47fc1bb4c69d",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

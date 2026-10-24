@@ -1,0 +1,19 @@
+packages/app/README.md
+  s_3f255cad337178::t_6ebbe9417d1bd5 74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "51f06c335c154841ee42cbdb0d5477127cb9c719",
+  "prompts": {},
+  "sessions": {
+    "s_3f255cad337178": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a139e6-3df0-75a0-9373-c2b6bea12274",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

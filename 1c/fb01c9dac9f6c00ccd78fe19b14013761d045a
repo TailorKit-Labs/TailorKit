@@ -1,0 +1,22 @@
+packages/react/src/__tests__/tailor-kit.types.tsx
+  s_9d79b70b6eff2a::t_ba555f096193ec 4-5,22-33
+  s_9d79b70b6eff2a::t_bef49125db0d2a 34
+packages/client-core/src/client/config.ts
+  s_9d79b70b6eff2a::t_ba555f096193ec 23-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1cfb01c9dac9f6c00ccd78fe19b14013761d045a",
+  "prompts": {},
+  "sessions": {
+    "s_9d79b70b6eff2a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12fc8-3200-7053-8c8a-eb72a53cc84e",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

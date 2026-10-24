@@ -1,0 +1,19 @@
+scripts/check-prerelease.mjs
+  s_6b3ee77f666210::t_d816930c6d03be 17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0f3c8b7e86e072d7bcd2919007cb66ffe35c3d7d",
+  "prompts": {},
+  "sessions": {
+    "s_6b3ee77f666210": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13839-0b89-77f2-9f4d-f05effbd3bde",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

@@ -1,0 +1,38 @@
+.changeset/quick-runtime-discovery.md
+  h_18044dd1b61a81 1-6
+apps/apps-worker/src/worker.test.ts
+  h_18044dd1b61a81 370-371
+apps/apps-worker/src/worker.ts
+  h_18044dd1b61a81 132-134
+packages/api-platform/openapi.json
+  h_18044dd1b61a81 2605-3126,3137-3145,3215
+packages/api-platform/src/routes/apps.test.ts
+  h_18044dd1b61a81 183-412
+packages/api-platform/src/routes/apps.ts
+  h_18044dd1b61a81 27-33,64-110,122,138-196,533
+packages/api-platform/src/routes/runtime.ts
+  h_18044dd1b61a81 9,15,50-149,155-160,163,165-167
+packages/client-platform/src/client/index.ts
+  h_18044dd1b61a81 3-4
+packages/client-platform/src/client/sdk.gen.ts
+  h_18044dd1b61a81 5,93-101
+packages/client-platform/src/client/types.gen.ts
+  h_18044dd1b61a81 614-724,727-728
+packages/core/src/server/runtime-discovery.ts
+  h_18044dd1b61a81 1-78
+packages/core/src/server/views.test.ts
+  h_18044dd1b61a81 94,96-105,167-168,170,173,175,178,181,354-418
+packages/core/src/server/views.ts
+  h_18044dd1b61a81 15,112-121,204,206-210
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a963f46c19a56c51d4d0c0e797ce66ad94587d8f",
+  "prompts": {},
+  "humans": {
+    "h_18044dd1b61a81": {
+      "author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

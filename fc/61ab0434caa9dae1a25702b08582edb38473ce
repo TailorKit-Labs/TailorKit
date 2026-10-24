@@ -1,0 +1,67 @@
+apps/apps-worker/src/supervisor/runtime.test.ts
+  s_03779b7e2ab596::t_e735bd09adcc98 42,48,51-59,75-76,79-80
+  s_03779b7e2ab596::t_b9f5f3f036cd1f 41,43,45-46,49-50,77,82-93,107-109
+apps/web/workflows/app-deployment.ts
+  s_03779b7e2ab596::t_b0da42bd74bf9e 1-2
+packages/api-platform/package.json
+  s_03779b7e2ab596::t_b0da42bd74bf9e 38
+packages/api-platform/src/routes/apps.ts
+  s_03779b7e2ab596::t_b0da42bd74bf9e 429-438,619
+  s_03779b7e2ab596::t_5ccb68bf77195c 367,369,376-395,397-421
+packages/api-platform/src/routes/runtime.ts
+  s_03779b7e2ab596::t_b0da42bd74bf9e 240,243,245,249-250,252-260,264-268
+  s_03779b7e2ab596::t_23439153eb23e5 246,248,261-262
+apps/apps-worker/src/supervisor/source.test.ts
+  s_03779b7e2ab596::t_e735bd09adcc98 8,44-76,85,87-89,92-97,107,112-120,130-132,136-144,146-147,149-151,158,161-162,166,170-171,173-174,176-177,179-180,183-184,188-190,193-198,201,205-206,208-219,221,223,225,227,230-232,234,236-247,330,335-336,339,355,359,361-362,365,372-373,377,380
+  s_03779b7e2ab596::t_aa22afec8588ab 98-99,110,152,154,163-164,167,169,200,204,222,228,233,248,328-329,331-334,337-338,340-354,356-358,360,363-364,366-371,374-376,378-379
+packages/api-platform/src/runtime/deployment-steps.ts
+  s_03779b7e2ab596::t_b0da42bd74bf9e 1-16,20,22-26,29-64,66-71,74-91,93-96,99-102,105-108,111,114-121,123-125,130-146,148-149
+  s_03779b7e2ab596::t_7fc6721e2c1b3e 17-19,21,27-28,65,72-73,92,97-98,103-104,109-110,112-113,122,126-129,147
+apps/apps-worker/src/supervisor/source.ts
+  s_03779b7e2ab596::t_dc44dd6a33d1e1 7,23-26,34,36,43-63,68,70,72,74-75,113-115,119,122-124,126-128,134-138,141-145,163-164,167-182,185,191,197,221-224,226,232-237,275-278,280-289,291,309,315,319,321-323,325-328,330,332,337,340,343
+  s_03779b7e2ab596::t_fd2efa78a07b75 1,6,37-42,64-67,69,71,73,120-121,125,129-133,139-140,146-162,165-166,183-184,186-190,192-196,198-207,225,227-231,279,290,292-294,303,333-334,336,352
+packages/api-platform/src/runtime/publication.ts
+  s_03779b7e2ab596::t_b0da42bd74bf9e 1-10,13-20,23-29,31-35,38-40
+  s_03779b7e2ab596::t_5f9feca150da15 11-12,21-22,30,36-37
+packages/api-platform/src/runtime/deployment-workflow.ts
+  s_03779b7e2ab596::t_b0da42bd74bf9e 1-2,4-19,23-28
+  s_03779b7e2ab596::t_733795d3955cb5 3,20-22
+apps/apps-worker/README.md
+  s_03779b7e2ab596::t_ba93e5c704ee8a 35,193,213,215,217,219-221,225
+apps/apps-worker/src/installation.ts
+  s_03779b7e2ab596::t_7c45f169c642d3 32-34,55-86,340
+apps/apps-worker/src/publication.ts
+  s_03779b7e2ab596::t_e2f04a5e47047e 4,17
+apps/apps-worker/src/routing.test.ts
+  s_03779b7e2ab596::t_89f3150895e7bc 54-55,159-160,167,172,187,196,210-220
+apps/apps-worker/src/tests/integration.test.mjs
+  s_03779b7e2ab596::t_5904ff515ad9b6 1065,1108-1109,1121,1123-1125,1138,1140-1142,1145
+apps/apps-worker/src/worker-env.d.ts
+  s_03779b7e2ab596::t_e6de4e8b9742f3 2,5-11,14-18,22,25,28-29,32-33,36-37,40-41,44-45,48-49,52-53
+apps/apps-worker/src/worker.test.ts
+  s_03779b7e2ab596::t_09c370a3d88cd7 164-166,177,187-202,225-226,264,618,646-647,649-650,652-663
+apps/apps-worker/src/worker.ts
+  s_03779b7e2ab596::t_aa7bcdf3f2608c 18,111-118
+apps/apps-worker/wrangler.jsonc
+  s_03779b7e2ab596::t_1456c9487602b7 89
+packages/api-platform/src/routes/runtime.test.ts
+  s_03779b7e2ab596::t_6a3d291c695c97 5,7,91,108-109
+packages/api-platform/src/runtime/deployment-steps.test.ts
+  s_03779b7e2ab596::t_bae66454105c3d 1-126
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fc61ab0434caa9dae1a25702b08582edb38473ce",
+  "prompts": {},
+  "sessions": {
+    "s_03779b7e2ab596": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1635d-7a6e-74b2-b3c9-1ec29d075b00",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

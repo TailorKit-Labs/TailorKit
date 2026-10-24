@@ -1,0 +1,71 @@
+.changeset/public-vite-plugin.md
+  s_1c2f5257cdad52::t_c2c8c63bdcd484 1-13
+examples/apps/email/vite.config.ts
+  s_1c2f5257cdad52::t_da1fbbd7454302 1-2,5
+examples/apps/notes/package.json
+  s_1c2f5257cdad52::t_cc5239d504d712 18,24-25,34-36
+examples/apps/notes/vite.config.ts
+  s_1c2f5257cdad52::t_8c461074e2aa89 1-2,5
+examples/apps/todo/README.md
+  s_1c2f5257cdad52::t_1da538ffbd5d5a 11
+examples/apps/todo/package.json
+  s_1c2f5257cdad52::t_f8d55d7b0baece 18,25-26,37-39
+examples/apps/todo/vite.config.ts
+  s_1c2f5257cdad52::t_356eaf018280ec 1-2,5
+packages/app/README.md
+  s_1c2f5257cdad52::t_e2b9cd65f1cc0a 111,113-151
+packages/app/package.json
+  s_1c2f5257cdad52::t_b3c829e87ec818 46-49,77,81-82
+packages/app/src/builder/server.ts
+  s_1c2f5257cdad52::t_5c692db51d6389 4,20,26,59-61,63
+packages/app/src/vite.ts
+  s_1c2f5257cdad52::t_0a020930837da7 1-221
+packages/app/tsup.config.ts
+  s_1c2f5257cdad52::t_48e3b697a09a5f 13
+packages/cli/src/build.test.ts
+  s_1c2f5257cdad52::t_8847cd0663fe53 1-89
+packages/cli/src/build.ts
+  s_1c2f5257cdad52::t_795dd5ec37fcf6 1-54
+packages/cli/src/deploy.ts
+  s_1c2f5257cdad52::t_74d2f00633e509 13,253,255,274
+packages/cli/src/generator/generate.test.ts
+  s_1c2f5257cdad52::t_2f102d6d48bcb0 29,32-33,56,92,94-121
+packages/cli/src/generator/generate.ts
+  s_1c2f5257cdad52::t_2d64c92f80119f 12,30,35-36,89,123-126,147
+packages/cli/src/generator/templates/index.ts
+  s_1c2f5257cdad52::t_03c12db546df97 5,21
+packages/cli/src/generator/templates/package.json.liquid
+  s_1c2f5257cdad52::t_b60a9759a019b8 9,12-18,28-30
+packages/cli/src/generator/templates/vite.config.ts.liquid
+  s_1c2f5257cdad52::t_e05cf5bab95196 1-12
+packages/cli/src/index.test.ts
+  s_1c2f5257cdad52::t_5ef64fcc010fb9 102,112
+packages/cli/src/index.ts
+  s_1c2f5257cdad52::t_e301e7734e703b 319,335
+packages/cli/src/init.ts
+  s_1c2f5257cdad52::t_6b68b7bc5689fa 20,81,83-84,87-103,194,211,219,228
+packages/cli/src/preview-startup.test.ts
+  s_1c2f5257cdad52::t_f0eba74f023fe7 22,47-50
+packages/cli/src/preview.ts
+  s_1c2f5257cdad52::t_5196870c783c5d 1,179-183
+packages/tailorkit/package.json
+  s_1c2f5257cdad52::t_4586970b3e86f6 56-59,66
+packages/tailorkit/src/vite.ts
+  s_1c2f5257cdad52::t_83e83c24f8a8da 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "29f3e30d4d040189beabaf5ab7e67b1b9267f664",
+  "prompts": {},
+  "sessions": {
+    "s_1c2f5257cdad52": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1330d-146a-7191-b1d2-8c234710d378",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

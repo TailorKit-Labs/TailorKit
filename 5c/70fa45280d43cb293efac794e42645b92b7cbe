@@ -1,0 +1,27 @@
+packages/agent/README.md
+  s_b4d483724e1a51::t_ec5f1c09984be7 54,96,98,100,104,135-137
+packages/agent/src/mcp-progress.test.ts
+  s_b4d483724e1a51::t_b1531863243574 25,46,50,81,109,124,237,251-253
+packages/agent/src/mcp-progress.ts
+  s_b4d483724e1a51::t_43b19150b1c174 18,107,117,153-154,166,179,194,200,206,212,224,258,321-324,327
+packages/agent/src/mcp.test.ts
+  s_b4d483724e1a51::t_8444bdd195d8dd 121,134,138,182,185,192-195,226,347,375-377,390-392,395-397,413,441-444
+packages/agent/src/mcp.ts
+  s_b4d483724e1a51::t_1f197dbd7c6289 11,93
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5c70fa45280d43cb293efac794e42645b92b7cbe",
+  "prompts": {},
+  "sessions": {
+    "s_b4d483724e1a51": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a156a4-dddc-78f1-879d-ab09b9bbbef3",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

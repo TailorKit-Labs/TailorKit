@@ -1,0 +1,56 @@
+docs/writing-apps/ui.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-166
+docs/concepts/showing-ui.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-155
+apps/web/vercel.json
+  s_35012a91b914e4::t_e8fe23aa3667bf 7-18
+docs/concepts/components.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-104
+docs/concepts/slots.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-98
+docs/getting-started/introduction.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 45
+package.json
+  s_35012a91b914e4::t_e8fe23aa3667bf 43-44
+  s_35012a91b914e4::t_0e6830cbb948c2 42
+docs/snippets/sdk/app-ui.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-81
+docs/getting-started/installation.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 331-332,679,734,786
+scripts/generate-docs-reference.mjs
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-145
+docs/README.md
+  s_35012a91b914e4::t_e8fe23aa3667bf 1,3,5,7,9-10,13-14,16,18-19,21,23-25,28-29,31,33,35-38
+docs/concepts/views.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-142
+docs/concepts/tools.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-110
+docs/snippets/sdk/components.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-44
+docs/docs.json
+  s_35012a91b914e4::t_e8fe23aa3667bf 18-32
+docs/snippets/sdk/slots.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-31
+docs/images/slots-wireframe.svg
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-30
+docs/snippets/sdk/tools.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-88
+docs/snippets/sdk/views.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2147338feb069502dfd620bdc0ff70b180a81d9e",
+  "prompts": {},
+  "sessions": {
+    "s_35012a91b914e4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a123fb-4e04-7eb2-af76-566a5e408879",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}

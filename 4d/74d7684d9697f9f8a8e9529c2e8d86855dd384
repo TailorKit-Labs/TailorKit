@@ -1,0 +1,19 @@
+packages/vite/src/builder/generate-migrations.test.ts
+  s_3a9366f5f03b61::t_82a47e605de9a3 40-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4d74d7684d9697f9f8a8e9529c2e8d86855dd384",
+  "prompts": {},
+  "sessions": {
+    "s_3a9366f5f03b61": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a157d2-378a-7853-9314-e344de3db7e5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
