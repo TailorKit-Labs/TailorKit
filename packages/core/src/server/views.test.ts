@@ -433,7 +433,7 @@ it("preserves successful data and per-app timeout warnings from the platform", a
   expect(runtimeFetch).not.toHaveBeenCalled();
 });
 
-it("preserves static deployment metadata returned by platform resolution", async () => {
+it("omits static snapshots from host responses while preserving resolved instance data", async () => {
   const { run, reply, runtimeFetch } = setup();
 
   const staticApp = {
@@ -453,7 +453,12 @@ it("preserves static deployment metadata returned by platform resolution", async
   const response = await run();
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual({
-    data: [{ ...instance, app: staticApp }],
+    data: [
+      {
+        ...instance,
+        app: { ...app, views: [{ instances: true, path: "/", slot: "page" }] },
+      },
+    ],
     status: "ready",
     warnings: [],
   });

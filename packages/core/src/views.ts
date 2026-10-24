@@ -120,7 +120,6 @@ export interface PatchsmithApp {
     path: string;
     instances?: true;
     disabled?: true;
-    staticInstances?: ViewInstance[];
   }[];
   clientPath?: string;
   description?: string | null;
@@ -237,15 +236,6 @@ export const patchsmithAppSchema: v.GenericSchema<PatchsmithApp> =
           instances: v.optional(v.literal(true)),
           path: v.string(),
           slot: v.string(),
-          staticInstances: v.optional(
-            v.array(
-              v.object({
-                data: v.unknown(),
-                key: v.pipe(v.string(), v.minLength(1)),
-                metadata: v.record(v.string(), v.unknown()),
-              })
-            )
-          ),
         })
       )
     ),
