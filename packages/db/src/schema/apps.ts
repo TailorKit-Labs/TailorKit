@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -205,6 +206,7 @@ export const appDeployment = pgTable(
       table.appId,
       table.shortId
     ),
+    uniqueIndex("app_deployment_app_id_id_unique").on(table.appId, table.id),
   ]
 );
 
@@ -331,6 +333,7 @@ export const appAsset = pgTable(
       table.path
     ),
     uniqueIndex("app_asset_object_key_unique").on(table.objectKey),
+    uniqueIndex("app_asset_app_id_id_unique").on(table.appId, table.id),
   ]
 );
 
@@ -344,15 +347,22 @@ export { AppAssetSchema as AppAsset };
 export const appDeploymentAsset = pgTable(
   "app_deployment_asset",
   {
-    appAssetId: uuid("app_asset_id")
-      .notNull()
-      .references(() => appAsset.id, { onDelete: "restrict" }),
-    appDeploymentId: uuid("app_deployment_id")
-      .notNull()
-      .references(() => appDeployment.id, { onDelete: "cascade" }),
+    appAssetId: uuid("app_asset_id").notNull(),
+    appDeploymentId: uuid("app_deployment_id").notNull(),
+    appId: uuid("app_id").notNull(),
   },
   (table) => [
     primaryKey({ columns: [table.appDeploymentId, table.appAssetId] }),
+    foreignKey({
+      columns: [table.appId, table.appAssetId],
+      foreignColumns: [appAsset.appId, appAsset.id],
+      name: "app_deployment_asset_app_asset_fkey",
+    }).onDelete("restrict"),
+    foreignKey({
+      columns: [table.appId, table.appDeploymentId],
+      foreignColumns: [appDeployment.appId, appDeployment.id],
+      name: "app_deployment_asset_app_deployment_fkey",
+    }).onDelete("cascade"),
     index("app_deployment_asset_asset_id_idx").on(table.appAssetId),
   ]
 );
