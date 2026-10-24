@@ -16,12 +16,15 @@ CREATE TABLE "app_asset" (
 CREATE TABLE "app_deployment_asset" (
 	"app_asset_id" uuid,
 	"app_deployment_id" uuid,
+	"app_id" uuid NOT NULL,
 	CONSTRAINT "app_deployment_asset_pkey" PRIMARY KEY("app_deployment_id","app_asset_id")
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX "app_asset_app_checksum_path_unique" ON "app_asset" ("app_id","checksum","path");--> statement-breakpoint
 CREATE UNIQUE INDEX "app_asset_object_key_unique" ON "app_asset" ("object_key");--> statement-breakpoint
+CREATE UNIQUE INDEX "app_asset_app_id_id_unique" ON "app_asset" ("app_id","id");--> statement-breakpoint
+CREATE UNIQUE INDEX "app_deployment_app_id_id_unique" ON "app_deployment" ("app_id","id");--> statement-breakpoint
 CREATE INDEX "app_deployment_asset_asset_id_idx" ON "app_deployment_asset" ("app_asset_id");--> statement-breakpoint
 ALTER TABLE "app_asset" ADD CONSTRAINT "app_asset_app_id_app_id_fkey" FOREIGN KEY ("app_id") REFERENCES "app"("id") ON DELETE CASCADE;--> statement-breakpoint
-ALTER TABLE "app_deployment_asset" ADD CONSTRAINT "app_deployment_asset_app_asset_id_app_asset_id_fkey" FOREIGN KEY ("app_asset_id") REFERENCES "app_asset"("id") ON DELETE RESTRICT;--> statement-breakpoint
-ALTER TABLE "app_deployment_asset" ADD CONSTRAINT "app_deployment_asset_app_deployment_id_app_deployment_id_fkey" FOREIGN KEY ("app_deployment_id") REFERENCES "app_deployment"("id") ON DELETE CASCADE;
+ALTER TABLE "app_deployment_asset" ADD CONSTRAINT "app_deployment_asset_app_asset_fkey" FOREIGN KEY ("app_id","app_asset_id") REFERENCES "app_asset"("app_id","id") ON DELETE RESTRICT;--> statement-breakpoint
+ALTER TABLE "app_deployment_asset" ADD CONSTRAINT "app_deployment_asset_app_deployment_fkey" FOREIGN KEY ("app_id","app_deployment_id") REFERENCES "app_deployment"("app_id","id") ON DELETE CASCADE;

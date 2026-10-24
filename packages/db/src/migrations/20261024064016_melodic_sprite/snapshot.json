@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "4065e09e-cdab-4373-8c73-12d5af09b976",
+  "id": "70bad330-e085-439b-9a96-1fe33545b741",
   "prevIds": ["524d806a-8852-4c23-acf4-4d9a0986ea4e"],
   "ddl": [
     {
@@ -2155,6 +2155,19 @@
       "default": null,
       "generated": null,
       "identity": null,
+      "name": "app_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "app_deployment_asset"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
       "name": "app_deployment_id",
       "entityType": "columns",
       "schema": "public",
@@ -3213,6 +3226,34 @@
           "opclass": null
         },
         {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "app_asset_app_id_id_unique",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "app_asset"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "app_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
           "value": "short_id",
           "isExpression": false,
           "asc": true,
@@ -3226,6 +3267,34 @@
       "method": "btree",
       "concurrently": false,
       "name": "app_deployment_app_id_short_id_unique",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "app_deployment"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "app_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "app_deployment_app_id_id_unique",
       "entityType": "indexes",
       "schema": "public",
       "table": "app_deployment"
@@ -3884,27 +3953,27 @@
       "table": "app_deployment"
     },
     {
-      "nameExplicit": false,
-      "columns": ["app_asset_id"],
+      "nameExplicit": true,
+      "columns": ["app_id", "app_asset_id"],
       "schemaTo": "public",
       "tableTo": "app_asset",
-      "columnsTo": ["id"],
+      "columnsTo": ["app_id", "id"],
       "onUpdate": "NO ACTION",
       "onDelete": "RESTRICT",
-      "name": "app_deployment_asset_app_asset_id_app_asset_id_fkey",
+      "name": "app_deployment_asset_app_asset_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "app_deployment_asset"
     },
     {
-      "nameExplicit": false,
-      "columns": ["app_deployment_id"],
+      "nameExplicit": true,
+      "columns": ["app_id", "app_deployment_id"],
       "schemaTo": "public",
       "tableTo": "app_deployment",
-      "columnsTo": ["id"],
+      "columnsTo": ["app_id", "id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
-      "name": "app_deployment_asset_app_deployment_id_app_deployment_id_fkey",
+      "name": "app_deployment_asset_app_deployment_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "app_deployment_asset"
