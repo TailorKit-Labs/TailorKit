@@ -296,6 +296,91 @@ it.each([false, true])(
   }
 );
 
+it.each([false, true])(
+  "limits concurrent static uploads (failure=%s)",
+  async (fail) => {
+    const content = Buffer.from("asset-data");
+    const checksum = createHash("sha256").update(content).digest("hex");
+
+    const assets = Array.from({ length: 9 }, (_, index) => ({
+      checksum,
+      contentLength: content.byteLength,
+      path: `asset-${index}.bin`,
+    }));
+
+    await mkdir(path.join(root, ".patchsmith/assets"));
+    await Promise.all(
+      assets.map(async (asset) => {
+        await writeFile(
+          path.join(root, ".patchsmith/assets", asset.path),
+          content
+        );
+      })
+    );
+    await writeFile(
+      path.join(root, ".patchsmith/patchsmith-upload.json"),
+      JSON.stringify({
+        assets: { client: "client/client.js", static: assets },
+        version: 1,
+      })
+    );
+    mocks.create.mockResolvedValue({
+      assets: [{ uploadUrl: "https://uploads.example/client" }],
+      deployment: { id: "deployment" },
+      staticAssets: assets.map((asset) => ({
+        file: asset,
+        uploadUrl: `https://uploads.example/${asset.path}`,
+      })),
+    });
+    const gate = Promise.withResolvers<boolean>();
+    let active = 0;
+    let peak = 0;
+    const uploaded: string[] = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url) => {
+      const uploadUrl = url instanceof Request ? url.url : url.toString();
+
+      if (uploadUrl.endsWith(".bin")) {
+        active += 1;
+        peak = Math.max(peak, active);
+        await gate.promise;
+        active -= 1;
+        uploaded.push(uploadUrl);
+
+        if (fail) {
+          return new Response(null, { status: 500 });
+        }
+      }
+
+      return new Response(null, { status: 200 });
+    });
+    const deployment = runDeploy({ cwd: root });
+
+    try {
+      await vi.waitFor(() => {
+        expect(active).toBeGreaterThanOrEqual(4);
+      });
+      expect(mocks.publish).not.toHaveBeenCalled();
+    } finally {
+      gate.resolve(true);
+    }
+
+    if (fail) {
+      await expect(deployment).rejects.toThrow("Asset upload failed");
+      expect(mocks.publish).not.toHaveBeenCalled();
+    } else {
+      await expect(deployment).resolves.toMatchObject({ status: "published" });
+      expect(uploaded.toSorted()).toEqual(
+        assets
+          .map((asset) => `https://uploads.example/${asset.path}`)
+          .toSorted()
+      );
+      expect(mocks.publish).toHaveBeenCalledOnce();
+    }
+
+    expect(peak).toBe(4);
+  }
+);
+
 it("rejects hosts that discard static asset metadata instead of publishing a broken app", async () => {
   const content = Buffer.from("game-data");
   const checksum = createHash("sha256").update(content).digest("hex");

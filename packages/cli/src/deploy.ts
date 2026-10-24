@@ -634,15 +634,20 @@ export const runDeploy = async (
     }
   }
 
+  const pendingStaticAssets = staticAssets.values();
+
   await Promise.all([
-    ...staticAssets.map(async (asset) => {
-      const upload = staticUploads.get(asset.path);
+    ...Array.from({ length: Math.min(4, staticAssets.length) }, async () => {
+      for (const asset of pendingStaticAssets) {
+        const upload = staticUploads.get(asset.path);
 
-      if (!upload) {
-        throw new Error(`Missing static asset upload: ${asset.path}`);
+        if (!upload) {
+          throw new Error(`Missing static asset upload: ${asset.path}`);
+        }
+
+        // oxlint-disable-next-line no-await-in-loop -- Each worker uploads one asset at a time to bound concurrent PUT requests.
+        await uploadAsset(upload, asset.content);
       }
-
-      await uploadAsset(upload, asset.content);
     }),
     ...(serverAssetGzip && created.server
       ? [uploadAsset(created.server, serverAssetGzip, "gzip")]
