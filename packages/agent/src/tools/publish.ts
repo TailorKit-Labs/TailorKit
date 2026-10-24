@@ -2,13 +2,16 @@ import { createHash } from "node:crypto";
 import { promisify } from "node:util";
 import { gzip } from "node:zlib";
 
-import { patchsmithUploadManifestSchema } from "@patchsmith/vite/upload-manifest";
+import {
+  assertDeploymentSize,
+  maxDeploymentBytes,
+  patchsmithUploadManifestSchema,
+} from "@patchsmith/vite/upload-manifest";
 import type { Sandbox } from "@vercel/sandbox";
 import * as v from "valibot";
 import { z } from "zod";
 
 export const deploymentDirectory = "/tmp/patchsmith-deployment";
-const maxAssetBytes = 3 * 1024 * 1024;
 const gzipAsync = promisify(gzip);
 
 const claimsSchema = z.object({
@@ -64,16 +67,12 @@ const logoTypes = {
   webp: "image/webp",
 } as const;
 
-const readAsset = async (
-  sandbox: ReadArtifact,
-  filename: string,
-  maxBytes = maxAssetBytes
-) => {
+const readAsset = async (sandbox: ReadArtifact, filename: string) => {
   const content = await sandbox.readFileToBuffer({
     path: `${deploymentDirectory}/${filename}`,
   });
 
-  if (content === null || content.byteLength > maxBytes) {
+  if (content === null || content.byteLength > maxDeploymentBytes) {
     throw new Error(`Missing or oversized deployment asset: ${filename}`);
   }
 
@@ -81,7 +80,7 @@ const readAsset = async (
 };
 
 const describeAsset = (content: Buffer) => {
-  if (content.byteLength > maxAssetBytes) {
+  if (content.byteLength > maxDeploymentBytes) {
     throw new Error("Deployment asset exceeds the size limit.");
   }
 
@@ -89,6 +88,80 @@ const describeAsset = (content: Buffer) => {
     checksum: createHash("sha256").update(content).digest("hex"),
     contentLength: content.byteLength,
   };
+};
+
+const readDeploymentAssets = async (
+  sandbox: ReadArtifact,
+  manifest: v.InferOutput<typeof patchsmithUploadManifestSchema>
+) => {
+  const clientAsset = await readAsset(sandbox, manifest.assets.client);
+
+  const serverAsset = manifest.assets.server
+    ? await readAsset(sandbox, manifest.assets.server)
+    : undefined;
+
+  const staticAssets = await Promise.all(
+    (manifest.assets.static ?? []).map(async (asset) => {
+      const content = await readAsset(sandbox, `assets/${asset.path}`);
+
+      if (
+        content.byteLength !== asset.contentLength ||
+        createHash("sha256").update(content).digest("hex") !== asset.checksum
+      ) {
+        throw new Error(`Built asset changed after hashing: ${asset.path}`);
+      }
+
+      return { ...asset, content };
+    })
+  );
+
+  const clientCode = await gzipAsync(clientAsset);
+  const serverCode = serverAsset ? await gzipAsync(serverAsset) : undefined;
+
+  const logos = [];
+
+  for (const variant of ["dark", "light"] as const) {
+    const filename = manifest.assets.logos?.[variant];
+
+    if (filename === undefined) {
+      continue;
+    }
+
+    // oxlint-disable-next-line eslint/no-await-in-loop -- Validate each of the two optional logos before creating a deployment.
+    const content = await readAsset(sandbox, filename);
+    const extension = filename.split(".").at(-1);
+
+    if (extension !== "png" && extension !== "svg" && extension !== "webp") {
+      throw new Error("Unsupported deployment logo format.");
+    }
+
+    logos.push({ content, contentType: logoTypes[extension], variant });
+  }
+
+  const logoBytes = logos.reduce(
+    (total, { content }) => total + content.byteLength,
+    0
+  );
+
+  const staticBytes = staticAssets.reduce(
+    (total, asset) => total + asset.content.byteLength,
+    0
+  );
+
+  assertDeploymentSize([
+    clientAsset.byteLength,
+    serverAsset?.byteLength ?? 0,
+    logoBytes,
+    staticBytes,
+  ]);
+  assertDeploymentSize([
+    clientCode.byteLength,
+    serverCode?.byteLength ?? 0,
+    logoBytes,
+    staticBytes,
+  ]);
+
+  return { clientCode, logos, serverCode, staticAssets };
 };
 
 /** Only the host publishes; sandbox output is parsed as data and never executed here. */
@@ -117,52 +190,8 @@ export const publishDeployment = async (
     JSON.parse(manifestContent.toString("utf-8"))
   );
 
-  const clientCode = await gzipAsync(
-    await readAsset(sandbox, manifest.assets.client)
-  );
-
-  const serverCode = manifest.assets.server
-    ? await gzipAsync(await readAsset(sandbox, manifest.assets.server))
-    : undefined;
-
-  const staticAssets = await Promise.all(
-    (manifest.assets.static ?? []).map(async (asset) => {
-      const content = await readAsset(
-        sandbox,
-        `assets/${asset.path}`,
-        50 * 1024 * 1024
-      );
-
-      if (
-        content.byteLength !== asset.contentLength ||
-        createHash("sha256").update(content).digest("hex") !== asset.checksum
-      ) {
-        throw new Error(`Built asset changed after hashing: ${asset.path}`);
-      }
-
-      return { ...asset, content };
-    })
-  );
-
-  const logos = [];
-
-  for (const variant of ["dark", "light"] as const) {
-    const filename = manifest.assets.logos?.[variant];
-
-    if (filename === undefined) {
-      continue;
-    }
-
-    // oxlint-disable-next-line eslint/no-await-in-loop -- Validate each of the two optional logos before creating a deployment.
-    const content = await readAsset(sandbox, filename);
-    const extension = filename.split(".").at(-1);
-
-    if (extension !== "png" && extension !== "svg" && extension !== "webp") {
-      throw new Error("Unsupported deployment logo format.");
-    }
-
-    logos.push({ content, contentType: logoTypes[extension], variant });
-  }
+  const { clientCode, logos, serverCode, staticAssets } =
+    await readDeploymentAssets(sandbox, manifest);
 
   const request = async (pathname: string, body: string) => {
     const response = await fetchImplementation(
@@ -231,10 +260,9 @@ export const publishDeployment = async (
   const upload = async (
     destination: z.infer<typeof uploadSchema> | undefined,
     content: Buffer,
-    encoding?: "gzip",
-    maxBytes = maxAssetBytes
+    encoding?: "gzip"
   ) => {
-    if (destination === undefined || content.byteLength > maxBytes) {
+    if (destination === undefined || content.byteLength > maxDeploymentBytes) {
       throw new Error(
         "Missing upload destination or oversized deployment asset."
       );
@@ -283,12 +311,7 @@ export const publishDeployment = async (
 
   await Promise.all(
     staticAssets.map(async (asset) => {
-      await upload(
-        staticUploads.get(asset.path),
-        asset.content,
-        undefined,
-        50 * 1024 * 1024
-      );
+      await upload(staticUploads.get(asset.path), asset.content);
     })
   );
 

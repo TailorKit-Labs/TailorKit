@@ -4,6 +4,10 @@ Use the Patchsmith command-line interface (CLI) to create, develop, and publish 
 
 New apps use Valibot for validation. Function inputs/outputs and instance data accept Standard Schema v1-compatible validators; existing apps can keep their current compatible library. Function input/output validation must be synchronous.
 
+## Deployment size
+
+Each deployment can contain up to 10 MiB (10,485,760 bytes) of combined client code, server code, light/dark logos, and public files from `assets/`. Both the uploaded total and the total before compression must fit this budget. Reused static files still count toward each deployment that references them. Each logo also has a 256 KiB limit. Independently hosted files downloaded at runtime are outside the deployment budget.
+
 ## Start with a bare app
 
 Use `--bare` to generate configuration, tooling, host bindings and capabilities, and the client root without example slots, functions, database files or logos:

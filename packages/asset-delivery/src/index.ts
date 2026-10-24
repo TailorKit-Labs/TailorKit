@@ -1,11 +1,14 @@
 import { Effect } from "effect";
 import { catch as catchEffect } from "effect/Effect";
 
+import { maxDeploymentBytes } from "./deployment-limits";
 import {
   isStaticAssetPath,
   maxStaticAssetBytes,
   staticAssetContentType,
 } from "./static-assets";
+
+export { maxDeploymentBytes } from "./deployment-limits";
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -32,7 +35,6 @@ const staticAssetPath = new RegExp(
 
 const methods = new Set(["GET", "HEAD", "OPTIONS"]);
 
-export const maxDeploymentBytes = 3 * 1024 * 1024;
 export const maxAssetBytes = maxDeploymentBytes;
 
 export interface AssetIdentity {

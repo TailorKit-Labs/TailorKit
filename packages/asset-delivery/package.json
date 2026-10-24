@@ -25,6 +25,11 @@
       "types": "./dist/index.d.mts",
       "default": "./dist/index.mjs"
     },
+    "./deployment-limits": {
+      "development": "./src/deployment-limits.ts",
+      "types": "./dist/deployment-limits.d.mts",
+      "default": "./dist/deployment-limits.mjs"
+    },
     "./logo-validation": {
       "development": "./src/logo-validation.ts",
       "types": "./dist/logo-validation.d.mts",
@@ -32,7 +37,7 @@
     }
   },
   "scripts": {
-    "build": "vp pack src/index.ts src/logo-validation.ts src/static-assets.ts --target node24 --format esm --dts --clean",
+    "build": "vp pack src/index.ts src/deployment-limits.ts src/logo-validation.ts src/static-assets.ts --target node24 --format esm --dts --clean",
     "check-types": "tsc --noEmit",
     "test": "vp test run",
     "lint": "vp lint .",

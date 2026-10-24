@@ -1,6 +1,9 @@
-/** Limits apply to raw file bytes; static files are uploaded without gzip. */
-export const maxStaticAssetBytes = 50 * 1024 * 1024;
-export const maxStaticDeploymentBytes = 100 * 1024 * 1024;
+/** Static files use raw bytes from the same budget as bundles and logos. */
+export {
+  maxDeploymentBytes as maxStaticAssetBytes,
+  maxDeploymentBytes as maxStaticDeploymentBytes,
+} from "./deployment-limits";
+
 export const maxStaticAssets = 1000;
 
 const assetPathPattern =

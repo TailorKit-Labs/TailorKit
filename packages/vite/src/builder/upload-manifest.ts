@@ -1,4 +1,10 @@
+import { maxDeploymentBytes } from "@patchsmith/asset-delivery/deployment-limits";
 import * as v from "valibot";
+
+export {
+  assertDeploymentSize,
+  maxDeploymentBytes,
+} from "@patchsmith/asset-delivery/deployment-limits";
 
 export const staticInstancesSchema = v.pipe(
   v.array(
@@ -39,7 +45,7 @@ export const patchsmithUploadManifestSchema = v.object({
               v.number(),
               v.integer(),
               v.minValue(1),
-              v.maxValue(50 * 1024 * 1024)
+              v.maxValue(maxDeploymentBytes)
             ),
             path: v.pipe(
               v.string(),
@@ -59,7 +65,7 @@ export const patchsmithUploadManifestSchema = v.object({
         v.check(
           (assets) =>
             assets.reduce((size, asset) => size + asset.contentLength, 0) <=
-            100 * 1024 * 1024,
+            maxDeploymentBytes,
           "Static assets exceed the deployment size limit"
         )
       )

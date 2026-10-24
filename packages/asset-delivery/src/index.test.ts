@@ -7,6 +7,7 @@ import {
   assetPreflight,
   isAssetMethod,
   isValidAssetSize,
+  maxDeploymentBytes,
   parseHostedAssetRequest,
   parseNodeAssetRequest,
 } from "./index";
@@ -160,9 +161,9 @@ describe("asset delivery contract", () => {
     expect(["GET", "HEAD", "OPTIONS"].every(isAssetMethod)).toBe(true);
     expect(isAssetMethod("POST")).toBe(false);
     expect(isValidAssetSize(1)).toBe(true);
-    expect(isValidAssetSize(3 * 1024 * 1024)).toBe(true);
+    expect(isValidAssetSize(maxDeploymentBytes)).toBe(true);
     expect(isValidAssetSize(0)).toBe(false);
-    expect(isValidAssetSize(3 * 1024 * 1024 + 1)).toBe(false);
+    expect(isValidAssetSize(maxDeploymentBytes + 1)).toBe(false);
     expect(assetFailure(404).headers.get("Cache-Control")).toBe("no-store");
     expect(assetPreflight().status).toBe(204);
     const headers = assetHeaders({ contentLength: 10, etag: '"etag"' });

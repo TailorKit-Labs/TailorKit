@@ -120,12 +120,7 @@ export const deploymentRouter = {
             v.array(
               v.object({
                 checksum: v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/u)),
-                contentLength: v.pipe(
-                  v.number(),
-                  v.integer(),
-                  v.minValue(1),
-                  v.maxValue(50 * 1024 * 1024)
-                ),
+                contentLength: v.pipe(v.number(), v.integer(), v.minValue(1)),
                 path: v.pipe(
                   v.string(),
                   v.maxLength(512),

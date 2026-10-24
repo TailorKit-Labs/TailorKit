@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
-import { gunzipSync } from "node:zlib";
+import { gunzipSync, gzipSync } from "node:zlib";
 
+import { asyncFixture } from "@patchsmith/config/testing";
+import { maxDeploymentBytes } from "@patchsmith/vite/upload-manifest";
 import { expect, it } from "vite-plus/test";
 
 import { deploymentDirectory, publishDeployment } from "./publish";
@@ -40,6 +42,102 @@ const reader = (overrides: Record<string, Buffer> = {}) => {
       ),
   };
 };
+
+it.each([
+  { budget: "compressed", extraBytes: 0, reuse: false },
+  { budget: "compressed", extraBytes: 1, reuse: false },
+  { budget: "compressed", extraBytes: 0, reuse: true },
+  { budget: "compressed", extraBytes: 1, reuse: true },
+  { budget: "raw", extraBytes: 0, reuse: true },
+  { budget: "raw", extraBytes: 1, reuse: true },
+])(
+  "counts static files in the agent's combined $budget budget ($extraBytes bytes over, reused=$reuse)",
+  async ({ budget, extraBytes, reuse }) => {
+    const clientContent =
+      budget === "raw" ? Buffer.alloc(6 * 1024 * 1024, "x") : clientCode;
+
+    const serverContent =
+      budget === "raw" ? Buffer.alloc(1024 * 1024, "y") : serverCode;
+
+    const bundleBytes =
+      budget === "raw"
+        ? clientContent.byteLength + serverContent.byteLength
+        : gzipSync(clientContent).byteLength +
+          gzipSync(serverContent).byteLength;
+
+    const content = Buffer.alloc(
+      maxDeploymentBytes - bundleBytes + extraBytes,
+      3
+    );
+
+    const checksum = createHash("sha256").update(content).digest("hex");
+
+    const artifact = {
+      checksum,
+      contentLength: content.byteLength,
+      path: "doom.wad",
+    };
+
+    let requests = 0;
+
+    const send: typeof fetch = async (input, init) => {
+      requests += 1;
+      const request = new Request(input, init);
+
+      if (request.url.endsWith("/deployments")) {
+        expect(await request.json()).toMatchObject({
+          staticAssets: [artifact],
+        });
+
+        return Response.json({
+          assets: [{ uploadUrl: "https://storage.test/client" }],
+          deployment: { id: "created" },
+          server: { uploadUrl: "https://storage.test/server" },
+          staticAssets: [
+            {
+              file: { checksum, path: "doom.wad" },
+              uploadUrl: reuse ? undefined : "https://storage.test/doom.wad",
+            },
+          ],
+        });
+      }
+
+      return request.method === "PUT"
+        ? new Response(null, { status: 200 })
+        : Response.json({ id: "published" });
+    };
+
+    const publish = publishDeployment(
+      reader({
+        "assets/doom.wad": content,
+        "client/client.js": clientContent,
+        "patchsmith-upload.json": Buffer.from(
+          JSON.stringify({
+            assets: {
+              client: "client/client.js",
+              server: "server/server.js",
+              static: [artifact],
+            },
+            version: 1,
+          })
+        ),
+        "server/server.js": serverContent,
+      }),
+      authorization,
+      undefined,
+      send
+    );
+
+    if (extraBytes > 0) {
+      await expect(publish).rejects.toThrow(
+        "Combined deployment assets cannot exceed"
+      );
+      expect(requests).toBe(0);
+    } else {
+      await expect(publish).resolves.toBe("Deployment: published");
+    }
+  }
+);
 
 it.each([false, true])(
   "publishes hashed static files from sandbox output and reuses existing uploads: %s",
@@ -257,7 +355,7 @@ it("rejects oversized output before an authenticated deployment request", async 
 
   await expect(
     publishDeployment(
-      reader({ "client/client.js": Buffer.alloc(3 * 1024 * 1024 + 1) }),
+      reader({ "client/client.js": Buffer.alloc(maxDeploymentBytes + 1) }),
       authorization,
       undefined,
       send
@@ -280,3 +378,67 @@ it("honors platform authorization failures without uploading or publishing", asy
   ).rejects.toThrow("401");
   expect(requests).toEqual(["https://platform.test/api/platform/deployments"]);
 });
+
+it.each([0, 1])(
+  "checks the combined agent output budget (%i bytes over the limit)",
+  async (extraBytes) => {
+    const requests: string[] = [];
+
+    const send: typeof fetch = asyncFixture((input) => {
+      const { url } = new Request(input);
+      requests.push(url);
+
+      if (url.endsWith("/deployments")) {
+        return Response.json({
+          assets: [{ uploadUrl: "https://storage.test/client" }],
+          deployment: { id: "created" },
+          logos: { dark: {}, light: {} },
+          server: { uploadUrl: "https://storage.test/server" },
+        });
+      }
+
+      if (url.endsWith("/deployments/created")) {
+        return Response.json({ id: "published" });
+      }
+
+      return new Response(null, { status: 200 });
+    });
+
+    const publish = publishDeployment(
+      reader({
+        "client/client.js": Buffer.alloc(6 * 1024 * 1024, 120),
+        "client/logo-light.svg": logo,
+        "patchsmith-upload.json": Buffer.from(
+          JSON.stringify({
+            ...manifest,
+            assets: {
+              ...manifest.assets,
+              logos: {
+                dark: "client/logo-dark.svg",
+                light: "client/logo-light.svg",
+              },
+            },
+          })
+        ),
+        "server/server.js": Buffer.alloc(
+          4 * 1024 * 1024 - 2 * logo.byteLength + extraBytes,
+          121
+        ),
+      }),
+      authorization,
+      undefined,
+      send
+    );
+
+    if (extraBytes > 0) {
+      await expect(publish).rejects.toThrow(
+        "Combined deployment assets cannot exceed"
+      );
+      expect(requests).toHaveLength(0);
+
+      return;
+    }
+
+    await expect(publish).resolves.toBe("Deployment: published");
+  }
+);

@@ -79,11 +79,11 @@ afterEach(() => {
 });
 
 describe("project asset gateway", () => {
-  it("streams hashed assets above the bundle limit and keeps immutable browser caching on cache hits and HEAD", async () => {
+  it("streams hashed assets within the deployment limit and keeps immutable browser caching on cache hits and HEAD", async () => {
     const hash = "a".repeat(64);
     const assetUrl = `https://${projectId}.tailorkit.app/a/${appId}/assets/${hash}/game/doom.wasm`;
     const assetKey = `projects/${projectId}/apps/${appId}/assets/${hash}/game/doom.wasm`;
-    const bytes = new Uint8Array(maxDeploymentBytes + 1);
+    const bytes = new Uint8Array(maxDeploymentBytes);
     get.mockResolvedValueOnce({
       body: new Response(bytes).body,
       httpEtag: '"wasm"',
@@ -437,7 +437,7 @@ it.each(["GET", "HEAD"])(
 );
 
 it.each(["R2", "cache"])(
-  "caps inflated bytes from %s at 3 MiB",
+  "caps inflated bytes from %s at 10 MiB",
   async (source) => {
     const stored = gzipObject("a".repeat(maxDeploymentBytes + 1));
     expect(stored.size).toBeLessThan(maxDeploymentBytes);
@@ -470,7 +470,7 @@ it.each(["R2", "cache"])(
   }
 );
 
-it("serves a gzip bundle whose decoded size is exactly 3 MiB", async () => {
+it("serves a gzip bundle whose decoded size is exactly 10 MiB", async () => {
   get.mockResolvedValueOnce(gzipObject("a".repeat(maxDeploymentBytes)));
   const response = await fetchAsset(new Request(url));
   const awaitedResult1 = await response.arrayBuffer();
